@@ -13,7 +13,7 @@ export { Accordion, type AccordionProps, type AccordionItem } from './Accordion'
 export { Alert, type AlertProps, type AlertVariant } from './Alert';
 export { Breadcrumb, type BreadcrumbProps, type BreadcrumbItem } from './Breadcrumb';
 export { ButtonGroup, type ButtonGroupProps } from './ButtonGroup';
-export { CommandPalette, type CommandPaletteProps, type CommandPaletteCommand } from './CommandPalette';
+export { CommandPalette, dispatchCommandPaletteCommand, type CommandPaletteProps, type CommandPaletteCommand, type DispatchCommandPaletteCommandDeps } from './CommandPalette';
 export { FilterGroup, type FilterGroupProps, type FilterDefinition } from './FilterGroup';
 export { Card as ActionCard, type CardProps as ActionCardProps, type CardAction } from './Card';
 export { Container, type ContainerProps } from './Container';

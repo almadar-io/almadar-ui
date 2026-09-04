@@ -1,0 +1,437 @@
+/**
+ * Comic Theme — "Comic Studio"
+ *
+ * Fun, light, cartoonish comic-book-art skin for the game-studio editor:
+ * bold black-ink outlines, hard offset drop shadows (no blur, like
+ * screen-printed panel borders), chunky rounded corners, a bright sunny
+ * paper palette with a subtle halftone-dot texture, and snappy springy
+ * transitions. Dark mode ("night ink") inverts the ink onto a deep indigo
+ * page while keeping the same accent hues, brightened.
+ *
+ * Halftone texture: applied to `body` (descendant of the themed root, which
+ * carries [data-theme] on <html>) rather than baked into --color-background,
+ * because --color-background must stay a flat parseable color for
+ * scripts/theme-contrast-audit.mjs.
+ */
+
+/* ==========================================================================
+ * LIGHT MODE — sunny paper + ink
+ * ========================================================================== */
+[data-theme="comic-light"] {
+    /* Shadows - Hard offset ink silhouette, no blur */
+    --shadow-main: 4px 4px 0 0 #1c1c28;
+    --shadow-sm: 2px 2px 0 0 #1c1c28;
+    --shadow-lg: 6px 6px 0 0 #1c1c28;
+    --shadow-inner: inset 2px 2px 0 0 rgba(28, 28, 40, 0.15);
+    --shadow-none: none;
+    --shadow-hover: 6px 6px 0 0 #1c1c28;
+    --shadow-active: 1px 1px 0 0 #1c1c28;
+
+    /* Border radius - Chunky, friendly, rounded-panel corners */
+    --radius-none: 0px;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+
+    /* Border width - Bold inked outline */
+    --border-width: 3px;
+    --border-width-thin: 2px;
+    --border-width-thick: 4px;
+
+    /* Colors - Sunny cream paper, comic red-orange primary, mint + yellow pop */
+    --color-primary: #c2301b;
+    --color-primary-hover: #a92814;
+    --color-primary-foreground: #fff8e7;
+
+    --color-secondary: #a9e8d3;
+    --color-secondary-hover: #8fdcc1;
+    --color-secondary-foreground: #0f3d2c;
+
+    --color-accent: #8f6300;
+    --color-accent-foreground: #fff8e7;
+
+    --color-muted: #f5e9c9;
+    --color-muted-foreground: #6b5a34;
+
+    --color-background: #fff8e7;
+    --color-foreground: #1c1c28;
+    --color-card: #ffffff;
+    --color-card-foreground: #1c1c28;
+    --color-surface: #fff1d6;
+    --color-border: #1c1c28;
+    --color-input: #2b2b3d;
+    --color-ring: #2f6fed;
+
+    --color-table-header: #fff1d6;
+    --color-table-border: #1c1c28;
+    --color-table-row-hover: #fff8e7;
+    --color-surface-hover: #ffe9bc;
+    --color-border-hover: #c2301b;
+    --color-placeholder: #8a7a54;
+
+    /* Semantic colors */
+    --color-error: #e0293b;
+    --color-error-foreground: #ffffff;
+    --color-success: #12874f;
+    --color-success-foreground: #ffffff;
+    --color-warning: #f5a623;
+    --color-warning-foreground: #2a1a00;
+    --color-info: #2f6fed;
+    --color-info-foreground: #ffffff;
+
+    /* Typography - Rounded friendly display + body, generous line-height */
+    --font-family:
+        "Fredoka", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing: 0em;
+    --line-height: 1.55;
+
+    /* Icon styling - Thick cartoon strokes */
+    --icon-stroke-width: 2.5;
+    --icon-color: #c2301b;
+
+    /* Transitions - Snappy + springy, bouncy overshoot */
+    --transition-fast: 120ms;
+    --transition-normal: 200ms;
+    --transition-slow: 320ms;
+    --transition-timing: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Hover/Active transforms - Peel-off-the-page lift / press-into-page */
+    --hover-scale: 1.03;
+    --hover-translate-y: -2px;
+    --hover-translate-x: -1px;
+    --active-scale: 0.97;
+    --active-translate-y: 1px;
+
+    /* Focus ring - Electric blue pop */
+    --focus-ring-width: 3px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #2f6fed;
+
+    /* Layer 1 — Density axis (spacing scale) */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+    /* Density axis — per-element heights */
+    --button-height-sm: 30px;
+    --button-height-md: 40px;
+    --button-height-lg: 48px;
+    --input-height-sm: 30px;
+    --input-height-md: 40px;
+    --input-height-lg: 48px;
+    --row-height-compact: 32px;
+    --row-height-normal: 40px;
+    --row-height-spacious: 48px;
+    /* Density axis — per-element padding */
+    --card-padding-sm: 12px;
+    --card-padding-md: 18px;
+    --card-padding-lg: 24px;
+    --dialog-padding: 24px;
+    --section-gap: 32px;
+    /* Type axis — family triplet */
+    --font-family-display: "Fredoka", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-body: var(--font-family);
+    --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Type axis — size scale */
+    --text-xs: 12px;
+    --leading-xs: 16px;
+    --text-sm: 14px;
+    --leading-sm: 20px;
+    --text-base: 16px;
+    --leading-base: 24px;
+    --text-lg: 18px;
+    --leading-lg: 28px;
+    --text-xl: 20px;
+    --leading-xl: 28px;
+    --text-2xl: 24px;
+    --leading-2xl: 32px;
+    --text-3xl: 30px;
+    --leading-3xl: 36px;
+    --text-4xl: 36px;
+    --leading-4xl: 40px;
+    --text-display-1: 48px;
+    --leading-display-1: 52px;
+    --text-display-2: 60px;
+    --leading-display-2: 64px;
+    /* Type axis — intent mapping */
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-base);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-base);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+    /* Motion axis — duration palette */
+    --duration-instant: 0ms;
+    --duration-fast: var(--transition-fast);
+    --duration-normal: var(--transition-normal);
+    --duration-slow: var(--transition-slow);
+    --duration-dramatic: 600ms;
+    /* Motion axis — easing palette */
+    --easing-linear: linear;
+    --easing-standard: var(--transition-timing);
+    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Iconography axis */
+    --icon-family: lucide;
+    --icon-default-size: 16px;
+    /* Elevation axis — per-layer mapping */
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-lg);
+    --elevation-toast: var(--shadow-main);
+    /* Geometry axis — radius rhythm with intent */
+    --radius-container: var(--radius-md);
+    --radius-interactive: var(--radius-md);
+    --radius-pill: var(--radius-full);
+    /* Geometry axis — border-width rhythm */
+    --border-hairline: 1px;
+    --border-standard: var(--border-width);
+    --border-heavy: var(--border-width-thick);
+}
+
+/* Halftone-dot paper texture — subtle, doesn't fight card/panel contrast. */
+[data-theme="comic-light"] body {
+    background-color: var(--color-background);
+    background-image: radial-gradient(circle at 1px 1px, rgba(28, 28, 40, 0.07) 1.2px, transparent 0);
+    background-size: 14px 14px;
+}
+
+/* ==========================================================================
+ * DARK MODE — "Night Ink": deep indigo paper, cream ink outlines
+ * ========================================================================== */
+[data-theme="comic-dark"] {
+    /* Shadows - Hard offset cream-ink silhouette, no blur */
+    --shadow-main: 4px 4px 0 0 #f0e9d8;
+    --shadow-sm: 2px 2px 0 0 #f0e9d8;
+    --shadow-lg: 6px 6px 0 0 #f0e9d8;
+    --shadow-inner: inset 2px 2px 0 0 rgba(240, 233, 216, 0.15);
+    --shadow-none: none;
+    --shadow-hover: 6px 6px 0 0 #f0e9d8;
+    --shadow-active: 1px 1px 0 0 #f0e9d8;
+
+    /* Border radius - Chunky, friendly, rounded-panel corners */
+    --radius-none: 0px;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+
+    /* Border width - Bold inked outline */
+    --border-width: 3px;
+    --border-width-thin: 2px;
+    --border-width-thick: 4px;
+
+    /* Colors - Deep indigo night paper, brightened comic accents */
+    --color-primary: #ff7a5c;
+    --color-primary-hover: #ff9174;
+    --color-primary-foreground: #180a05;
+
+    --color-secondary: #6fe3c4;
+    --color-secondary-hover: #8ceccf;
+    --color-secondary-foreground: #062a1e;
+
+    --color-accent: #ffdd57;
+    --color-accent-foreground: #2a1e00;
+
+    --color-muted: #262a4d;
+    --color-muted-foreground: #b7bbe3;
+
+    --color-background: #14162c;
+    --color-foreground: #f5efe0;
+    --color-card: #1d2044;
+    --color-card-foreground: #f5efe0;
+    --color-surface: #1a1d3c;
+    --color-border: #f0e9d8;
+    --color-input: #c9c2a9;
+    --color-ring: #6fa8ff;
+
+    --color-table-header: #1a1d3c;
+    --color-table-border: #f0e9d8;
+    --color-table-row-hover: #20244a;
+    --color-surface-hover: #262a52;
+    --color-border-hover: #ff7a5c;
+    --color-placeholder: #8e92c0;
+
+    /* Semantic colors - Brightened for dark ground */
+    --color-error: #ff6b6b;
+    --color-error-foreground: #180505;
+    --color-success: #4ede93;
+    --color-success-foreground: #04210f;
+    --color-warning: #ffc24c;
+    --color-warning-foreground: #2a1a00;
+    --color-info: #6fa8ff;
+    --color-info-foreground: #071b3d;
+
+    /* Typography - Rounded friendly display + body, generous line-height */
+    --font-family:
+        "Fredoka", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing: 0em;
+    --line-height: 1.55;
+
+    /* Icon styling - Thick cartoon strokes */
+    --icon-stroke-width: 2.5;
+    --icon-color: #ff7a5c;
+
+    /* Transitions - Snappy + springy, bouncy overshoot */
+    --transition-fast: 120ms;
+    --transition-normal: 200ms;
+    --transition-slow: 320ms;
+    --transition-timing: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Hover/Active transforms - Peel-off-the-page lift / press-into-page */
+    --hover-scale: 1.03;
+    --hover-translate-y: -2px;
+    --hover-translate-x: -1px;
+    --active-scale: 0.97;
+    --active-translate-y: 1px;
+
+    /* Focus ring - Electric blue pop */
+    --focus-ring-width: 3px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #6fa8ff;
+
+    /* Layer 1 — Density axis (spacing scale) */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+    /* Density axis — per-element heights */
+    --button-height-sm: 30px;
+    --button-height-md: 40px;
+    --button-height-lg: 48px;
+    --input-height-sm: 30px;
+    --input-height-md: 40px;
+    --input-height-lg: 48px;
+    --row-height-compact: 32px;
+    --row-height-normal: 40px;
+    --row-height-spacious: 48px;
+    /* Density axis — per-element padding */
+    --card-padding-sm: 12px;
+    --card-padding-md: 18px;
+    --card-padding-lg: 24px;
+    --dialog-padding: 24px;
+    --section-gap: 32px;
+    /* Type axis — family triplet */
+    --font-family-display: "Fredoka", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-body: var(--font-family);
+    --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Type axis — size scale */
+    --text-xs: 12px;
+    --leading-xs: 16px;
+    --text-sm: 14px;
+    --leading-sm: 20px;
+    --text-base: 16px;
+    --leading-base: 24px;
+    --text-lg: 18px;
+    --leading-lg: 28px;
+    --text-xl: 20px;
+    --leading-xl: 28px;
+    --text-2xl: 24px;
+    --leading-2xl: 32px;
+    --text-3xl: 30px;
+    --leading-3xl: 36px;
+    --text-4xl: 36px;
+    --leading-4xl: 40px;
+    --text-display-1: 48px;
+    --leading-display-1: 52px;
+    --text-display-2: 60px;
+    --leading-display-2: 64px;
+    /* Type axis — intent mapping */
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-base);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-base);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+    /* Motion axis — duration palette */
+    --duration-instant: 0ms;
+    --duration-fast: var(--transition-fast);
+    --duration-normal: var(--transition-normal);
+    --duration-slow: var(--transition-slow);
+    --duration-dramatic: 600ms;
+    /* Motion axis — easing palette */
+    --easing-linear: linear;
+    --easing-standard: var(--transition-timing);
+    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Iconography axis */
+    --icon-family: lucide;
+    --icon-default-size: 16px;
+    /* Elevation axis — per-layer mapping */
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-lg);
+    --elevation-toast: var(--shadow-main);
+    /* Geometry axis — radius rhythm with intent */
+    --radius-container: var(--radius-md);
+    --radius-interactive: var(--radius-md);
+    --radius-pill: var(--radius-full);
+    /* Geometry axis — border-width rhythm */
+    --border-hairline: 1px;
+    --border-standard: var(--border-width);
+    --border-heavy: var(--border-width-thick);
+}
+
+/* Halftone-dot paper texture — subtle, doesn't fight card/panel contrast. */
+[data-theme="comic-dark"] body {
+    background-color: var(--color-background);
+    background-image: radial-gradient(circle at 1px 1px, rgba(240, 233, 216, 0.05) 1.2px, transparent 0);
+    background-size: 14px 14px;
+}

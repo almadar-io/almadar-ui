@@ -4,8 +4,14 @@
  * Renders a mermaid diagram from the body of a ```mermaid fenced block.
  * The mermaid library is loaded lazily on first use (a literal dynamic
  * import the consumer's bundler code-splits), so apps that never show a
- * diagram never pay for it. Invalid diagram source degrades to a
- * syntax-highlighted code block with the parse error above it.
+ * diagram never pay for it.
+ *
+ * Diagram source is frequently LLM-authored (kflow lessons), so a source that
+ * fails to parse is retried through `mermaidRepairCandidates` — mermaid's own
+ * parser accepts or rejects each candidate, so a repaired diagram is one the
+ * parser vouched for, never a guess. Source that parses is never rewritten.
+ * When nothing parses the reader gets the diagram source, not the parser's
+ * token dump; the raw message goes to the log for whoever is debugging.
  *
  * Event Contract:
  * - No events emitted (display-only component)
@@ -18,11 +24,16 @@
  */
 
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { createLogger } from '@almadar/logger';
 import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 import { CodeBlock } from './CodeBlock';
+import { mermaidRepairCandidates } from './mermaidSource';
 import { useTheme } from '../../../../providers/ThemeContext';
+import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
+
+const log = createLogger('almadar:ui:mermaid-diagram');
 
 export interface MermaidDiagramProps {
   /** Mermaid diagram source (the fenced ```mermaid block body) */
@@ -42,44 +53,57 @@ function loadMermaid(): Promise<MermaidApi> {
 export const MermaidDiagram = React.memo<MermaidDiagramProps>(
   ({ code, className }) => {
     const { resolvedMode } = useTheme();
+    const { t } = useTranslate();
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [unrenderable, setUnrenderable] = useState(false);
     const reactId = useId();
 
     useEffect(() => {
       let active = true;
       void (async () => {
-        try {
-          const mermaid = await loadMermaid();
-          mermaid.initialize({
-            startOnLoad: false,
-            securityLevel: 'strict',
-            theme: resolvedMode === 'dark' ? 'dark' : 'default',
-          });
-          // render() requires a document-unique element id; useId emits `:`
-          // which is invalid inside the CSS selectors mermaid builds from it.
-          const domId = `mermaid-${reactId.replace(/[^a-zA-Z0-9]/g, '')}`;
-          const { svg } = await mermaid.render(domId, code);
-          if (!active || !containerRef.current) return;
-          containerRef.current.innerHTML = svg;
-          setError(null);
-        } catch (err: unknown) {
-          if (active) setError(err instanceof Error ? err.message : String(err));
+        const mermaid = await loadMermaid();
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: resolvedMode === 'dark' ? 'dark' : 'default',
+        });
+        // render() requires a document-unique element id; useId emits `:`
+        // which is invalid inside the CSS selectors mermaid builds from it.
+        const domId = `mermaid-${reactId.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+        let firstError: Error | null = null;
+        for (const [index, source] of [code, ...mermaidRepairCandidates(code)].entries()) {
+          try {
+            const { svg } = await mermaid.render(domId, source);
+            if (!active) return;
+            const container = containerRef.current;
+            if (container === null) return;
+            container.innerHTML = svg;
+            container.dataset.mermaidRepaired = String(index > 0);
+            setUnrenderable(false);
+            if (index > 0) log.debug('mermaid:repaired', { candidate: index });
+            return;
+          } catch (err: unknown) {
+            firstError ??= err instanceof Error ? err : new Error(String(err));
+          }
         }
+        if (!active) return;
+        log.warn('mermaid:unrenderable', { error: firstError?.message ?? '', code });
+        setUnrenderable(true);
       })();
       return () => {
         active = false;
       };
     }, [code, resolvedMode, reactId]);
 
-    // The container stays mounted through the error state so a corrected
+    // The container stays mounted through the failure state so a corrected
     // `code` prop can re-render into it (the effect writes via its ref).
     return (
       <Box className={cn('not-prose my-4', className)}>
-        {error !== null && (
-          <Box className="space-y-2 mb-2">
-            <Typography variant="caption" className="text-error whitespace-pre-wrap">
-              {error}
+        {unrenderable && (
+          <Box className="space-y-2 mb-2" data-testid="mermaid-unrenderable">
+            <Typography variant="caption" className="text-muted-foreground">
+              {t('mermaid.unrenderable')}
             </Typography>
             <CodeBlock code={code} language="mermaid" />
           </Box>
@@ -88,7 +112,7 @@ export const MermaidDiagram = React.memo<MermaidDiagramProps>(
           ref={containerRef}
           data-testid="mermaid-diagram"
           className="overflow-x-auto"
-          style={error !== null ? { display: 'none' } : undefined}
+          style={unrenderable ? { display: 'none' } : undefined}
         />
       </Box>
     );

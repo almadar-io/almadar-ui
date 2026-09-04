@@ -13,9 +13,10 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import type { Asset } from '@almadar/core';
+import type { Asset, EventEmit } from '@almadar/core';
 import { Button } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
+import { useEventBus } from '../../../hooks/useEventBus';
 import { useGameAudioContextOptional } from '../../../providers/GameAudioProvider';
 import { GameIcon } from '../../core/atoms/GameIcon';
 import type { UiError } from '../../core/atoms/types';
@@ -37,6 +38,8 @@ export interface GameAudioToggleProps {
     onAsset?: Asset;
     /** Asset rendered when sound is OFF (muted). Falls back to 🔇 emoji. */
     offAsset?: Asset;
+    /** Event dispatched via event bus on toggle, carrying the new muted state. */
+    toggleEvent?: EventEmit<{ muted: boolean }>;
     /** Entity name for schema-driven auto-fetch */
 }
 
@@ -50,15 +53,19 @@ export function GameAudioToggle({
     className,
     onAsset,
     offAsset,
+    toggleEvent,
 }: GameAudioToggleProps): React.JSX.Element {
     const ctx = useGameAudioContextOptional();
     const [localMuted, setLocalMuted] = useState(false);
     const muted = ctx ? ctx.muted : localMuted;
     const setMuted = ctx ? ctx.setMuted : setLocalMuted;
+    const eventBus = useEventBus();
 
     const handleToggle = useCallback(() => {
-        setMuted(!muted);
-    }, [muted, setMuted]);
+        const next = !muted;
+        setMuted(next);
+        if (toggleEvent) eventBus.emit(`UI:${toggleEvent}`, { muted: next });
+    }, [muted, setMuted, toggleEvent, eventBus]);
 
     const activeAsset = muted ? offAsset : onAsset;
 

@@ -56,8 +56,9 @@ import { DrawableRegistryContext, type DrawableRegistrar } from '../../../lib/dr
 import type { DrawSpriteLayerProps } from './DrawSpriteLayer';
 import type { DrawShapeLayerProps } from './DrawShapeLayer';
 import type { DrawTextLayerProps } from './DrawTextLayer';
-import { collectDrawnItems, buildHitIndex, hitTestSprites } from '../../../lib/drawable/hitTest';
-import type { DrawContext } from '../../../lib/drawable/contract';
+import { collectDrawnItems, buildHitIndex, hitTestSprites, withPreviewPosition, type DrawnItem } from '../../../lib/drawable/hitTest';
+import { spriteRect, type DrawContext, type Projector } from '../../../lib/drawable/contract';
+import type { DrawShapeProps } from '../atoms/DrawShape';
 import {
     screenToIso,
     TILE_WIDTH,
@@ -76,6 +77,19 @@ const canvas2DLog = createLogger('almadar:ui:game-canvas');
 export interface TileCoord {
     x: number;
     y: number;
+}
+
+/** One in-flight edit-mode drag gesture (a single pointer). */
+interface EditDragState {
+    id: string;
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    startSceneX: number;
+    startSceneY: number;
+    moved: boolean;
+    previewX: number;
+    previewY: number;
 }
 
 /** Projection axis. iso/hex/flat use `isoToScreen`; `free`/`side` are world-pixel-direct. */
@@ -149,6 +163,23 @@ export interface Canvas2DProps {
     /** Maps a keyup `e.code` → the board's SEMANTIC event. */
     keyUpMap?: Record<string, string>;
 
+    // --- Scene-edit mode (a game studio selecting/dragging drawables). Purely
+    //     additive: undefined/false behaves exactly like today. Suppresses
+    //     `tileClickEvent`/`unitClickEvent` while active. Coordinates are SCENE
+    //     coordinates (the same space as `tileClickEvent { x, y }`), not pixels. ---
+    /** Enter scene-edit mode: click selects/deselects a drawable, drag moves it. */
+    editable?: boolean;
+    /** The currently-selected drawable id (controlled); `null`/undefined = none. */
+    selectedId?: string | null;
+    /** Fired on a click that changes selection — before `selectEvent`. */
+    onSelect?: (id: string | null) => void;
+    /** Fired once per drag gesture, on drop — before `moveEvent`. */
+    onMove?: (id: string, x: number, y: number) => void;
+    /** Declarative selection event, `UI:{selectEvent} { id }`. */
+    selectEvent?: EventEmit<{ id: string | null }>;
+    /** Declarative move event, `UI:{moveEvent} { id, x, y }` — fired once on drop. */
+    moveEvent?: EventEmit<{ id: string; x: number; y: number }>;
+
     // --- View config (pure render) ---
     /** Camera behavior (default 'pan-zoom'). */
     camera?: CameraMode;
@@ -194,6 +225,52 @@ function normalizeBackdrop(bg: AssetUrl | Asset | undefined): Asset | undefined 
         : bg;
 }
 
+/** Edit-mode selection ring color + corner-handle size (painter px). */
+const EDIT_SELECTION_COLOR = '#3b82f6';
+const EDIT_HANDLE_SIZE_PX = 8;
+const EDIT_SELECTION_CORNERS: ReadonlyArray<readonly [number, number]> = [[0, 0], [1, 0], [0, 1], [1, 1]];
+
+/** The selection ring + corner handles for one drawn item, as synthetic
+ *  `draw-shape` descriptors positioned via the shared {@link spriteRect}
+ *  anchor math — the same rect the pointer hit-test resolves against, so the
+ *  ring always matches what is actually painted regardless of the drawable's
+ *  own anchor. */
+function selectionOverlayNodes(projector: Projector, item: DrawnItem): DrawShapeProps[] {
+    const r = spriteRect(projector, { position: item.pos, anchor: item.anchor, width: item.width, height: item.height });
+    const tw = projector.tileWidth;
+    const cellTopLeft = projector.anchorPoint(item.pos, 'top-left');
+    const offsetX = (r.x - cellTopLeft.x) / tw;
+    const offsetY = (r.y - cellTopLeft.y) / tw;
+    const width = r.w / tw;
+    const height = r.h / tw;
+    const handle = EDIT_HANDLE_SIZE_PX / tw;
+    const ring: DrawShapeProps = {
+        type: 'draw-shape',
+        shape: 'rect',
+        position: item.pos,
+        anchor: 'top-left',
+        offsetX,
+        offsetY,
+        width,
+        height,
+        stroke: EDIT_SELECTION_COLOR,
+        strokeWidth: 2,
+        fill: 'none',
+    };
+    const handles: DrawShapeProps[] = EDIT_SELECTION_CORNERS.map(([cx, cy]) => ({
+        type: 'draw-shape',
+        shape: 'rect',
+        position: item.pos,
+        anchor: 'top-left',
+        offsetX: offsetX + cx * width - handle / 2,
+        offsetY: offsetY + cy * height - handle / 2,
+        width: handle,
+        height: handle,
+        fill: EDIT_SELECTION_COLOR,
+    }));
+    return [ring, ...handles];
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -211,6 +288,12 @@ export function Canvas2D({
     tileLeaveEvent,
     keyMap,
     keyUpMap,
+    editable = false,
+    selectedId = null,
+    onSelect,
+    onMove,
+    selectEvent,
+    moveEvent,
     camera = 'pan-zoom',
     scale = 0.4,
     tileWidth,
@@ -558,10 +641,27 @@ export function Canvas2D({
         painter.scale(cam.zoom, cam.zoom);
         painter.translate(-viewportSize.width / 2 - cam.x, -viewportSize.height / 2 - cam.y);
         const dctx: DrawContext = { projector, time: timeMs, invalidate: bumpAtlas };
-        for (const node of drawables) paintDrawable(painter, node, dctx);
+        // Edit mode: repaint the dragged node at its preview position (a clone,
+        // never a painter API change) and overlay the selection ring on top.
+        let paintNodes: DrawableNode[] = drawables;
+        if (editable) {
+            const drag = editDragRef.current;
+            if (drag && drag.moved) {
+                paintNodes = withPreviewPosition(paintNodes, drag.id, { x: drag.previewX, y: drag.previewY });
+            }
+            const selectedItem = selectedId != null ? drawnItems.find((it) => it.id === selectedId) : undefined;
+            if (selectedItem) {
+                const overlaySource =
+                    drag && drag.moved && drag.id === selectedId
+                        ? { ...selectedItem, pos: { x: drag.previewX, y: drag.previewY } }
+                        : selectedItem;
+                paintNodes = [...paintNodes, ...selectionOverlayNodes(projector, overlaySource)];
+            }
+        }
+        for (const node of paintNodes) paintDrawable(painter, node, dctx);
         painter.restore();
-        scheduleAnimation(drawables);
-    }, [viewportSize, backgroundImage, bgColor, drawables, projector, cameraRef, bumpAtlas, getImage, cameraPos, defaultGridFocus, camera, dragDistance]);
+        scheduleAnimation(paintNodes);
+    }, [viewportSize, backgroundImage, bgColor, drawables, projector, cameraRef, bumpAtlas, getImage, cameraPos, defaultGridFocus, camera, dragDistance, editable, selectedId, drawnItems]);
     useEffect(() => {
         drawTimeRef.current = draw;
     }, [draw]);
@@ -617,27 +717,97 @@ export function Canvas2D({
     // Pointer / gesture handlers
     // =========================================================================
     const singlePointerActiveRef = useRef(false);
+    // A single in-flight edit-mode gesture (select/drag). `editable` only.
+    const editDragRef = useRef<EditDragState | null>(null);
+
+    // Screen point → SCENE coordinate (the `tileClickEvent {x,y}` space) —
+    // shared by hover, tile/unit click, and edit-mode drag so the three never
+    // diverge on the anchor-offset math.
+    const pointerToScene = useCallback((clientX: number, clientY: number): { x: number; y: number } => {
+        const canvas = canvasRef.current;
+        if (!canvas) return { x: 0, y: 0 };
+        const world = screenToWorld(clientX, clientY, canvas, viewportSize);
+        const adjustedX = world.x - scaledTileWidth / 2;
+        const adjustedY = squareGrid ? world.y - scaledTileWidth / 2 : world.y - scaledDiamondTopY - scaledFloorHeight / 2;
+        return unproject(adjustedX, adjustedY);
+    }, [screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject]);
 
     const handleCanvasPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
         singlePointerActiveRef.current = true;
+        if (editable) {
+            if (!canvasRef.current) return;
+            const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
+            const hitId = hitTestSprites(drawnItems, projector, world);
+            if (hitId === undefined) return;
+            const item = [...drawnItems].reverse().find((it) => it.id === hitId);
+            if (!item) return;
+            editDragRef.current = {
+                id: hitId,
+                pointerId: e.pointerId,
+                startClientX: e.clientX,
+                startClientY: e.clientY,
+                startSceneX: item.pos.x,
+                startSceneY: item.pos.y,
+                moved: false,
+                previewX: item.pos.x,
+                previewY: item.pos.y,
+            };
+            return;
+        }
         if (enableCamera) handlePointerDown(e);
-    }, [enableCamera, handlePointerDown]);
+    }, [editable, screenToWorld, viewportSize, drawnItems, projector, enableCamera, handlePointerDown]);
 
     const handleCanvasPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (editable) {
+            const drag = editDragRef.current;
+            if (!drag || drag.pointerId !== e.pointerId) return;
+            const dxPx = e.clientX - drag.startClientX;
+            const dyPx = e.clientY - drag.startClientY;
+            // Same drag-vs-click distance gate `useCamera.dragDistance()` uses
+            // for panning (5px); a plain ref here since dragging an item must
+            // not also pan the camera.
+            if (!drag.moved && Math.abs(dxPx) + Math.abs(dyPx) <= 5) return;
+            drag.moved = true;
+            const nowScene = pointerToScene(e.clientX, e.clientY);
+            const startScene = pointerToScene(drag.startClientX, drag.startClientY);
+            drag.previewX = drag.startSceneX + (nowScene.x - startScene.x);
+            drag.previewY = drag.startSceneY + (nowScene.y - startScene.y);
+            draw();
+            return;
+        }
         if (enableCamera) handlePointerMove(e, () => draw());
-    }, [enableCamera, handlePointerMove, draw]);
+    }, [editable, pointerToScene, draw, enableCamera, handlePointerMove]);
 
     const handleCanvasHover = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
         if (singlePointerActiveRef.current) return;
         if (!tileHoverEvent || !canvasRef.current) return;
-        const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
-        const adjustedX = world.x - scaledTileWidth / 2;
-        const adjustedY = squareGrid ? world.y - scaledTileWidth / 2 : world.y - scaledDiamondTopY - scaledFloorHeight / 2;
-        const isoPos = unproject(adjustedX, adjustedY);
+        const isoPos = pointerToScene(e.clientX, e.clientY);
         eventBus.emit(`UI:${tileHoverEvent}`, { x: isoPos.x, y: isoPos.y });
-    }, [screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, tileHoverEvent, eventBus]);
+    }, [pointerToScene, tileHoverEvent, eventBus]);
 
     const handleCanvasPointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (editable) {
+            singlePointerActiveRef.current = false;
+            const drag = editDragRef.current;
+            if (drag && drag.pointerId === e.pointerId) {
+                editDragRef.current = null;
+                if (drag.moved) {
+                    onMove?.(drag.id, drag.previewX, drag.previewY);
+                    if (moveEvent) eventBus.emit(`UI:${moveEvent}`, { id: drag.id, x: drag.previewX, y: drag.previewY });
+                    draw();
+                    return;
+                }
+                // No movement past the gate — a click: toggle selection.
+                const next = selectedId === drag.id ? null : drag.id;
+                onSelect?.(next);
+                if (selectEvent) eventBus.emit(`UI:${selectEvent}`, { id: next });
+                return;
+            }
+            // No drag state (pointer-down hit no drawable) — a background click deselects.
+            onSelect?.(null);
+            if (selectEvent) eventBus.emit(`UI:${selectEvent}`, { id: null });
+            return;
+        }
         singlePointerActiveRef.current = false;
         if (enableCamera) handlePointerUp();
         if (dragDistance() > 5) return;
@@ -650,9 +820,7 @@ export function Canvas2D({
             eventBus.emit(`UI:${unitClickEvent}`, { unitId: spriteHit });
             return;
         }
-        const adjustedX = world.x - scaledTileWidth / 2;
-        const adjustedY = squareGrid ? world.y - scaledTileWidth / 2 : world.y - scaledDiamondTopY - scaledFloorHeight / 2;
-        const isoPos = unproject(adjustedX, adjustedY);
+        const isoPos = pointerToScene(e.clientX, e.clientY);
         // A cell with a tagged descriptor (a unit) → unitClick {unitId}; else tileClick {x,y}.
         const hitId = hitIndex.get(`${isoPos.x},${isoPos.y}`);
         if (hitId !== undefined && unitClickEvent) {
@@ -660,7 +828,7 @@ export function Canvas2D({
         } else if (tileClickEvent) {
             eventBus.emit(`UI:${tileClickEvent}`, { x: isoPos.x, y: isoPos.y });
         }
-    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, hitIndex, drawnItems, projector, tileClickEvent, unitClickEvent, eventBus]);
+    }, [editable, selectedId, onMove, moveEvent, onSelect, selectEvent, eventBus, draw, enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, drawnItems, projector, tileClickEvent, unitClickEvent, hitIndex, pointerToScene]);
 
     const handleCanvasPointerLeave = useCallback(() => {
         handleMouseLeave();
@@ -684,7 +852,7 @@ export function Canvas2D({
 
     const gestureHandlers = useCanvasGestures({
         canvasRef,
-        enabled: enableCamera || !!tileHoverEvent || !!tileClickEvent || !!unitClickEvent,
+        enabled: enableCamera || !!tileHoverEvent || !!tileClickEvent || !!unitClickEvent || editable,
         onPointerDown: handleCanvasPointerDown,
         onPointerMove: handleCanvasPointerMove,
         onPointerUp: handleCanvasPointerUp,

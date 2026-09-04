@@ -52,6 +52,7 @@
 @import "./clay.css";
 @import "./retro.css";
 @import "./corporate.css";
+@import "./comic.css";
 
 /**
  * Minimal element reset for @almadar/ui components.

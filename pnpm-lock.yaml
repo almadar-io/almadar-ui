@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@almadar/core':
-        specifier: ^10.81.0
-        version: 10.81.0
+        specifier: ^10.83.0
+        version: 10.83.0
       '@almadar/evaluator':
         specifier: ^2.44.0
         version: 2.44.0
@@ -22,11 +22,11 @@ importers:
         specifier: ^1.12.0
         version: 1.12.0
       '@almadar/runtime':
-        specifier: ^6.69.0
-        version: 6.69.0(express@5.2.1)
+        specifier: ^6.70.0
+        version: 6.70.0(express@5.2.1)
       '@almadar/std':
-        specifier: ^16.201.0
-        version: 16.201.0
+        specifier: ^16.203.0
+        version: 16.203.0
       '@almadar/syntax':
         specifier: ^1.16.0
         version: 1.16.0
@@ -236,8 +236,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@almadar/core@10.81.0':
-    resolution: {integrity: sha512-uXgm25AzTcSI8BzQGRK3+h4H0eC8ntLx9B3EyvhadEjeDxnZhoKmzjm9+SzW7Wm5ydfzN5Nw3CrOIfrPHfKbiA==}
+  '@almadar/core@10.83.0':
+    resolution: {integrity: sha512-GMq4GoOh+K8pih+Mcw1i/E4IGE8LPiDTWa8POGnTJc3IxWBTqz3tjx2oX7xQT2NmU9CZFhY5i6hJ2CoUws/7zw==}
 
   '@almadar/eslint-plugin@2.17.0':
     resolution: {integrity: sha512-3ZdHAH0XURvDHaMXLeEgbf6+0r+oh/Q8cnFlQttJ9tT2d8ToPG6TtWtGlHQKACk67OOJQ273CCR4ac2CjsLXyg==}
@@ -250,8 +250,8 @@ packages:
   '@almadar/logger@1.12.0':
     resolution: {integrity: sha512-LcNpduM3Mx36u2b9G7ofR0ekYZuJCB8eGTYq9THe00gpnkVJVewbvJxsEza1bRcUa5e81MbYs0NCZsTSWio6Xg==}
 
-  '@almadar/runtime@6.69.0':
-    resolution: {integrity: sha512-I2pv1YWxL6+AMr3Td0hQFxQHazh3X6/O0L1a6sxo+hBEMtMjSVjvBC1CS81TbuYVsCfruxjyHzfy0Sb2fkw8DQ==}
+  '@almadar/runtime@6.70.0':
+    resolution: {integrity: sha512-rzTtds0qyg2wPCjypf+yP6M4nFoX+wh0qL/4Z0a96FbvyqN+xNJECTQwOpYgss6zT97gue2n1gtSwl402A+bag==}
     peerDependencies:
       express: ^5.0.0
     peerDependenciesMeta:
@@ -267,8 +267,8 @@ packages:
       '@almadar-io/rabit':
         optional: true
 
-  '@almadar/std@16.201.0':
-    resolution: {integrity: sha512-m7WtN2ChnuxhBKl0UOFZGSH3QFL5xOqITbL8vjev0+EBQG6+SkvBg4hA23n/I2RU6TRuC/F0+aAHw3sBJWerYw==}
+  '@almadar/std@16.203.0':
+    resolution: {integrity: sha512-4h7ipWlUHn1DYFYgC3Z9ujorLXT4/rP7G3I4c1Ly8NmCouC2de5g0px6xCDekLr8uYmNcP77cSfoNh4tCauMPw==}
 
   '@almadar/syntax@1.16.0':
     resolution: {integrity: sha512-HP2Ns6P4rGeGwfprfxo7nN5knKh9fk4U7/gd6SVtS15mnHhgDYOY7J52Oo+QlnVPXpsbWJ9fOVOgc4uexDwudg==}
@@ -4927,7 +4927,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@almadar/core@10.81.0':
+  '@almadar/core@10.83.0':
     dependencies:
       zod: 3.25.76
 
@@ -4938,20 +4938,20 @@ snapshots:
 
   '@almadar/evaluator@2.44.0':
     dependencies:
-      '@almadar/core': 10.81.0
-      '@almadar/std': 16.201.0
+      '@almadar/core': 10.83.0
+      '@almadar/std': 16.203.0
 
   '@almadar/logger@1.12.0':
     dependencies:
-      '@almadar/core': 10.81.0
+      '@almadar/core': 10.83.0
 
-  '@almadar/runtime@6.69.0(express@5.2.1)':
+  '@almadar/runtime@6.70.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.81.0
+      '@almadar/core': 10.83.0
       '@almadar/evaluator': 2.44.0
       '@almadar/logger': 1.12.0
       '@almadar/server': 2.39.0(express@5.2.1)
-      '@almadar/std': 16.201.0
+      '@almadar/std': 16.203.0
     optionalDependencies:
       express: 5.2.1
     transitivePeerDependencies:
@@ -4963,7 +4963,7 @@ snapshots:
 
   '@almadar/server@2.39.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.81.0
+      '@almadar/core': 10.83.0
       '@almadar/logger': 1.12.0
       '@faker-js/faker': 9.9.0
       cors: 2.8.6
@@ -4981,14 +4981,14 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@almadar/std@16.201.0':
+  '@almadar/std@16.203.0':
     dependencies:
-      '@almadar/core': 10.81.0
+      '@almadar/core': 10.83.0
 
   '@almadar/syntax@1.16.0':
     dependencies:
-      '@almadar/core': 10.81.0
-      '@almadar/std': 16.201.0
+      '@almadar/core': 10.83.0
+      '@almadar/std': 16.203.0
 
   '@antfu/install-pkg@1.1.0':
     dependencies:

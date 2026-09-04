@@ -57,6 +57,10 @@ export {
     type GameAudioToggleProps,
 } from '../atoms/GameAudioToggle';
 export {
+    GameAudioCue,
+    type GameAudioCueProps,
+} from '../atoms/GameAudioCue';
+export {
     useGameAudio,
     type AudioManifest,
     type SoundEntry,

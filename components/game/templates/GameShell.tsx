@@ -10,19 +10,11 @@
 import React from "react";
 import type { Asset } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { resolveGameFontFamily } from "../../../lib/gameFonts";
 import { Box } from "../../core/atoms/Box";
 import { Card } from "../../core/atoms/Card";
 import { Typography } from "../../core/atoms/Typography";
 import { AtlasPanel } from "../../core/atoms/AtlasImage";
-
-const GAME_FONTS: Record<string, string> = {
-    fredoka: "Fredoka",
-    future: "Kenney Future",
-    "future-narrow": "Kenney Future Narrow",
-    pixel: "Kenney Pixel",
-    blocks: "Kenney Blocks",
-    mini: "Kenney Mini",
-};
 
 export interface GameShellProps {
     /** Application / game title shown as a floating chip */
@@ -64,7 +56,7 @@ export const GameShell: React.FC<GameShellProps> = ({
     fontFamily,
     "data-theme": dataTheme,
 }) => {
-    const font = fontFamily ? (GAME_FONTS[fontFamily] ?? fontFamily) : undefined;
+    const displayFont = resolveGameFontFamily(fontFamily);
     return (
         <Box
             data-theme={dataTheme || undefined}
@@ -82,8 +74,8 @@ export const GameShell: React.FC<GameShellProps> = ({
                 // passed — an always-on inline stamp would shadow the orbital's
                 // inline-theme font-family-display token (inline style beats the
                 // theme provider's vars for the whole shell subtree).
-                ...(font
-                    ? { "--font-family-display": `'${font}', ui-sans-serif, system-ui, sans-serif` }
+                ...(displayFont
+                    ? { "--font-family-display": displayFont }
                     : {}),
             } as React.CSSProperties}
         >

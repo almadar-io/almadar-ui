@@ -106,6 +106,24 @@ export interface CanvasProps {
     featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
     keyMap?: Record<string, string>;
     keyUpMap?: Record<string, string>;
+
+    // --- Scene-edit mode (a game studio selecting/dragging drawables). Purely
+    //     additive; suppresses `tileClickEvent`/`unitClickEvent` while active.
+    //     Coordinates are SCENE coordinates for both painters — the 3D host maps
+    //     scene y ↔ world z. ---
+    /** Enter scene-edit mode: click selects/deselects a drawable, drag moves it. */
+    editable?: boolean;
+    /** The currently-selected drawable id (controlled); `null`/undefined = none. */
+    selectedId?: string | null;
+    /** Fired on a click that changes selection — before `selectEvent`. */
+    onSelect?: (id: string | null) => void;
+    /** Fired once per drag gesture, on drop — before `moveEvent`. */
+    onMove?: (id: string, x: number, y: number) => void;
+    /** Declarative selection event, `UI:{selectEvent} { id }`. */
+    selectEvent?: EventEmit<{ id: string | null }>;
+    /** Declarative move event, `UI:{moveEvent} { id, x, y }` — fired once on drop. */
+    moveEvent?: EventEmit<{ id: string; x: number; y: number }>;
+
     /** Declarative JSX drawable children (`<DrawShape .../>` composed in paint order).
      *  Forwarded to the 2D host, which collects them via drawable registry context. */
     children?: React.ReactNode;
@@ -157,6 +175,12 @@ export function Canvas({
     featureClickEvent,
     keyMap,
     keyUpMap,
+    editable,
+    selectedId,
+    onSelect,
+    onMove,
+    selectEvent,
+    moveEvent,
     children,
 }: CanvasProps): React.JSX.Element {
     canvasLog.debug('Canvas render', { mode, drawablesCount: drawables?.length, projection, camera: camera ? JSON.stringify(camera) : undefined });
@@ -256,6 +280,12 @@ export function Canvas({
             tileLeaveEvent={tileLeaveEvent}
             keyMap={keyMap}
             keyUpMap={keyUpMap}
+            editable={editable}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            onMove={onMove}
+            selectEvent={selectEvent}
+            moveEvent={moveEvent}
             {...(children !== undefined ? { children } : {})}
         />
     );

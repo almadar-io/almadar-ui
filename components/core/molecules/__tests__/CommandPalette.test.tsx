@@ -7,7 +7,7 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { CommandPalette, type CommandPaletteCommand } from '../CommandPalette';
+import { CommandPalette, dispatchCommandPaletteCommand, type CommandPaletteCommand } from '../CommandPalette';
 import { EventBusProvider } from '../../../../providers/EventBusProvider';
 import { useEventBus } from '../../../../hooks/useEventBus';
 
@@ -243,5 +243,110 @@ describe('CommandPalette', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+});
+
+describe('dispatchCommandPaletteCommand', () => {
+  it('emits UI:{event} with the commandId for an event-only command', () => {
+    const emit = vi.fn();
+    const onSelect = vi.fn();
+    const command: CommandPaletteCommand = { id: 'pick', label: 'Pick Me', event: 'PALETTE_PICK' };
+
+    dispatchCommandPaletteCommand(command, { emit, onSelect });
+
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(emit).toHaveBeenCalledWith('UI:PALETTE_PICK', { commandId: 'pick' });
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith(command);
+  });
+
+  it('emits UI:{action} with actionPayload for an action-only command', () => {
+    const emit = vi.fn();
+    const onSelect = vi.fn();
+    const command: CommandPaletteCommand = {
+      id: 'act',
+      label: 'Act',
+      action: 'PALETTE_ACTION',
+      actionPayload: { foo: 'bar' },
+    };
+
+    dispatchCommandPaletteCommand(command, { emit, onSelect });
+
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(emit).toHaveBeenCalledWith('UI:PALETTE_ACTION', { foo: 'bar' });
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith(command);
+  });
+
+  it('emits both event and action, in that order, when a command declares both', () => {
+    const emit = vi.fn();
+    const command: CommandPaletteCommand = {
+      id: 'both',
+      label: 'Both',
+      event: 'PALETTE_PICK',
+      action: 'PALETTE_ACTION',
+      actionPayload: { foo: 'bar' },
+    };
+
+    dispatchCommandPaletteCommand(command, { emit });
+
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit).toHaveBeenNthCalledWith(1, 'UI:PALETTE_PICK', { commandId: 'both' });
+    expect(emit).toHaveBeenNthCalledWith(2, 'UI:PALETTE_ACTION', { foo: 'bar' });
+  });
+
+  it('calls onSelect exactly once with the command', () => {
+    const onSelect = vi.fn();
+    const command: CommandPaletteCommand = { id: 'plain', label: 'Plain' };
+
+    dispatchCommandPaletteCommand(command, { emit: vi.fn(), onSelect });
+
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith(command);
+  });
+
+  it('does nothing for a disabled command', () => {
+    const emit = vi.fn();
+    const onSelect = vi.fn();
+    const command: CommandPaletteCommand = {
+      id: 'blocked',
+      label: 'Blocked',
+      disabled: true,
+      event: 'PALETTE_PICK',
+    };
+
+    dispatchCommandPaletteCommand(command, { emit, onSelect });
+
+    expect(emit).not.toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('regression: selecting a row in the rendered palette dispatches identically', () => {
+    const listener = vi.fn();
+    const onSelect = vi.fn();
+    const EventListener: React.FC = () => {
+      const eventBus = useEventBus();
+      React.useEffect(() => eventBus.on('UI:PALETTE_PICK', listener), [eventBus]);
+      return null;
+    };
+
+    render(
+      <TestWrapper>
+        <EventListener />
+        <CommandPalette
+          open
+          onOpenChange={vi.fn()}
+          commands={[{ id: 'pick', label: 'Pick Me', event: 'PALETTE_PICK' }]}
+          onSelect={onSelect}
+        />
+      </TestWrapper>
+    );
+
+    fireEvent.click(screen.getByTestId('command-palette-item-pick'));
+
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'UI:PALETTE_PICK', payload: { commandId: 'pick' } })
+    );
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'pick' }));
   });
 });

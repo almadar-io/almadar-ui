@@ -39,6 +39,8 @@ export interface BrowserPlaygroundProps {
   height?: string;
   /** CSS class for the outer container. */
   className?: string;
+  /** Pause the in-process runtime's tick scheduler. Default: undefined (running, same as today). */
+  paused?: boolean;
 }
 
 export function BrowserPlayground({
@@ -47,10 +49,22 @@ export function BrowserPlayground({
   initialPagePath,
   height,
   className,
+  paused,
 }: BrowserPlaygroundProps): React.ReactElement {
   const [runtime] = useState(
     () => new OrbitalServerRuntime({ mode, debug: false }),
   );
+
+  // Purely additive: `paused` undefined never calls pause/resume, so a
+  // caller that doesn't pass it sees the runtime's default (running) state.
+  useEffect(() => {
+    if (paused === undefined) return;
+    if (paused) {
+      runtime.pauseTicks();
+    } else {
+      runtime.resumeTicks();
+    }
+  }, [runtime, paused]);
 
   // Kick registration off DURING RENDER via useMemo — not in a useEffect.
   // React fires child effects before parent effects on mount, so a parent

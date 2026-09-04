@@ -553,5 +553,6 @@
   "richTextEditor.image": "Insert image",
   "richTextEditor.imagePrompt": "Image URL",
   "richTextEditor.placeholder": "Start writing…",
-  "form.imageUrlFallback": "…or paste an image address"
+  "form.imageUrlFallback": "…or paste an image address",
+  "mermaid.unrenderable": "This diagram could not be displayed. Its source is shown below."
 }

@@ -553,5 +553,6 @@
   "richTextEditor.image": "Vstavi sliko",
   "richTextEditor.imagePrompt": "URL slike",
   "richTextEditor.placeholder": "Začnite pisati …",
-  "form.imageUrlFallback": "…ali prilepite naslov slike"
+  "form.imageUrlFallback": "…ali prilepite naslov slike",
+  "mermaid.unrenderable": "Tega diagrama ni bilo mogoče prikazati. Njegova izvorna koda je prikazana spodaj."
 }

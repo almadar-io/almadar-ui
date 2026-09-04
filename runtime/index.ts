@@ -54,6 +54,17 @@ export { OrbPreview, type OrbPreviewProps } from './OrbPreview';
 // BrowserPlayground — in-browser OrbitalServerRuntime mount (mock mode)
 export { BrowserPlayground, type BrowserPlaygroundProps } from './BrowserPlayground';
 
+// OrbitalPluginHost — headless plugin runtime(s) against the ambient bus + slots
+export {
+    OrbitalPluginHost,
+    useOrbitalPluginHost,
+    useDeclaredCaptureTable,
+    type OrbitalPluginHostProps,
+    type PluginHostPlugin,
+    type PluginHostInbound,
+    type PluginHostDenyVerb,
+} from './OrbitalPluginHost';
+
 // Preview prep — single source of truth for the doc/playground mock pipeline
 export {
     prepareSchemaForPreview,

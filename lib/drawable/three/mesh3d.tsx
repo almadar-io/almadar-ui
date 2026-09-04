@@ -233,7 +233,7 @@ export function Sprite3D({ node, projector, groupOpacity = 1 }: { node: DrawSpri
                 <ModelLoader
                     url={asset.url}
                     scale={scale}
-                    rotation={[0, ((node.rotation ?? 0) * 180) / Math.PI, 0]}
+                    rotation={[0, node.rotation ?? 0, 0]}
                     animation={node.animation}
                     fallbackGeometry="box"
                     castShadow

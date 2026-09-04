@@ -6,10 +6,19 @@
  *
  * Event Contract:
  * - Emits: UI:COPY_CODE { language, success }
+ * - Emits: UI:EDITOR_FOCUS { editorId }
+ * - Emits: UI:EDITOR_BLUR { editorId }
+ *
+ * The editor capability props (`onMotion` / `onOperate` / `onInsertText` /
+ * `onSetMode`) are declarative bus LISTENS (`EventListen<P>`), not emits —
+ * `extractEventsFromJSDoc` (tools/almadar-pattern-sync/parser.ts) only parses
+ * "Emits:" lines, so they are omitted here; the registry extractor picks them
+ * up structurally via the `EventListen<P>` brand on each prop instead.
  */
 
 import React, { useState, useRef, useLayoutEffect, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '../../../../lib/cn';
+import type { EditorMotion, EditorOperator } from '../../../../lib/editorMotions';
 import { Card, Typography } from '../../atoms/index';
 import { Tabs, type TabItem } from '../Tabs';
 import { LoadingState } from '../LoadingState';
@@ -300,7 +309,8 @@ import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { createLogger } from '@almadar/logger';
-import type { EventKey } from "@almadar/core";
+import type { EventEmit, EventKey, EventListen } from "@almadar/core";
+import { useEditorCapabilities } from './useEditorCapabilities';
 
 const log = createLogger('almadar:ui:markdown-code');
 
@@ -411,6 +421,37 @@ export function toCodeLanguage(value: string | undefined): string {
 
 export type CodeViewerMode = 'code' | 'diff';
 
+// ── Editor capability vocabulary (declaration-only in this wave; P1 wires
+// the runtime behaviour) ──────────────────────────────────────────────────
+
+export type { EditorMotion, EditorOperator } from '../../../../lib/editorMotions';
+
+/** Closed-list caret render styles for editor mode. */
+export type EditorCaret = 'bar' | 'block' | 'underline';
+
+/** Full motion vocabulary, in declaration order. Kept in sync with the `motions` prop default. */
+export const EDITOR_MOTIONS: readonly EditorMotion[] = [
+  'left',
+  'right',
+  'up',
+  'down',
+  'word-forward',
+  'word-back',
+  'word-end',
+  'line-start',
+  'line-end',
+  'first-nonblank',
+  'doc-start',
+  'doc-end',
+  'paragraph-forward',
+  'paragraph-back',
+  'line',
+  'selection',
+];
+
+/** Full operator vocabulary, in declaration order. Kept in sync with the `operators` prop default. */
+export const EDITOR_OPERATORS: readonly EditorOperator[] = ['delete', 'yank', 'change'];
+
 export interface DiffLine {
   type: 'add' | 'added' | 'remove' | 'removed' | 'context' | 'unchanged';
   content: string;
@@ -463,11 +504,12 @@ export interface CodeBlockProps {
    */
   onChange?: (code: string) => void;
   /**
-   * GAP-80: line-level error/warning highlights for editable mode.
-   * Map of 1-based line number → severity. The overlay paints a colored
-   * background on each line: error = red, warning = yellow. Pass undefined
-   * (default) to disable. The consumer is responsible for computing the
-   * path → line map from the schema + validation results.
+   * GAP-80: line-level error/warning highlights. Map of 1-based line number
+   * → severity. Paints a colored background on each line: error = red,
+   * warning = yellow. Honored by the editable overlay and (GAP-84) by
+   * viewer mode's non-diff highlight; pass undefined (default) to disable.
+   * The consumer is responsible for computing the path → line map from the
+   * schema + validation results.
    */
   errorLines?: Map<number, 'error' | 'warning'>;
   // ── Viewer props (absorbed from CodeViewer / DocCodeBlock) ────────────────
@@ -495,6 +537,52 @@ export interface CodeBlockProps {
   error?: UiError | null;
   /** Show copy button (viewer alias for showCopyButton) */
   showCopy?: boolean;
+  /**
+   * Stable identity for the keyboard router / plugin host to target this editor.
+   * Unset = this instance never receives capability events.
+   * @tier presentation
+   */
+  editorId?: string;
+  /**
+   * Declarative bus emit fired when this editor gains focus.
+   * @tier presentation
+   */
+  onEditorFocus?: EventEmit<{ editorId: string }>;
+  /**
+   * Declarative bus emit fired when this editor loses focus.
+   * @tier presentation
+   */
+  onEditorBlur?: EventEmit<{ editorId: string }>;
+  /**
+   * Declarative bus listen: move the cursor per the vim-style motion vocabulary.
+   * @tier presentation
+   */
+  onMotion?: EventListen<{ editorId: string; motion: EditorMotion; count: number }>;
+  /**
+   * Declarative bus listen: apply a text operator over a motion's range.
+   * @tier presentation
+   */
+  onOperate?: EventListen<{ editorId: string; operator: EditorOperator; motion: EditorMotion; count: number }>;
+  /**
+   * Declarative bus listen: insert literal text at the cursor.
+   * @tier presentation
+   */
+  onInsertText?: EventListen<{ editorId: string; text: string }>;
+  /**
+   * Declarative bus listen: switch editor mode and caret style.
+   * @tier presentation
+   */
+  onSetMode?: EventListen<{ editorId: string; mode: string; caret: EditorCaret }>;
+  /**
+   * Motion vocabulary this editor accepts. Default: the full `EditorMotion` set.
+   * @tier presentation
+   */
+  motions?: readonly EditorMotion[];
+  /**
+   * Operator vocabulary this editor accepts. Default: the full `EditorOperator` set.
+   * @tier presentation
+   */
+  operators?: readonly EditorOperator[];
 }
 
 // ── Diff helpers ─────────────────────────────────────────────────────────────
@@ -560,6 +648,79 @@ function useLanguageReady(language: string): boolean {
   return ready;
 }
 
+// ── Shared SyntaxHighlighter machinery ────────────────────────────────────
+// Everything below is used by all three render branches (standard / editable
+// / viewer, viewer covering both its non-diff and diff sub-cases) so the
+// tokenizer, style resolution, and lineProps behavior are defined exactly
+// once — GAP-84: viewer mode used to skip this machinery entirely and render
+// plain `<Typography>` rows with no Prism pass.
+
+/** Shared monospace font stack for every SyntaxHighlighter-backed code
+ *  surface in this file. */
+const MONO_FONT_FAMILY =
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace';
+
+/** Resolve the AVL-aligned Prism style sheet for a language id — `orb`/`lolo`
+ *  get their token-class overrides, everything else uses the base VS Code
+ *  Dark+ theme. Module-scope constants, so callers get a stable reference. */
+function resolveHighlightStyle(lang: string): Record<string, React.CSSProperties> {
+  if (lang === 'orb') return orbStyle;
+  if (lang === 'lolo') return loloStyle;
+  return dark;
+}
+
+/** The `code[class*="language-"]` foreground color a style sheet defines —
+ *  used as the plain-text color for the >HIGHLIGHT_CAPACITY_BYTES fallback
+ *  so that path still respects the resolved theme instead of a hardcoded gray. */
+function plainCodeColorOf(style: Record<string, React.CSSProperties>): string {
+  return (style['code[class*="language-"]']?.color as string | undefined) ?? '#d4d4d4';
+}
+
+/**
+ * Builds a SyntaxHighlighter `lineProps` callback: every line gets `data-line`
+ * (selection/scroll code keys off it) plus `extraClassName` when given; a
+ * line with a GAP-80 severity in `errorLines` additionally gets the
+ * error/warning background. Shared by the editable overlay and viewer's
+ * non-diff highlight so `errorLines` behaves identically in either context.
+ */
+function buildLineProps(
+  errorLines: Map<number, 'error' | 'warning'> | undefined,
+  extraClassName?: string,
+): (lineNumber: number) => React.HTMLProps<HTMLElement> {
+  return (lineNumber: number): React.HTMLProps<HTMLElement> => {
+    const base = {
+      'data-line': String(lineNumber - 1),
+      ...(extraClassName ? { className: extraClassName } : {}),
+    } as React.HTMLProps<HTMLElement>;
+    const severity = errorLines?.get(lineNumber);
+    if (!severity) return base;
+    return {
+      ...base,
+      style: {
+        display: 'block',
+        backgroundColor: severity === 'error'
+          ? 'rgba(248, 113, 113, 0.18)'  // red-400 @ 18%
+          : 'rgba(251, 191, 36, 0.18)',  // amber-400 @ 18%
+        borderLeft: `3px solid ${severity === 'error' ? '#ef4444' : '#f59e0b'}`,
+        paddingLeft: '0.5rem',
+        marginLeft: '-0.5rem',
+      },
+    } as React.HTMLProps<HTMLElement>;
+  };
+}
+
+/** Line-number gutter style for viewer-mode SyntaxHighlighter instances
+ *  (the standard/editable branches instead hide the gutter and derive
+ *  `data-line` only — viewer mode wants the numbers actually visible). */
+const VIEWER_LINE_NUMBER_STYLE: React.CSSProperties = {
+  minWidth: '2.5em',
+  paddingRight: '1rem',
+  textAlign: 'right',
+  userSelect: 'none',
+  opacity: 0.5,
+  fontVariantNumeric: 'tabular-nums',
+};
+
 export const CodeBlock = React.memo<CodeBlockProps>(
   ({
     code: rawCode,
@@ -585,15 +746,41 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     isLoading = false,
     error,
     showCopy,
+    // editor capability surface — P1 wires these
+    editorId,
+    onEditorFocus = 'EDITOR_FOCUS',
+    onEditorBlur = 'EDITOR_BLUR',
+    onMotion = 'MOTION',
+    onOperate = 'OPERATE',
+    onInsertText = 'INSERT_TEXT',
+    onSetMode = 'SET_MODE',
+    motions = [
+      'left',
+      'right',
+      'up',
+      'down',
+      'word-forward',
+      'word-back',
+      'word-end',
+      'line-start',
+      'line-end',
+      'first-nonblank',
+      'doc-start',
+      'doc-end',
+      'paragraph-forward',
+      'paragraph-back',
+      'line',
+      'selection',
+    ],
+    operators = ['delete', 'yank', 'change'],
   }) => {
+    // `motions`/`operators` document the vocabulary this instance accepts;
+    // enforcement lives at the emitting plugin, not here (P1 E3).
+    void motions; void operators;
     const code = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
-    const isOrb = language === 'orb';
-    const isLolo = language === 'lolo';
-    const activeStyle = isOrb ? orbStyle : isLolo ? loloStyle : dark;
+    const activeStyle = resolveHighlightStyle(language);
     const overCapacity = code.length > HIGHLIGHT_CAPACITY_BYTES;
-    const plainCodeColor =
-      (activeStyle['code[class*="language-"]']?.color as string | undefined) ?? '#d4d4d4';
-    const languageReady = useLanguageReady(language);
+    const plainCodeColor = plainCodeColorOf(activeStyle);
     const eventBus = useEventBus();
     const { t } = useTranslate();
     const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -608,6 +795,12 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const activeFile = files?.[activeFileIndex];
     const activeCode = activeFile?.code ?? code;
     const activeLanguage: string = activeFile?.language ?? language;
+    // Single readiness check covers all three branches: `activeLanguage`
+    // equals `language` whenever `files` isn't used (standard/editable), and
+    // resolves the selected file's own grammar when it is (viewer).
+    const languageReady = useLanguageReady(activeLanguage);
+    const viewerStyle = resolveHighlightStyle(activeLanguage);
+    const viewerPlainCodeColor = plainCodeColorOf(viewerStyle);
 
     const diffLines = useMemo(() => {
       if (propDiff) return propDiff;
@@ -649,32 +842,39 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       }
     }, []);
 
-    // GAP-80: line-level error highlights. SyntaxHighlighter calls this for
-    // each line when `wrapLines` is true; we paint a colored background per
-    // severity. Memoized so its identity is stable across renders.
-    const errorLineProps = useMemo(() => {
-      if (!errorLines || errorLines.size === 0) {
-        return LINE_PROPS_FN;
-      }
-      return (lineNumber: number): React.HTMLProps<HTMLElement> => {
-        const severity = errorLines.get(lineNumber);
-        if (!severity) {
-          return { 'data-line': String(lineNumber - 1) } as React.HTMLProps<HTMLElement>;
-        }
-        return {
-          'data-line': String(lineNumber - 1),
-          style: {
-            display: 'block',
-            backgroundColor: severity === 'error'
-              ? 'rgba(248, 113, 113, 0.18)'  // red-400 @ 18%
-              : 'rgba(251, 191, 36, 0.18)',  // amber-400 @ 18%
-            borderLeft: `3px solid ${severity === 'error' ? '#ef4444' : '#f59e0b'}`,
-            paddingLeft: '0.5rem',
-            marginLeft: '-0.5rem',
-          },
-        } as React.HTMLProps<HTMLElement>;
-      };
-    }, [errorLines]);
+    // The ONE change path: a keystroke and a plugin-driven capability edit
+    // (useEditorCapabilities' `applyChange`) both flow through here, so both
+    // hit `lastPropCodeRef`/`setEditableValue`/`onChange` identically.
+    const handleEditableChange = useCallback((v: string) => {
+      // Mark known so the parent echoing `v` back doesn't remount us.
+      lastPropCodeRef.current = v;
+      setEditableValue(v);
+      onChange?.(v);
+    }, [onChange]);
+
+    const { caretMode } = useEditorCapabilities({
+      editorId: editable ? editorId : undefined,
+      textareaRef: editableTextareaRef,
+      events: { onMotion, onOperate, onInsertText, onSetMode },
+      applyChange: handleEditableChange,
+    });
+    const [caretIndex, setCaretIndex] = useState(0);
+    const caretRowCol = useMemo(() => {
+      const before = editableValue.slice(0, Math.min(caretIndex, editableValue.length));
+      const lines = before.split('\n');
+      return { row: lines.length - 1, col: lines[lines.length - 1].length };
+    }, [editableValue, caretIndex]);
+
+    // GAP-80: line-level error highlights (editable overlay). Memoized so
+    // identity is stable across renders when `errorLines` hasn't changed.
+    const errorLineProps = useMemo(() => buildLineProps(errorLines), [errorLines]);
+    // Viewer-mode non-diff highlight: same severity behavior as above, plus
+    // the per-row padding/hover chrome the old hand-rolled `<Typography>`
+    // rows carried.
+    const viewerLineProps = useMemo(
+      () => buildLineProps(errorLines, 'px-4 py-0.5 hover:bg-muted/50'),
+      [errorLines],
+    );
 
     // ── Fold state ──
     // Folding is brace-based (language-agnostic): any language with multi-line
@@ -820,6 +1020,131 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         ),
       [code, overCapacity, plainCodeColor, language, activeStyle, languageReady],
     );
+
+    // ── Memoized viewer-mode highlight (non-diff) ──
+    // GAP-84: this used to be `activeCode.split('\n')` mapped straight into
+    // `<Typography>` rows with no Prism pass at all. Same SyntaxHighlighter
+    // machinery as the two branches above — `showLineNumbers` and `wrap` are
+    // honored through its own `showLineNumbers`/`wrapLongLines` props instead
+    // of a hand-rolled number column, and `viewerLineProps` carries GAP-80
+    // severity highlighting into viewer mode for the first time.
+    const viewerOverCapacity = activeCode.length > HIGHLIGHT_CAPACITY_BYTES;
+    const viewerHighlightedElement = useMemo(
+      () =>
+        viewerOverCapacity ? (
+          <div
+            className="px-4 py-0.5"
+            style={{
+              margin: 0,
+              whiteSpace: wrap ? 'pre-wrap' : 'pre',
+              wordBreak: wrap ? 'break-all' : 'normal',
+              color: viewerPlainCodeColor,
+              fontFamily: MONO_FONT_FAMILY,
+              fontSize: '12px',
+              lineHeight: '1.6',
+            }}
+          >
+            {activeCode}
+          </div>
+        ) : (
+        <SyntaxHighlighter
+          PreTag="div"
+          language={activeLanguage}
+          style={viewerStyle}
+          wrapLines
+          wrapLongLines={wrap}
+          showLineNumbers={showLineNumbers}
+          lineNumberStyle={VIEWER_LINE_NUMBER_STYLE}
+          lineProps={viewerLineProps}
+          customStyle={{
+            backgroundColor: 'transparent',
+            borderRadius: 0,
+            padding: '0.25rem 0',
+            margin: 0,
+            whiteSpace: wrap ? 'pre-wrap' : 'pre',
+            wordBreak: wrap ? 'break-all' : 'normal',
+            fontFamily: MONO_FONT_FAMILY,
+            fontSize: '12px',
+            lineHeight: '1.6',
+          }}
+          codeTagProps={{ style: { fontFamily: MONO_FONT_FAMILY, fontSize: '12px', lineHeight: '1.6' } }}
+        >
+          {activeCode}
+        </SyntaxHighlighter>
+        ),
+      [activeCode, viewerOverCapacity, viewerPlainCodeColor, activeLanguage, viewerStyle, wrap, showLineNumbers, viewerLineProps, languageReady],
+    );
+
+    // ── Memoized diff-mode row highlighting ──
+    // react-syntax-highlighter tokenizes its whole `children` string as one
+    // unit, so a single call can't hand back independently-styled
+    // +/-/context row backgrounds AND a leading prefix glyph that stays
+    // outside the tokenized span (`lineProps` sets element attributes, not
+    // children) — that chrome lives in this component's own JSX
+    // (`DIFF_STYLES`), not Prism's. So each diff row gets its own
+    // SyntaxHighlighter instance, tokenizing only that row's content; the
+    // surrounding HStack/Typography/prefix markup is unchanged. Acceptable
+    // for diff rows specifically (typically short) and still capacity-gated
+    // like every other branch in this file.
+    const diffOverCapacity = useMemo(
+      () => !!diffLines && diffLines.reduce((n, l) => n + l.content.length + 1, 0) > HIGHLIGHT_CAPACITY_BYTES,
+      [diffLines],
+    );
+    const diffRowElements = useMemo(() => {
+      if (!diffLines) return null;
+      return diffLines.map((line, idx) => {
+        const style = DIFF_STYLES[line.type] ?? DIFF_STYLE_FALLBACK;
+        return (
+          <HStack key={idx} gap="none" align="start" className={cn(style.bg, 'px-4 py-0.5')}>
+            {showLineNumbers && (
+              <Typography
+                variant="caption"
+                color="secondary"
+                className="w-8 text-right mr-3 select-none tabular-nums flex-shrink-0"
+              >
+                {line.lineNumber ?? ''}
+              </Typography>
+            )}
+            <Typography
+              variant="caption"
+              className={cn('font-mono flex-1 min-w-0', style.text, wrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre')}
+            >
+              <Box as="span" className="select-none opacity-50 mr-2">{style.prefix}</Box>
+              {diffOverCapacity ? (
+                line.content || ' '
+              ) : (
+                <SyntaxHighlighter
+                  PreTag="span"
+                  CodeTag="span"
+                  language={activeLanguage}
+                  style={viewerStyle}
+                  customStyle={{
+                    display: 'inline',
+                    background: 'transparent',
+                    padding: 0,
+                    margin: 0,
+                    whiteSpace: wrap ? 'pre-wrap' : 'pre',
+                    wordBreak: wrap ? 'break-all' : 'normal',
+                    fontFamily: 'inherit',
+                    fontSize: 'inherit',
+                    lineHeight: 'inherit',
+                  }}
+                  codeTagProps={{
+                    style: {
+                      whiteSpace: wrap ? 'pre-wrap' : 'pre',
+                      fontFamily: 'inherit',
+                      fontSize: 'inherit',
+                    },
+                  }}
+                >
+                  {line.content || ' '}
+                </SyntaxHighlighter>
+              )}
+            </Typography>
+          </HStack>
+        );
+      });
+    }, [diffLines, showLineNumbers, wrap, diffOverCapacity, activeLanguage, viewerStyle, languageReady]);
 
     // ── DOM-level fold UI (no re-tokenization, just style + element injection) ──
     useLayoutEffect(() => {
@@ -999,7 +1324,6 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         label: file.label,
         content: null,
       }));
-      const lines = activeCode.split('\n');
 
       return (
         <Card className={cn('overflow-hidden', className)}>
@@ -1067,52 +1391,10 @@ export const CodeBlock = React.memo<CodeBlockProps>(
             <Box className="overflow-auto bg-muted/20" style={{ maxHeight }}>
               {diffLines ? (
                 <div style={{ display: 'flex', flexDirection: 'column' }} className="font-mono text-xs">
-                  {diffLines.map((line, idx) => {
-                    const style = DIFF_STYLES[line.type] ?? DIFF_STYLE_FALLBACK;
-                    return (
-                      <HStack key={idx} gap="none" align="start" className={cn(style.bg, 'px-4 py-0.5')}>
-                        {showLineNumbers && (
-                          <Typography
-                            variant="caption"
-                            color="secondary"
-                            className="w-8 text-right mr-3 select-none tabular-nums flex-shrink-0"
-                          >
-                            {line.lineNumber ?? ''}
-                          </Typography>
-                        )}
-                        <Typography
-                          variant="caption"
-                          className={cn('font-mono flex-1 min-w-0', style.text, wrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre')}
-                        >
-                          <Box as="span" className="select-none opacity-50 mr-2">{style.prefix}</Box>
-                          {line.content}
-                        </Typography>
-                      </HStack>
-                    );
-                  })}
+                  {diffRowElements}
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column' }} className="font-mono text-xs">
-                  {lines.map((line, idx) => (
-                    <HStack key={idx} gap="none" align="start" className="px-4 py-0.5 hover:bg-muted/50">
-                      {showLineNumbers && (
-                        <Typography
-                          variant="caption"
-                          color="secondary"
-                          className="w-8 text-right mr-4 select-none tabular-nums flex-shrink-0"
-                        >
-                          {idx + 1}
-                        </Typography>
-                      )}
-                      <Typography
-                        variant="caption"
-                        className={cn('font-mono flex-1 min-w-0', wrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre')}
-                      >
-                        {line || ' '}
-                      </Typography>
-                    </HStack>
-                  ))}
-                </div>
+                <div className="font-mono text-xs">{viewerHighlightedElement}</div>
               )}
             </Box>
           </div>
@@ -1210,14 +1492,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               key={editableTextareaKey}
               ref={editableTextareaRef}
               defaultValue={code}
-              onChange={(e) => {
-                const v = e.target.value;
-                // Mark known so the parent echoing `v` back doesn't remount us.
-                lastPropCodeRef.current = v;
-                setEditableValue(v);
-                onChange?.(v);
-              }}
+              onChange={(e) => handleEditableChange(e.target.value)}
               onScroll={handleEditableScroll}
+              onSelect={(e) => setCaretIndex(e.currentTarget.selectionStart)}
+              onFocus={editorId ? () => eventBus.emit(`UI:${onEditorFocus}`, { editorId }) : undefined}
+              onBlur={editorId ? () => eventBus.emit(`UI:${onEditorBlur}`, { editorId }) : undefined}
               spellCheck={false}
               style={{
                 position: 'absolute',
@@ -1232,7 +1511,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 resize: 'none',
                 backgroundColor: 'transparent',
                 color: 'transparent',
-                caretColor: '#e6e6e6',
+                caretColor: caretMode === 'block' ? 'transparent' : '#e6e6e6',
                 WebkitTextFillColor: 'transparent',
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
                 fontSize: '13px',
@@ -1242,6 +1521,26 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 overflow: 'auto',
               }}
             />
+            {/* Block/underline caret render (SET_MODE): the 'bar' default
+                relies on the textarea's own native caret above — this span
+                only ever paints for the other two modes. Positioned by
+                monospace character-cell math (`ch` for columns, the
+                13px * 1.5 line-height literal for rows). */}
+            {caretMode !== 'bar' && (
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  top: `calc(1rem + ${caretRowCol.row * 19.5}px)`,
+                  left: `calc(1rem + ${caretRowCol.col}ch)`,
+                  width: '1ch',
+                  height: caretMode === 'block' ? '19.5px' : '2px',
+                  backgroundColor: caretMode === 'block' ? 'rgba(230, 230, 230, 0.5)' : undefined,
+                  borderBottom: caretMode === 'underline' ? '2px solid #e6e6e6' : undefined,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
           </Box>
         ) : (
           <div
@@ -1285,7 +1584,16 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.files === next.files &&
     prev.actions === next.actions &&
     prev.isLoading === next.isLoading &&
-    prev.error === next.error,
+    prev.error === next.error &&
+    prev.editorId === next.editorId &&
+    prev.onEditorFocus === next.onEditorFocus &&
+    prev.onEditorBlur === next.onEditorBlur &&
+    prev.onMotion === next.onMotion &&
+    prev.onOperate === next.onOperate &&
+    prev.onInsertText === next.onInsertText &&
+    prev.onSetMode === next.onSetMode &&
+    prev.motions === next.motions &&
+    prev.operators === next.operators,
 );
 
 CodeBlock.displayName = 'CodeBlock';

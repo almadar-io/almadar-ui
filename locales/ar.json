@@ -553,5 +553,6 @@
   "richTextEditor.image": "إدراج صورة",
   "richTextEditor.imagePrompt": "رابط الصورة",
   "richTextEditor.placeholder": "ابدأ الكتابة…",
-  "form.imageUrlFallback": "…أو الصق رابط الصورة"
+  "form.imageUrlFallback": "…أو الصق رابط الصورة",
+  "mermaid.unrenderable": "تعذر عرض هذا المخطط. يظهر مصدره أدناه."
 }

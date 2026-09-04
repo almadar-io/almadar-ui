@@ -171,6 +171,12 @@ export const BUILT_IN_THEMES: UIThemeDefinition[] = [
     hasLightMode: true,
     hasDarkMode: true,
   },
+  {
+    name: "comic",
+    displayName: "Comic Studio",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
 ];
 
 /** Theme context value */

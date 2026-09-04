@@ -70,6 +70,15 @@ export type {
 /** @deprecated Use BusEventListener. */
 export type { BusEventListener as EventListener } from '../types/event-bus-types';
 
+// Keyboard router hook: declared-data keydown capture, sole emitter of UI:KEY
+export {
+  useKeyboardRouter,
+  type KeyCaptureEntry,
+  type KeyCaptureTable,
+  type EditorKeyEvent,
+  type UseKeyboardRouterOptions,
+} from './useKeyboardRouter';
+
 // UI Slot hooks for trait-driven UI rendering
 export {
   useUISlotManager,

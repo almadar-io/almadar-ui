@@ -38,7 +38,7 @@ import React, {
 import type { ThreeEvent } from '@react-three/fiber';
 import type { EventEmit, Asset, ScenePos } from '@almadar/core';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { collectDrawnItems, buildHitIndex } from '../hitTest';
+import { collectDrawnItems, buildHitIndex, withPreviewPosition } from '../hitTest';
 import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -51,6 +51,7 @@ import { Lighting3D } from './Lighting3D';
 import { Effects3D } from './Effects3D';
 import { CameraController3D, FollowCamera3D } from './GameCamera3D';
 import { Drawable3D } from './Drawable3D';
+import { Shape3D } from './mesh3d';
 import { BoneRegistryContext, BoneStore } from './BoneRegistry';
 import { create3DProjector } from '../projector3d';
 import type { DrawableNode } from '../paintDispatch';
@@ -223,6 +224,23 @@ export interface Canvas3DHostProps {
     lighting?: CanvasLighting;
     /** 3D post-processing stack — bloom + vignette. Omitted → no composer pass mounted. */
     post?: CanvasPost;
+
+    // --- Scene-edit mode (a game studio selecting/dragging drawables). Purely
+    //     additive; suppresses `tileClickEvent`/`unitClickEvent` and the orbit
+    //     controls while active. Coordinates are SCENE coordinates — the same
+    //     `{x,z}` space `tileClickEvent` emits — the host maps scene y ↔ world z. ---
+    /** Enter scene-edit mode: click selects/deselects a drawable, drag moves it. */
+    editable?: boolean;
+    /** The currently-selected drawable id (controlled); `null`/undefined = none. */
+    selectedId?: string | null;
+    /** Fired on a click that changes selection — before `selectEvent`. */
+    onSelect?: (id: string | null) => void;
+    /** Fired once per drag gesture, on drop — before `moveEvent`. */
+    onMove?: (id: string, x: number, y: number) => void;
+    /** Declarative selection event, `UI:{selectEvent} { id }`. */
+    selectEvent?: EventEmit<{ id: string | null }>;
+    /** Declarative move event, `UI:{moveEvent} { id, x, y }` — fired once on drop. */
+    moveEvent?: EventEmit<{ id: string; x: number; y: number }>;
 }
 
 /** Grid configuration */
@@ -238,6 +256,19 @@ const DEFAULT_GRID_CONFIG: GridConfig = {
     offsetX: 0,
     offsetZ: 0,
 };
+
+/** Edit-mode selection ring color + ground radius (world units), matching the
+ *  2D host's selection overlay color. */
+const EDIT_SELECTION_COLOR = '#3b82f6';
+const EDIT_SELECTION_RADIUS = 0.6;
+
+/** One in-flight edit-mode drag gesture (a single pointer). */
+interface EditDragState3D {
+    id: string;
+    startClientX: number;
+    startClientY: number;
+    moved: boolean;
+}
 
 /** Imperative handle for GameCanvas3D */
 export interface Canvas3DHostHandle {
@@ -343,6 +374,12 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             post,
             children,
             drawables,
+            editable = false,
+            selectedId = null,
+            onSelect,
+            onMove,
+            selectEvent,
+            moveEvent,
         },
         ref
     ) => {
@@ -461,6 +498,37 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             [gridBounds, gridConfig]
         );
 
+        // -- Scene-edit mode: a single in-flight drag gesture + its live preview. --
+        const editDragRef = useRef<EditDragState3D | null>(null);
+        const [dragPreview, setDragPreview] = useState<{ id: string; x: number; y: number } | null>(null);
+
+        /** Ground-plane raycast hit → SCENE cell (the drawable projector's inverse),
+         *  shared by the tile-click resolve and the edit-mode drag preview. */
+        const groundPointToScene = useCallback((point: THREE.Vector3): { x: number; y: number } => ({
+            x: Math.round(point.x / gridConfig.cellSize + gridBounds.minX),
+            y: Math.round(point.z / gridConfig.cellSize + gridBounds.minZ),
+        }), [gridConfig, gridBounds]);
+
+        // Drawables actually rendered: the authored graph, or — mid-drag — a clone
+        // with the dragged node's position swapped to its live preview cell (never
+        // a mesh/painter API change, just a data substitution before the walk).
+        const paintDrawables = useMemo(
+            () => (dragPreview ? withPreviewPosition(allDrawables, dragPreview.id, { x: dragPreview.x, y: dragPreview.y }) : allDrawables),
+            [allDrawables, dragPreview],
+        );
+
+        // Selection ring position: the selected item's authored position, or its
+        // live drag preview while it is the one being dragged.
+        const selectedItem = useMemo(
+            () => (editable && selectedId != null ? drawnItems.find((it) => it.id === selectedId) : undefined),
+            [editable, selectedId, drawnItems],
+        );
+        const selectionPos = useMemo(() => {
+            if (!selectedItem) return undefined;
+            if (dragPreview && dragPreview.id === selectedItem.id) return { x: dragPreview.x, y: dragPreview.y };
+            return selectedItem.pos;
+        }, [selectedItem, dragPreview]);
+
         // Imperative handle (camera control + screenshot only).
         useImperativeHandle(ref, () => ({
             getCameraPosition: () => {
@@ -566,17 +634,14 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
         const handleGroundClick = useCallback((e: ThreeEvent<MouseEvent>) => {
             if (!tileClickEvent && !unitClickEvent) return;
             e.stopPropagation();
-            const cell = {
-                x: Math.round(e.point.x / gridConfig.cellSize + gridBounds.minX),
-                y: Math.round(e.point.z / gridConfig.cellSize + gridBounds.minZ),
-            };
+            const cell = groundPointToScene(e.point);
             const hitId = hitIndex.get(`${cell.x},${cell.y}`);
             if (hitId !== undefined && unitClickEvent) {
                 eventBus.emit(`UI:${unitClickEvent}`, { unitId: hitId, x: cell.x, z: cell.y });
             } else if (tileClickEvent) {
                 eventBus.emit(`UI:${tileClickEvent}`, { x: cell.x, z: cell.y });
             }
-        }, [tileClickEvent, unitClickEvent, gridConfig, gridBounds, hitIndex, eventBus]);
+        }, [tileClickEvent, unitClickEvent, groundPointToScene, hitIndex, eventBus]);
 
         // True per-mesh picking: the raycast hit walks up to the nearest ancestor
         // tagged with a descriptor id (Drawable3D stamps `userData.drawableId`) →
@@ -599,6 +664,71 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                 obj = obj.parent;
             }
         }, [unitClickEvent, gridConfig, gridBounds, eventBus]);
+
+        // Edit-mode pointer-down on a tagged drawable: start a drag (nearest tagged
+        // ancestor, same walk as `handleDrawableClick`). stopPropagation keeps the
+        // ground plane from also starting a background deselect for this gesture.
+        const handleEditDrawablePointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
+            if (!editable) return;
+            let obj: THREE.Object3D | null = e.object;
+            while (obj) {
+                const id: string | undefined = obj.userData.drawableId;
+                if (id !== undefined) {
+                    e.stopPropagation();
+                    editDragRef.current = {
+                        id,
+                        startClientX: e.nativeEvent.clientX,
+                        startClientY: e.nativeEvent.clientY,
+                        moved: false,
+                    };
+                    return;
+                }
+                obj = obj.parent;
+            }
+        }, [editable]);
+
+        // Edit-mode ground-plane raycast while a drag is in flight: the same 5px
+        // client-distance gate `useCamera.dragDistance()` uses for pan-vs-click,
+        // so a drawable pointer-down that never moves stays a click (select), not
+        // a spurious move to the same cell.
+        const handleEditGroundPointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
+            const drag = editDragRef.current;
+            if (!editable || !drag) return;
+            const dx = e.nativeEvent.clientX - drag.startClientX;
+            const dy = e.nativeEvent.clientY - drag.startClientY;
+            if (!drag.moved && Math.abs(dx) + Math.abs(dy) <= 5) return;
+            drag.moved = true;
+            const cell = groundPointToScene(e.point);
+            setDragPreview({ id: drag.id, x: cell.x, y: cell.y });
+        }, [editable, groundPointToScene]);
+
+        // Edit-mode drop: DOM-level (not a mesh raycast target) so it fires
+        // regardless of what is under the cursor on release. No drag state (the
+        // pointer-down hit no tagged drawable) → background click → deselect;
+        // a drag that moved → `onMove`/`moveEvent` once; otherwise → toggle select.
+        const handleEditPointerUp = useCallback((_e: React.PointerEvent<HTMLDivElement>) => {
+            if (!editable) return;
+            const drag = editDragRef.current;
+            editDragRef.current = null;
+            if (!drag) {
+                onSelect?.(null);
+                if (selectEvent) eventBus.emit(`UI:${selectEvent}`, { id: null });
+                return;
+            }
+            if (drag.moved) {
+                setDragPreview((preview) => {
+                    if (preview && preview.id === drag.id) {
+                        onMove?.(drag.id, preview.x, preview.y);
+                        if (moveEvent) eventBus.emit(`UI:${moveEvent}`, { id: drag.id, x: preview.x, y: preview.y });
+                    }
+                    return null;
+                });
+                return;
+            }
+            const next = selectedId === drag.id ? null : drag.id;
+            onSelect?.(next);
+            if (selectEvent) eventBus.emit(`UI:${selectEvent}`, { id: next });
+        }, [editable, selectedId, onMove, moveEvent, onSelect, selectEvent, eventBus]);
 
         // Loading state.
         if (externalLoading) {
@@ -657,6 +787,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                                 eventHandlers.handleCanvasClick(e);
                             }
                         }}
+                        onPointerUp={handleEditPointerUp}
                     >
                         <CameraController3D onCameraChange={eventHandlers.handleCameraChange} />
                         {cameraMode !== 'follow' && cameraMode !== 'chase' && (
@@ -714,17 +845,38 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                             Canvas2D — this is what makes the two hosts one interface. */}
                         {allDrawables.length > 0 && (
                             <BoneRegistryContext.Provider value={boneStore}>
-                                <group onClick={unitClickEvent ? handleDrawableClick : undefined}>
-                                    {allDrawables.map((node, i) => (
+                                <group
+                                    onClick={!editable && unitClickEvent ? handleDrawableClick : undefined}
+                                    onPointerDown={editable ? handleEditDrawablePointerDown : undefined}
+                                >
+                                    {paintDrawables.map((node, i) => (
                                         <Drawable3D key={i} node={node} projector={drawableProjector} />
                                     ))}
                                 </group>
                             </BoneRegistryContext.Provider>
                         )}
 
+                        {/* Edit-mode selection ring — the existing 3D shape backend
+                            (a stroked ellipse renders a flat ground ring), not a new
+                            paint primitive. */}
+                        {selectionPos && (
+                            <Shape3D
+                                node={{
+                                    type: 'draw-shape',
+                                    shape: 'ellipse',
+                                    position: selectionPos,
+                                    radiusX: EDIT_SELECTION_RADIUS,
+                                    stroke: EDIT_SELECTION_COLOR,
+                                }}
+                                projector={drawableProjector}
+                            />
+                        )}
+
                         {/* Invisible ground plane for click hit-testing: a raycast lands
-                            on the plane cell, resolved to a scene coord + id. */}
-                        {(tileClickEvent || unitClickEvent) && (
+                            on the plane cell, resolved to a scene coord + id. Also the
+                            edit-mode drag surface (`onPointerMove`) and background-click
+                            deselect target when nothing else consumes the pointer-down. */}
+                        {(tileClickEvent || unitClickEvent || editable) && (
                             <mesh
                                 rotation={[-Math.PI / 2, 0, 0]}
                                 position={[
@@ -732,7 +884,8 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                                     0,
                                     ((gridBounds.maxZ - gridBounds.minZ) / 2) * cellSize,
                                 ]}
-                                onClick={handleGroundClick}
+                                onClick={!editable ? handleGroundClick : undefined}
+                                onPointerMove={editable ? handleEditGroundPointerMove : undefined}
                             >
                                 <planeGeometry
                                     args={[
@@ -746,10 +899,11 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
 
                         {post && (post.bloom || post.vignette) ? <Effects3D post={post} /> : null}
 
-                        {/* Camera controls — disabled while FollowCamera3D is authoritative */}
+                        {/* Camera controls — disabled while FollowCamera3D is authoritative,
+                            or while edit mode owns pointer gestures for select/drag. */}
                         <OrbitControls
                             ref={controlsRef}
-                            enabled={controlsEnabled && cameraMode !== 'follow' && cameraMode !== 'chase'}
+                            enabled={controlsEnabled && !editable && cameraMode !== 'follow' && cameraMode !== 'chase'}
                             target={cameraTarget}
                             enableDamping
                             dampingFactor={0.05}

@@ -91,6 +91,24 @@ function commandMatches(command: CommandPaletteCommand, query: string): boolean 
 
 const UNGROUPED = Symbol('command-palette-ungrouped');
 
+export interface DispatchCommandPaletteCommandDeps {
+  emit: (type: string, payload?: EventPayload) => void;
+  onSelect?: (command: CommandPaletteCommand) => void;
+}
+
+/** Turns a selected `CommandPaletteCommand` into bus emits + the `onSelect`
+ *  callback. Extracted from `handleSelect` so a host can drive the same
+ *  dispatch for a `COMMAND {id}` bus request without duplicating it. */
+export function dispatchCommandPaletteCommand(
+  command: CommandPaletteCommand,
+  deps: DispatchCommandPaletteCommandDeps,
+): void {
+  if (command.disabled) return;
+  if (command.event) deps.emit(`UI:${command.event}`, { commandId: command.id });
+  if (command.action) deps.emit(`UI:${command.action}`, command.actionPayload ?? {});
+  deps.onSelect?.(command);
+}
+
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
   open,
   onOpenChange,
@@ -137,9 +155,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const handleSelect = useCallback(
     (command: CommandPaletteCommand) => {
       if (command.disabled) return;
-      if (command.event) eventBus.emit(`UI:${command.event}`, { commandId: command.id });
-      if (command.action) eventBus.emit(`UI:${command.action}`, command.actionPayload ?? {});
-      onSelect?.(command);
+      dispatchCommandPaletteCommand(command, { emit: eventBus.emit, onSelect });
       handleClose();
     },
     [eventBus, onSelect, handleClose],

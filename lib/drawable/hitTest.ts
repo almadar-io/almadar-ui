@@ -27,6 +27,10 @@ export interface DrawnItem {
     anchor?: DrawableAnchor;
     width?: number;
     height?: number;
+    /** Sprite rotation in radians about the painted rect's centre (same value
+     *  `DrawSpriteProps.rotation` paints with) — lets the hit-test inverse-rotate
+     *  the test point so a rotated sprite hit-tests against what is actually drawn. */
+    rotation?: number;
 }
 
 /** Collect every drawable's scene position + hit id (atoms directly; layers via `items`). */
@@ -35,7 +39,7 @@ export function collectDrawnItems(nodes: DrawableNode[]): DrawnItem[] {
     for (const n of nodes) {
         switch (n.type) {
             case 'draw-sprite':
-                if (isValidScenePos(n.position)) out.push({ pos: n.position, id: n.id, anchor: n.anchor, width: n.width, height: n.height });
+                if (isValidScenePos(n.position)) out.push({ pos: n.position, id: n.id, anchor: n.anchor, width: n.width, height: n.height, rotation: n.rotation });
                 break;
             case 'draw-shape':
             case 'draw-text':
@@ -45,7 +49,7 @@ export function collectDrawnItems(nodes: DrawableNode[]): DrawnItem[] {
                 break;
             case 'draw-sprite-layer':
                 for (const it of n.items) {
-                    if (isValidScenePos(it.position)) out.push({ pos: it.position, id: it.id, anchor: it.anchor, width: it.width, height: it.height });
+                    if (isValidScenePos(it.position)) out.push({ pos: it.position, id: it.id, anchor: it.anchor, width: it.width, height: it.height, rotation: it.rotation });
                 }
                 break;
             case 'draw-shape-layer':
@@ -72,6 +76,30 @@ export function buildHitIndex(items: DrawnItem[]): Map<string, string> {
 }
 
 /**
+ * Clone `nodes`, replacing the position of whichever descriptor (top-level,
+ * sprite/shape/text-layer item, or nested group item) carries `id` — the live
+ * edit-mode drag-preview repaint shared by both hosts. Never touches a painter
+ * API; the paint/mesh walk downstream sees an ordinary drawable graph with one
+ * position swapped.
+ */
+export function withPreviewPosition(nodes: DrawableNode[], id: string, pos: ScenePos): DrawableNode[] {
+    return nodes.map((n) => {
+        if (n.type === 'draw-sprite-layer' || n.type === 'draw-shape-layer' || n.type === 'draw-text-layer') {
+            if (!n.items.some((it) => it.id === id)) return n;
+            return { ...n, items: n.items.map((it) => (it.id === id ? { ...it, position: pos } : it)) } as DrawableNode;
+        }
+        if (n.type === 'draw-group') {
+            if (!Array.isArray(n.items)) return n;
+            return { ...n, items: withPreviewPosition(n.items, id, pos) };
+        }
+        if (n.id === id && 'position' in n) {
+            return { ...n, position: pos };
+        }
+        return n;
+    });
+}
+
+/**
  * Resolve a world point to the id of the topmost tagged sprite whose PAINTED
  * RECT contains it. A sprite anchored `ground` extends `height × tileWidth`
  * above its floor cell (a unit's body/head hangs over the cells behind it), so
@@ -87,7 +115,21 @@ export function hitTestSprites(items: DrawnItem[], projector: Projector, point: 
         const it = items[i];
         if (it.id === undefined) continue;
         const r = spriteRect(projector, { position: it.pos, anchor: it.anchor, width: it.width, height: it.height });
-        if (point.x >= r.x && point.x <= r.x + r.w && point.y >= r.y && point.y <= r.y + r.h) return it.id;
+        const test = it.rotation
+            ? rotatePoint(point, { x: r.x + r.w / 2, y: r.y + r.h / 2 }, -it.rotation)
+            : point;
+        if (test.x >= r.x && test.x <= r.x + r.w && test.y >= r.y && test.y <= r.y + r.h) return it.id;
     }
     return undefined;
+}
+
+/** Rotate `p` by `radians` about `center` — the same convention the painter's
+ *  `ctx.rotate` composes with a translate-to-center, so passing `-rotation`
+ *  here maps a point back into the sprite's unrotated local rect. */
+function rotatePoint(p: PainterPoint, center: PainterPoint, radians: number): PainterPoint {
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const dx = p.x - center.x;
+    const dy = p.y - center.y;
+    return { x: center.x + dx * cos - dy * sin, y: center.y + dx * sin + dy * cos };
 }

@@ -24,24 +24,11 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 // Types
 // =============================================================================
 
-export interface SoundEntry {
-    /** Single path or array of paths — array picks randomly on each play */
-    path: string | string[];
-    /** Volume 0–1 (multiplied by masterVolume; default 1) */
-    volume?: number;
-    /** Whether this sound loops (background music) */
-    loop?: boolean;
-    /** Number of concurrent Audio instances in the pool (default 1) */
-    poolSize?: number;
-    /** Start automatically on first user interaction */
-    autostart?: boolean;
-    /** Use crossfade transitions when played via playMusic() */
-    crossfade?: boolean;
-    /** Crossfade duration in ms (default 1500) */
-    crossfadeDurationMs?: number;
-}
-
-export type AudioManifest = Record<string, SoundEntry>;
+/** Core owns the sound-manifest shape (`@almadar/core` `types/asset.ts`) so the
+ *  pattern extractor and the generated `.lolo` factories resolve the same
+ *  declaration; re-exported here for the hook's existing consumers. */
+export type { SoundEntry, AudioManifest } from '@almadar/core';
+import type { SoundEntry, AudioManifest } from '@almadar/core';
 
 export interface GameAudioControls {
     /** Play a sound effect (instant, pooled) */
