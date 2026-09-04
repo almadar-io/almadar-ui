@@ -137,7 +137,7 @@ export interface LearningTracePanel {
   backgroundOpacity?: number;
 }
 
-const DASH_PATTERNS = { dashed: [6, 4], dotted: [2, 3] } as const;
+const DASH_PATTERNS = { solid: [], dashed: [6, 4], dotted: [2, 3] } as const;
 
 const TRACE_SERIES_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#f59e0b'];
 
@@ -289,7 +289,8 @@ function drawShape(
   const stroke = resolveColor(shape.color, ctx, '#333333');
   const fill = shape.fill ? resolveColor(shape.fill, ctx, '#cccccc') : undefined;
   ctx.lineWidth = shape.lineWidth ?? 2;
-  if (shape.dash && shape.dash !== 'solid') ctx.setLineDash([...DASH_PATTERNS[shape.dash]]);
+  const dashPattern = shape.dash ? DASH_PATTERNS[shape.dash] : undefined;
+  if (dashPattern) ctx.setLineDash([...dashPattern]);
 
   switch (shape.type) {
     case 'grid': {
