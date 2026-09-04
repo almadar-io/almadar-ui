@@ -366,6 +366,25 @@ function PluginRuntimeMount({
     [plugin.schema],
   );
 
+  // Full snapshot of every trait's CURRENT state, across every orbital this
+  // plugin owns. Shared by the initial post-registration seed below and by
+  // the cascade resync effect that follows it.
+  const snapshotAllStates = useCallback((): Array<readonly [string, string, TraitState]> => {
+    const states: Array<readonly [string, string, TraitState]> = [];
+    if (!mockRuntime) return states;
+    for (const orbital of plugin.schema.orbitals) {
+      // Per-trait `getState(orbital, trait)` lazily initializes on first
+      // read (`StateMachineManager.getOrInitState`); the bulk
+      // `getState(orbital)` form does NOT — it only reflects traits that
+      // have already processed an event, so it can't seed the snapshot.
+      for (const traitName of traitNamesOf(orbital)) {
+        const raw = mockRuntime.getState(orbital.name, traitName);
+        if (isTraitState(raw)) states.push([orbital.name, traitName, raw]);
+      }
+    }
+    return states;
+  }, [mockRuntime, plugin.schema]);
+
   // Snapshot every trait's INITIAL state as soon as registration completes,
   // so `useOrbitalPluginHost().getState` / `useDeclaredCaptureTable` read the
   // real starting state instead of "no data yet" before the first dispatch.
@@ -373,17 +392,7 @@ function PluginRuntimeMount({
     let cancelled = false;
     void registrationReady.then(() => {
       if (cancelled || !mockRuntime) return;
-      const states: Array<readonly [string, string, TraitState]> = [];
-      for (const orbital of plugin.schema.orbitals) {
-        // Per-trait `getState(orbital, trait)` lazily initializes on first
-        // read (`StateMachineManager.getOrInitState`); the bulk
-        // `getState(orbital)` form does NOT — it only reflects traits that
-        // have already processed an event, so it can't seed the snapshot.
-        for (const traitName of traitNamesOf(orbital)) {
-          const raw = mockRuntime.getState(orbital.name, traitName);
-          if (isTraitState(raw)) states.push([orbital.name, traitName, raw]);
-        }
-      }
+      const states = snapshotAllStates();
       if (states.length > 0) onDispatched(plugin.id, null, states);
     }).catch((err) => {
       if (!cancelled) onError(plugin.id, err instanceof Error ? err.message : String(err));
@@ -391,7 +400,46 @@ function PluginRuntimeMount({
     return () => {
       cancelled = true;
     };
-  }, [registrationReady, mockRuntime, plugin, onDispatched, onError]);
+  }, [registrationReady, mockRuntime, plugin, onDispatched, onError, snapshotAllStates]);
+
+  // Cascade resync: a cross-trait `listens {}` fan-out fires through the
+  // runtime's OWN internal event-bus subscription (`setupEventListeners`),
+  // via a SEPARATE `processOrbitalEvent` call the host's own `dispatch()`
+  // below never sees or awaits — its `response.states`/`emittedEvents`
+  // reflect only the trait `dispatch()` directly targeted. Without this,
+  // `useOrbitalPluginHost().getState()` on a trait that only ever changes
+  // via a sibling's cascade (never the plugin's own `inbound` dispatch)
+  // stayed frozen at its initial snapshot forever — the state machine had
+  // genuinely transitioned, but nothing told the host's cached snapshot.
+  //
+  // The cascade's own `processOrbitalEvent` call is fire-and-forget from
+  // `EventBus.emit`'s synchronous listener loop — `setupEventListeners`'s
+  // handler is `async` and awaits `ensureOsHandlers()`/
+  // `ensureAgentSubstrateHandlers()` before touching the state machine, so
+  // the trait hasn't actually transitioned yet at the moment the triggering
+  // emit fires. A same-tick snapshot would just re-read the pre-cascade
+  // state. Coalesce onto a macrotask (`setTimeout(0)`) instead of resyncing
+  // synchronously inside the listener — long enough for that pending-promise
+  // chain (already-resolved after the first dispatch, so at most a couple of
+  // microtask turns) to drain, short enough to stay invisible to a human,
+  // and de-duped so a burst of cascaded emits schedules exactly one resync.
+  useEffect(() => {
+    if (!mockRuntime) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleResync = (): void => {
+      if (timer !== null) return;
+      timer = setTimeout(() => {
+        timer = null;
+        const states = snapshotAllStates();
+        if (states.length > 0) onDispatched(plugin.id, null, states);
+      }, 0);
+    };
+    const unsub = mockRuntime.getEventBus().onAny(scheduleResync);
+    return () => {
+      unsub();
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [mockRuntime, plugin.id, onDispatched, snapshotAllStates]);
 
   const dispatch = useCallback(
     async (row: PluginHostInbound, payload: EventPayload | undefined) => {

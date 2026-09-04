@@ -65,6 +65,15 @@ export {
     type PluginHostDenyVerb,
 } from './OrbitalPluginHost';
 
+// Slot-host manifest — declarative region -> UISlot bindings a host (a
+// plugin host's persona shell, or an embedding app) uses to describe its
+// regions; mirrors UISlotComponent's fallback/mode contract as data.
+export {
+    assertUniqueSlotsPerHost,
+    type SlotHostRegion,
+    type SlotHostManifest,
+} from '../types/slot-host';
+
 // Preview prep — single source of truth for the doc/playground mock pipeline
 export {
     prepareSchemaForPreview,

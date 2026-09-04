@@ -342,7 +342,7 @@ const PATTERNS_WITH_CHILDREN = new Set([
 // Slot Component
 // ============================================================================
 
-interface UISlotComponentProps {
+export interface UISlotComponentProps {
   slot: UISlot;
   portal?: boolean;
   position?:
@@ -363,6 +363,22 @@ interface UISlotComponentProps {
   pattern?: string;
   /** Source trait name for data-source-trait attribute (compiled mode) */
   sourceTrait?: string;
+  /**
+   * Host-supplied stock content for a slot-host region (Studio V4 §14 Part
+   * I2). Ignored whenever `children` is passed — `children` (compiled mode)
+   * always wins, so a compiled organism's slot can never be silently
+   * shadowed by a host `fallback`. In `portal` mode `fallback` never
+   * portals: it paints inline at this component's own position in the
+   * tree, while slot content (if present) still portals as usual — a
+   * plugin filling `modal` doesn't relocate the host's inline empty-state.
+   */
+  fallback?: React.ReactNode;
+  /**
+   * `'replace'` (default): slot content when present, else `fallback`.
+   * `'append'`: `fallback` first, then slot content when present — both
+   * render together, so `fallback` is a fixture, not just a placeholder.
+   */
+  mode?: "replace" | "append";
 }
 
 /**
@@ -624,6 +640,8 @@ function UISlotComponentInner({
   children,
   pattern,
   sourceTrait,
+  fallback,
+  mode = "replace",
 }: UISlotComponentProps): React.ReactElement | null {
   const { slots, clear } = useUISlots();
   const eventBus = useEventBus();
@@ -691,14 +709,31 @@ function UISlotComponentInner({
     );
   }
 
-  // Handle empty slot
+  // Handle empty slot. When a `fallback` is supplied it renders INLINE at
+  // this position regardless of `portal` — a portal slot's fallback is host
+  // chrome, not something a plugin should ever be able to relocate, so it
+  // never goes through SlotPortal/CompiledPortal.
   if (!content) {
+    if (fallback !== undefined) {
+      return (
+        <Box
+          id={`slot-${slot}`}
+          className={cn("ui-slot", `ui-slot-${slot}`, className)}
+          data-testid={`ui-slot-${slot}`}
+          data-slot-mode="fallback"
+        >
+          {fallback}
+        </Box>
+      );
+    }
     // For non-portal slots, render an empty placeholder
     if (!portal) {
       return (
         <Box
           id={`slot-${slot}`}
           className={cn("ui-slot", `ui-slot-${slot}`, className)}
+          data-testid={`ui-slot-${slot}`}
+          data-slot-mode="empty"
         />
       );
     }
@@ -728,19 +763,42 @@ function UISlotComponentInner({
     clear(slot);
   };
 
-  // Portal-based slots
+  // Portal-based slots. Content always portals (SlotPortal/renderContainedPortal
+  // own `id="slot-${slot}"` on the mount they create — see VG1/VG15). A
+  // `fallback` in `append` mode paints as an INLINE sibling at this
+  // position with its own id, so it never collides with the portaled
+  // content's id and is never itself portaled.
   if (portal) {
+    const inlineFallback =
+      mode === "append" && fallback !== undefined ? (
+        <Box
+          id={`slot-${slot}-fallback`}
+          className={cn("ui-slot", `ui-slot-${slot}-fallback`, className)}
+          data-testid={`ui-slot-${slot}-fallback`}
+          data-slot-mode="append"
+        >
+          {fallback}
+        </Box>
+      ) : null;
     // In contained mode, render inline with absolute positioning
     if (contained) {
-      return renderContainedPortal(t, slot, content, handleDismiss);
+      return (
+        <>
+          {inlineFallback}
+          {renderContainedPortal(t, slot, content, handleDismiss)}
+        </>
+      );
     }
     return (
-      <SlotPortal
-        slot={slot}
-        content={content}
-        position={position}
-        onDismiss={handleDismiss}
-      />
+      <>
+        {inlineFallback}
+        <SlotPortal
+          slot={slot}
+          content={content}
+          position={position}
+          onDismiss={handleDismiss}
+        />
+      </>
     );
   }
 
@@ -763,13 +821,18 @@ function UISlotComponentInner({
     <ErrorBoundary>{slotContent}</ErrorBoundary>
   );
 
+  const showFallback = mode === "append" && fallback !== undefined;
+
   return (
     <Box
       id={`slot-${slot}`}
       className={cn("ui-slot", `ui-slot-${slot}`, className)}
       data-pattern={content.pattern}
       data-source-trait={content.sourceTrait}
+      data-testid={`ui-slot-${slot}`}
+      data-slot-mode={showFallback ? "append" : "content"}
     >
+      {showFallback ? fallback : null}
       <MaybeTraitScope sourceTrait={content.sourceTrait}>{wrappedContent}</MaybeTraitScope>
     </Box>
   );

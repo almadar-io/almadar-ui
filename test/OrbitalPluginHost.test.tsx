@@ -70,12 +70,74 @@ function pingPlugin(): PluginHostPlugin {
   };
 }
 
+/**
+ * Two-trait intra-orbital cascade shaped like a composed/`uses`-resolved
+ * plugin (e.g. vim-mode's `Shell` → `VimStudioBridge`): `Emitter`'s own
+ * `emits[]` contract carries a V4 ledger `eventId` for `PING`, while
+ * `Receiver`'s source-qualified `listens { Emitter PING -> RECV }` entry
+ * does not carry one — the exact partial-ledger shape `orb resolve`
+ * produces (`docs/Almadar_Runtime_Gaps.md`, composed-trait listen routing).
+ * Regression for `OrbitalServerRuntime.resolveSourceEmitEventId`: the
+ * cascade must still fire even though only one side of the listen/emit
+ * pair carries an id.
+ */
+function cascadeSchema(): OrbitalSchema {
+  return {
+    name: 'cascade-plugin',
+    orbitals: [
+      {
+        name: 'CascadeOrbital',
+        entity: { name: 'CascadeData', persistence: 'runtime', fields: [{ name: 'id', type: 'string' }] },
+        pages: [],
+        traits: [
+          {
+            name: 'Emitter',
+            scope: 'instance',
+            linkedEntity: 'CascadeData',
+            stateMachine: {
+              states: [{ name: 'idle', isInitial: true }],
+              events: [{ key: 'FIRE', name: 'FIRE' }],
+              transitions: [
+                { from: 'idle', to: 'idle', event: 'FIRE', effects: [['emit', 'PING', {}]] },
+              ],
+            },
+            emits: [{ event: 'PING', eventId: 'evt_cascade_ping', scope: 'external' }],
+            listens: [{ event: 'FIRE', triggers: 'FIRE' }],
+          },
+          {
+            name: 'Receiver',
+            scope: 'instance',
+            linkedEntity: 'CascadeData',
+            stateMachine: {
+              states: [{ name: 'waiting', isInitial: true }, { name: 'received' }],
+              events: [{ key: 'RECV', name: 'RECV' }],
+              transitions: [
+                { from: 'waiting', to: 'received', event: 'RECV', effects: [] },
+              ],
+            },
+            // Source-qualified, no `eventId` of its own — only `source`.
+            listens: [{ event: 'PING', triggers: 'RECV', source: { kind: 'trait', trait: 'Emitter' } }],
+          },
+        ],
+      },
+    ],
+  } as unknown as OrbitalSchema;
+}
+
+function cascadePlugin(): PluginHostPlugin {
+  return {
+    id: 'cascade',
+    schema: cascadeSchema(),
+    inbound: [{ busEvent: 'FIRE', orbital: 'CascadeOrbital', trait: 'Emitter', trigger: 'FIRE' }],
+  };
+}
+
 function CaptureTableProbe() {
   const table = useDeclaredCaptureTable({ pluginId: 'ping', orbital: 'PingOrbital', trait: 'Pinger' });
   return <div data-testid="capture-table" data-json={JSON.stringify({ ...table.shell, keys: Array.from(table.shell.keys) })} />;
 }
 
-function renderHost(opts: { deny?: Array<'persist' | 'call-service' | 'navigate' | 'notify'>; onTransition?: (...args: unknown[]) => void; withCaptureTable?: boolean } = {}) {
+function renderHost(opts: { deny?: Array<'persist' | 'call-service' | 'navigate' | 'notify'>; onTransition?: (...args: unknown[]) => void; withCaptureTable?: boolean; plugins?: PluginHostPlugin[] } = {}) {
   const onTransition = opts.onTransition ?? vi.fn();
   let bus!: EventBusContextType;
   function BusGrabber() {
@@ -90,7 +152,7 @@ function renderHost(opts: { deny?: Array<'persist' | 'call-service' | 'navigate'
   const utils = render(
     <EventBusProvider isolated>
       <UISlotProvider>
-        <OrbitalPluginHost plugins={[pingPlugin()]} deny={opts.deny} onTransition={onTransition}>
+        <OrbitalPluginHost plugins={opts.plugins ?? [pingPlugin()]} deny={opts.deny} onTransition={onTransition}>
           <BusGrabber />
           <HostGrabber />
           {opts.withCaptureTable ? <CaptureTableProbe /> : null}
@@ -159,5 +221,16 @@ describe('OrbitalPluginHost', () => {
 
     await waitFor(() => expect(readTable().mode).toBe('PONGED'));
     expect(readTable().keys).toEqual(['r']);
+  });
+
+  it('a two-trait cascade fires even when only the emitter side carries a ledger eventId', async () => {
+    const { bus, host } = renderHost({ plugins: [cascadePlugin()] });
+
+    await waitFor(() => expect(host().getState('cascade', 'CascadeOrbital', 'Receiver')?.currentState).toBe('waiting'));
+
+    bus.emit('UI:FIRE', {});
+
+    await waitFor(() => expect(host().getState('cascade', 'CascadeOrbital', 'Receiver')?.currentState).toBe('received'));
+    expect(host().errors.cascade).toBeUndefined();
   });
 });
