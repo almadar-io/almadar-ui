@@ -11,6 +11,34 @@
  * preview has (in-memory persist, mock services); `deny` is an opt-in
  * host policy, never a default sandbox.
  *
+ * OUTBOUND = the runtime's internal event bus, not the direct dispatch
+ * response. `response.emittedEvents` (mock mode) reflects only the effects
+ * of the trait `dispatch()` DIRECTLY targeted — a sibling trait that reacts
+ * through the runtime's own cascade (`setupEventListeners`, a SEPARATE
+ * `processOrbitalEvent` call whose response is discarded) never shows up
+ * there, so its emits never reached the ambient bus (verified 2026-09-04:
+ * vim-mode's `Shell` relays `PLUGIN_ENABLED` -> `VimStudioBridge`'s
+ * `ENABLED` arm emits `STATUS` + 2x `REGISTER_COMMAND`, none of which
+ * reached the studio's status bar/palette). Fix: for `mode: 'mock'`, one
+ * `runtime.getEventBus().onAny(...)` subscription per plugin (mounted
+ * alongside the runtime, not per-dispatch) is the ONLY outbound path — it
+ * sees every emit, direct or cascaded, since every `emit` effect passes
+ * through that same bus. `mode: 'server'` has no local bus to subscribe to
+ * (the runtime lives on the remote transport), so it keeps reading
+ * `response.emittedEvents` for outbound — same single-hop-only limitation
+ * this fix removes for mock mode, unaddressed here (no `mode: 'server'`
+ * consumer exists yet; see `docs/Almadar_UI_Gaps.md`).
+ *
+ * RELAY RULE: the plugin's `inbound[]` is its host→plugin vocabulary — one
+ * `UI:<busEvent>` bus event per row, dispatching `trigger` at
+ * `orbital`/`trait`. Anything a plugin emits under one of those SAME
+ * busEvent names (or under an inbound `trigger` name) is a relay for its
+ * own siblings' `listens {}` (the runtime's internal event bus already
+ * carries that fan-out), never a fresh request back to the host, and must
+ * NEVER be re-broadcast — doing so re-fires the very `UI:<busEvent>`
+ * listener that produced it, a synchronous self-feeding loop (verified
+ * 2026-09-04, see `docs/Almadar_UI_Gaps.md`).
+ *
  * @packageDocumentation
  */
 
@@ -366,6 +394,26 @@ function PluginRuntimeMount({
     [plugin.schema],
   );
 
+  // The plugin's own inbound vocabulary — see the file-header note on the
+  // relay rule. Any event this plugin emits under one of these names is the
+  // host's own trigger being relayed to a sibling `listens {}`, never a
+  // fresh request back to the host.
+  const inboundBusEvents = useMemo(
+    () => new Set(plugin.inbound.map((row) => row.busEvent)),
+    [plugin.inbound],
+  );
+
+  // Belt-and-braces relay guard: the inbound TRIGGER names too (distinct
+  // from `busEvent` whenever a row renames on the way in, e.g. `PING` ->
+  // `HOST_PING`). `processOrbitalEvent`'s own dispatch of the trigger never
+  // puts it on the internal bus by itself (only an explicit `emit` effect
+  // does), but a schema that re-emits its own trigger name as an effect
+  // must not have that treated as a fresh outbound request either.
+  const inboundTriggerNames = useMemo(
+    () => new Set(plugin.inbound.map((row) => row.trigger)),
+    [plugin.inbound],
+  );
+
   // Full snapshot of every trait's CURRENT state, across every orbital this
   // plugin owns. Shared by the initial post-registration seed below and by
   // the cascade resync effect that follows it.
@@ -441,6 +489,39 @@ function PluginRuntimeMount({
     };
   }, [mockRuntime, plugin.id, onDispatched, snapshotAllStates]);
 
+  // Outbound bridging — see the file-header note. One `onAny` subscription
+  // per plugin, mounted for the lifetime of the runtime (not re-armed per
+  // dispatch), is the ONLY outbound path for `mode: 'mock'`: it sees every
+  // `emit` effect the runtime ever executes, whether from the directly
+  // dispatched trait or from a sibling reacting through
+  // `setupEventListeners`'s internal cascade. `dispatch()` below no longer
+  // re-broadcasts from `response.emittedEvents` when `mockRuntime` exists,
+  // so nothing here is emitted twice.
+  useEffect(() => {
+    if (!mockRuntime) return;
+    // Defensive de-dupe keyed on the event object itself: a real bus
+    // `emit()` call fires this listener exactly once per event, so this
+    // only guards against an accidental double-subscription (e.g. an
+    // overlapping effect re-run), never fires in normal operation.
+    const rebroadcast = new WeakSet<object>();
+    const unsub = mockRuntime.getEventBus().onAny((event) => {
+      if (rebroadcast.has(event)) return;
+      // RELAY RULE: this plugin's own inbound vocabulary (busEvent or
+      // trigger name) is always a relay for a sibling's `listens {}`,
+      // never a fresh request back to the host — see file header.
+      if (inboundBusEvents.has(event.type) || inboundTriggerNames.has(event.type)) return;
+      // Only re-broadcast events sourced from one of the PLUGIN's OWN
+      // orbitals, never a host-protocol orbital it merely composes.
+      const sourceOrbital = event.source?.orbital;
+      if (sourceOrbital === undefined || !ownOrbitals.has(sourceOrbital)) return;
+      rebroadcast.add(event);
+      bus.emit(`UI:${event.type}`, event.payload, event.source);
+    });
+    return () => {
+      unsub();
+    };
+  }, [mockRuntime, bus, ownOrbitals, inboundBusEvents, inboundTriggerNames]);
+
   const dispatch = useCallback(
     async (row: PluginHostInbound, payload: EventPayload | undefined) => {
       await registrationReady;
@@ -462,14 +543,23 @@ function PluginRuntimeMount({
         onError(plugin.id, response.error ?? `${plugin.id}: ${row.trigger} failed`);
       }
 
-      // Outbound: re-emit only events sourced from one of the PLUGIN's OWN
-      // orbitals (not a host-protocol orbital it merely composes), and never
-      // echo the trigger we just dispatched back onto the bus.
-      for (const entry of response.emittedEvents ?? []) {
-        if (entry.event === row.trigger) continue;
-        const sourceOrbital = entry.source?.orbital;
-        if (sourceOrbital !== undefined && ownOrbitals.has(sourceOrbital)) {
-          bus.emit(`UI:${entry.event}`, entry.payload, entry.source);
+      // Outbound: for `mode: 'mock'`, the plugin-lifetime `onAny`
+      // subscription above is the ONLY outbound path (see file header) —
+      // reading `response` here is deliberately skipped so nothing is
+      // emitted twice. `mode: 'server'` has no local runtime/bus to
+      // subscribe to (the runtime lives on the remote transport), so it
+      // still re-emits from the dispatch response: never echo the trigger
+      // we just dispatched back onto the bus, and never re-broadcast a
+      // RELAY (this plugin's own inbound busEvent vocabulary — see the
+      // RELAY RULE).
+      if (!mockRuntime) {
+        for (const entry of response.emittedEvents ?? []) {
+          if (entry.event === row.trigger) continue;
+          if (inboundBusEvents.has(entry.event)) continue;
+          const sourceOrbital = entry.source?.orbital;
+          if (sourceOrbital !== undefined && ownOrbitals.has(sourceOrbital)) {
+            bus.emit(`UI:${entry.event}`, entry.payload, entry.source);
+          }
         }
       }
 
@@ -480,7 +570,7 @@ function PluginRuntimeMount({
       }
       onDispatched(plugin.id, row.trigger, states);
     },
-    [registrationReady, mockRuntime, mode, transport, plugin, bus, ownOrbitals, onError, onTransition, onDispatched],
+    [registrationReady, mockRuntime, mode, transport, plugin, bus, ownOrbitals, inboundBusEvents, onError, onTransition, onDispatched],
   );
 
   useEffect(() => {

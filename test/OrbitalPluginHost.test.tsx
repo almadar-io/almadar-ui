@@ -112,9 +112,14 @@ function cascadeSchema(): OrbitalSchema {
               states: [{ name: 'waiting', isInitial: true }, { name: 'received' }],
               events: [{ key: 'RECV', name: 'RECV' }],
               transitions: [
-                { from: 'waiting', to: 'received', event: 'RECV', effects: [] },
+                // The cascade-fired sibling's OWN outbound emit — the shape
+                // the vim-mode repro actually hit (`VimStudioBridge`'s
+                // `ENABLED` arm emitting `STATUS` after being cascaded into
+                // by `Shell`'s relay, never the directly-dispatched trait).
+                { from: 'waiting', to: 'received', event: 'RECV', effects: [['emit', 'ACK', {}]] },
               ],
             },
+            emits: [{ event: 'ACK', scope: 'external' }],
             // Source-qualified, no `eventId` of its own — only `source`.
             listens: [{ event: 'PING', triggers: 'RECV', source: { kind: 'trait', trait: 'Emitter' } }],
           },
@@ -129,6 +134,69 @@ function cascadePlugin(): PluginHostPlugin {
     id: 'cascade',
     schema: cascadeSchema(),
     inbound: [{ busEvent: 'FIRE', orbital: 'CascadeOrbital', trait: 'Emitter', trigger: 'FIRE' }],
+  };
+}
+
+/**
+ * The relay-loop repro (Almadar Studio V4 host-protocol shape, e.g.
+ * `studio-shell`'s `Shell` trait): trait `A` is the one the host's inbound
+ * row actually targets, and its busEvent name (`PING`) DIFFERS from the
+ * internal trigger (`HOST_PING`) — exactly like a RELAY trait whose arm
+ * re-emits the same bus vocabulary word for a sibling's `listens {}`, not
+ * for the host. Trait `B` listens on `A`'s `PING` (source-qualified,
+ * runtime-internal cascade) and emits `PONG`. Before the relay-rule fix,
+ * the host re-broadcast `A`'s `PING` re-emit as `UI:PING` — the same event
+ * its own `bus.on('UI:PING', …)` listener is armed for — an infinite
+ * synchronous loop.
+ */
+function relaySchema(): OrbitalSchema {
+  return {
+    name: 'relay-plugin',
+    orbitals: [
+      {
+        name: 'RelayOrbital',
+        entity: { name: 'RelayData', persistence: 'runtime', fields: [{ name: 'id', type: 'string' }] },
+        pages: [],
+        traits: [
+          {
+            name: 'A',
+            scope: 'instance',
+            linkedEntity: 'RelayData',
+            stateMachine: {
+              states: [{ name: 'idle', isInitial: true }],
+              events: [{ key: 'HOST_PING', name: 'HOST_PING' }],
+              transitions: [
+                { from: 'idle', to: 'idle', event: 'HOST_PING', effects: [['emit', 'PING', {}]] },
+              ],
+            },
+            emits: [{ event: 'PING', scope: 'external' }],
+            listens: [{ event: 'HOST_PING', triggers: 'HOST_PING' }],
+          },
+          {
+            name: 'B',
+            scope: 'instance',
+            linkedEntity: 'RelayData',
+            stateMachine: {
+              states: [{ name: 'waiting', isInitial: true }, { name: 'ponged' }],
+              events: [{ key: 'PONGED', name: 'PONGED' }],
+              transitions: [
+                { from: 'waiting', to: 'ponged', event: 'PONGED', effects: [['emit', 'PONG', {}]] },
+              ],
+            },
+            emits: [{ event: 'PONG', scope: 'external' }],
+            listens: [{ event: 'PING', triggers: 'PONGED', source: { kind: 'trait', trait: 'A' } }],
+          },
+        ],
+      },
+    ],
+  } as unknown as OrbitalSchema;
+}
+
+function relayPlugin(): PluginHostPlugin {
+  return {
+    id: 'relay',
+    schema: relaySchema(),
+    inbound: [{ busEvent: 'PING', orbital: 'RelayOrbital', trait: 'A', trigger: 'HOST_PING' }],
   };
 }
 
@@ -223,8 +291,10 @@ describe('OrbitalPluginHost', () => {
     expect(readTable().keys).toEqual(['r']);
   });
 
-  it('a two-trait cascade fires even when only the emitter side carries a ledger eventId', async () => {
+  it('a two-trait cascade fires even when only the emitter side carries a ledger eventId, and the cascade-fired sibling\'s own emit reaches the ambient bus exactly once', async () => {
     const { bus, host } = renderHost({ plugins: [cascadePlugin()] });
+    const ackListener = vi.fn();
+    bus.on('UI:ACK', ackListener);
 
     await waitFor(() => expect(host().getState('cascade', 'CascadeOrbital', 'Receiver')?.currentState).toBe('waiting'));
 
@@ -232,5 +302,51 @@ describe('OrbitalPluginHost', () => {
 
     await waitFor(() => expect(host().getState('cascade', 'CascadeOrbital', 'Receiver')?.currentState).toBe('received'));
     expect(host().errors.cascade).toBeUndefined();
+
+    // `Receiver` never appears in `dispatch()`'s own response (it fires
+    // through the runtime's internal cascade, not the directly-dispatched
+    // `Emitter`) — its `ACK` emit reaching the ambient bus proves the
+    // outbound path is the internal event bus, not the dispatch response.
+    await waitFor(() => expect(ackListener).toHaveBeenCalledTimes(1));
+    expect(ackListener.mock.calls[0][0].source?.trait).toBe('Receiver');
+  });
+
+  it('never re-broadcasts a relay event (its own inbound busEvent) — no infinite loop, sibling\'s PONG reaches the bus exactly once', async () => {
+    const { bus, host, unmount } = renderHost({ plugins: [relayPlugin()] });
+    const pongListener = vi.fn();
+    bus.on('UI:PONG', pongListener);
+
+    await waitFor(() => expect(host().getState('relay', 'RelayOrbital', 'A')?.currentState).toBe('idle'));
+
+    // Circuit breaker: a regression here is a self-feeding async loop, not a
+    // synchronous stack overflow (dispatch() awaits before re-emitting), so
+    // a naive assertion after `bus.emit` would hang the whole run instead of
+    // failing fast. Bound it: past a handful of re-broadcasts, tear the
+    // plugin down (unsubscribes its `UI:PING` listener) so the loop cannot
+    // continue, then let the (already-failing) count assertion below report
+    // it plainly.
+    let pingCount = 0;
+    const MAX_PING = 5;
+    bus.on('UI:PING', () => {
+      pingCount += 1;
+      if (pingCount > MAX_PING) unmount();
+    });
+
+    bus.emit('UI:PING', {});
+
+    // The relay's own sibling cascade (A.PING -> B via the runtime's
+    // internal event bus) is unaffected by the fix — B still transitions,
+    // and B's own PONG emit — the whole point of the fix, this is exactly
+    // the vim-mode `STATUS`/`REGISTER_COMMAND` shape — reaches the ambient
+    // bus exactly once with `source.trait` = the sibling that fired it.
+    await waitFor(() => expect(host().getState('relay', 'RelayOrbital', 'B')?.currentState).toBe('ponged'));
+    await waitFor(() => expect(pongListener).toHaveBeenCalledTimes(1));
+    expect(pongListener.mock.calls[0][0].source?.trait).toBe('B');
+    // Let any wrongly-scheduled re-broadcast chain resolve before asserting.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(pingCount).toBe(1); // only our own manual emit — the host must never relay its own inbound vocabulary
+    expect(pongListener).toHaveBeenCalledTimes(1); // still exactly once — no double-emit from response + onAny
+    expect(host().errors.relay).toBeUndefined();
   });
 });
