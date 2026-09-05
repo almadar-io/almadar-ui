@@ -7,7 +7,7 @@ import { renderHook } from '@testing-library/react';
 import React from 'react';
 import { EventBusProvider } from '../providers/EventBusProvider';
 import { useEventBus } from '../hooks/useEventBus';
-import { useKeyboardRouter, mergeCaptureTables, type KeyCaptureTable, type EditorKeyEvent } from '../hooks/useKeyboardRouter';
+import { useKeyboardRouter, mergeCaptureTables, keyChord, type KeyCaptureTable, type EditorKeyEvent } from '../hooks/useKeyboardRouter';
 
 function wrapper({ children }: { children?: React.ReactNode }): React.JSX.Element {
   return React.createElement(EventBusProvider, { isolated: true }, children as React.ReactElement);
@@ -63,13 +63,31 @@ describe('useKeyboardRouter', () => {
     expect(received[0]).toMatchObject({ editorId: 'e1', key: 'a' });
   });
 
-  it('falls back to the shell target with no focus event; mode "any" captures every key', () => {
+  it('falls back to the shell target with no focus event; mode "any" with no keys captures nothing', () => {
     const captureTable: KeyCaptureTable = { shell: { mode: 'any', keys: new Set() } };
-    renderHook(() => useKeyboardRouter({ captureTable }), { wrapper });
+    const { received } = renderRouterWithBus(captureTable);
 
     const preventDefault = dispatchKeyDown({ key: 'z', code: 'KeyZ' });
 
-    expect(preventDefault).toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(received[0]).toMatchObject({ editorId: 'shell', key: 'z' });
+  });
+
+  it('captures a chord entry only when the modifiers match — plain typing of the same key passes through', () => {
+    const captureTable: KeyCaptureTable = {
+      shell: { mode: 'any', keys: new Set(['Meta+k', 'Control+Shift+P']) },
+    };
+    renderHook(() => useKeyboardRouter({ captureTable }), { wrapper });
+
+    expect(dispatchKeyDown({ key: 'k', code: 'KeyK' })).not.toHaveBeenCalled();
+    expect(dispatchKeyDown({ key: 'k', code: 'KeyK', metaKey: true })).toHaveBeenCalled();
+    expect(dispatchKeyDown({ key: 'P', code: 'KeyP', shiftKey: true })).not.toHaveBeenCalled();
+    expect(dispatchKeyDown({ key: 'P', code: 'KeyP', ctrlKey: true, shiftKey: true })).toHaveBeenCalled();
+  });
+
+  it('keyChord spells modifiers in the fixed Control, Alt, Shift, Meta order', () => {
+    expect(keyChord({ key: 'k', ctrlKey: true, altKey: false, shiftKey: true, metaKey: true })).toBe('Control+Shift+Meta+k');
+    expect(keyChord({ key: 'Escape', ctrlKey: false, altKey: false, shiftKey: false, metaKey: false })).toBe('Escape');
   });
 
   it('captures nothing when no shell entry is declared and no editor is focused', () => {

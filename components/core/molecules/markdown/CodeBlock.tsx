@@ -425,32 +425,16 @@ export type CodeViewerMode = 'code' | 'diff';
 // the runtime behaviour) ──────────────────────────────────────────────────
 
 export type { EditorMotion, EditorOperator } from '../../../../lib/editorMotions';
+// Single source of truth for the closed vocabularies lives in `lib/editorMotions.ts`
+// (it also builds `isEditorMotion`/`isEditorOperator` from these). Re-exported here
+// since consumers historically import them from `CodeBlock`. The `motions`/
+// `operators` prop DEFAULTS below must list the same members as JSON literals
+// (the registry parser reads those literals) — `test/CodeBlock.editable.test.tsx`
+// asserts the two stay in sync.
+export { EDITOR_MOTIONS, EDITOR_OPERATORS, isEditorMotion, isEditorOperator } from '../../../../lib/editorMotions';
 
 /** Closed-list caret render styles for editor mode. */
 export type EditorCaret = 'bar' | 'block' | 'underline';
-
-/** Full motion vocabulary, in declaration order. Kept in sync with the `motions` prop default. */
-export const EDITOR_MOTIONS: readonly EditorMotion[] = [
-  'left',
-  'right',
-  'up',
-  'down',
-  'word-forward',
-  'word-back',
-  'word-end',
-  'line-start',
-  'line-end',
-  'first-nonblank',
-  'doc-start',
-  'doc-end',
-  'paragraph-forward',
-  'paragraph-back',
-  'line',
-  'selection',
-];
-
-/** Full operator vocabulary, in declaration order. Kept in sync with the `operators` prop default. */
-export const EDITOR_OPERATORS: readonly EditorOperator[] = ['delete', 'yank', 'change'];
 
 export interface DiffLine {
   type: 'add' | 'added' | 'remove' | 'removed' | 'context' | 'unchanged';
@@ -771,8 +755,22 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       'paragraph-back',
       'line',
       'selection',
+      'match-bracket',
     ],
-    operators = ['delete', 'yank', 'change'],
+    operators = [
+      'delete',
+      'yank',
+      'change',
+      'put',
+      'put-before',
+      'undo',
+      'redo',
+      'join',
+      'toggle-case',
+      'indent',
+      'dedent',
+      'replace',
+    ],
   }) => {
     // `motions`/`operators` document the vocabulary this instance accepts;
     // enforcement lives at the emitting plugin, not here (P1 E3).
@@ -824,6 +822,18 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const lastPropCodeRef = useRef(code);
     const editableTextareaRef = useRef<HTMLTextAreaElement | null>(null);
     const editableOverlayRef = useRef<HTMLDivElement | null>(null);
+    // SV4-4: the block/underline caret only ever renders while focused.
+    const [isFocused, setIsFocused] = useState(false);
+    // SV4-1: the caret BEFORE the current keydown is processed — captured on
+    // keydown (not derivable from React state, which only updates after the
+    // browser applies the keystroke) so `recordKeystroke` can snapshot the
+    // pre-edit caret for the undo stack. Edits with no preceding keydown
+    // (e.g. a context-menu paste) fall back to the last known value.
+    const prevCaretRef = useRef(0);
+    const [caretIndex, setCaretIndex] = useState(0);
+    const caretMirrorRef = useRef<HTMLDivElement | null>(null);
+    const caretMarkerRef = useRef<HTMLSpanElement | null>(null);
+    const [caretGeometry, setCaretGeometry] = useState<{ top: number; left: number; lineHeight: number } | null>(null);
 
     useEffect(() => {
       if (code !== lastPropCodeRef.current) {
@@ -845,25 +855,90 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     // The ONE change path: a keystroke and a plugin-driven capability edit
     // (useEditorCapabilities' `applyChange`) both flow through here, so both
     // hit `lastPropCodeRef`/`setEditableValue`/`onChange` identically.
-    const handleEditableChange = useCallback((v: string) => {
+    // `origin` only matters upstream (undo coalescing); it changes nothing here.
+    const handleEditableChange = useCallback((v: string, _origin: 'keystroke' | 'capability') => {
       // Mark known so the parent echoing `v` back doesn't remount us.
       lastPropCodeRef.current = v;
       setEditableValue(v);
+      const ta = editableTextareaRef.current;
+      // Keeps caretIndex live after a capability edit too (MOTION/OPERATE/
+      // INSERT_TEXT already moved `ta.selectionStart` by the time this runs).
+      if (ta) setCaretIndex(ta.selectionStart);
       onChange?.(v);
     }, [onChange]);
 
-    const { caretMode } = useEditorCapabilities({
+    const { caretMode, recordKeystroke, undo, redo } = useEditorCapabilities({
       editorId: editable ? editorId : undefined,
       textareaRef: editableTextareaRef,
       events: { onMotion, onOperate, onInsertText, onSetMode },
+      focused: isFocused,
       applyChange: handleEditableChange,
     });
-    const [caretIndex, setCaretIndex] = useState(0);
-    const caretRowCol = useMemo(() => {
-      const before = editableValue.slice(0, Math.min(caretIndex, editableValue.length));
-      const lines = before.split('\n');
-      return { row: lines.length - 1, col: lines[lines.length - 1].length };
-    }, [editableValue, caretIndex]);
+
+    const handleEditableKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        const ta = editableTextareaRef.current;
+        if (ta) prevCaretRef.current = ta.selectionStart;
+        const mod = e.metaKey || e.ctrlKey;
+        if (!mod) return;
+        const key = e.key.toLowerCase();
+        if (key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+        } else if ((key === 'z' && e.shiftKey) || key === 'y') {
+          e.preventDefault();
+          redo();
+        }
+      },
+      [undo, redo],
+    );
+
+    const showBlockCaret = isFocused && caretMode !== 'bar';
+
+    // SV4-4: measure the caret's pixel position via the standard
+    // textarea-caret technique (a hidden mirror div that copies the
+    // textarea's computed box/font/wrap so wrapped lines and tabs measure
+    // correctly — jsdom has no layout, so this is a no-op there beyond
+    // building the mirror's DOM).
+    useLayoutEffect(() => {
+      if (!showBlockCaret) return;
+      const ta = editableTextareaRef.current;
+      const mirror = caretMirrorRef.current;
+      const marker = caretMarkerRef.current;
+      if (!ta || !mirror || !marker) return;
+      const computed = window.getComputedStyle(ta);
+      const MIRRORED_PROPS = [
+        'font-family',
+        'font-size',
+        'font-weight',
+        'font-style',
+        'letter-spacing',
+        'line-height',
+        'padding-top',
+        'padding-right',
+        'padding-bottom',
+        'padding-left',
+        'border-top-width',
+        'border-right-width',
+        'border-bottom-width',
+        'border-left-width',
+        'box-sizing',
+        'width',
+        'white-space',
+        'word-break',
+        'overflow-wrap',
+        'tab-size',
+      ] as const;
+      for (const prop of MIRRORED_PROPS) {
+        mirror.style.setProperty(prop, computed.getPropertyValue(prop));
+      }
+      const lineHeight = parseFloat(computed.getPropertyValue('line-height'));
+      setCaretGeometry({
+        top: marker.offsetTop,
+        left: marker.offsetLeft,
+        lineHeight: Number.isFinite(lineHeight) ? lineHeight : 0,
+      });
+    }, [showBlockCaret, editableValue, caretIndex]);
 
     // GAP-80: line-level error highlights (editable overlay). Memoized so
     // identity is stable across renders when `errorLines` hasn't changed.
@@ -1492,11 +1567,24 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               key={editableTextareaKey}
               ref={editableTextareaRef}
               defaultValue={code}
-              onChange={(e) => handleEditableChange(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                recordKeystroke(editableValue, prevCaretRef.current, next);
+                handleEditableChange(next, 'keystroke');
+              }}
               onScroll={handleEditableScroll}
               onSelect={(e) => setCaretIndex(e.currentTarget.selectionStart)}
-              onFocus={editorId ? () => eventBus.emit(`UI:${onEditorFocus}`, { editorId }) : undefined}
-              onBlur={editorId ? () => eventBus.emit(`UI:${onEditorBlur}`, { editorId }) : undefined}
+              onKeyUp={(e) => setCaretIndex(e.currentTarget.selectionStart)}
+              onClick={(e) => setCaretIndex(e.currentTarget.selectionStart)}
+              onKeyDown={handleEditableKeyDown}
+              onFocus={() => {
+                setIsFocused(true);
+                if (editorId) eventBus.emit(`UI:${onEditorFocus}`, { editorId });
+              }}
+              onBlur={() => {
+                setIsFocused(false);
+                if (editorId) eventBus.emit(`UI:${onEditorBlur}`, { editorId });
+              }}
               spellCheck={false}
               style={{
                 position: 'absolute',
@@ -1521,20 +1609,43 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 overflow: 'auto',
               }}
             />
-            {/* Block/underline caret render (SET_MODE): the 'bar' default
-                relies on the textarea's own native caret above — this span
-                only ever paints for the other two modes. Positioned by
-                monospace character-cell math (`ch` for columns, the
-                13px * 1.5 line-height literal for rows). */}
-            {caretMode !== 'bar' && (
-              <span
+            {/* Block/underline caret render (SET_MODE), SV4-4: only while
+                focused — the plugin re-announces SET_MODE on every
+                EDITOR_FOCUS, and blur resets caretMode to 'bar' (the hook).
+                Position comes from a hidden mirror div that copies the
+                textarea's computed font/padding/width/wrap (the standard
+                textarea-caret technique) so wrapped lines and tabs measure
+                correctly — character-cell `ch`/row math doesn't. */}
+            {showBlockCaret && (
+              <div
+                ref={caretMirrorRef}
                 aria-hidden
+                data-testid="editor-caret-mirror"
                 style={{
                   position: 'absolute',
-                  top: `calc(1rem + ${caretRowCol.row * 19.5}px)`,
-                  left: `calc(1rem + ${caretRowCol.col}ch)`,
+                  top: 0,
+                  left: 0,
+                  padding: '1rem',
+                  margin: 0,
+                  border: 'none',
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              >
+                {editableValue.slice(0, caretIndex)}
+                <span ref={caretMarkerRef} data-testid="editor-caret-marker">{'​'}</span>
+              </div>
+            )}
+            {showBlockCaret && caretGeometry && (
+              <span
+                aria-hidden
+                data-testid="editor-caret"
+                style={{
+                  position: 'absolute',
+                  top: caretGeometry.top,
+                  left: caretGeometry.left,
                   width: '1ch',
-                  height: caretMode === 'block' ? '19.5px' : '2px',
+                  height: caretMode === 'block' ? caretGeometry.lineHeight || '1.2em' : '2px',
                   backgroundColor: caretMode === 'block' ? 'rgba(230, 230, 230, 0.5)' : undefined,
                   borderBottom: caretMode === 'underline' ? '2px solid #e6e6e6' : undefined,
                   pointerEvents: 'none',

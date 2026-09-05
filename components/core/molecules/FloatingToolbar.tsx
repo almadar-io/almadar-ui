@@ -53,7 +53,13 @@ export interface FloatingToolbarItem {
   testId?: string;
 }
 
-export type FloatingToolbarPosition = "bottom-center" | "bottom-left" | "bottom-right";
+export type FloatingToolbarPosition =
+  | "bottom-center"
+  | "bottom-left"
+  | "bottom-right"
+  | "top-center"
+  | "top-left"
+  | "top-right";
 
 export interface FloatingToolbarProps {
   /** Tool items rendered as icon buttons */
@@ -73,6 +79,9 @@ const positionClasses: Record<FloatingToolbarPosition, string> = {
   "bottom-center": "bottom-6 left-1/2 -translate-x-1/2",
   "bottom-left": "bottom-6 left-6",
   "bottom-right": "bottom-6 right-6",
+  "top-center": "top-6 left-1/2 -translate-x-1/2",
+  "top-left": "top-6 left-6",
+  "top-right": "top-6 right-6",
 };
 
 export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({

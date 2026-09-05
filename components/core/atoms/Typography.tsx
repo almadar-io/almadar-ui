@@ -194,8 +194,17 @@ export const Typography: React.FC<TypographyProps> = ({
         weight && weightStyles[weight],
         size && typographySizeStyles[size],
         align && `text-${align}`,
-        truncate && "truncate overflow-hidden text-ellipsis",
-        overflow && overflowStyles[overflow],
+        // `min-w-0` rides along with truncate/wrap/clamp: a flex or grid
+        // item's default `min-width: auto` refuses to shrink below its
+        // content's intrinsic width, so ellipsis/wrap silently does nothing
+        // in the single most common placement (a row next to a fixed-width
+        // control) unless the item can also shrink to zero. (Spelled out as
+        // just "truncate", not "truncate overflow-hidden text-ellipsis" —
+        // tailwind-merge treats those as the same conflict group and drops
+        // "truncate" as the earlier-declared class, silently losing its
+        // `white-space: nowrap`.)
+        truncate && "truncate min-w-0",
+        overflow && cn(overflowStyles[overflow], overflow !== "visible" && "min-w-0"),
         className,
       ),
       style,

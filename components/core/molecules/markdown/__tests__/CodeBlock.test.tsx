@@ -103,8 +103,8 @@ describe('CodeBlock', () => {
   // Part D1). Runtime wiring lands in P1 — these props are accepted but
   // inert here.
   describe('editor capability surface (declaration-only)', () => {
-    it('EDITOR_MOTIONS lists all 16 motions', () => {
-      expect(EDITOR_MOTIONS).toHaveLength(16);
+    it('EDITOR_MOTIONS lists all 17 motions', () => {
+      expect(EDITOR_MOTIONS).toHaveLength(17);
       expect(EDITOR_MOTIONS).toEqual([
         'left',
         'right',
@@ -122,11 +122,25 @@ describe('CodeBlock', () => {
         'paragraph-back',
         'line',
         'selection',
+        'match-bracket',
       ]);
     });
 
-    it('EDITOR_OPERATORS lists all 3 operators', () => {
-      expect(EDITOR_OPERATORS).toEqual(['delete', 'yank', 'change']);
+    it('EDITOR_OPERATORS lists all 12 operators', () => {
+      expect(EDITOR_OPERATORS).toEqual([
+        'delete',
+        'yank',
+        'change',
+        'put',
+        'put-before',
+        'undo',
+        'redo',
+        'join',
+        'toggle-case',
+        'indent',
+        'dedent',
+        'replace',
+      ]);
     });
 
     it('accepts the editor capability props without runtime error', () => {

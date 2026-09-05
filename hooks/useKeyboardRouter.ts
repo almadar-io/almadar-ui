@@ -10,6 +10,16 @@
  * or a DOM attribute lookup. This hook is the SOLE emitter of `UI:KEY`.
  * No heuristics: every capture decision comes from the declared table.
  *
+ * Capture rule: a keydown is `preventDefault`ed iff the focused target's
+ * entry lists it — as the bare `event.key` (`"k"`, `"Escape"`), or as a
+ * chord `"<Modifiers>+<key>"` with modifiers in the fixed order
+ * `Control`, `Alt`, `Shift`, `Meta` (`"Meta+k"`, `"Control+Shift+P"`).
+ * `mode` is the trait state the entry belongs to — informational for the
+ * host, never a capture decision: an entry with `mode: 'any'` and no keys
+ * captures nothing (it used to capture EVERY key at shell level, which
+ * blocked typing in every plain input — `docs/Almadar_UI_Gaps.md`
+ * U-KEYBOARD-ROUTER-CAPTURE-ALL).
+ *
  * @packageDocumentation
  */
 
@@ -59,6 +69,17 @@ export function mergeCaptureTables(tables: readonly KeyCaptureTable[]): KeyCaptu
     }
   }
   return merged;
+}
+
+/** `"Control+Shift+P"`-style spelling of a keydown: modifiers in the fixed order Control, Alt, Shift, Meta, then `event.key`. */
+export function keyChord(event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>): string {
+  const parts: string[] = [];
+  if (event.ctrlKey) parts.push('Control');
+  if (event.altKey) parts.push('Alt');
+  if (event.shiftKey) parts.push('Shift');
+  if (event.metaKey) parts.push('Meta');
+  parts.push(event.key);
+  return parts.join('+');
 }
 
 export interface UseKeyboardRouterOptions {
@@ -115,7 +136,7 @@ export function useKeyboardRouter(options: UseKeyboardRouterOptions): void {
 
       const target = focusedEditorIdRef.current ?? 'shell';
       const entry = captureTableRef.current[target];
-      const captured = entry !== undefined && (entry.mode === 'any' || entry.keys.has(event.key));
+      const captured = entry !== undefined && (entry.keys.has(event.key) || entry.keys.has(keyChord(event)));
 
       if (captured) {
         event.preventDefault();

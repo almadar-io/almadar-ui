@@ -31,6 +31,8 @@ export interface MenuItem {
   badge?: string | number;
   /** Disable item */
   disabled?: boolean;
+  /** Tooltip text (e.g. why a disabled item is disabled) */
+  title?: string;
   /** Item click handler */
   onClick?: () => void;
   /** Event name for pattern compatibility */
@@ -185,6 +187,7 @@ function SubMenu({
               item.onClick?.();
             }}
             aria-disabled={item.disabled || undefined}
+            title={item.title}
             data-testid={item.event ? `action-${item.event}` : undefined}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-2 text-start",
@@ -256,6 +259,7 @@ function MenuItemRow({
         as="button"
         onClick={() => onItemClick({ ...item, id: itemId }, itemId)}
         aria-disabled={item.disabled || undefined}
+        title={item.title}
         onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
           if (hasSubMenu) openSubMenu(itemId, e.currentTarget);
         }}

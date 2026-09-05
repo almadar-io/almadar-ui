@@ -125,6 +125,16 @@ describe('FloatingToolbar', () => {
     expect(screen.getByTestId('floating-toolbar-item-select')).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('applies the top-right position classes', () => {
+    render(
+      <TestWrapper>
+        <FloatingToolbar items={items} position="top-right" />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId('floating-toolbar-item-select').closest('.fixed')).toHaveClass('top-6', 'right-6');
+  });
+
   it('renders passthrough children after a divider', () => {
     render(
       <TestWrapper>

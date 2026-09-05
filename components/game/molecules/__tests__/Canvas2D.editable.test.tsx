@@ -59,6 +59,20 @@ function drawables(): DrawableNode[] {
     ];
 }
 
+/** One wide `draw-shape-layer` rect (Kura's AABB gizmo): anchor `top-left` at
+ *  scene (100,100), width 120 / height 40 — painted rect x:[100,220] y:[100,140]
+ *  under the identity `free` projector (same convention as `drawables()` above). */
+function wideShapeDrawables(): DrawableNode[] {
+    return [
+        {
+            type: 'draw-shape-layer',
+            items: [
+                { type: 'draw-shape', shape: 'rect', id: 'platform-1', position: { x: 100, y: 100 }, anchor: 'top-left', width: 120, height: 40, fill: '#000' },
+            ],
+        },
+    ];
+}
+
 /** Subscribes to one bus event and forwards every payload to `onEvent`. */
 function BusListener({ event, onEvent }: { event: string; onEvent: (payload: unknown) => void }): null {
     const bus = useEventBus();
@@ -123,6 +137,31 @@ describe('Canvas2D editable', () => {
         expect(onSelectEvent).toHaveBeenCalledWith({ id: 'unit-1' });
         expect(onTileClick).not.toHaveBeenCalled();
         expect(onUnitClick).not.toHaveBeenCalled();
+    });
+
+    it('selects a wide draw-shape-layer rect at a point beyond one tile from its anchor', () => {
+        const onSelect = vi.fn();
+        const onSelectEvent = vi.fn();
+        const { getByTestId } = renderCanvas({
+            editable: true,
+            selectedId: null,
+            drawables: wideShapeDrawables(),
+            onSelect,
+            onTileClick: vi.fn(),
+            onUnitClick: vi.fn(),
+            onSelectEvent,
+            onMoveEvent: vi.fn(),
+        });
+        const canvas = getByTestId('canvas-2d');
+
+        // x:200 is well past [100,140] (a one-tile box anchored at (100,100))
+        // but still inside the rect's declared 120-wide painted extent [100,220].
+        fireEvent.pointerDown(canvas, { pointerId: 1, clientX: 200, clientY: 110 });
+        fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 200, clientY: 110 });
+
+        expect(onSelect).toHaveBeenCalledTimes(1);
+        expect(onSelect).toHaveBeenCalledWith('platform-1');
+        expect(onSelectEvent).toHaveBeenCalledWith({ id: 'platform-1' });
     });
 
     it('toggles selection off on a second click of the already-selected drawable', () => {

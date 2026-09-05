@@ -17,20 +17,35 @@ import type { DrawableNode } from './paintDispatch';
 import { isValidScenePos, spriteRect } from './contract';
 import type { DrawableAnchor, Projector } from './contract';
 import type { PainterPoint } from '../painter2d';
+import type { DrawShapeProps } from '../../components/game/atoms/DrawShape';
 
 /** One drawn descriptor's scene position + optional hit-test id. */
 export interface DrawnItem {
     pos: ScenePos;
     id?: string;
-    /** Sprite placement geometry (present for sprite descriptors) — lets the
-     *  hit-test resolve a pointer against the painted rect, not just the cell. */
+    /** Placement geometry — present for sprite descriptors and `rect`-kind
+     *  shapes (a `draw-shape`/`draw-shape-layer` item declaring `width`/
+     *  `height`, e.g. an AABB gizmo) — lets the hit-test resolve a pointer
+     *  against the painted rect, not just a fixed one-tile cell box. */
     anchor?: DrawableAnchor;
     width?: number;
     height?: number;
-    /** Sprite rotation in radians about the painted rect's centre (same value
-     *  `DrawSpriteProps.rotation` paints with) — lets the hit-test inverse-rotate
-     *  the test point so a rotated sprite hit-tests against what is actually drawn. */
+    /** Rotation in radians about the painted rect's centre (same value
+     *  `DrawSpriteProps.rotation` / `DrawShapeProps.rotate` paints with) —
+     *  lets the hit-test inverse-rotate the test point so a rotated
+     *  sprite/shape hit-tests against what is actually drawn. */
     rotation?: number;
+}
+
+/** A `draw-shape`'s `rect` kind paints an axis-aligned box sized by
+ *  `width`/`height` (in tile units) from its anchor point — the same
+ *  `anchor`+`width`+`height` inputs {@link spriteRect} already resolves for
+ *  sprites, so a rect item feeds the identical rect derivation instead of
+ *  the one-tile fallback. Other shape kinds (`cell`/`ellipse`/`poly`/`path`)
+ *  keep the position-only floor-cell hit — they have no rect geometry to test. */
+function shapeDrawnItem(n: DrawShapeProps): DrawnItem {
+    if (n.shape !== 'rect') return { pos: n.position, id: n.id };
+    return { pos: n.position, id: n.id, anchor: n.anchor, width: n.width, height: n.height, rotation: n.rotate };
 }
 
 /** Collect every drawable's scene position + hit id (atoms directly; layers via `items`). */
@@ -42,6 +57,8 @@ export function collectDrawnItems(nodes: DrawableNode[]): DrawnItem[] {
                 if (isValidScenePos(n.position)) out.push({ pos: n.position, id: n.id, anchor: n.anchor, width: n.width, height: n.height, rotation: n.rotation });
                 break;
             case 'draw-shape':
+                if (isValidScenePos(n.position)) out.push(shapeDrawnItem(n));
+                break;
             case 'draw-text':
             case 'draw-group':
             case 'draw-mesh':
@@ -53,6 +70,10 @@ export function collectDrawnItems(nodes: DrawableNode[]): DrawnItem[] {
                 }
                 break;
             case 'draw-shape-layer':
+                for (const it of n.items) {
+                    if (isValidScenePos(it.position)) out.push(shapeDrawnItem(it));
+                }
+                break;
             case 'draw-text-layer':
                 for (const it of n.items) {
                     if (isValidScenePos(it.position)) out.push({ pos: it.position, id: it.id });
@@ -100,15 +121,17 @@ export function withPreviewPosition(nodes: DrawableNode[], id: string, pos: Scen
 }
 
 /**
- * Resolve a world point to the id of the topmost tagged sprite whose PAINTED
- * RECT contains it. A sprite anchored `ground` extends `height × tileWidth`
- * above its floor cell (a unit's body/head hangs over the cells behind it), so
- * the floor-cell inverse alone mis-resolves clicks on the visible body to the
- * cell behind. Testing the painted rect — the same {@link spriteRect} math the
- * painter uses — resolves the click to what is actually under the cursor.
- * Later descriptors win (reverse walk = painter's topmost), matching what the
- * user sees. Returns undefined when no tagged sprite contains the point; the
- * caller then falls back to the floor-cell inverse (tile click / cell-tagged id).
+ * Resolve a world point to the id of the topmost tagged sprite (or rect-kind
+ * shape) whose PAINTED RECT contains it. A sprite anchored `ground` extends
+ * `height × tileWidth` above its floor cell (a unit's body/head hangs over the
+ * cells behind it); a wide `rect` shape (e.g. an AABB gizmo) extends
+ * `width × tileWidth` past its anchor cell — the floor-cell inverse alone
+ * mis-resolves either. Testing the painted rect — the same {@link spriteRect}
+ * math the painter uses — resolves the click to what is actually under the
+ * cursor. Later descriptors win (reverse walk = painter's topmost), matching
+ * what the user sees. Returns undefined when no tagged item contains the
+ * point; the caller then falls back to the floor-cell inverse (tile click /
+ * cell-tagged id).
  */
 export function hitTestSprites(items: DrawnItem[], projector: Projector, point: PainterPoint): string | undefined {
     for (let i = items.length - 1; i >= 0; i--) {

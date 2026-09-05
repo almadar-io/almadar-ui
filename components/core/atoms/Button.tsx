@@ -59,7 +59,7 @@ const variantStyles = {
   secondary: [
     "bg-transparent text-accent",
     "border border-accent",
-    "hover:bg-accent hover:text-white hover:border-accent",
+    "hover:bg-accent hover:text-accent-foreground hover:border-accent",
     "active:scale-[var(--active-scale)]",
   ].join(" "),
   ghost: [
