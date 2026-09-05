@@ -83,7 +83,7 @@ export {
 } from '../lib/prepareSchemaForPreview';
 
 // ServerBridge — client-server bridge for dual execution
-export { ServerBridgeProvider, useServerBridge, type ServerBridgeContextValue, type ServerBridgeTransport, type ServerClientEffect } from '../providers/ServerBridge';
+export { ServerBridgeProvider, useServerBridge, type ServerBridgeContextValue, type ServerBridgeTransport, type ServerClientEffect, type AccessTokenProvider } from '../providers/ServerBridge';
 
 // Types
 export type {

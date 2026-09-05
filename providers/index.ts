@@ -95,6 +95,7 @@ export {
   type ServerBridgeContextValue,
   type ServerBridgeTransport,
   type ServerBridgeProviderProps,
+  type AccessTokenProvider,
 } from './ServerBridge';
 
 export {

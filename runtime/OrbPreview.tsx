@@ -33,7 +33,7 @@ import { useTraitStateMachine } from '../hooks/useTraitStateMachine';
 import { buildOrbitalsByTrait } from '../lib/orbitalsByTrait';
 import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
 import { EntityBindingContext } from '../providers/EntityBindingContext';
-import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from '../providers/ServerBridge';
+import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport, type AccessTokenProvider } from '../providers/ServerBridge';
 import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
 import { NavStackProvider, useNavStack, type NavStackApi, type NavPageDecl } from '../providers/NavStackContext';
@@ -472,10 +472,11 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, persistence }: {
+function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, persistence }: {
   schema: OrbitalSchema;
   serverUrl?: string;
   transport?: ServerBridgeTransport;
+  getAccessToken?: AccessTokenProvider;
   mockData?: EntityData;
   pageName?: string;
   /** Route params extracted from a parameterized page path (`/x/:id`) — merged into INIT payloads. */
@@ -778,7 +779,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeP
 
   if (serverUrl || transport) {
     return (
-      <ServerBridgeProvider schema={schema} serverUrl={serverUrl} transport={transport}>
+      <ServerBridgeProvider schema={schema} serverUrl={serverUrl} transport={transport} getAccessToken={getAccessToken}>
         {inner}
       </ServerBridgeProvider>
     );
@@ -826,6 +827,8 @@ export interface OrbPreviewProps {
    * `OrbitalServerRuntime.processOrbitalEvent` directly without HTTP.
    */
   transport?: ServerBridgeTransport;
+  /** Bearer token for `serverUrl` requests (see `ServerBridgeProviderProps.getAccessToken`). */
+  getAccessToken?: AccessTokenProvider;
   /**
    * Initial page path to render (e.g. `/deals`). Resolves against the
    * schema's `pages[]` to seed `currentPage` so the right orbital's traits
@@ -864,6 +867,7 @@ export function OrbPreview({
   className,
   serverUrl,
   transport,
+  getAccessToken,
   initialPagePath,
   isolated = false,
 }: OrbPreviewProps): React.ReactElement {
@@ -1169,6 +1173,7 @@ export function OrbPreview({
               schema={parseResult.schema}
               serverUrl={serverUrl}
               transport={transport}
+              getAccessToken={getAccessToken}
               mockData={effectiveMockData}
               pageName={currentPage}
               routeParams={routeParams}

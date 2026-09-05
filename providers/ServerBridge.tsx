@@ -290,14 +290,28 @@ interface OrbitalEventRequestBody {
   sourceTrait?: string;
 }
 
+/**
+ * Supplies the bearer token the hosting server authenticates with. Resolved
+ * per request (tokens expire); `undefined` sends the request unauthenticated
+ * (dev servers with an auth bypass, standalone playground).
+ */
+export type AccessTokenProvider = () => Promise<string | undefined>;
+
+async function authHeaders(getAccessToken: AccessTokenProvider | undefined): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = getAccessToken ? await getAccessToken() : undefined;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
 /** HTTP transport — POSTs to a server speaking the canonical playground-runtime contract. */
-function createHttpTransport(serverUrl: string): ServerBridgeTransport {
+function createHttpTransport(serverUrl: string, getAccessToken?: AccessTokenProvider): ServerBridgeTransport {
   return {
     register: async (schema) => {
       try {
         const res = await fetch(`${serverUrl}/register`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await authHeaders(getAccessToken),
           body: JSON.stringify({ schema }),
         });
         const result = await res.json();
@@ -317,7 +331,7 @@ function createHttpTransport(serverUrl: string): ServerBridgeTransport {
     },
     unregister: async () => {
       try {
-        await fetch(`${serverUrl}/unregister`, { method: 'DELETE' });
+        await fetch(`${serverUrl}/unregister`, { method: 'DELETE', headers: await authHeaders(getAccessToken) });
       } catch {
         // Ignore cleanup errors
       }
@@ -326,7 +340,7 @@ function createHttpTransport(serverUrl: string): ServerBridgeTransport {
       const body: OrbitalEventRequestBody = { event, payload, clientId, tick, sourceTrait };
       const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders(getAccessToken),
         body: JSON.stringify(body),
       });
       return res.json() as Promise<OrbitalEventResponse>;
@@ -366,6 +380,12 @@ export interface ServerBridgeProviderProps {
    * directly). Mutually exclusive with `serverUrl`.
    */
   transport?: ServerBridgeTransport;
+  /**
+   * Bearer token for the HTTP transport (`Authorization` on every fetch;
+   * `access_token` on the SSE URL, since EventSource cannot set headers).
+   * Ignored with a custom `transport`.
+   */
+  getAccessToken?: AccessTokenProvider;
   children: ReactNode;
 }
 
@@ -373,6 +393,7 @@ export function ServerBridgeProvider({
   schema,
   serverUrl,
   transport: customTransport,
+  getAccessToken,
   children,
 }: ServerBridgeProviderProps) {
   if (!serverUrl && !customTransport) {
@@ -390,8 +411,8 @@ export function ServerBridgeProvider({
   // mutual-exclusion check above). Memo on `serverUrl`/`customTransport` so
   // useCallback deps don't churn every render.
   const transport = useMemo<ServerBridgeTransport>(
-    () => customTransport ?? createHttpTransport(serverUrl!),
-    [serverUrl, customTransport],
+    () => customTransport ?? createHttpTransport(serverUrl!, getAccessToken),
+    [serverUrl, customTransport, getAccessToken],
   );
 
   const registerSchema = useCallback(
@@ -639,16 +660,28 @@ export function ServerBridgeProvider({
     if (!serverUrl) return;
     if (typeof EventSource === 'undefined') return;
 
-    const url = `${deriveEventsUrl(serverUrl)}?clientId=${encodeURIComponent(getTabClientId())}`;
-    return acquirePushChannel(url, (parsed) => {
+    let release: (() => void) | undefined;
+    let cancelled = false;
+    const subscribe = (parsed: BusPushEnvelope) => {
       serverBridgeLog.debug('push:received', {
         event: parsed.event,
         sourceOrbital: parsed.source?.orbital,
         sourceTrait: parsed.source?.trait,
       });
       reEmitServerEvent(eventBus, parsed, 'push');
-    });
-  }, [serverUrl, eventBus]);
+    };
+    void (async () => {
+      const token = getAccessToken ? await getAccessToken() : undefined;
+      if (cancelled) return;
+      const params = new URLSearchParams({ clientId: getTabClientId() });
+      if (token) params.set('access_token', token);
+      release = acquirePushChannel(`${deriveEventsUrl(serverUrl)}?${params.toString()}`, subscribe);
+    })();
+    return () => {
+      cancelled = true;
+      release?.();
+    };
+  }, [serverUrl, eventBus, getAccessToken]);
 
   return (
     <ServerBridgeContext.Provider value={{ connected, sendEvent }}>
