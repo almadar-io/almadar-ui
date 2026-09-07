@@ -241,7 +241,7 @@ function generateMockPayload(
   };
 
   for (const field of payloadSchema) {
-    let value = valueForType(field.type, field.entityType);
+    let value = valueForType(field.type, field.entity);
     // For path-style fields (e.g. `row.id`) whose declared type is a
     // primitive, prefer the matching value off the linked entity's first row
     // so the preview shows real, consistent data instead of "Sample".

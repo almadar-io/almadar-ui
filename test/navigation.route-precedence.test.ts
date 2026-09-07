@@ -65,18 +65,20 @@ describe('matchPathAmong', () => {
 });
 
 describe('findPageByPath', () => {
-  const schema = {
+  const schema: OrbitalSchema = {
     name: 'fixture',
     orbitals: [
       {
         name: 'ListingOrbital',
+        entity: { name: 'Listing', fields: [{ name: 'id', type: 'string' }] },
+        traits: [],
         pages: [
           { name: 'ListingDetailPage', path: '/listings/:id', traits: [] },
           { name: 'ModerationPage', path: '/listings/moderation', traits: [] },
         ],
       },
     ],
-  } as unknown as OrbitalSchema;
+  };
 
   it('resolves the static route the param route used to shadow', () => {
     const hit = findPageByPath(schema, '/listings/moderation');

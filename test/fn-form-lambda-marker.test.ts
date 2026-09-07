@@ -33,7 +33,7 @@ describe('convertFnFormLambdasInProps × render-binding markers', () => {
   it('still converts real fn-form lambdas outside markers', () => {
     const props: SlotProps = {
       renderItem: ['fn', 'item', { type: 'typography', content: '@item.name' }],
-    } as unknown as SlotProps;
+    };
     const out = convertFnFormLambdasInProps(props);
     expect(typeof out.renderItem).toBe('function');
   });

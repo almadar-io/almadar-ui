@@ -34,13 +34,14 @@ import {
     createTickScheduler,
     isValidCronExpression,
     parseDurationString,
-    resolveCallSitePayloadCaptures,
+    LIFECYCLE_EVENTS,
     type TraitState,
     type TraitDefinition,
     type EffectHandlers,
     type BindingContext,
     type EffectContext,
     type CreateServerEffectHandlersOptions,
+    type ServerEffectResult,
 } from '@almadar/runtime';
 import { evaluate, evaluateGuard, executeEffects, createMinimalContext, evaluateListenPayloadExpr, type EvaluationContext } from '@almadar/evaluator';
 import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
@@ -149,8 +150,8 @@ const SYNC_TICK_OPERATORS: ReadonlySet<string> = new Set([
 // Lifecycle (mount-time) events. They are NOT user-driven, so the event-bus
 // self-subscription skips them — instead they are fired once per trait on mount
 // (see the mount-init effect) so single-state boards' INIT `set` effects seed
-// the entity before the first user event.
-const LIFECYCLE_EVENTS = ['INIT', 'LOAD', '$MOUNT'] as const;
+// the entity before the first user event. Shared with the server
+// (`OrbitalServerRuntime.rerenderCallsiteCaptureChildren`) via `@almadar/runtime`.
 
 // ============================================================================
 // Helper Functions
@@ -236,25 +237,27 @@ export function classifySharedTick(tick: ResolvedTraitTick): 'writer' | 'rendere
  * marker expression's `@config.X` reads exactly what the flush-time
  * executor read. Unresolved `@config.X` forwards in the raw call-site
  * config are dropped (they are the un-chained form of what the resolved
- * map already substituted) and `@callsitePayload.*` captures resolve
- * against the given payload (`{}` at render time).
+ * map already substituted). A `@callsitePayload.<field>` capture — whole-
+ * value or nested inside an S-expression, in either a declared default or a
+ * call-site override — passes through RAW: it resolves later through the
+ * standard `@config.*` binding-forward recursion in `interpolateString`
+ * once the binding context's `callsitePayload` is populated (see
+ * `executeTransitionEffects`'s `bindingCtx.callsitePayload` /
+ * `reRenderCallsiteCaptureChildren`) — one owner (the `callsitePayload`
+ * binding root), not a preprocessing pass here.
  */
 function buildTraitRenderConfig(
     binding: ResolvedTraitBinding,
     traitConfigsByName: Record<string, TraitConfig> | undefined,
-    payload: EventPayload,
 ): TraitConfig | undefined {
     const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
     const resolvedDefaults = traitConfigsByName?.[binding.trait.name];
     const callSiteConfig = getBindingConfig(binding);
     const callSiteOverrides = callSiteConfig
-        ? resolveCallSitePayloadCaptures(
-            Object.fromEntries(
-                Object.entries(callSiteConfig).filter(
-                    ([, v]) => !containsConfigForward(v),
-                ),
+        ? Object.fromEntries(
+            Object.entries(callSiteConfig).filter(
+                ([, v]) => !containsConfigForward(v),
             ),
-            payload,
         )
         : undefined;
     if (declaredDefaults || resolvedDefaults || callSiteOverrides) {
@@ -441,6 +444,15 @@ export interface UseTraitStateMachineOptions {
      * compiled-path codegen semantics.
      */
     embeddedTraits?: ReadonlySet<string>;
+    /**
+     * Referrer trait name → the DIRECT children (via `@trait.X`) that need
+     * their lifecycle transition re-run under the referrer's payload
+     * whenever the referrer's own transition fires — built by the caller
+     * via `@almadar/core`'s `collectCallsiteCaptureChildren` (merged across
+     * every orbital in the resolved schema, the same flattening
+     * `orbitalsByTrait` uses). See `reRenderCallsiteCaptureChildren`.
+     */
+    callsiteCaptureChildrenByTrait?: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 /**
@@ -512,6 +524,63 @@ function evalFieldDefault(value: FieldValue): FieldValue {
     }
 }
 
+/** Narrows `ServerEffectResult.action` (declared `string`) to the literal
+ * union `EffectTrace.action` accepts — the server handler only ever
+ * stamps a persist's own action, never an arbitrary string. */
+function isPersistTraceAction(value: string): value is NonNullable<EffectTrace['action']> {
+    return value === 'create' || value === 'update' || value === 'delete' || value === 'batch';
+}
+
+/**
+ * Overlay the executor's REAL per-effect outcomes (from
+ * `createServerEffectHandlers`'s `effectResults` sink) onto the trace
+ * reconstructed from the transition's declared SExprs. Empty for
+ * `[runtime]`-only traits (no `persistence` option supplied — offline
+ * in-memory entities have no persist handler to record against), which
+ * keeps their reconstructed `status: 'executed'` unchanged.
+ *
+ * Matched by `type` in dispatch order: `createServerEffectHandlers`'s
+ * `record()` sink pushes one entry per handler call in the SAME order
+ * `EffectExecutor` dispatches the transition's top-level effects, so a
+ * per-type queue realigns the two arrays without needing the server
+ * side to carry raw SExpr args back.
+ */
+export function overlayServerEffectResults(
+    effectTraces: EffectTrace[],
+    serverResults: readonly ServerEffectResult[],
+): EffectTrace[] {
+    if (serverResults.length === 0) return effectTraces;
+    const queues = new Map<string, ServerEffectResult[]>();
+    for (const result of serverResults) {
+        const queue = queues.get(result.effect);
+        if (queue) queue.push(result);
+        else queues.set(result.effect, [result]);
+    }
+    return effectTraces.map((trace) => {
+        const match = queues.get(trace.type)?.shift();
+        if (!match) return trace;
+        const resultId = match.data && typeof match.data === 'object' && !Array.isArray(match.data)
+            ? (match.data as { id?: string }).id
+            : undefined;
+        const outcome: NonNullable<EffectTrace['outcome']> = match.success
+            ? 'success'
+            : match.denied
+                ? 'denied'
+                : 'failed';
+        return {
+            ...trace,
+            ...(match.entityType !== undefined ? { entityName: match.entityType } : {}),
+            ...(match.action !== undefined && isPersistTraceAction(match.action)
+                ? { action: match.action }
+                : {}),
+            ...(resultId !== undefined ? { resultId } : {}),
+            outcome,
+            status: match.success ? 'executed' as const : 'failed' as const,
+            ...(match.error !== undefined ? { error: match.error } : {}),
+        };
+    });
+}
+
 export function useTraitStateMachine(
     traitBindings: ResolvedTraitBinding[],
     uiSlots: ReturnType<typeof useUISlots>,
@@ -526,6 +595,7 @@ export function useTraitStateMachine(
     // orbital schema) backfills the missing entries.
     const traitConfigsByName = options?.traitConfigsByName;
     const orbitalsByTrait = options?.orbitalsByTrait;
+    const callsiteCaptureChildrenByTrait = options?.callsiteCaptureChildrenByTrait;
 
     // One shared-entity store per running orbital instance (stable across
     // re-renders — see `useSharedEntityStore`'s own ref-backed-instance
@@ -948,7 +1018,10 @@ export function useTraitStateMachine(
      * tick relies on is synchronous and completes within the frame.
      *
      * Returns the events this trait's effects emitted (for the event path's
-     * `recordTransition` ServerResponseTrace).
+     * `recordTransition` ServerResponseTrace) AND the offline-preview
+     * `persistence` handler's real per-effect results (for `recordTransition`'s
+     * `EffectTrace[]` — empty when `syncOnly`/no `persistence` is wired, since
+     * `[runtime]`-only ticks have no persist handler to record against).
      */
     const executeTransitionEffects = useCallback(async (params: {
         binding: ResolvedTraitBinding;
@@ -959,8 +1032,15 @@ export function useTraitStateMachine(
         flushEvent: string;
         syncOnly: boolean;
         log: ReturnType<typeof createLogger>;
-    }): Promise<string[]> => {
-        const { binding, previousState, newState, payload, flushEvent, syncOnly, log } = params;
+        /**
+         * The composing effect's triggering payload, when `binding` is a
+         * JSX-hoisted inline child (`@trait.X`) being re-run under its
+         * embedder's transition — see `reRenderCallsiteCaptureChildren`.
+         * Surfaced on the binding context as `@callsitePayload.<field>`.
+         */
+        callsitePayload?: EventPayload;
+    }): Promise<{ emitted: string[]; serverEffectResults: ServerEffectResult[] }> => {
+        const { binding, previousState, newState, payload, flushEvent, syncOnly, log, callsitePayload } = params;
         const traitName = binding.trait.name;
         const linkedEntity = binding.linkedEntity || '';
         const entityId = payload?.entityId as string | undefined;
@@ -1003,7 +1083,7 @@ export function useTraitStateMachine(
                 (e) => Array.isArray(e) && SYNC_TICK_OPERATORS.has(String(e[0])),
             )
             : params.effects;
-        if (effects.length === 0) return [];
+        if (effects.length === 0) return { emitted: [], serverEffectResults: [] };
 
         const pendingSlots = new Map<string, SlotPatternEntry[]>();
         const slotSource: SlotSource = {
@@ -1056,6 +1136,10 @@ export function useTraitStateMachine(
             // what makes a [runtime] entity's set (from ticks AND events) reach
             // the render-ui + next tick + guards.
             liveEntity,
+            // No local persistence adapter (bridge mode, or a syncOnly tick):
+            // nothing persists client-side, the server owns the write and
+            // reports it — never read the placeholder as a denial.
+            persistDelegated: (syncOnly ? undefined : optionsRef.current?.persistence) === undefined,
         });
 
         // Offline-preview mode: when `persistence` is supplied, layer
@@ -1066,6 +1150,13 @@ export function useTraitStateMachine(
         // Skipped for `syncOnly` ticks (they never run async ops).
         const persistence = syncOnly ? undefined : optionsRef.current?.persistence;
         let handlers: EffectHandlers = clientHandlers;
+        // The offline-preview `persist`/`set`/`fetch`/… handler's REAL
+        // per-effect results (action/entityType/data/success/denied) — the
+        // one place this trait's actual write outcome is observable client-
+        // side. Stays empty when `persistence` isn't wired below (bridge
+        // mode, or a syncOnly tick), so `recordTransition` keeps its
+        // reconstructed `status: 'executed'` traces for those paths.
+        const serverEffectResults: ServerEffectResult[] = [];
         if (persistence) {
             const sharedBindings: BindingContext = {
                 // Seed `@entity` from the trait's scalar field state (a real
@@ -1077,6 +1168,12 @@ export function useTraitStateMachine(
                 payload: payload || {},
                 state: previousState,
             };
+            // Composing payload for a `@trait.X`-embedded child re-run by
+            // `reRenderCallsiteCaptureChildren` — same as the render
+            // `bindingCtx` below.
+            if (callsitePayload) {
+                sharedBindings.callsitePayload = callsitePayload;
+            }
             const sharedDeclared = collectDeclaredConfigDefaults(binding.trait);
             const sharedResolved = traitConfigsByName?.[traitName];
             // Drop unresolved `@config.X` forwards from the raw call-site config
@@ -1085,16 +1182,17 @@ export function useTraitStateMachine(
             // literal `"@config.fields"` here would clobber the resolved array
             // back to a string (the server-handler render path's half of the
             // oscillation the client-handler path already guards against below).
-            // A concrete call-site override (non-forward value) still wins.
+            // A concrete call-site override (non-forward value) still wins. A
+            // `@callsitePayload.<field>` override passes through RAW — it
+            // resolves later through the standard `@config.*` binding-forward
+            // recursion once `sharedBindings.callsitePayload` is populated
+            // above, same as `buildTraitRenderConfig`.
             const sharedCallSiteRaw = getBindingConfig(binding);
             const sharedCallSite = sharedCallSiteRaw
-                ? resolveCallSitePayloadCaptures(
-                    Object.fromEntries(
-                        Object.entries(sharedCallSiteRaw).filter(
-                            ([, v]) => !containsConfigForward(v),
-                        ),
+                ? Object.fromEntries(
+                    Object.entries(sharedCallSiteRaw).filter(
+                        ([, v]) => !containsConfigForward(v),
                     ),
-                    payload || {},
                 )
                 : undefined;
             if (sharedDeclared || sharedResolved || sharedCallSite) {
@@ -1120,6 +1218,7 @@ export function useTraitStateMachine(
                 source: { trait: traitName },
                 // @almadar/runtime callService types params:unknown/Promise<unknown> — should be ServiceParams/EventPayload (upstream fix queued)
                 callService: optionsRef.current?.callService,
+                effectResults: serverEffectResults,
             });
             handlers = {
                 ...serverHandlers,
@@ -1167,11 +1266,17 @@ export function useTraitStateMachine(
             payload: payload || {},
             state: previousState,
         };
+        // The composing effect's triggering payload, for a `@trait.X`-
+        // embedded child re-run by `reRenderCallsiteCaptureChildren` — see
+        // `BindingContext.callsitePayload`.
+        if (callsitePayload) {
+            bindingCtx.callsitePayload = callsitePayload;
+        }
         // The one config merge (declared < resolved < call-site) — see
         // `buildTraitRenderConfig`. The render-time binding source
         // (`EntityBindingContext`) resolves marker expressions against the
         // same merge, so `@config.X` reads identically on both paths.
-        const renderConfig = buildTraitRenderConfig(binding, traitConfigsByName, payload || {});
+        const renderConfig = buildTraitRenderConfig(binding, traitConfigsByName);
         if (renderConfig !== undefined) {
             bindingCtx.config = renderConfig;
         }
@@ -1303,8 +1408,73 @@ export function useTraitStateMachine(
             });
         }
 
-        return emittedDuringExec;
+        return { emitted: emittedDuringExec, serverEffectResults };
     }, [eventBus, flushSlot, sharedEntityStore, publishBindingSnapshot, orbitalsByTrait]);
+
+    /**
+     * Re-run a JSX-hoisted inline child trait's (`@trait.X`) lifecycle
+     * transition under `callsitePayload` — the payload of the transition
+     * that just composed it — so its `@callsitePayload.<field>` captures
+     * (whole-value AND nested inside an S-expression) reflect the composing
+     * event instead of staying frozen at whatever the child captured at its
+     * own mount-time INIT.
+     *
+     * `callsiteCaptureChildrenByTrait` (built by the caller via
+     * `@almadar/core`'s `collectCallsiteCaptureChildren`) gives `traitName`'s
+     * DIRECT children that need this — either because the child itself
+     * captures, or because it is a pass-through to a capturing descendant.
+     * The child's lifecycle event (INIT/LOAD/$MOUNT) is re-dispatched
+     * targeted at just that trait (`StateMachineManager.sendEvent`'s
+     * `targetTrait`) from its CURRENT state — the same guard-aware lookup
+     * the mount effect below uses via `canHandleEvent` — then its effects
+     * run through the same `executeTransitionEffects` the mount path uses,
+     * with `payload: {}` (a lifecycle event carries none) and
+     * `callsitePayload` set so `@callsitePayload.*` resolves. Recurses into
+     * the child's own entry in the same map (still under the SAME
+     * `callsitePayload` — the capture resolves up the embed chain to the
+     * nearest transition that actually has one) for grandchildren; `visited`
+     * guards against a malformed embed graph cycling back on itself.
+     */
+    const reRenderCallsiteCaptureChildren = useCallback(async (
+        traitName: string,
+        callsitePayload: EventPayload,
+        entityByTrait: Record<string, EntityRow>,
+        log: ReturnType<typeof createLogger>,
+        visited: Set<string> = new Set(),
+    ): Promise<void> => {
+        const children = callsiteCaptureChildrenByTrait?.get(traitName);
+        if (!children || children.size === 0) return;
+        const mgr = managerRef.current;
+        const bindingMap = new Map(traitBindingsRef.current.map((b) => [b.trait.name, b]));
+        for (const childName of children) {
+            if (visited.has(childName)) continue;
+            visited.add(childName);
+            const childBinding = bindingMap.get(childName);
+            if (!childBinding) continue;
+            const lifecycleEvent = LIFECYCLE_EVENTS.find((evt) => mgr.canHandleEvent(childName, evt));
+            if (lifecycleEvent === undefined) continue;
+            const [entry] = mgr.sendEvent(lifecycleEvent, {}, undefined, entityByTrait, undefined, childName);
+            if (!entry || !entry.result.executed) continue;
+            log.debug('callsite-capture-child:rerender', {
+                referrer: traitName,
+                child: childName,
+                lifecycleEvent,
+                callsitePayload: JSON.stringify(callsitePayload),
+            });
+            await executeTransitionEffects({
+                binding: childBinding,
+                effects: entry.result.effects,
+                previousState: entry.result.previousState,
+                newState: entry.result.newState,
+                payload: {},
+                flushEvent: lifecycleEvent,
+                syncOnly: false,
+                log,
+                callsitePayload,
+            });
+            await reRenderCallsiteCaptureChildren(childName, callsitePayload, entityByTrait, log, visited);
+        }
+    }, [callsiteCaptureChildrenByTrait, executeTransitionEffects]);
 
     /**
      * Execute a single tick's effects through the SAME canonical executor
@@ -1573,6 +1743,11 @@ export function useTraitStateMachine(
         // Without this, the runtime path silently drops the persist's
         // declared emit.success and serverResponse arrives as null.
         const emittedByTrait = new Map<string, string[]>();
+        // The offline-preview persist handler's real per-effect results for
+        // each trait's transition this dispatch — consumed below to overlay
+        // `recordTransition`'s reconstructed `EffectTrace[]` with the
+        // executor's actual outcome instead of a hard-coded 'executed'.
+        const serverEffectResultsByTrait = new Map<string, ServerEffectResult[]>();
 
         // Fresh dispatch — the previous dispatch's bridge echoes have all
         // arrived (the bridge round-trip is awaited below), so leftovers are
@@ -1654,7 +1829,7 @@ export function useTraitStateMachine(
                 // requires all effects to complete before the next event
                 // is dequeued.
                 const _perfT2 = perfStart('processEvent:executeAll');
-                const emittedDuringExec = await executeTransitionEffects({
+                const { emitted: emittedDuringExec, serverEffectResults: transitionServerEffectResults } = await executeTransitionEffects({
                     binding,
                     // upstream gap: /runtime TransitionResult.effects is unknown[] — they are SExpr at runtime (see Almadar_UI_Gaps.md)
                     effects: result.effects,
@@ -1667,12 +1842,20 @@ export function useTraitStateMachine(
                 });
                 perfEnd('processEvent:executeAll', _perfT2);
                 emittedByTrait.set(traitName, emittedDuringExec);
+                serverEffectResultsByTrait.set(traitName, transitionServerEffectResults);
                 for (const emittedKey of emittedDuringExec) {
                     bridgeEchoPendingRef.current.set(
                         emittedKey,
                         (bridgeEchoPendingRef.current.get(emittedKey) ?? 0) + 1,
                     );
                 }
+                // A JSX-hoisted inline child embedded via `@trait.X`
+                // (`@callsitePayload.<field>` capture) renders once at its
+                // own mount-time INIT and never again — re-run its lifecycle
+                // transition now, under THIS transition's payload, so its
+                // frame reflects the composing event instead of staying
+                // frozen at whatever it captured at mount.
+                await reRenderCallsiteCaptureChildren(traitName, payload ?? {}, entityByTrait, stateLog);
             } else if (!result.executed) {
                 if (result.guardResult === false) {
                     stateLog.debug('guard-blocked-transition', {
@@ -1704,7 +1887,13 @@ export function useTraitStateMachine(
             if (result.executed) {
                 updateTraitState(traitName, result.newState);
                 // upstream gap: /runtime TransitionResult.effects is unknown[] — they are SExpr at runtime (see Almadar_UI_Gaps.md)
-                const effectTraces: EffectTrace[] = result.effects.map(
+                // Reconstructed from the declared SExprs — `type`/`entityName`/
+                // `args` only, `status` defaulted to 'executed'. This is a
+                // structural guess, not the executor's real per-effect
+                // outcome; `overlayServerEffectResults` below replaces it with
+                // the REAL `action`/`resultId`/`outcome`/`status` wherever the
+                // offline-preview persist handler actually ran (see C1-V7).
+                const reconstructedEffectTraces: EffectTrace[] = result.effects.map(
                     (e: SExpr): EffectTrace => {
                         if (Array.isArray(e)) {
                             const head = String(e[0] ?? 'unknown');
@@ -1729,6 +1918,10 @@ export function useTraitStateMachine(
                             status: 'executed' as const,
                         };
                     }
+                );
+                const effectTraces = overlayServerEffectResults(
+                    reconstructedEffectTraces,
+                    serverEffectResultsByTrait.get(traitName) ?? [],
                 );
                 const emittedEvents = emittedByTrait.get(traitName) ?? [];
                 recordTransition({
@@ -1811,7 +2004,7 @@ export function useTraitStateMachine(
         // second use; the summary buckets are what we read).
         perfEnd('processEvent:total', _perfT0);
         perfEnd(`event:${normalizedEvent}`, _perfT0);
-    }, [entities, eventBus, sharedEntityStore]);
+    }, [entities, eventBus, sharedEntityStore, reRenderCallsiteCaptureChildren]);
 
     /**
      * Drain the event queue one entry at a time (actor model).
@@ -2101,7 +2294,7 @@ export function useTraitStateMachine(
         getConfig: (traitName) => {
             const binding = traitBindingsRef.current.find((b) => b.trait.name === traitName);
             if (binding === undefined) return undefined;
-            return buildTraitRenderConfig(binding, traitConfigsByName, {});
+            return buildTraitRenderConfig(binding, traitConfigsByName);
         },
         getState: (traitName) => traitStatesRef.current.get(traitName)?.currentState ?? '',
         subscribe: (traitName, callback) => {

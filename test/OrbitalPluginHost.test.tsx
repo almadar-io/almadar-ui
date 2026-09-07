@@ -10,6 +10,7 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import type { OrbitalSchema } from '@almadar/core';
+import { asEventId } from '@almadar/core';
 import { EventBusProvider } from '../providers/EventBusProvider';
 import { useEventBus, type EventBusContextType } from '../hooks/useEventBus';
 import { UISlotProvider, useUISlots } from '../providers/UISlotContext';
@@ -102,7 +103,7 @@ function cascadeSchema(): OrbitalSchema {
                 { from: 'idle', to: 'idle', event: 'FIRE', effects: [['emit', 'PING', {}]] },
               ],
             },
-            emits: [{ event: 'PING', eventId: 'evt_cascade_ping', scope: 'external' }],
+            emits: [{ event: 'PING', eventId: asEventId('evt_cascade_ping'), scope: 'external' }],
             listens: [{ event: 'FIRE', triggers: 'FIRE' }],
           },
           {
@@ -127,7 +128,7 @@ function cascadeSchema(): OrbitalSchema {
         ],
       },
     ],
-  } as unknown as OrbitalSchema;
+  };
 }
 
 function cascadePlugin(): PluginHostPlugin {
@@ -190,7 +191,7 @@ function relaySchema(): OrbitalSchema {
         ],
       },
     ],
-  } as unknown as OrbitalSchema;
+  };
 }
 
 function relayPlugin(): PluginHostPlugin {
@@ -245,7 +246,7 @@ function sidebarPluginSchema(): OrbitalSchema {
         ],
       },
     ],
-  } as unknown as OrbitalSchema;
+  };
 }
 
 function sidebarPlugin(): PluginHostPlugin {

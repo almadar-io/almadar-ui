@@ -7,10 +7,42 @@ import { renderHook } from '@testing-library/react';
 import React from 'react';
 import { EventBusProvider } from '../providers/EventBusProvider';
 import { useEventBus } from '../hooks/useEventBus';
+import type { EventPayload } from '@almadar/core';
 import { useKeyboardRouter, mergeCaptureTables, keyChord, type KeyCaptureTable, type EditorKeyEvent } from '../hooks/useKeyboardRouter';
 
 function wrapper({ children }: { children?: React.ReactNode }): React.JSX.Element {
   return React.createElement(EventBusProvider, { isolated: true }, children as React.ReactElement);
+}
+
+/** Rebuilds the `EditorKeyEvent` shape `useKeyboardRouter` actually emits
+ *  field-by-field from the bus's generic `EventPayload` — a real typed
+ *  value instead of casting the union (`EventPayload`'s index signature
+ *  keeps it structurally unrelated to the concrete `EditorKeyEvent`
+ *  interface, so no single-step assertion between them exists). */
+function toEditorKeyEvent(payload: EventPayload | undefined): EditorKeyEvent | undefined {
+  if (
+    payload === undefined ||
+    typeof payload.editorId !== 'string' ||
+    typeof payload.key !== 'string' ||
+    typeof payload.code !== 'string' ||
+    typeof payload.ctrl !== 'boolean' ||
+    typeof payload.alt !== 'boolean' ||
+    typeof payload.shift !== 'boolean' ||
+    typeof payload.meta !== 'boolean' ||
+    typeof payload.repeat !== 'boolean'
+  ) {
+    return undefined;
+  }
+  return {
+    editorId: payload.editorId,
+    key: payload.key,
+    code: payload.code,
+    ctrl: payload.ctrl,
+    alt: payload.alt,
+    shift: payload.shift,
+    meta: payload.meta,
+    repeat: payload.repeat,
+  };
 }
 
 function dispatchKeyDown(init: KeyboardEventInit): ReturnType<typeof vi.spyOn> {
@@ -30,7 +62,10 @@ function renderRouterWithBus(captureTable: KeyCaptureTable) {
     },
     { wrapper },
   );
-  result.current.on('UI:KEY', (evt) => received.push(evt.payload as unknown as EditorKeyEvent));
+  result.current.on('UI:KEY', (evt) => {
+    const keyEvent = toEditorKeyEvent(evt.payload);
+    if (keyEvent) received.push(keyEvent);
+  });
   return { bus: result.current, received };
 }
 

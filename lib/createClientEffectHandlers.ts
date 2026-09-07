@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import type { BusEventSource, EventPayload, EntityRow, FieldValue, ServiceParams, PatternConfig } from '@almadar/core';
+import type { BusEventSource, EventPayload, EntityRow, FieldValue, ServiceParams, PatternConfig, ResolvedPatternProps } from '@almadar/core';
 import type { EffectHandlers } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 
@@ -17,7 +17,7 @@ export interface ClientEventBus {
 }
 
 export interface SlotSetter {
-    addPattern: (slot: string, pattern: PatternConfig | null, props?: Record<string, FieldValue | undefined>) => void;
+    addPattern: (slot: string, pattern: PatternConfig | null, props?: ResolvedPatternProps) => void;
     clearSlot: (slot: string) => void;
 }
 
@@ -42,6 +42,17 @@ export interface CreateClientEffectHandlersOptions {
      */
     liveEntity?: EntityRow;
     /**
+     * Bridge mode — no local persistence adapter is wired, so the SERVER
+     * executes every persist and returns its outcome. Sets
+     * `EffectHandlers.persistDelegated` so the executor skips the placeholder
+     * `persist` below instead of reading its `undefined` as a denial
+     * (an error in every browser console + a client-side `failure` emit
+     * while the server had succeeded). The hook decides this from whether a
+     * `persistence` adapter was supplied — `liveEntity` says nothing about
+     * it (the hook always binds one for `(set @entity.X)`).
+     */
+    persistDelegated?: boolean;
+    /**
      * Optional consumer-supplied call-service handler. When set, it runs
      * instead of the default mock fallback — use to wire the playground
      * to real backends. When omitted, `callService` returns a synthetic
@@ -58,7 +69,7 @@ export interface CreateClientEffectHandlersOptions {
 export function createClientEffectHandlers(
     options: CreateClientEffectHandlersOptions
 ): EffectHandlers {
-    const { eventBus, slotSetter, navigate, navigateBack, notify, callService, liveEntity } = options;
+    const { eventBus, slotSetter, navigate, navigateBack, notify, callService, liveEntity, persistDelegated } = options;
 
     return {
         emit: (event: string, payload?: EventPayload, source?: BusEventSource) => {
@@ -76,8 +87,12 @@ export function createClientEffectHandlers(
             eventBus.emit(prefixedEvent, payload, source);
         },
         persist: async () => {
-            log.warn('persist is server-side only, ignored on client');
+            log.debug('persist is server-side only, ignored on client');
         },
+        // Bridge mode: the server runs every persist and the response
+        // carries its outcome — tell the executor so the placeholder above is
+        // never read as a denial (see `EffectHandlers.persistDelegated`).
+        ...(persistDelegated === true ? { persistDelegated: true as const } : {}),
         // @almadar/runtime EffectHandlers.set types value:unknown — should be FieldValue (upstream fix queued)
         set: ((_entityId: string, field: string, value: FieldValue) => {
             // `[runtime]` entities live only in the browser — `(set @entity.X)`
@@ -119,7 +134,7 @@ export function createClientEffectHandlers(
                 ...paramsEcho,
             };
         },
-        renderUI: (slot: string, pattern: PatternConfig | null, props?: Record<string, FieldValue | undefined>) => {
+        renderUI: (slot: string, pattern: PatternConfig | null, props?: ResolvedPatternProps) => {
             if (pattern === null) {
                 slotSetter.clearSlot(slot);
                 return;

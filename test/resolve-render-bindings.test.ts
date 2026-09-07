@@ -51,11 +51,11 @@ describe('resolveRenderBindingMarkers', () => {
   });
 
   it('leaves foreign _sourceTrait subtrees raw for their own renderer', () => {
-    const foreign = {
+    const foreign: SlotPropValue = {
       type: 'typography',
       content: marker('@entity.turn'),
       _sourceTrait: 'SideTurn',
-    } as unknown as SlotPropValue;
+    };
     const props: SlotProps = { children: [foreign] };
     const out = resolveRenderBindingMarkers(props, '__multi_source_stack__', {}, undefined, '');
     const child = (out.children as readonly Record<string, SlotPropValue>[])[0];

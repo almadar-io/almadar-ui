@@ -43,7 +43,7 @@ vi.mock('../OrbPreview', () => ({
 }));
 
 function schema(): OrbitalSchema {
-  return { name: 'App', version: '1.0.0', orbitals: [] } as unknown as OrbitalSchema;
+  return { name: 'App', version: '1.0.0', orbitals: [] };
 }
 
 describe('BrowserPlayground — paused prop', () => {

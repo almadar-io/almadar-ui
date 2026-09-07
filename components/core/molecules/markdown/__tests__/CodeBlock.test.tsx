@@ -16,12 +16,27 @@ import { render, fireEvent, act } from '@testing-library/react';
 import { CodeBlock, EDITOR_MOTIONS, EDITOR_OPERATORS } from '../CodeBlock';
 import { EventBusProvider } from '../../../../../providers/EventBusProvider';
 import { useEventBus, type EventBusContextType } from '../../../../../hooks/useEventBus';
+import { coreTables } from '@almadar/core/i18n';
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <EventBusProvider debug={false}>{children}</EventBusProvider>;
 }
 
 const JSON_CODE = '{\n  "orbital": "Task",\n  "count": 3\n}';
+
+const LOLO_CODE = [
+  'app Shop',
+  '',
+  'entity Product [persistent: products]',
+  '  price: number',
+  '',
+  'trait Cart for Product [interaction]',
+  '  initial idle',
+  '  state idle',
+  '    on ADD -> active',
+  '      (persist create @entity)',
+  '  state active',
+].join('\n');
 
 describe('CodeBlock', () => {
   it('standard mode: tokenizes JSON via SyntaxHighlighter', () => {
@@ -163,6 +178,91 @@ describe('CodeBlock', () => {
       );
       const tokens = container.querySelectorAll('span.token');
       expect(tokens.length).toBeGreaterThan(1);
+    });
+  });
+
+  // Natural-language tabs: the same program rendered in Arabic / Slovenian.
+  describe('naturalLanguages', () => {
+    it('renders exactly as without the prop when it is absent', () => {
+      const plain = render(<Wrapper><CodeBlock code={LOLO_CODE} language="lolo" /></Wrapper>);
+      const withProp = render(<Wrapper><CodeBlock code={LOLO_CODE} language="lolo" naturalLanguages={[]} /></Wrapper>);
+      expect(withProp.container.innerHTML).toBe(plain.container.innerHTML);
+      expect(plain.container.querySelector('[data-testid="codeblock-language-tabs"]')).toBeNull();
+    });
+
+    it('renders exactly as without the prop for a single language', () => {
+      const plain = render(<Wrapper><CodeBlock code={LOLO_CODE} language="lolo" /></Wrapper>);
+      const single = render(<Wrapper><CodeBlock code={LOLO_CODE} language="lolo" naturalLanguages={['ar']} /></Wrapper>);
+      expect(single.container.innerHTML).toBe(plain.container.innerHTML);
+      expect(single.container.textContent).toContain('app Shop');
+    });
+
+    it('shows a tab per language for two or more', () => {
+      const { container } = render(
+        <Wrapper>
+          <CodeBlock code={LOLO_CODE} language="lolo" naturalLanguages={['en', 'ar', 'sl']} />
+        </Wrapper>,
+      );
+      const strip = container.querySelector('[data-testid="codeblock-language-tabs"]');
+      expect(strip).not.toBeNull();
+      expect(strip?.textContent).toContain(coreTables.en.meta.name);
+      expect(strip?.textContent).toContain(coreTables.ar.meta.name);
+      expect(strip?.textContent).toContain(coreTables.sl.meta.name);
+      // First tab wins: the English source renders untranslated.
+      expect(container.textContent).toContain('app Shop');
+    });
+
+    it('switching a tab swaps the rendered text and flips the chrome to RTL', () => {
+      const { container, getByText } = render(
+        <Wrapper>
+          <CodeBlock code={LOLO_CODE} language="lolo" naturalLanguages={['en', 'ar']} />
+        </Wrapper>,
+      );
+      expect(container.textContent).toContain('app Shop');
+      expect(container.textContent).not.toContain('تطبيق');
+
+      fireEvent.click(getByText(coreTables.ar.meta.name));
+
+      expect(container.textContent).toContain('تطبيق');
+      expect(container.textContent).toContain('كيان Product');
+      expect(container.textContent).not.toContain('app Shop');
+      const strip = container.querySelector('[data-testid="codeblock-language-tabs"]');
+      expect(strip?.getAttribute('dir')).toBe('rtl');
+      // Code lines stay LTR — bidi would mirror the s-expression brackets.
+      expect(container.querySelector('[dir="ltr"]')).not.toBeNull();
+    });
+
+    it('translates .orb documents too', () => {
+      const orb = JSON.stringify({ orbitals: [{ name: 'Shop' }] }, null, 2);
+      const { container, getByText } = render(
+        <Wrapper>
+          <CodeBlock code={orb} language="orb" naturalLanguages={['en', 'ar']} />
+        </Wrapper>,
+      );
+      fireEvent.click(getByText(coreTables.ar.meta.name));
+      expect(container.textContent).toContain('مدارات');
+    });
+
+    it('editable wins: no tabs, English source', () => {
+      const { container } = render(
+        <Wrapper>
+          <CodeBlock code={LOLO_CODE} language="lolo" editable naturalLanguages={['en', 'ar']} />
+        </Wrapper>,
+      );
+      expect(container.querySelector('[data-testid="codeblock-language-tabs"]')).toBeNull();
+      const textarea = container.querySelector('textarea');
+      expect(textarea?.value).toBe(LOLO_CODE);
+      expect(container.textContent).not.toContain('تطبيق');
+    });
+
+    it('leaves a non-program language alone', () => {
+      const { container, getByText } = render(
+        <Wrapper>
+          <CodeBlock code={JSON_CODE} language="json" naturalLanguages={['en', 'ar']} />
+        </Wrapper>,
+      );
+      fireEvent.click(getByText(coreTables.ar.meta.name));
+      expect(container.textContent).toContain('"orbital"');
     });
   });
 

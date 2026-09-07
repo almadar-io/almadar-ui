@@ -132,6 +132,47 @@ function parseLifecycleEvent(type: string): {
   return null;
 }
 
+/**
+ * Map the compiled path's raw `effectResults` bus payload (persist / fetch /
+ * call-service outcomes forwarded from the server) onto `EffectTrace[]`.
+ * Exported for unit testing — pure, no React/event-bus dependency.
+ *
+ * The server's `EffectResult` (`OrbitalServerRuntime.ts`) writes
+ * `entityType` — not `entity` — plus `action` / `data.id` / `success` /
+ * `denied`; reading only `er['entity']` (never populated) dropped all of
+ * that, so a denied or failed persist read back here as a plain 'executed'
+ * effect with no entity name.
+ */
+export function mapServerEffectResults(effectResults: ReadonlyArray<EventPayload>): EffectTrace[] {
+  return effectResults.map((er): EffectTrace => {
+    const target = er['entityType'] ?? er['entity'] ?? er['service'];
+    const entityName = typeof target === 'string' && target !== '' ? target : undefined;
+    const rawAction = er['action'];
+    const action = rawAction === 'create' || rawAction === 'update'
+      || rawAction === 'delete' || rawAction === 'batch'
+      ? rawAction
+      : undefined;
+    const data = er['data'];
+    const resultId = data !== null && typeof data === 'object' && !Array.isArray(data)
+      && typeof (data as EventPayload)['id'] === 'string'
+      ? (data as EventPayload)['id'] as string
+      : undefined;
+    const denied = er['denied'] === true;
+    const success = er['success'] !== false;
+    const outcome: EffectTrace['outcome'] = denied ? 'denied' : success ? 'success' : 'failed';
+    return {
+      type: String(er['type'] ?? er['effect'] ?? 'server-effect'),
+      ...(entityName !== undefined ? { entityName } : {}),
+      ...(action !== undefined ? { action } : {}),
+      ...(resultId !== undefined ? { resultId } : {}),
+      outcome,
+      args: entityName !== undefined ? [entityName] : [],
+      status: outcome === 'success' ? 'executed' as const : 'failed' as const,
+      error: er['error'] as string | undefined,
+    };
+  });
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -199,19 +240,15 @@ export function VerificationProvider({
           status: 'executed' as const,
         }));
 
-        // Extract effectResults (persist, fetch, call-service results from server)
-        const effectResults = Array.isArray(payload['effectResults'])
+        // Extract effectResults (persist, fetch, call-service results from
+        // server). The server's `EffectResult` writes `entityType` — not
+        // `entity` — plus `action`/`data.id`/`success`/`denied`; dropping
+        // those left a denied or failed persist reading as a plain
+        // 'executed' effect with no entity name in the verification trace.
+        const effectResultsRaw = Array.isArray(payload['effectResults'])
           ? payload['effectResults'] as Array<EventPayload>
           : [];
-        for (const er of effectResults) {
-          const target = er['entity'] ?? er['service'];
-          effects.push({
-            type: String(er['type'] ?? er['effect'] ?? 'server-effect'),
-            args: typeof target === 'string' && target !== '' ? [target] : [],
-            status: er['error'] ? 'failed' as const : 'executed' as const,
-            error: er['error'] as string | undefined,
-          });
-        }
+        effects.push(...mapServerEffectResults(effectResultsRaw));
 
         // Build data entity counts from response data
         const dataEntities: Record<string, number> = {};

@@ -20,17 +20,33 @@ import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import type { UiError } from '../atoms/types';
-import type { JsonValue } from '@almadar/core';
 
 // ============ Types ============
 
+/** One page's contribution to {@link OrbitalVisualizationSchemaSummary} — only
+ *  a section COUNT feeds the complexity score (`calculateComplexity`); no
+ *  per-section field is ever read, so a count is the honest declared shape. */
+export interface OrbitalVisualizationPageSummary {
+  /** Section count for this page. */
+  sections?: number;
+}
+
+/** A complexity-scoring SUMMARY of a KFlow schema — counts only, never the
+ *  full entity/trait/section objects (`calculateComplexity` reads nothing
+ *  but `.length`/count fields). The caller computes these counts from
+ *  whatever full schema it holds; this component never needs the rows. */
+export interface OrbitalVisualizationSchemaSummary {
+  /** Data-entity count. */
+  dataEntities?: number;
+  ui?: { pages?: OrbitalVisualizationPageSummary[] };
+  /** Trait count. */
+  traits?: number;
+}
+
 export interface OrbitalVisualizationProps {
-  /** Full KFlow schema object */
-  schema?: {
-    dataEntities?: JsonValue[];
-    ui?: { pages?: { sections?: JsonValue[] }[] };
-    traits?: JsonValue[];
-  };
+  /** Complexity-scoring summary of a KFlow schema (counts only — see
+   *  {@link OrbitalVisualizationSchemaSummary}). */
+  schema?: OrbitalVisualizationSchemaSummary;
   /** Direct complexity override (1-100+) */
   complexity?: number;
   /** Size of the visualization */
@@ -145,12 +161,12 @@ function calculateComplexity(
 ): number {
   if (!schema) return 1;
 
-  const entities = schema.dataEntities?.length || 0;
+  const entities = schema.dataEntities || 0;
   const pages = schema.ui?.pages?.length || 0;
-  const traits = schema.traits?.length || 0;
+  const traits = schema.traits || 0;
   const sections =
     schema.ui?.pages?.reduce(
-      (acc, page) => acc + (page.sections?.length || 0),
+      (acc, page) => acc + (page.sections || 0),
       0,
     ) || 0;
 

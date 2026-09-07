@@ -8,7 +8,7 @@
  * Uses useSwipeGesture for gesture detection and useEventBus for event emission.
  */
 import React, { useCallback, useRef, useState } from 'react';
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EntityRow, EventKey, EventPayload } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../atoms/Box';
@@ -23,6 +23,8 @@ export interface SwipeAction {
   icon?: IconInput;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   event: EventKey;
+  /** Payload included with the `event` emit
+   *  @payloadFor event */
   eventPayload?: EventPayload;
 }
 
@@ -31,7 +33,7 @@ export interface SwipeableRowProps {
   rightActions?: SwipeAction[];
   threshold?: number;
   children: React.ReactNode;
-  itemData?: EventPayload;
+  itemData?: EntityRow;
   className?: string;
 }
 

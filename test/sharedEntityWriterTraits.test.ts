@@ -12,12 +12,13 @@
 
 import { describe, it, expect } from 'vitest';
 import { createRef } from 'react';
-import type { ResolvedTrait, ResolvedTraitBinding, ResolvedTraitTick, EventPayload } from '@almadar/core';
+import type { ResolvedTrait, ResolvedTraitBinding, ResolvedTraitTick, EventPayload, EffectTrace } from '@almadar/core';
 import { createEmptyResolvedTrait } from '@almadar/core';
-import type { TraitState } from '@almadar/runtime';
+import type { TraitState, ServerEffectResult } from '@almadar/runtime';
 import {
     effectsCallOp,
     createSharedEntityWriter,
+    overlayServerEffectResults,
     SHARED_ENTITY_WRITE_OPS,
     SHARED_ENTITY_RENDER_OPS,
 } from '../hooks/useTraitStateMachine';
@@ -212,5 +213,106 @@ describe('runTickFrame + createSharedEntityWriter — several writer traits, one
 
         expect(merged).toEqual({ x: 1 });
         expect(emitted).toEqual([{ event: 'ADVANCED', payload: undefined }]);
+    });
+});
+
+describe('overlayServerEffectResults — the executor\'s real outcome onto recordTransition\'s trace (C1-V7)', () => {
+    // `processEventQueued` builds `reconstructedEffectTraces` from the
+    // transition's declared SExprs (status hard-coded 'executed', no
+    // action/resultId/outcome — see useTraitStateMachine.ts). This is
+    // exactly that reconstruction for a `(persist create ApprovalRequest
+    // {...})` effect; `overlayServerEffectResults` is the function that
+    // then feeds the merged array to `recordTransition`.
+    function reconstructedPersistTrace(entityName: string): EffectTrace {
+        return { type: 'persist', entityName, args: ['create', entityName, {}], status: 'executed' };
+    }
+
+    it('a successful persist create carries action/resultId/outcome from the offline-preview handler', () => {
+        const traces = [reconstructedPersistTrace('ApprovalRequest')];
+        // Shape `createServerEffectHandlers`'s `record()` actually pushes on
+        // a successful create (ServerEffectHandlers.ts persist case).
+        const serverResults: ServerEffectResult[] = [{
+            effect: 'persist',
+            action: 'create',
+            entityType: 'ApprovalRequest',
+            data: { id: 'req_1', title: 'Invite Sam' },
+            success: true,
+        }];
+
+        const merged = overlayServerEffectResults(traces, serverResults);
+
+        expect(merged).toEqual([{
+            type: 'persist',
+            entityName: 'ApprovalRequest',
+            args: ['create', 'ApprovalRequest', {}],
+            action: 'create',
+            resultId: 'req_1',
+            outcome: 'success',
+            status: 'executed',
+        }]);
+    });
+
+    it('a denied persist reports outcome:"denied" and status:"failed", not the reconstructed "executed"', () => {
+        const traces = [reconstructedPersistTrace('LeaveRequest')];
+        const serverResults: ServerEffectResult[] = [{
+            effect: 'persist',
+            action: 'update',
+            entityType: 'LeaveRequest',
+            success: false,
+            denied: true,
+            error: 'persist update LeaveRequest resolved no row key',
+        }];
+
+        const merged = overlayServerEffectResults(traces, serverResults);
+
+        expect(merged[0]).toMatchObject({
+            outcome: 'denied',
+            status: 'failed',
+            error: 'persist update LeaveRequest resolved no row key',
+        });
+        expect(merged[0].resultId).toBeUndefined();
+    });
+
+    it('a non-denied failure (thrown store error) reports outcome:"failed"', () => {
+        const traces = [reconstructedPersistTrace('Asset')];
+        const serverResults: ServerEffectResult[] = [{
+            effect: 'persist',
+            action: 'delete',
+            entityType: 'Asset',
+            success: false,
+            error: 'store unavailable',
+        }];
+
+        const merged = overlayServerEffectResults(traces, serverResults);
+
+        expect(merged[0].outcome).toBe('failed');
+        expect(merged[0].status).toBe('failed');
+    });
+
+    it('no server results (in-memory [runtime] tick, or a non-persistence trait) returns the traces untouched', () => {
+        const traces = [reconstructedPersistTrace('X')];
+
+        const merged = overlayServerEffectResults(traces, []);
+
+        expect(merged).toBe(traces);
+        expect(merged[0].outcome).toBeUndefined();
+    });
+
+    it('two persists in one transition realign in dispatch order, and an emit trace passes through', () => {
+        const traces: EffectTrace[] = [
+            reconstructedPersistTrace('ApprovalRequest'),
+            { type: 'emit', args: ['APPROVAL_REQUESTED'], status: 'executed' },
+            reconstructedPersistTrace('AuditLog'),
+        ];
+        const serverResults: ServerEffectResult[] = [
+            { effect: 'persist', action: 'create', entityType: 'ApprovalRequest', data: { id: 'ar_1' }, success: true },
+            { effect: 'persist', action: 'create', entityType: 'AuditLog', data: { id: 'log_1' }, success: true },
+        ];
+
+        const merged = overlayServerEffectResults(traces, serverResults);
+
+        expect(merged[0]).toMatchObject({ entityName: 'ApprovalRequest', resultId: 'ar_1', outcome: 'success' });
+        expect(merged[1]).toEqual({ type: 'emit', args: ['APPROVAL_REQUESTED'], status: 'executed' });
+        expect(merged[2]).toMatchObject({ entityName: 'AuditLog', resultId: 'log_1', outcome: 'success' });
     });
 });

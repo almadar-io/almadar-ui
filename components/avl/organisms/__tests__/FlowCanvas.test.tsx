@@ -19,7 +19,7 @@ beforeAll(() => {
     unobserve() {}
     disconnect() {}
   }
-  (globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver = ResizeObserverStub;
+  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
 });
 
 const schema: OrbitalSchema = {

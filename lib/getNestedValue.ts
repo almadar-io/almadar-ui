@@ -1,4 +1,4 @@
-import { isFileValue, type EventPayload, type FieldValue } from '@almadar/core';
+import { isFileValue, type FieldValue } from '@almadar/core';
 
 /**
  * Get Nested Value Utility
@@ -10,46 +10,13 @@ import { isFileValue, type EventPayload, type FieldValue } from '@almadar/core';
  */
 
 /**
- * Get a nested value from an object using dot-notation path.
- *
- * @param obj - The object to traverse
- * @param path - Dot-notation path (e.g., "company.name", "address.city")
- * @returns The value at the path, or undefined if not found
- *
- * @example
- * const data = { company: { name: "Acme Corp", address: { city: "NYC" } } };
- * getNestedValue(data, "company.name");         // => "Acme Corp"
- * getNestedValue(data, "company.address.city"); // => "NYC"
- * getNestedValue(data, "company.missing");      // => undefined
+ * Get a nested value from an object using a dot-notation path (e.g.
+ * `"company.name"`, `"address.city"`). Single owner moved to
+ * `@almadar/core/lib/get-nested-value` (Stage B B1-F) — emitted SERVER code
+ * cannot import this render-substrate package, so the shared implementation
+ * lives upstream. Re-exported here for `@almadar/ui`'s own consumers.
  */
-export function getNestedValue(
-  obj: EventPayload | Record<string, FieldValue | undefined> | null | undefined,
-  path: string
-): FieldValue | undefined {
-  if (obj === null || obj === undefined || !path) {
-    return undefined;
-  }
-
-  // Fast path: no dots means simple property access
-  if (!path.includes('.')) {
-    return (obj as Record<string, FieldValue | undefined>)[path];
-  }
-
-  const parts = path.split('.');
-  let value: Record<string, FieldValue> | FieldValue = obj as Record<string, FieldValue>;
-
-  for (const part of parts) {
-    if (value === null || value === undefined) {
-      return undefined;
-    }
-    if (typeof value !== 'object' || Array.isArray(value)) {
-      return undefined;
-    }
-    value = (value as Record<string, FieldValue>)[part];
-  }
-
-  return value as FieldValue | undefined;
-}
+export { getNestedValue } from '@almadar/core';
 
 /**
  * Resolve a field value that may be a raw URL string (legacy `image`/`url` fields) or a

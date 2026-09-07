@@ -246,14 +246,22 @@ export function getTransitionsForTrait(traitName: string): TransitionTrace[] {
  * Record a server response as a timeline entry.
  * Creates a synthetic transition entry with type "server-response" to show
  * what the server returned (clientEffects, data counts, emitted events).
+ *
+ * `effectResults` — the server's persist/set/call-service outcomes, already
+ * mapped to `EffectTrace` by the caller — populate `entry.effects` so a
+ * denied or failed persist is visible on this synthetic entry too. Before
+ * this it was always `[]`: the ONLY entry the driver's per-event
+ * `server:<orbital>` lookup (`default-snapshot.ts`'s `lastEffectResultsFor`)
+ * can find carried nothing.
  */
 export function recordServerResponse(
   orbitalName: string,
   event: string,
-  response: Omit<ServerResponseTrace, "orbitalName" | "timestamp">,
+  response: Omit<ServerResponseTrace, "orbitalName" | "timestamp"> & { effectResults?: EffectTrace[] },
 ): void {
+  const { effectResults, ...responseFields } = response;
   const serverResponse: ServerResponseTrace = {
-    ...response,
+    ...responseFields,
     orbitalName,
     timestamp: Date.now(),
   };
@@ -264,7 +272,7 @@ export function recordServerResponse(
     from: "server",
     to: "server",
     event,
-    effects: [],
+    effects: effectResults ?? [],
     serverResponse,
     timestamp: Date.now(),
   };

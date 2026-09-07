@@ -23,8 +23,8 @@ import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots, type SlotProps } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
-import type { OrbitalSchema, EntityData, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, TraitRef } from '@almadar/core';
-import { buildResolvedTraitConfigs } from '@almadar/core';
+import type { OrbitalSchema, EntityData, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, OrbitalDefinition, TraitRef } from '@almadar/core';
+import { buildResolvedTraitConfigs, collectCallsiteCaptureChildren } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { matchPathAmong } from '../providers/navigation';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
@@ -40,6 +40,8 @@ import { NavStackProvider, useNavStack, type NavStackApi, type NavPageDecl } fro
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from '../lib/prepareSchemaForPreview';
 import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
+// Server-only shape (action/entityType/data/denied) — see ServerBridge.tsx.
+import type { ServerEffectResult } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital cascade tracing on
@@ -79,6 +81,35 @@ function normalizeChild(child: PatternNode | string | null | readonly PatternNod
     type,
     props: { ...rest, ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}) },
   } as PatternNode;
+}
+
+/**
+ * Map the server's `ServerEffectResult[]` (`OrbitalServerRuntime.EffectResult`,
+ * JSON-serialized over the bridge) onto core's `EffectTrace[]` for
+ * `recordServerResponse`. Carries the real persist outcome — entity, action,
+ * resulting id, `denied` — onto the synthetic `server:<orbital>` timeline
+ * entry so `assertDataMutation` can read it instead of a row-count delta.
+ */
+function effectResultsToTraces(results: ServerEffectResult[] | undefined): EffectTrace[] {
+  if (!results) return [];
+  return results.map((r): EffectTrace => {
+    const resultId = r.data !== undefined && r.data !== null && 'id' in r.data && typeof r.data.id === 'string'
+      ? r.data.id
+      : undefined;
+    const outcome: EffectTrace['outcome'] = r.denied ? 'denied' : r.success ? 'success' : 'failed';
+    return {
+      type: r.effect,
+      ...(r.entityType !== undefined ? { entityName: r.entityType } : {}),
+      ...(r.action !== undefined && (r.action === 'create' || r.action === 'update' || r.action === 'delete' || r.action === 'batch')
+        ? { action: r.action }
+        : {}),
+      ...(resultId !== undefined ? { resultId } : {}),
+      outcome,
+      args: [],
+      status: outcome === 'success' ? 'executed' : 'failed',
+      error: r.error,
+    };
+  });
 }
 
 /**
@@ -244,7 +275,7 @@ function NavStackRefBridge({ apiRef }: { apiRef: React.MutableRefObject<NavStack
   return null;
 }
 
-function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, serverActiveTraits, children }: {
+function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, serverActiveTraits, children }: {
   traits: ResolvedTraitBinding[];
   /** Route params from a parameterized page path — merged into every INIT payload. */
   routeParams?: Record<string, string>;
@@ -276,6 +307,13 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
    * Mirrors compiled-path codegen semantics.
    */
   embeddedTraits?: ReadonlySet<string>;
+  /**
+   * Referrer trait name → the DIRECT children (via `@trait.X`) that need
+   * their lifecycle transition re-run under the referrer's payload whenever
+   * the referrer's own transition fires — forwarded to
+   * `useTraitStateMachine`'s `reRenderCallsiteCaptureChildren`.
+   */
+  callsiteCaptureChildrenByTrait?: ReadonlyMap<string, ReadonlySet<string>>;
   /**
    * Page-scoped execution set (`collectServerActiveTraits`): mounted closure
    * + pageless lifecycle traits. Rides every bridge send as
@@ -361,15 +399,15 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
       // continues here, and the bridge's command pump keeps the applications
       // in dispatch order (request N+1 leaves only after response N landed).
       void bridge.sendEvent(name, event, withActiveTraits(payload)).then(({ effects, meta }) => {
-        recordServerResponse(name, event, meta);
+        recordServerResponse(name, event, { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
         applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);
       });
     }
   }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits]);
 
   const opts = orbitalNames
-    ? { onEventProcessed, navigate: onNavigate, navigateBack: onNavigateBack, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams }
-    : { navigate: onNavigate, navigateBack: onNavigateBack, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams };
+    ? { onEventProcessed, navigate: onNavigate, navigateBack: onNavigateBack, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams }
+    : { navigate: onNavigate, navigateBack: onNavigateBack, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams };
   const { sendEvent, entityBindingSource } = useTraitStateMachine(traits, uiSlots, opts);
 
   const initSentRef = useRef(false);
@@ -432,7 +470,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
         const { effects, meta } = await bridge.sendEvent(name, 'INIT', withActiveTraits({ ...(routeParams ?? {}) }));
 
         // Record server response in verification timeline
-        recordServerResponse(name, 'INIT', meta);
+        recordServerResponse(name, 'INIT', { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
 
         const effectTraces: EffectTrace[] = [
           { type: 'fetch', args: [], status: 'executed' as const },
@@ -681,6 +719,26 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
     [schema],
   );
 
+  // Referrer trait name → the DIRECT children (via `@trait.X`) that need
+  // their lifecycle transition re-run under the referrer's payload whenever
+  // the referrer's own transition fires (`@almadar/core`'s
+  // `collectCallsiteCaptureChildren`, threaded to `useTraitStateMachine`'s
+  // `reRenderCallsiteCaptureChildren`). Merged across every orbital in the
+  // schema, same flattening `orbitalsByTrait`/`traitConfigsByName` use —
+  // trait names are unique within one running schema.
+  const callsiteCaptureChildrenByTrait = useMemo<ReadonlyMap<string, ReadonlySet<string>>>(() => {
+    const merged = new Map<string, ReadonlySet<string>>();
+    const orbitals: OrbitalDefinition[] | undefined = schema?.orbitals;
+    if (orbitals) {
+      for (const orbital of orbitals) {
+        for (const [referrer, children] of collectCallsiteCaptureChildren(orbital)) {
+          merged.set(referrer, children);
+        }
+      }
+    }
+    return merged;
+  }, [schema]);
+
   // V2 Phase 6: EntityStore is gone. Standalone-preview (no serverUrl) with
   // `mockData` no longer hydrates a shared store; mock data now flows through
   // the event bus the same way a real server response does — i.e. traits
@@ -741,6 +799,7 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
           traitConfigsByName={traitConfigsByName}
           orbitalsByTrait={orbitalsByTrait}
           embeddedTraits={embeddedTraits}
+          callsiteCaptureChildrenByTrait={callsiteCaptureChildrenByTrait}
           serverActiveTraits={serverActiveTraits}
           onNavigate={onNavigate}
           onNavigateBack={onNavigateBack}

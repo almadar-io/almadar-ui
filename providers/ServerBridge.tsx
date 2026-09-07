@@ -22,6 +22,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback, us
 import type { ReactNode } from 'react';
 import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr } from '@almadar/core';
 import type { AnyPatternConfig } from '@almadar/core/patterns';
+import type { ServerEffectResult } from '@almadar/runtime';
 import { useEventBus } from '../hooks/useEventBus';
 import type { EventBusContextType } from '../types/event-bus-types';
 import { createTickSendRelay, type TickSendRelay } from '../lib/tick-send-relay';
@@ -211,6 +212,14 @@ interface OrbitalEventResponse {
    * to legacy `clientEffects` parsing on older servers.
    */
   clientEffectsByTrait?: Array<{ traitName: string; effect: ClientEffectTuple }>;
+  /**
+   * Results from server-side effects (persist, call-service, set, …) —
+   * `ServerEffectResult`, JSON-serialized. Carries the
+   * persist effect's real outcome (action, entity, resulting id, denied)
+   * so the verification trace can read it instead of inferring success
+   * from a row-count delta.
+   */
+  effectResults?: ServerEffectResult[];
   error?: string;
 }
 
@@ -239,6 +248,8 @@ export interface ServerResponseMeta {
   /** Raw entity data from server response (for EntityStore advancement) */
   data?: Record<string, EntityRow[]>;
   emittedEvents: string[];
+  /** Server-side effect outcomes — see `OrbitalEventResponse.effectResults`. */
+  effectResults?: ServerEffectResult[];
   error?: string;
 }
 
@@ -497,6 +508,7 @@ export function ServerBridgeProvider({
         dataEntities,
         data: responseData,
         emittedEvents: result.emittedEvents?.map((e) => e.event) ?? [],
+        effectResults: result.effectResults,
         error: result.error,
       };
 

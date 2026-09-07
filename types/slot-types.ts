@@ -11,7 +11,7 @@
  * @packageDocumentation
  */
 
-import type { PatternConfig, EventSource, ResolvedTrait, FieldValue, SExpr } from '@almadar/core';
+import type { PatternConfig, EventSource, ResolvedTrait, FieldValue, SExpr, ResolvedPatternProps } from '@almadar/core';
 import type { SlotPropValue } from '../hooks/useUISlots';
 import { createLogger } from '@almadar/logger';
 
@@ -47,7 +47,7 @@ export function refId(obj: SlotPropValue | null | undefined): number | null {
  */
 export interface SlotPatternEntry {
   pattern: PatternConfig;
-  props: Record<string, FieldValue | undefined>;
+  props: ResolvedPatternProps;
 }
 
 /**

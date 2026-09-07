@@ -34,7 +34,8 @@ import type { UiError } from '../../atoms/types';
 // extensions here makes both code paths work.
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-light.js';
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js';
-import { orbLanguage, loloLanguage, ORB_COLORS } from '@almadar/syntax';
+import { orbLanguage, loloLanguage, ORB_COLORS, translateLolo, translateOrb } from '@almadar/syntax';
+import { coreTables, type LanguageCode } from '@almadar/core/i18n';
 
 // PrismLight requires explicit language registration.
 // Import common languages used in markdown code blocks.
@@ -513,6 +514,15 @@ export interface CodeBlockProps {
   wordWrap?: boolean;
   /** Multiple files shown as tabs */
   files?: readonly CodeViewerFile[];
+  /**
+   * Show the program in these natural languages as tabs, translating on the
+   * fly. Only meaningful for `language` 'lolo' / 'orb'; ignored otherwise.
+   *
+   * Fewer than two entries renders exactly as without the prop. `editable`
+   * wins: editing a translation is not a thing, so the English source is
+   * shown and this is ignored.
+   */
+  naturalLanguages?: readonly LanguageCode[];
   /** Action badges in the toolbar */
   actions?: readonly CodeViewerAction[];
   /** Loading state */
@@ -705,6 +715,22 @@ const VIEWER_LINE_NUMBER_STYLE: React.CSSProperties = {
   fontVariantNumeric: 'tabular-nums',
 };
 
+/**
+ * English → native rendering of the displayed program. Only `.lolo` and
+ * `.orb` carry a vocabulary; every other language passes through, as does a
+ * `.orb` string that does not parse (`translateOrb` degrades to "translate
+ * nothing" rather than throwing).
+ */
+function translateProgram(source: string, language: string, lang: LanguageCode): string {
+  if (lang === 'en') return source;
+  if (language === 'lolo') return translateLolo(source, lang);
+  if (language === 'orb') {
+    const translated = translateOrb(source, lang);
+    return typeof translated === 'string' ? translated : source;
+  }
+  return source;
+}
+
 export const CodeBlock = React.memo<CodeBlockProps>(
   ({
     code: rawCode,
@@ -726,6 +752,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     showLineNumbers = false,
     wordWrap = false,
     files,
+    naturalLanguages,
     actions,
     isLoading = false,
     error,
@@ -775,7 +802,59 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     // `motions`/`operators` document the vocabulary this instance accepts;
     // enforcement lives at the emitting plugin, not here (P1 E3).
     void motions; void operators;
-    const code = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
+    const englishCode = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
+
+    // ── Natural-language tabs (opt-in) ────────────────────────────────────
+    // Fewer than two languages is today's rendering byte for byte, and
+    // `editable` wins over the prop rather than throwing.
+    const naturalTabs = !editable && naturalLanguages && naturalLanguages.length > 1
+      ? naturalLanguages
+      : undefined;
+    const [naturalLanguage, setNaturalLanguage] = useState<LanguageCode>(() => naturalTabs?.[0] ?? 'en');
+    const activeNaturalLanguage: LanguageCode = naturalTabs?.includes(naturalLanguage) === true
+      ? naturalLanguage
+      : (naturalTabs?.[0] ?? 'en');
+    // One translation per (source, language), kept across tab switches — a
+    // re-render, or coming back to a tab, must never re-run the renderer.
+    const translationCache = useMemo(() => new Map<string, string>(), [englishCode, files]);
+    const translateFor = useCallback(
+      (source: string, sourceLanguage: string, cacheKey: string): string => {
+        if (activeNaturalLanguage === 'en') return source;
+        const key = `${cacheKey}|${sourceLanguage}|${activeNaturalLanguage}`;
+        const hit = translationCache.get(key);
+        if (hit !== undefined) return hit;
+        const translated = translateProgram(source, sourceLanguage, activeNaturalLanguage);
+        translationCache.set(key, translated);
+        return translated;
+      },
+      [translationCache, activeNaturalLanguage],
+    );
+    const code = translateFor(englishCode, language, 'code');
+    // Code stays LTR even in Arabic: bidi mirrors brackets and floats each
+    // line's leading `(` to the right edge, which destroys s-expression and
+    // indentation structure. Only the tab chrome flips.
+    const naturalTabItems: TabItem[] | undefined = naturalTabs?.map((lang) => ({
+      id: `lang-${lang}`,
+      label: coreTables[lang].meta.name,
+      content: null,
+    }));
+    const naturalTabStrip = naturalTabs && naturalTabItems ? (
+      <Box
+        className="border-b border-border"
+        dir={coreTables[activeNaturalLanguage].meta.rtl ? 'rtl' : 'ltr'}
+        data-testid="codeblock-language-tabs"
+      >
+        <Tabs
+          tabs={naturalTabItems}
+          activeTab={`lang-${activeNaturalLanguage}`}
+          onTabChange={(id) => {
+            const next = naturalTabs.find((lang) => `lang-${lang}` === id);
+            if (next) setNaturalLanguage(next);
+          }}
+        />
+      </Box>
+    ) : null;
+
     const activeStyle = resolveHighlightStyle(language);
     const overCapacity = code.length > HIGHLIGHT_CAPACITY_BYTES;
     const plainCodeColor = plainCodeColorOf(activeStyle);
@@ -791,8 +870,10 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const [activeFileIndex, setActiveFileIndex] = useState(0);
 
     const activeFile = files?.[activeFileIndex];
-    const activeCode = activeFile?.code ?? code;
     const activeLanguage: string = activeFile?.language ?? language;
+    const activeCode = activeFile
+      ? translateFor(activeFile.code, activeLanguage, `file-${activeFileIndex}`)
+      : code;
     // Single readiness check covers all three branches: `activeLanguage`
     // equals `language` whenever `files` isn't used (standard/editable), and
     // resolves the selected file's own grammar when it is (viewer).
@@ -1403,6 +1484,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       return (
         <Card className={cn('overflow-hidden', className)}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {naturalTabStrip}
             {tabItems && tabItems.length > 1 && (
               <Box className="border-b border-border">
                 <Tabs
@@ -1463,7 +1545,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 ))}
               </HStack>
             </HStack>
-            <Box className="overflow-auto bg-muted/20" style={{ maxHeight }}>
+            <Box className="overflow-auto bg-muted/20" style={{ maxHeight }} dir="ltr">
               {diffLines ? (
                 <div style={{ display: 'flex', flexDirection: 'column' }} className="font-mono text-xs">
                   {diffRowElements}
@@ -1510,6 +1592,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
             )}
           </HStack>
         )}
+        {naturalTabStrip}
 
         {/* Code content */}
         {editable ? (
@@ -1657,6 +1740,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           <div
             ref={scrollRef}
             onCopy={handleSelectionCopy}
+            dir="ltr"
             style={{
               flex: 1,
               minHeight: 0,
@@ -1693,6 +1777,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.title === next.title &&
     prev.diff === next.diff &&
     prev.files === next.files &&
+    prev.naturalLanguages === next.naturalLanguages &&
     prev.actions === next.actions &&
     prev.isLoading === next.isLoading &&
     prev.error === next.error &&

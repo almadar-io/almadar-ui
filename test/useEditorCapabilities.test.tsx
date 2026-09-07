@@ -16,6 +16,15 @@ import type { EditorCaret } from '../components/core/molecules/markdown/CodeBloc
 const INITIAL = 'hello world\nfoo bar';
 const EVENTS = { onMotion: 'MOTION', onOperate: 'OPERATE', onInsertText: 'INSERT_TEXT', onSetMode: 'SET_MODE' };
 
+// Test-only escape hatch — flips the harness's focus state without adding
+// UI just for this. Declared as a real Window augmentation instead of a
+// per-use cast.
+declare global {
+  interface Window {
+    __setFocused?: (v: boolean) => void;
+  }
+}
+
 function Harness({
   editorId,
   applyChange,
@@ -45,7 +54,7 @@ function Wrapper({
   const [focused, setFocused] = useState(false);
   useEffect(() => {
     // exposed on window so tests can flip focus without adding UI just for this
-    (window as unknown as { __setFocused?: (v: boolean) => void }).__setFocused = setFocused;
+    window.__setFocused = setFocused;
   }, []);
   return <Harness editorId={editorId} applyChange={applyChange} focused={focused} apiRef={apiRef} />;
 }
@@ -65,7 +74,8 @@ function renderHarness(editorId: string | undefined) {
     </EventBusProvider>,
   );
   const ta = screen.getByTestId('ta') as HTMLTextAreaElement;
-  const setFocused = (window as unknown as { __setFocused: (v: boolean) => void }).__setFocused;
+  const setFocused = window.__setFocused;
+  if (!setFocused) throw new Error('Wrapper effect did not set window.__setFocused');
   return { applyChange, bus, ta, apiRef, setFocused };
 }
 
