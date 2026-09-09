@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../../lib/cn";
 import type { IconInput } from "../atoms/Icon";
@@ -21,6 +21,30 @@ export interface NavItem {
   icon?: IconInput;
   badge?: string | number;
   children?: NavItem[];
+}
+
+/**
+ * The single href that should read as "active" for currentPath, across the
+ * whole nav tree (nav is capped at depth 2, so this walks root items + their
+ * direct children only). Exact match wins outright; otherwise the LONGEST
+ * prefix match wins. Without this, a parent whose own href is a literal path
+ * prefix of a sibling's href (e.g. "Library" -> "/assets" next to "Versions"
+ * -> "/assets/revisions") matches both independently and highlights
+ * together — every nav item computing its own activeness via
+ * `currentPath.startsWith(href + "/")` in isolation has no way to know a
+ * more specific sibling also matched.
+ */
+function resolveActiveNavHref(items: NavItem[], currentPath: string): string | undefined {
+  let best: string | undefined;
+  for (const item of items) {
+    for (const href of item.children?.length ? [item.href, ...item.children.map((c) => c.href)] : [item.href]) {
+      if (currentPath === href) return href;
+      if (currentPath.startsWith(href + "/") && (!best || href.length > best.length)) {
+        best = href;
+      }
+    }
+  }
+  return best;
 }
 
 export interface NotificationItem {
@@ -224,6 +248,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   // unconditionally, and that empty default must not shadow the context.
   const ctxPagePath = useCurrentPagePath();
   const activePath = (currentPath || undefined) ?? ctxPagePath ?? location.pathname;
+  const activeHref = useMemo(() => resolveActiveNavHref(navItems, activePath), [navItems, activePath]);
 
   // Get user and signOut from auth context (with prop overrides)
   const { user: authUser, signOut: authSignOut } = useAuthContext();
@@ -341,7 +366,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <NavLink
                 key={item.href}
                 item={item}
-                currentPath={activePath}
+                activeHref={activeHref}
                 compact={isRail}
               />
             ))}
@@ -422,7 +447,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     <NavLinkTopnav
                       key={item.href}
                       item={item}
-                      currentPath={activePath}
+                      activeHref={activeHref}
                     />
                   ))}
                 </HStack>
@@ -599,7 +624,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <NavLinkBottom
                   key={item.href}
                   item={item}
-                  currentPath={activePath}
+                  activeHref={activeHref}
                 />
               ))}
             </HStack>
@@ -613,13 +638,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 DashboardLayout.displayName = "DashboardLayout";
 
 // NavLink component
-const NavLink: React.FC<{ item: NavItem; currentPath: string; compact?: boolean }> = ({
+const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean }> = ({
   item,
-  currentPath,
+  activeHref,
   compact = false,
 }) => {
-  const isActive =
-    currentPath === item.href || currentPath.startsWith(item.href + "/");
+  const hasChildren = !!item.children?.length;
+  const childActive = hasChildren && item.children!.some((child) => child.href === activeHref);
+  const isActive = item.href === activeHref || childActive;
+  // Starts expanded when a child route is already active, so landing on a
+  // nested page doesn't hide the group it belongs to.
+  const [open, setOpen] = useState(childActive);
 
   const iconClassName = cn(
     "h-5 w-5",
@@ -632,6 +661,85 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string; compact?: boolean 
   // accessible name, a badge rides the icon's corner so counts stay visible.
   // An icon-less item shows its label's first letter so it never disappears.
   if (compact) {
+    if (hasChildren) {
+      return (
+        <Box className="relative">
+          <Button
+            variant="ghost"
+            title={item.label}
+            aria-label={item.label}
+            aria-expanded={open}
+            className={cn(
+              "flex items-center justify-center w-full px-2 py-2 rounded-lg transition-colors",
+              isActive
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+            onClick={() => setOpen(!open)}
+          >
+            <Box as="span" className="relative inline-flex">
+              {item.icon ? (
+                typeof item.icon === 'string'
+                  ? <AlmadarIcon name={item.icon} className={iconClassName} />
+                  : <item.icon className={iconClassName} />
+              ) : (
+                <Typography variant="small" className="font-semibold" as="span">
+                  {item.label.charAt(0).toUpperCase()}
+                </Typography>
+              )}
+              {item.badge && (
+                <Badge
+                  variant={isActive ? "primary" : "default"}
+                  size="sm"
+                  className="absolute -top-2 -right-2 px-1 py-0 text-[10px] leading-4"
+                >
+                  {item.badge}
+                </Badge>
+              )}
+            </Box>
+          </Button>
+
+          {open && (
+            <>
+              <Box className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+              <Box className="absolute left-full top-0 ml-2 w-48 bg-card dark:bg-card rounded-lg shadow-lg border border-border dark:border-border py-1 z-30">
+                {item.children!.map((child) => {
+                  const childIsActive = child.href === activeHref;
+                  return (
+                    <Link
+                      key={child.href}
+                      to={child.href}
+                      onClick={() => setOpen(false)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 text-sm transition-colors",
+                        childIsActive
+                          ? "bg-muted text-foreground font-medium"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      {child.icon && (
+                        typeof child.icon === 'string'
+                          ? <AlmadarIcon name={child.icon} className="h-4 w-4" />
+                          : <child.icon className="h-4 w-4" />
+                      )}
+                      <Typography variant="small" className="flex-1" as="span">
+                        {child.label}
+                      </Typography>
+                      {child.badge && (
+                        <Badge variant={childIsActive ? "primary" : "default"} size="sm">
+                          {child.badge}
+                        </Badge>
+                      )}
+                    </Link>
+                  );
+                })}
+              </Box>
+            </>
+          )}
+        </Box>
+      );
+    }
+
     return (
       <Link
         to={item.href}
@@ -665,6 +773,89 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string; compact?: boolean 
           )}
         </Box>
       </Link>
+    );
+  }
+
+  if (hasChildren) {
+    return (
+      <Box>
+        <Button
+          variant="ghost"
+          aria-expanded={open}
+          className={cn(
+            "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+            isActive
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+          onClick={() => setOpen(!open)}
+        >
+          {item.icon && (
+            typeof item.icon === 'string'
+              ? <AlmadarIcon name={item.icon} className={iconClassName} />
+              : <item.icon className={iconClassName} />
+          )}
+          <Typography
+            variant="small"
+            color={isActive ? 'inherit' : 'primary'}
+            className="flex-1 text-left"
+            as="span"
+          >
+            {item.label}
+          </Typography>
+          {item.badge && (
+            <Badge variant={isActive ? "primary" : "default"} size="sm">
+              {item.badge}
+            </Badge>
+          )}
+          <AlmadarIcon
+            name="chevron-down"
+            className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")}
+          />
+        </Button>
+
+        {open && (
+          <VStack
+            gap="none"
+            className="mt-1 ml-4 pl-4 border-l border-border dark:border-border space-y-1"
+          >
+            {item.children!.map((child) => {
+              const childIsActive = child.href === activeHref;
+              return (
+                <Link
+                  key={child.href}
+                  to={child.href}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+                    childIsActive
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {child.icon && (
+                    typeof child.icon === 'string'
+                      ? <AlmadarIcon name={child.icon} className="h-4 w-4" />
+                      : <child.icon className="h-4 w-4" />
+                  )}
+                  <Typography
+                    variant="small"
+                    color={childIsActive ? 'inherit' : 'primary'}
+                    className="flex-1"
+                    as="span"
+                  >
+                    {child.label}
+                  </Typography>
+                  {child.badge && (
+                    <Badge variant={childIsActive ? "primary" : "default"} size="sm">
+                      {child.badge}
+                    </Badge>
+                  )}
+                </Link>
+              );
+            })}
+          </VStack>
+        )}
+      </Box>
     );
   }
 
@@ -703,12 +894,88 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string; compact?: boolean 
 NavLink.displayName = "NavLink";
 
 // Topnav nav link — compact horizontal style
-const NavLinkTopnav: React.FC<{ item: NavItem; currentPath: string }> = ({
+const NavLinkTopnav: React.FC<{ item: NavItem; activeHref?: string }> = ({
   item,
-  currentPath,
+  activeHref,
 }) => {
-  const isActive =
-    currentPath === item.href || currentPath.startsWith(item.href + "/");
+  const hasChildren = !!item.children?.length;
+  const childActive = hasChildren && item.children!.some((child) => child.href === activeHref);
+  const isActive = item.href === activeHref || childActive;
+  const [open, setOpen] = useState(false);
+
+  if (hasChildren) {
+    return (
+      <Box className="relative">
+        <Button
+          variant="ghost"
+          aria-expanded={open}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
+            isActive
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+          onClick={() => setOpen(!open)}
+        >
+          {item.icon && (
+            typeof item.icon === 'string'
+              ? <AlmadarIcon name={item.icon} className="h-4 w-4" />
+              : <item.icon className="h-4 w-4" />
+          )}
+          <Typography variant="small" color="inherit" className="flex-1" as="span">
+            {item.label}
+          </Typography>
+          {item.badge && (
+            <Badge variant={isActive ? "primary" : "default"} size="sm">
+              {item.badge}
+            </Badge>
+          )}
+          <AlmadarIcon
+            name="chevron-down"
+            className={cn("h-3.5 w-3.5 shrink-0 transition-transform", open && "rotate-180")}
+          />
+        </Button>
+
+        {open && (
+          <>
+            <Box className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+            <Box className="absolute left-0 top-full mt-1 w-48 bg-card dark:bg-card rounded-lg shadow-lg border border-border dark:border-border py-1 z-30">
+              {item.children!.map((child) => {
+                const childIsActive = child.href === activeHref;
+                return (
+                  <Link
+                    key={child.href}
+                    to={child.href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 text-sm transition-colors",
+                      childIsActive
+                        ? "bg-muted text-foreground font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    {child.icon && (
+                      typeof child.icon === 'string'
+                        ? <AlmadarIcon name={child.icon} className="h-4 w-4" />
+                        : <child.icon className="h-4 w-4" />
+                    )}
+                    <Typography variant="small" className="flex-1" as="span">
+                      {child.label}
+                    </Typography>
+                    {child.badge && (
+                      <Badge variant={childIsActive ? "primary" : "default"} size="sm">
+                        {child.badge}
+                      </Badge>
+                    )}
+                  </Link>
+                );
+              })}
+            </Box>
+          </>
+        )}
+      </Box>
+    );
+  }
 
   return (
     <Link
@@ -739,13 +1006,14 @@ const NavLinkTopnav: React.FC<{ item: NavItem; currentPath: string }> = ({
 
 NavLinkTopnav.displayName = "NavLinkTopnav";
 
-// Bottom nav link — icon-only with label below (mobile tab bar style)
-const NavLinkBottom: React.FC<{ item: NavItem; currentPath: string }> = ({
+// Bottom nav link — icon-only with label below (mobile tab bar style).
+// `children` is intentionally not rendered here: a fixed-height tab bar has
+// no room for a flyout, and mobile tab bars are a flat-only pattern.
+const NavLinkBottom: React.FC<{ item: NavItem; activeHref?: string }> = ({
   item,
-  currentPath,
+  activeHref,
 }) => {
-  const isActive =
-    currentPath === item.href || currentPath.startsWith(item.href + "/");
+  const isActive = item.href === activeHref;
 
   const iconClassName = cn(
     "h-5 w-5",
