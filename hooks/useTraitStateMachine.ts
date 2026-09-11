@@ -52,6 +52,7 @@ import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
 import type { useUISlots, SlotProps } from '../providers/UISlotContext';
 import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useEntitySchema } from '../providers/EntitySchemaContext';
+import { useUser } from '../providers/UserContext';
 import type { EntityBindingSource } from '../providers/EntityBindingContext';
 import {
     registerTrait,
@@ -121,7 +122,9 @@ setNamespaceLevel('almadar:ui:shared-entity', 'WARN');
 const EMPTY_BINDING_SNAPSHOT: EntityRow = {};
 
 // Synchronous effect operators a tick may run. `set` / `emit` /
-// `render-ui` (+ navigate/notify/log) resolve without awaiting; the
+// `render-ui` (+ navigate/log) resolve without awaiting — `notify` is a
+// retired effect kind (lowered to `render-ui toast` at L1) kept here only
+// so a pre-lowering registry's tuple no-ops instead of being skipped; the
 // async ops (`fetch`/`persist`/`call-service`/`swap!`/`ref`/`deref`/
 // `atomic`/`spawn`/`despawn`/`os/*`/`watch`) cannot be awaited inside a
 // RAF/setInterval frame, so ticks skip them. This is the fixed tick
@@ -406,8 +409,6 @@ export interface UseTraitStateMachineOptions {
     navigateBack?: () => void;
     /** Payload merged into the mount-time lifecycle INIT (route params from a parameterized page path). */
     initPayload?: EventPayload;
-    /** Notification function for notify effects */
-    notify?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
     /**
      * Offline-preview persistence layer. When set, the client runtime merges
      * `@almadar/runtime` `createServerEffectHandlers` on top of the default
@@ -589,6 +590,10 @@ export function useTraitStateMachine(
     sharedEntityLog.debug('useTraitStateMachine start', { traitBindingsCount: traitBindings.length, traitNames: traitBindings.map((b) => b.trait.name) });
     const eventBus = useEventBus();
     const { entities } = useEntitySchema();
+    // The viewer behind `@user.x` for client-side effect and guard evaluation —
+    // the same binding the server carries; without it a client-run
+    // `(set … @user.id)` / `(emit … @user.id)` resolves to undefined.
+    const { user: viewer } = useUser();
     // Mirrors OrbitalServerRuntime's setTraitConfig loop so the client-side
     // guard evaluator sees @config.X. Page-level bindings often arrive with
     // config undefined; the caller's `traitConfigsByName` map (built from the
@@ -1129,7 +1134,6 @@ export function useTraitStateMachine(
             },
             navigate: optionsRef.current?.navigate,
             navigateBack: optionsRef.current?.navigateBack,
-            notify: optionsRef.current?.notify,
             callService: optionsRef.current?.callService,
             // The canonical client `set` writes `(set @entity.X)` straight into
             // the trait's one live store — the same object bound below. This is
@@ -1146,7 +1150,7 @@ export function useTraitStateMachine(
         // `createServerEffectHandlers` on top so `fetch` / `persist` /
         // `set` / `ref` / `deref` / `swap!` / `atomic` / `callService`
         // run locally with the same semantics as `OrbitalServerRuntime`.
-        // Keep the client `emit` / `renderUI` / `navigate` / `notify`.
+        // Keep the client `emit` / `renderUI` / `navigate`.
         // Skipped for `syncOnly` ticks (they never run async ops).
         const persistence = syncOnly ? undefined : optionsRef.current?.persistence;
         let handlers: EffectHandlers = clientHandlers;
@@ -1226,7 +1230,6 @@ export function useTraitStateMachine(
                 renderUI: clientHandlers.renderUI,
                 navigate: clientHandlers.navigate,
                 navigateBack: clientHandlers.navigateBack,
-                notify: clientHandlers.notify,
             };
         }
 
@@ -1265,6 +1268,7 @@ export function useTraitStateMachine(
             entity: liveEntity,
             payload: payload || {},
             state: previousState,
+            ...(viewer ? { user: viewer } : {}),
         };
         // The composing effect's triggering payload, for a `@trait.X`-
         // embedded child re-run by `reRenderCallsiteCaptureChildren` — see
@@ -1409,7 +1413,7 @@ export function useTraitStateMachine(
         }
 
         return { emitted: emittedDuringExec, serverEffectResults };
-    }, [eventBus, flushSlot, sharedEntityStore, publishBindingSnapshot, orbitalsByTrait]);
+    }, [eventBus, flushSlot, sharedEntityStore, publishBindingSnapshot, orbitalsByTrait, viewer]);
 
     /**
      * Re-run a JSX-hoisted inline child trait's (`@trait.X`) lifecycle
@@ -1507,6 +1511,7 @@ export function useTraitStateMachine(
                 entity,
                 payload: {},
                 state: currentState,
+                ...(viewer ? { user: viewer } : {}),
             };
             const bindingCfg = getBindingConfig(binding) ?? traitConfigsByName?.[traitName];
             if (bindingCfg) {
@@ -1544,7 +1549,7 @@ export function useTraitStateMachine(
     const emitFromSharedWriter = useCallback((event: string, payload?: EventPayload, source?: BusEventSource) => {
         const prefixedEvent = event.startsWith('UI:') ? event : `UI:${event}`;
         eventBus.emit(prefixedEvent, payload, source);
-    }, [eventBus]);
+    }, [eventBus, viewer]);
 
     /**
      * One coalesced tick clock for every binding's ticks — frame-interval

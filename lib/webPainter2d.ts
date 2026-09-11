@@ -167,6 +167,16 @@ export function createWebPainter(ctx: CanvasRenderingContext2D, onAssetLoad?: ()
                 ctx.drawImage(img, dest.x, dest.y, dw, dh);
             }
         },
+        blitTransformed(tex: TextureHandle, src: BlitSrc, affine: [number, number, number, number, number, number]) {
+            const img = imageByHandle.get(tex);
+            if (!img) return;
+            ctx.save();
+            // Compose with the current transform: drawing the src rect AT its own
+            // coords under `affine` lands it at affine(srcRect) in the caller's space.
+            ctx.transform(affine[0], affine[1], affine[2], affine[3], affine[4], affine[5]);
+            ctx.drawImage(img, src.x, src.y, src.w, src.h, src.x, src.y, src.w, src.h);
+            ctx.restore();
+        },
 
         fillRect(x, y, w, h, style) {
             ctx.fillStyle = toCanvasStyle(style);

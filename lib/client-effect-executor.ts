@@ -15,7 +15,6 @@ import type {
   ClientEffect,
   ClientEffectExecutorConfig,
   PatternConfig,
-  NotifyOptions,
 } from '../types/renderer-types';
 import { createLogger } from '@almadar/logger';
 
@@ -39,12 +38,11 @@ const log = createLogger('almadar:ui:effects:client');
  * executeClientEffects(
  *   [
  *     ['render-ui', 'main', { type: 'entity-table', entity: 'Task' }],
- *     ['notify', 'Tasks loaded!', { type: 'success' }]
+ *     ['emit', 'TASKS_LOADED']
  *   ],
  *   {
  *     renderToSlot: (slot, pattern) => slotManager.render(slot, pattern),
  *     navigate: (path) => router.push(path),
- *     notify: (message, opts) => toast.show(message, opts),
  *     eventBus: { emit: (event, payload) => bus.emit(event, payload) }
  *   }
  * );
@@ -95,12 +93,6 @@ function executeEffect(
       break;
     }
 
-    case 'notify': {
-      const [message, options] = args as [string, NotifyOptions?];
-      executeNotify(message, options, config);
-      break;
-    }
-
     case 'emit': {
       const [event, payload] = args as [string, FieldValue?];
       executeEmit(event, payload, config);
@@ -138,17 +130,6 @@ function executeNavigate(
   config: ClientEffectExecutorConfig
 ): void {
   config.navigate(path, params);
-}
-
-/**
- * Execute a notify effect.
- */
-function executeNotify(
-  message: string,
-  options: NotifyOptions | undefined,
-  config: ClientEffectExecutorConfig
-): void {
-  config.notify(message, options);
 }
 
 /**
@@ -190,8 +171,6 @@ export function parseClientEffect(
       return ['render-ui', args[0] as string, args[1] as PatternConfig | null];
     case 'navigate':
       return ['navigate', args[0] as string, args[1] as Record<string, FieldValue>];
-    case 'notify':
-      return ['notify', args[0] as string, args[1] as NotifyOptions];
     case 'emit':
       return ['emit', args[0] as string, args[1]];
     default:
@@ -240,14 +219,5 @@ export function getRenderUIEffects(
   effects: ClientEffect[]
 ): Array<['render-ui', string, PatternConfig | null]> {
   return filterEffectsByType(effects, 'render-ui');
-}
-
-/**
- * Get all notify effects.
- */
-export function getNotifyEffects(
-  effects: ClientEffect[]
-): Array<['notify', string, NotifyOptions?]> {
-  return filterEffectsByType(effects, 'notify');
 }
 

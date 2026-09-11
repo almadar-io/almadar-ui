@@ -20,7 +20,6 @@ export type AvlEffectType =
   | 'fetch'
   | 'emit'
   | 'navigate'
-  | 'notify'
   | 'call-service'
   | 'spawn'
   | 'despawn'
@@ -103,7 +102,6 @@ export const EFFECT_TYPE_TO_CATEGORY: Record<AvlEffectType, EffectCategory> = {
   'persist':      'data',
   'fetch':        'data',
   'emit':         'communication',
-  'notify':       'communication',
   'call-service': 'communication',
   'spawn':        'lifecycle',
   'despawn':      'lifecycle',

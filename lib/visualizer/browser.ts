@@ -62,8 +62,6 @@ function formatSExprHumanReadable(expr: SExpr, indent: number = 0): string {
       return `<span class="sexpr-effect">set</span> ${formatSExprHumanReadable(args[0] as SExpr)} → ${formatSExprHumanReadable(args[1] as SExpr)}`;
     case 'emit':
       return `<span class="sexpr-effect">emit</span> <span class="sexpr-event">${args[0]}</span>${args[1] ? ` with ${formatSExprHumanReadable(args[1] as SExpr)}` : ''}`;
-    case 'notify':
-      return `<span class="sexpr-effect">notify</span> via <span class="sexpr-string">${args[0]}</span>: "${args[1] || ''}"`;
     case 'persist':
       return `<span class="sexpr-effect">persist</span> ${args[0]} ${args[1] || ''}`;
     case 'navigate':

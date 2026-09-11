@@ -71,7 +71,6 @@ export {
 export { ModalSlot, type ModalSlotProps } from "./ModalSlot";
 export { DrawerSlot, type DrawerSlotProps } from "./DrawerSlot";
 export { ToastSlot, type ToastSlotProps } from "./ToastSlot";
-export { NotifyListener } from "./NotifyListener";
 
 // Phase 7b - New core pattern organisms
 

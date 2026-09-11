@@ -319,7 +319,16 @@ export function DataList({
   );
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
-  const hasRenderProp = typeof children === 'function';
+  // The compiled (orbital-rust) codegen path passes the per-item renderer
+  // as the `renderItem` PROP (a real function); the interpreted/runtime
+  // path passes it as `children` (a function-as-children render-prop).
+  // Both are the same contract — accept either (C-DATALIST-RENDERITEM-
+  // IGNORED: `renderItem` was declared + typed but never invoked, so every
+  // compiled DataList silently fell back to the fields-based path with the
+  // data-loss warning below firing on every render).
+  const renderItemFn = typeof schemaRenderItem === 'function' ? schemaRenderItem : undefined;
+  const itemRenderer = typeof children === 'function' ? children : renderItemFn;
+  const hasRenderProp = typeof itemRenderer === 'function';
 
   // Diagnostic: when we have data + a `renderItem` prop but it's not a
   // function (e.g. it arrived as an unconverted `["fn","item",{...}]`
@@ -623,7 +632,7 @@ export function DataList({
       const actions = renderItemActions(itemData);
       return wrapDnd(
         <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEvent ? handleRowClick(itemData) : undefined} className={cn('relative group/rowactions', rowClickEvent && 'cursor-pointer')}>
-          {children(itemData as EntityRow, index)}
+          {itemRenderer!(itemData as EntityRow, index)}
           {actions && (
             <Box className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
               {/* Fine pointers: hover-revealed inline cluster. */}

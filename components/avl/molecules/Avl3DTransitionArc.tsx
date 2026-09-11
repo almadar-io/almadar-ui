@@ -22,7 +22,6 @@ function effectTypeColor(type: string): string {
     case 'fetch': return '#5b9bd5';
     case 'emit': return '#a78bda';
     case 'navigate': return '#40c8aa';
-    case 'notify': return '#f0c040';
     case 'call-service': return '#a78bda';
     case 'spawn': return '#4ecb71';
     case 'despawn': return '#f06060';
@@ -216,8 +215,6 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
                 <coneGeometry args={[0.8, 1.5, 6]} />
               ) : effectType === 'set' ? (
                 <tetrahedronGeometry args={[1, 0]} />
-              ) : effectType === 'notify' ? (
-                <dodecahedronGeometry args={[0.8, 0]} />
               ) : effectType === 'call-service' ? (
                 <torusGeometry args={[0.8, 0.3, 6, 12]} />
               ) : (

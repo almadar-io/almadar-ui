@@ -22,7 +22,6 @@
 export type {
   // Effect types
   ClientEffect,
-  NotifyOptions,
   ClientEffectExecutorConfig,
 
   // Pattern types
@@ -67,7 +66,6 @@ export {
   parseClientEffect,
   parseClientEffects,
   getRenderUIEffects,
-  getNotifyEffects,
 } from '../lib/client-effect-executor';
 
 // ============================================================================

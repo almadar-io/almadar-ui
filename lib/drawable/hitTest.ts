@@ -18,6 +18,9 @@ import { isValidScenePos, spriteRect } from './contract';
 import type { DrawableAnchor, Projector } from './contract';
 import type { PainterPoint } from '../painter2d';
 import type { DrawShapeProps } from '../../components/game/atoms/DrawShape';
+import type { DrawSkinnedMeshProps } from '../../components/game/atoms/DrawSkinnedMesh';
+import { resolveSkinPose } from '../../components/game/atoms/DrawSkinnedMesh';
+import { computeWorldMatrices, skinVertices, vertexBounds, type SkinMesh } from '../skinning';
 
 /** One drawn descriptor's scene position + optional hit-test id. */
 export interface DrawnItem {
@@ -48,6 +51,30 @@ function shapeDrawnItem(n: DrawShapeProps): DrawnItem {
     return { pos: n.position, id: n.id, anchor: n.anchor, width: n.width, height: n.height, rotation: n.rotate };
 }
 
+/**
+ * A `draw-skinned-mesh`'s painted extent is the AABB of its POSED vertices
+ * (local world units relative to `position`'s projected top-left) — not a fixed
+ * cell. Feeds the same anchor+width+height rect derivation as a sprite: the pos
+ * is offset by the hull's local min, the size is the hull span. Falls back to
+ * bind-pose bounds when the mesh is unresolvable (a `meshUrl` still in-flight
+ * hit-tests as one floor cell until the repaint lands).
+ */
+function skinnedMeshDrawnItem(n: DrawSkinnedMeshProps): DrawnItem {
+    const mesh: SkinMesh | undefined = n.mesh;
+    if (!mesh || n.bones.length === 0) return { pos: n.position, id: n.id };
+    const bindWorld = computeWorldMatrices(n.bones, {});
+    const curWorld = computeWorldMatrices(n.bones, resolveSkinPose(n));
+    const bounds = vertexBounds(skinVertices(mesh, bindWorld, curWorld));
+    if (!bounds) return { pos: n.position, id: n.id };
+    return {
+        pos: { ...n.position, x: n.position.x + bounds.minX, y: n.position.y + bounds.minY },
+        id: n.id,
+        anchor: 'top-left',
+        width: bounds.maxX - bounds.minX,
+        height: bounds.maxY - bounds.minY,
+    };
+}
+
 /** Collect every drawable's scene position + hit id (atoms directly; layers via `items`). */
 export function collectDrawnItems(nodes: DrawableNode[]): DrawnItem[] {
     const out: DrawnItem[] = [];
@@ -58,6 +85,9 @@ export function collectDrawnItems(nodes: DrawableNode[]): DrawnItem[] {
                 break;
             case 'draw-shape':
                 if (isValidScenePos(n.position)) out.push(shapeDrawnItem(n));
+                break;
+            case 'draw-skinned-mesh':
+                if (isValidScenePos(n.position)) out.push(skinnedMeshDrawnItem(n));
                 break;
             case 'draw-text':
             case 'draw-group':

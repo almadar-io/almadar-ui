@@ -11,7 +11,7 @@ export interface StateStyle {
 }
 
 const DEFAULT_ASSET_URL: Asset = {
-  url: 'https://almadar-kflow-assets.web.app/shared/isometric-dungeon/Isometric/chestClosed_E.png',
+  url: 'https://almadar-kflow-assets.web.app/shared/ui-topdown-dungeon-board/default/features/chest/chest.png',
   role: 'ui',
   category: 'state',
 };

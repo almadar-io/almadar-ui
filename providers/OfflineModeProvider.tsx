@@ -56,7 +56,6 @@ const OfflineModeContext = createContext<OfflineModeContextValue | null>(null);
  *       autoSync={true}
  *       renderToSlot={slotManager.render}
  *       navigate={router.push}
- *       notify={toast.show}
  *       eventBus={{ emit: bus.emit }}
  *     >
  *       <PreviewPage />

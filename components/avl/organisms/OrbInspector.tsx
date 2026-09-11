@@ -74,7 +74,7 @@ function formatExpression(expr: Expression | null | undefined): string {
 
 const KNOWN_EFFECTS = new Set([
   'render-ui', 'set', 'persist', 'fetch', 'emit', 'navigate',
-  'notify', 'call-service', 'spawn', 'despawn', 'do', 'if', 'log',
+  'call-service', 'spawn', 'despawn', 'do', 'if', 'log',
 ]);
 
 function effectSummary(type: string): string {

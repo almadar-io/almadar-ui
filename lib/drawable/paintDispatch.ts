@@ -15,6 +15,7 @@ import { paintSprite, type DrawSpriteProps } from '../../components/game/atoms/D
 import { paintShape, type DrawShapeProps } from '../../components/game/atoms/DrawShape';
 import { paintText, type DrawTextProps } from '../../components/game/atoms/DrawText';
 import { isAnimatedGroup, type DrawGroupProps } from '../../components/game/atoms/DrawGroup';
+import { paintSkinnedMesh, type DrawSkinnedMeshProps } from '../../components/game/atoms/DrawSkinnedMesh';
 import { applyMeshAnimation, type DrawMeshProps } from '../../components/game/atoms/DrawMesh';
 import { paintSpriteLayer, type DrawSpriteLayerProps } from '../../components/game/molecules/DrawSpriteLayer';
 import { paintShapeLayer, type DrawShapeLayerProps } from '../../components/game/molecules/DrawShapeLayer';
@@ -29,6 +30,7 @@ export type DrawableNode =
     | DrawTextProps
     | DrawGroupProps
     | DrawMeshProps
+    | DrawSkinnedMeshProps
     | DrawSpriteLayerProps
     | DrawShapeLayerProps
     | DrawTextLayerProps
@@ -90,6 +92,9 @@ export function paintDrawable(painter: Painter2D, node: DrawableNode, dctx: Draw
         case 'draw-mesh':
             // Volumetric — no faithful 2D projection; a footprint blob would mislead.
             warnUnsupported2d('draw-mesh');
+            break;
+        case 'draw-skinned-mesh':
+            paintSkinnedMesh(painter, node, dctx);
             break;
         case 'draw-sprite-layer':
             paintSpriteLayer(painter, node, dctx);

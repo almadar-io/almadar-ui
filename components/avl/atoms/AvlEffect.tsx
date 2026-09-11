@@ -70,15 +70,6 @@ function effectIcon(type: AvlEffectType, x: number, y: number, s: number, color:
           <polyline points={`${x + s * 0.1},${y - s * 0.5} ${x + s},${y} ${x + s * 0.1},${y + s * 0.5}`} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" />
         </g>
       );
-    case 'notify':
-      // Bell: 🔔
-      return (
-        <g>
-          <path d={`M${x - s * 0.7},${y + s * 0.3} Q${x - s * 0.7},${y - s} ${x},${y - s} Q${x + s * 0.7},${y - s} ${x + s * 0.7},${y + s * 0.3} Z`} fill="none" stroke={color} strokeWidth={1.5} />
-          <line x1={x - s * 0.8} y1={y + s * 0.3} x2={x + s * 0.8} y2={y + s * 0.3} stroke={color} strokeWidth={1.5} />
-          <circle cx={x} cy={y + s * 0.7} r={s * 0.2} fill={color} />
-        </g>
-      );
     case 'call-service':
       // Bidirectional: ⇄
       return (

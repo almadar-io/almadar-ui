@@ -85,6 +85,10 @@ export function Drawable3D({ node, projector, groupOpacity = 1 }: Drawable3DProp
             }
             case 'draw-fx-layer':
                 return <FxLayer3D node={node} projector={projector} groupOpacity={groupOpacity} />;
+            case 'draw-skinned-mesh':
+                // CPU-posed 2D drawable; 3D skinning is `draw-mesh` + `skin` (DrawMesh3D).
+                warnUnsupported3d('draw-skinned-mesh');
+                return null;
         }
     })();
     // A tagged descriptor stamps its id on the scene graph so the host's mesh

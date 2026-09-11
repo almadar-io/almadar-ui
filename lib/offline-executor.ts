@@ -115,7 +115,7 @@ function generateEffectId(): string {
  * OfflineExecutor - Handles effects in offline/client-only mode.
  *
  * Features:
- * - Executes client effects immediately (render-ui, navigate, notify, emit)
+ * - Executes client effects immediately (render-ui, navigate, emit)
  * - Queues server effects (persist, fetch, call-service) for later sync
  * - Provides mock data for fetch effects when offline
  * - Syncs queued effects when connection is restored
@@ -125,7 +125,6 @@ function generateEffectId(): string {
  * const executor = new OfflineExecutor({
  *   renderToSlot: (slot, pattern) => slotManager.render(slot, pattern),
  *   navigate: (path) => router.push(path),
- *   notify: (message, opts) => toast.show(message, opts),
  *   eventBus: { emit: (event, payload) => bus.emit(event, payload) },
  *   mockDataProvider: (entityName) => mockStore.getAll(entityName),
  * });
@@ -285,7 +284,6 @@ export class OfflineExecutor {
           // Client effects - execute immediately
           case 'render-ui':
           case 'navigate':
-          case 'notify':
           case 'emit':
             clientEffects.push(effect as ClientEffect);
             break;
@@ -442,7 +440,6 @@ export class OfflineExecutor {
  * const executor = createOfflineExecutor({
  *   renderToSlot: slotManager.render,
  *   navigate: router.push,
- *   notify: toast.show,
  *   eventBus: { emit: bus.emit },
  *   mockDataProvider: (entity) => store.getAll(entity),
  * });
@@ -505,7 +502,6 @@ export interface UseOfflineExecutorResult {
  *   const { isOffline, pendingCount, processEventOffline, sync } = useOfflineExecutor({
  *     renderToSlot: slotManager.render,
  *     navigate: router.push,
- *     notify: toast.show,
  *     eventBus: { emit: bus.emit },
  *     serverUrl: '/api/orbitals',
  *     autoSync: true,

@@ -93,7 +93,7 @@ function isUISlot(value: string): value is UISlot {
 
 /** Verbs a host may deny. Never includes `emit` — the runtime's own emit
  *  handler drives the internal `listens` cascade and must never be replaced. */
-export type PluginHostDenyVerb = 'persist' | 'call-service' | 'navigate' | 'notify';
+export type PluginHostDenyVerb = 'persist' | 'call-service' | 'navigate';
 
 /** One bus-event → orbital-event wiring: `UI:<busEvent>` dispatches `trigger` at `orbital`/`trait`. */
 export interface PluginHostInbound {
@@ -119,7 +119,6 @@ export interface OrbitalPluginHostProps {
   /** OPTIONAL policy: verbs listed here are denied with a logged warning, never a throw. Default: none denied. */
   deny?: PluginHostDenyVerb[];
   navigate?: (path: string) => void;
-  notify?: (message: string, type?: string) => void;
   onTransition?: (pluginId: string, orbital: string, trait: string, state: string) => void;
   children?: ReactNode;
 }
@@ -253,9 +252,8 @@ function buildMockEffectHandlers(opts: {
   slotsRef: React.MutableRefObject<UISlotManager>;
   renderedSlotsRef: React.MutableRefObject<Set<UISlot>>;
   navigateRef: React.MutableRefObject<((path: string) => void) | undefined>;
-  notifyRef: React.MutableRefObject<((message: string, type?: string) => void) | undefined>;
 }): Partial<EffectHandlers> {
-  const { pluginId, denySet, slotsRef, renderedSlotsRef, navigateRef, notifyRef } = opts;
+  const { pluginId, denySet, slotsRef, renderedSlotsRef, navigateRef } = opts;
 
   // `renderUI` is never deny-gated: rendering into the ambient slots IS the
   // plugin's UI surface, not a policy-restricted capability. `slotsRef` keeps
@@ -285,12 +283,6 @@ function buildMockEffectHandlers(opts: {
     handlers.navigate = (path) => navigateRef.current?.(path);
   }
 
-  if (denySet.has('notify')) {
-    handlers.notify = (message, type) => log.warn('notify:denied', { pluginId, message, type });
-  } else if (notifyRef.current) {
-    handlers.notify = (message, type) => notifyRef.current?.(message, type);
-  }
-
   // persist/call-service: present ONLY when denied. Absent, the runtime's
   // own built-in handlers stay in force — the in-memory mock persistence
   // store and mock service responses every preview already gets.
@@ -317,7 +309,6 @@ interface PluginRuntimeMountProps {
   transport?: ServerBridgeTransport;
   deny?: PluginHostDenyVerb[];
   navigate?: (path: string) => void;
-  notify?: (message: string, type?: string) => void;
   onTransition?: OrbitalPluginHostProps['onTransition'];
   /** `trigger === null` marks a post-registration initial-state snapshot — not an actual dispatch. */
   onDispatched: (
@@ -334,7 +325,6 @@ function PluginRuntimeMount({
   transport,
   deny,
   navigate,
-  notify,
   onTransition,
   onDispatched,
   onError,
@@ -350,16 +340,14 @@ function PluginRuntimeMount({
   const renderedSlotsRef = useRef<Set<UISlot>>(new Set());
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
-  const notifyRef = useRef(notify);
-  notifyRef.current = notify;
 
   // One runtime per plugin, created once (StrictMode-safe: the constructor
   // + register() below tolerate the dev double-invoke exactly like
   // BrowserPlayground's `useState`-held runtime). `deny`'s SHAPE (which
   // verbs are stubbed at all) is fixed at this first render — matching
   // OrbitalServerRuntime's own effectHandlers, which aren't hot-swapped
-  // after construction either. The actual navigate/notify function VALUES
-  // stay live via the refs above.
+  // after construction either. The actual navigate function VALUE stays
+  // live via the ref above.
   const [mockRuntime] = useState<OrbitalServerRuntime | undefined>(() => {
     if (mode !== 'mock') return undefined;
     return new OrbitalServerRuntime({
@@ -371,7 +359,6 @@ function PluginRuntimeMount({
         slotsRef,
         renderedSlotsRef,
         navigateRef,
-        notifyRef,
       }),
     });
   });
@@ -627,7 +614,6 @@ export function OrbitalPluginHost({
   transport,
   deny,
   navigate,
-  notify,
   onTransition,
   children,
 }: OrbitalPluginHostProps): React.ReactElement {
@@ -684,7 +670,6 @@ export function OrbitalPluginHost({
           transport={transport}
           deny={deny}
           navigate={navigate}
-          notify={notify}
           onTransition={onTransition}
           onDispatched={handleDispatched}
           onError={handleError}

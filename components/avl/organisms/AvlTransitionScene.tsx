@@ -34,7 +34,7 @@ function flattenEffect(node: ExprTreeNode): { type: string; args: string[] } {
 function mapEffectType(label: string): AvlEffectType {
   const valid: AvlEffectType[] = [
     'render-ui', 'set', 'persist', 'fetch', 'emit', 'navigate',
-    'notify', 'call-service', 'spawn', 'despawn', 'do', 'if', 'log',
+    'call-service', 'spawn', 'despawn', 'do', 'if', 'log',
   ];
   return valid.includes(label as AvlEffectType) ? (label as AvlEffectType) : 'log';
 }

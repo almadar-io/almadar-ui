@@ -29,7 +29,6 @@ export interface CreateClientEffectHandlersOptions {
     navigate?: (path: string, params?: Record<string, string>, crumb?: string) => void;
     /** Pop the orbital-scoped navigation stack (navigate-back effect). */
     navigateBack?: () => void;
-    notify?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
     /**
      * Live client-entity write target for `[runtime]` entities. `(set
      * @entity.<field> value)` runs entirely in the browser for in-memory
@@ -69,7 +68,7 @@ export interface CreateClientEffectHandlersOptions {
 export function createClientEffectHandlers(
     options: CreateClientEffectHandlersOptions
 ): EffectHandlers {
-    const { eventBus, slotSetter, navigate, navigateBack, notify, callService, liveEntity, persistDelegated } = options;
+    const { eventBus, slotSetter, navigate, navigateBack, callService, liveEntity, persistDelegated } = options;
 
     return {
         emit: (event: string, payload?: EventPayload, source?: BusEventSource) => {
@@ -150,9 +149,6 @@ export function createClientEffectHandlers(
         }),
         navigateBack: navigateBack ?? (() => {
             log.warn('No navigate-back handler, ignoring');
-        }),
-        notify: notify ?? ((msg: string, type?: string) => {
-            log.debug('notify', { type, message: msg });
         }),
     };
 }

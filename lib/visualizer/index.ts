@@ -213,7 +213,7 @@ export const DEFAULT_CONFIG: VisualizerConfig = {
 // S-Expression Parsing
 // =============================================================================
 
-const EFFECT_OPERATORS = ['set', 'emit', 'persist', 'navigate', 'notify', 'spawn', 'despawn', 'render-ui', 'call-service'];
+const EFFECT_OPERATORS = ['set', 'emit', 'persist', 'navigate', 'spawn', 'despawn', 'render-ui', 'call-service'];
 
 function isBinding(val: SExpr): val is string {
     return typeof val === 'string' && val.startsWith('@');
@@ -366,9 +366,6 @@ export function getEffectSummary(effects: Effect[]): string {
             case 'emit':
                 summaries.push(`↑ ${effect[1] || 'event'}`);
                 break;
-            case 'notify':
-                summaries.push(`📧 ${effect[1] || ''}`);
-                break;
             case 'persist':
                 summaries.push(`💾 ${effect[1] || 'save'}`);
                 break;
@@ -398,7 +395,7 @@ function extractOutputsFromTransitions(transitions: TransitionDefinition[]): str
                 if (Array.isArray(effect)) {
                     const op = effect[0] as string;
                     // Only extract "output" effects (things that affect the outside world)
-                    if (['emit', 'notify', 'persist', 'navigate', 'call-service'].includes(op)) {
+                    if (['emit', 'persist', 'navigate', 'call-service'].includes(op)) {
                         // Use domain language formatter for human-readable text
                         if (isArraySExpr(effect)) {
                             const humanText = formatSExprEffectToDomain(effect, '');

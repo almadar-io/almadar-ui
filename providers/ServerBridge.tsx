@@ -33,8 +33,7 @@ import { createLogger } from '@almadar/logger';
 type ClientEffectTuple =
   | ['render-ui', string, AnyPatternConfig | null, ...SExpr[]]
   | ['navigate', string, ...SExpr[]]
-  | ['navigate-back']
-  | ['notify', string, ...SExpr[]];
+  | ['navigate-back'];
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital re-broadcast
 // tracing. Each server-cascade event — carried back in-response (gap #13)
@@ -224,14 +223,13 @@ interface OrbitalEventResponse {
 }
 
 export interface ServerClientEffect {
-  type: 'render-ui' | 'navigate' | 'navigate-back' | 'notify';
+  type: 'render-ui' | 'navigate' | 'navigate-back';
   slot?: string;
   pattern?: AnyPatternConfig;
   route?: string;
   params?: EventPayload;
   /** Nav-stack entry label carried by the navigate effect's options. */
   crumb?: string;
-  message?: string;
   /**
    * Trait that emitted this effect. Used by `<TraitFrame>` to resolve
    * `@trait.X` bindings. Undefined when the server didn't tag the effect
@@ -556,9 +554,6 @@ export function ServerBridgeProvider({
             });
           } else if (effectType === 'navigate-back') {
             effects.push({ type: 'navigate-back', traitName });
-          } else if (effectType === 'notify') {
-            const message = effect[1];
-            effects.push({ type: 'notify', message: typeof message === 'string' ? message : undefined, traitName });
           }
         }
 

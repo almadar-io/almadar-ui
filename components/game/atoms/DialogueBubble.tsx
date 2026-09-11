@@ -6,7 +6,7 @@ import { Typography } from '../../core/atoms/Typography';
 import { GameIcon } from '../../core/atoms/GameIcon';
 
 const DEFAULT_PORTRAIT: Asset = {
-  url: 'https://almadar-kflow-assets.web.app/shared/characters/archetypes/04_hero.png',
+  url: 'https://almadar-kflow-assets.web.app/shared/ui-winter-ski-board/default/units/hero/hero.png',
   role: 'effect',
   category: 'character',
 };

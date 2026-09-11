@@ -248,7 +248,7 @@ export function TableView({
   columns,
   fields,
   itemActions,
-  maxInlineActions: _maxInlineActions,
+  maxInlineActions,
   itemClickEvent = '',
   selectable = false,
   selectEvent,
@@ -289,6 +289,16 @@ export function TableView({
   const colDefs: readonly TableViewColumn[] =
     (Array.isArray(columns) ? columns : undefined) ?? (Array.isArray(fields) ? fields : undefined) ?? [];
   const actionDefs: readonly TableViewItemAction[] = Array.isArray(itemActions) ? itemActions : [];
+  // Same split DataList uses: up to `maxInlineActions` buttons stay on the
+  // row, the rest collapse into the "⋯" menu (no cap → everything in the menu,
+  // the table's historical default).
+  const inlineActions = maxInlineActions != null ? actionDefs.slice(0, maxInlineActions) : [];
+  const overflowActions = maxInlineActions != null ? actionDefs.slice(maxInlineActions) : actionDefs;
+  const fireAction = (action: TableViewItemAction, row: EntityRow) =>
+    eventBus.emit(`UI:${action.event}`, {
+      id: row.id as string | number,
+      row: row as ItemActionPayload['row'],
+    });
   const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
 
   const dnd = useDataDnd({
@@ -556,25 +566,37 @@ export function TableView({
                 : 'bg-[var(--color-card)] group-hover:bg-[var(--color-surface-subtle)]',
             )}
           >
-            <Menu
-              position="bottom-end"
-              trigger={
-                <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow" data-row-id={String(row.id)}>
-                  <Icon name="more-horizontal" size="xs" />
-                </Button>
-              }
-              items={actionDefs.map((action) => ({
-                label: action.label,
-                icon: action.icon,
-                event: action.event,
-                variant: action.variant === 'danger' ? 'danger' : 'default',
-                onClick: () =>
-                  eventBus.emit(`UI:${action.event}`, {
-                    id: row.id as string | number,
-                    row: row as ItemActionPayload['row'],
-                  }),
-              }))}
-            />
+            {inlineActions.map((action) => (
+              <Button
+                key={action.event}
+                variant={action.variant ?? 'ghost'}
+                size="sm"
+                onClick={() => fireAction(action, row)}
+                data-testid={`action-${action.event}`}
+                data-row-id={String(row.id)}
+                className={cn(action.variant === 'danger' && 'text-error hover:bg-error/10')}
+              >
+                {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
+                {action.label}
+              </Button>
+            ))}
+            {overflowActions.length > 0 && (
+              <Menu
+                position="bottom-end"
+                trigger={
+                  <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow" data-row-id={String(row.id)}>
+                    <Icon name="more-horizontal" size="xs" />
+                  </Button>
+                }
+                items={overflowActions.map((action) => ({
+                  label: action.label,
+                  icon: action.icon,
+                  event: action.event,
+                  variant: action.variant === 'danger' ? 'danger' : 'default',
+                  onClick: () => fireAction(action, row),
+                }))}
+              />
+            )}
           </HStack>
         )}
       </Box>

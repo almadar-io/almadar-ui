@@ -18,6 +18,7 @@ import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react'
 import { Box } from '../components/core/atoms/Box';
 import { Typography } from '../components/core/atoms/Typography';
 import { OrbitalProvider } from '../providers/OrbitalProvider';
+import type { UserData } from '../providers/UserContext';
 import { CurrentPagePathProvider } from '../providers/CurrentPagePathContext';
 import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots, type SlotProps } from '../providers/UISlotContext';
@@ -897,6 +898,12 @@ export interface OrbPreviewProps {
    */
   initialPagePath?: string;
   /**
+   * The signed-in viewer — forwarded to `OrbitalProvider`'s `UserProvider` so
+   * `@user.x` resolves in client-side guard and effect evaluation exactly as
+   * it does on the server. Omitted → anonymous.
+   */
+  user?: UserData | null;
+  /**
    * Sandbox mode: the preview's event bus stays context-local and does NOT
    * register as the global bus. Set when embedded inside a host app (e.g. the
    * studio canvas) so preview events don't clobber the host's global bus.
@@ -929,23 +936,23 @@ export function OrbPreview({
   getAccessToken,
   initialPagePath,
   isolated = false,
+  user = null,
 }: OrbPreviewProps): React.ReactElement {
   if (serverUrl && transport) {
     throw new Error('OrbPreview accepts serverUrl OR transport, not both');
   }
   // GAP-19: track when the server bridge falls back to local execution.
   // The 5s timeout in TraitInitializer fires onLocalFallback if the bridge
-  // never connected. We surface a banner + emit UI:NOTIFY for any toast listener.
+  // never connected. We surface a persistent banner below — the retired
+  // UI:NOTIFY bus emit was a duplicate of the same message (NotifyListener,
+  // its only subscriber, is gone; the toast slot is the one feedback
+  // surface now, and this state is durable, not a one-shot toast).
   const [localFallback, setLocalFallback] = useState(false);
   const eventBus = useEventBus();
   const handleLocalFallback = useCallback(() => {
     if (localFallback) return;
     setLocalFallback(true);
-    eventBus.emit('UI:NOTIFY', {
-      message: 'Preview server unreachable — running locally without server-side state.',
-      severity: 'warning',
-    });
-  }, [localFallback, eventBus]);
+  }, [localFallback]);
   // Parse + (optionally) run the auto-mock pipeline. The pipeline:
   //   1. Generates mock entity rows from field definitions (EntityData)
   //   2. Flips two-state INIT state machines so the data state is initial
@@ -1226,7 +1233,7 @@ export function OrbPreview({
           storageKey={`almadar:navstack:${parseResult.schema.name ?? 'preview'}`}
         >
         <NavStackRefBridge apiRef={navStackRef} />
-        <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated}>
+        <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated} user={user}>
           <UISlotProvider>
             <SchemaRunner
               schema={parseResult.schema}

@@ -23,6 +23,7 @@ import { RenderSlotProvider } from "../../../providers/RenderSlotContext";
 import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, ResolvedEntity } from "@almadar/core";
 import { isRenderBindingMarker } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/core/patterns";
+import { SELF_OVERLAY_PATTERN_TYPES } from "@almadar/core/patterns";
 import { createPortal } from "react-dom";
 import {
   useUISlots,
@@ -293,8 +294,7 @@ function enrichDetailFields(
 // ConfirmDialog). When one of these is the modal-slot content, the portal
 // wrappers below must NOT add their own Modal shell — otherwise two backdrops
 // stack (the wrapper's + the component's). Render the self-overlaying content
-// bare so exactly one backdrop paints.
-const SELF_OVERLAY_PATTERNS = new Set(["modal", "confirm-dialog"]);
+// bare so exactly one backdrop paints. Single owner: @almadar/core/patterns.
 
 // Named node-slot props that carry pattern-descriptor arrays (same set as
 // lolo-ui.ts CONTENT_NODE_SLOTS). These must be converted to React elements
@@ -415,7 +415,7 @@ function renderContainedPortal(
       // Self-overlaying content (Modal / ConfirmDialog patterns) brings its
       // own backdrop + chrome — render it bare under the slot anchor so the
       // wrapper's backdrop doesn't double up.
-      if (SELF_OVERLAY_PATTERNS.has(content.pattern)) {
+      if (SELF_OVERLAY_PATTERN_TYPES.has(content.pattern)) {
         return <Box id={slotId} className="contents">{slotContent}</Box>;
       }
       return (
@@ -949,7 +949,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
       // Self-overlaying content (Modal / ConfirmDialog patterns) renders its
       // own backdrop + chrome — skip the Modal shell so only one backdrop
       // paints. Plain content keeps the shell.
-      wrapper = pattern !== undefined && SELF_OVERLAY_PATTERNS.has(pattern) ? (
+      wrapper = pattern !== undefined && SELF_OVERLAY_PATTERN_TYPES.has(pattern) ? (
         innerContent
       ) : (
         <Modal isOpen={true} onClose={handleDismiss} showCloseButton={true} size="lg">
@@ -1058,7 +1058,7 @@ function SlotPortal({
       // Self-overlaying content (Modal / ConfirmDialog patterns) renders its
       // own backdrop + chrome — skip the Modal shell so only one backdrop
       // paints. Plain content keeps the shell.
-      wrapper = SELF_OVERLAY_PATTERNS.has(content.pattern) ? (
+      wrapper = SELF_OVERLAY_PATTERN_TYPES.has(content.pattern) ? (
         <Box id={slotId}>{slotContent}</Box>
       ) : (
         <Modal

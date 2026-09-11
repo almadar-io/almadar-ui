@@ -116,6 +116,12 @@ export interface Painter2D {
     resolveTexture(url: string): TextureHandle | null;
     /** Blit a (sub-rect of a) texture to a destination rectangle. */
     blit(tex: TextureHandle, dest: BlitDest, src?: BlitSrc): void;
+    /**
+     * Blit a source rect through an arbitrary affine `[a,b,c,d,e,f]` (source px →
+     * destination px in the painter's current transform). The draw is NOT clipped —
+     * the caller clips (e.g. to a skinned triangle) around it.
+     */
+    blitTransformed(tex: TextureHandle, src: BlitSrc, affine: [number, number, number, number, number, number]): void;
 
     fillRect(x: number, y: number, w: number, h: number, style: PaintStyle): void;
     strokeRect(x: number, y: number, w: number, h: number, style: PaintStyle, lineWidth?: number): void;

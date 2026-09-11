@@ -274,7 +274,7 @@ function CaptureTableProbe() {
   return <div data-testid="capture-table" data-json={JSON.stringify({ ...table.shell, keys: Array.from(table.shell.keys) })} />;
 }
 
-function renderHost(opts: { deny?: Array<'persist' | 'call-service' | 'navigate' | 'notify'>; onTransition?: (...args: unknown[]) => void; withCaptureTable?: boolean; plugins?: PluginHostPlugin[] } = {}) {
+function renderHost(opts: { deny?: Array<'persist' | 'call-service' | 'navigate'>; onTransition?: (...args: unknown[]) => void; withCaptureTable?: boolean; plugins?: PluginHostPlugin[] } = {}) {
   const onTransition = opts.onTransition ?? vi.fn();
   let bus!: EventBusContextType;
   function BusGrabber() {

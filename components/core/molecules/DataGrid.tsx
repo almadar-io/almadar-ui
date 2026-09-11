@@ -353,7 +353,16 @@ export function DataGrid({
     : undefined;
   const stopCardClick = handleCardClick ? (e: React.MouseEvent) => e.stopPropagation() : undefined;
 
-  const hasRenderProp = typeof children === 'function';
+  // The compiled (orbital-rust) codegen path passes the per-item renderer
+  // as the `renderItem` PROP (a real function); the interpreted/runtime
+  // path passes it as `children` (a function-as-children render-prop).
+  // Both are the same contract — accept either (C-DATAGRID-RENDERITEM-
+  // IGNORED: `renderItem` was declared + typed but never invoked, so every
+  // compiled DataGrid — every kanban board, gallery, card grid — silently
+  // rendered zero items).
+  const renderItemFn = typeof schemaRenderItem === 'function' ? schemaRenderItem : undefined;
+  const itemRenderer = typeof children === 'function' ? children : renderItemFn;
+  const hasRenderProp = typeof itemRenderer === 'function';
 
   // Hook order rule: all hooks must run on every render. Keeping this
   // useEffect above the early returns below prevents the "rendered fewer
@@ -491,7 +500,7 @@ export function DataGrid({
                 onClick={handleCardClick?.(itemData)}
                 className={cn('relative group/rowactions', handleCardClick && 'cursor-pointer', isSelected && 'ring-2 ring-primary rounded-lg')}
               >
-                {children(itemData, index)}
+                {itemRenderer!(itemData, index)}
                 {actionDefs.length > 0 && (
                   <Box onClick={stopCardClick} className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
                     {/* Card rule (same as the fields path): at most one

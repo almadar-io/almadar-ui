@@ -21,7 +21,6 @@ import type { EntityRow, FieldValue, UISlot, PatternConfig } from '@almadar/core
  * @example
  * ['render-ui', 'main', { type: 'entity-table', ... }]
  * ['navigate', '/tasks/123']
- * ['notify', 'Task created!', { type: 'success' }]
  * ['emit', 'TASK_CREATED', { id: '123' }]
  */
 export type { UISlot, PatternConfig };
@@ -29,16 +28,7 @@ export type { UISlot, PatternConfig };
 export type ClientEffect =
   | ['render-ui', string, PatternConfig | null]
   | ['navigate', string, Record<string, FieldValue>?]
-  | ['notify', string, NotifyOptions?]
   | ['emit', string, FieldValue?];
-
-/**
- * Options for notify effect
- */
-export interface NotifyOptions {
-  type?: 'success' | 'error' | 'info' | 'warning';
-  duration?: number;
-}
 
 // ============================================================================
 // Pattern Types
@@ -73,7 +63,7 @@ export interface EventResponse {
   newState?: string;
   /** Data fetched by server effects (e.g., { Task: [...] }) */
   data?: Record<string, EntityRow[]>;
-  /** Client effects to execute (render-ui, navigate, notify, emit) */
+  /** Client effects to execute (render-ui, navigate, emit) */
   clientEffects?: ClientEffect[];
   /** Results of individual effect executions (for debugging) */
   effectResults?: Array<{
@@ -106,12 +96,6 @@ export interface ClientEffectExecutorConfig {
    * Called for 'navigate' effects.
    */
   navigate: (path: string, params?: Record<string, FieldValue>) => void;
-
-  /**
-   * Show a notification.
-   * Called for 'notify' effects.
-   */
-  notify: (message: string, options?: NotifyOptions) => void;
 
   /**
    * Emit an event to the event bus.
