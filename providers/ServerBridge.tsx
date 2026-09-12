@@ -241,6 +241,10 @@ export interface ServerClientEffect {
 /** Metadata about what the server returned, for debugger logging */
 export interface ServerResponseMeta {
   success: boolean;
+  /** `OrbitalEventResponse.transitioned` — whether any arm accepted the event. */
+  transitioned: boolean;
+  /** Server-side emits with their evaluated payloads (`ServerResponseTrace.emitted`). */
+  emitted?: ReadonlyArray<{ event: string; payload?: EventPayload }>;
   clientEffects: number;
   dataEntities: Record<string, number>;
   /** Raw entity data from server response (for EntityStore advancement) */
@@ -369,7 +373,7 @@ const ServerBridgeContext = createContext<ServerBridgeContextValue | null>(null)
 export function useServerBridge(): ServerBridgeContextValue {
   const ctx = useContext(ServerBridgeContext);
   if (!ctx) {
-    const emptyMeta: ServerResponseMeta = { success: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
+    const emptyMeta: ServerResponseMeta = { success: false, transitioned: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
     return { connected: false, sendEvent: async () => ({ effects: [], meta: emptyMeta }) };
   }
   return ctx;
@@ -471,7 +475,7 @@ export function ServerBridgeProvider({
     tick?: string,
     sourceTrait?: string,
   ): Promise<SendEventResult> => {
-    const emptyMeta: ServerResponseMeta = { success: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
+    const emptyMeta: ServerResponseMeta = { success: false, transitioned: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
     if (!connected) return { effects: [], meta: emptyMeta };
 
     // T6 + T8: a tick-stamped broadcast is relayed coalesced; its response is
@@ -502,10 +506,12 @@ export function ServerBridgeProvider({
 
       const meta: ServerResponseMeta = {
         success: !!result.success,
+        transitioned: result.transitioned === true,
         clientEffects: result.clientEffects?.length ?? 0,
         dataEntities,
         data: responseData,
         emittedEvents: result.emittedEvents?.map((e) => e.event) ?? [],
+        emitted: result.emittedEvents?.map((e) => ({ event: e.event, ...(e.payload !== undefined && { payload: e.payload }) })) ?? [],
         effectResults: result.effectResults,
         error: result.error,
       };

@@ -270,6 +270,11 @@ export function VerificationProvider({
         const emittedEvents: string[] = emittedEventsRaw
           .map((e) => (typeof e.event === 'string' ? e.event : null))
           .filter((e): e is string => e !== null);
+        const emitted = emittedEventsRaw.flatMap((e) => {
+          if (typeof e.event !== 'string') return [];
+          const p = e['payload'];
+          return [{ event: e.event, ...(p !== null && typeof p === 'object' && !Array.isArray(p) && { payload: p as EventPayload }) }];
+        });
 
         recordTransition({
           traitName: parsed.traitName,
@@ -280,9 +285,11 @@ export function VerificationProvider({
           serverResponse: {
             orbitalName: parsed.traitName,
             success: true,
+            ...(typeof payload['transitioned'] === 'boolean' && { transitioned: payload['transitioned'] }),
             clientEffects: clientEffectsArr.length,
             dataEntities,
             emittedEvents,
+            emitted,
             timestamp: Date.now(),
           },
           timestamp: Date.now(),
@@ -310,6 +317,7 @@ export function VerificationProvider({
           serverResponse: {
             orbitalName: parsed.traitName,
             success: false,
+            transitioned: false,
             clientEffects: 0,
             dataEntities: {},
             emittedEvents: [],

@@ -1676,6 +1676,16 @@ export function useTraitStateMachine(
         const bindings = traitBindingsRef.current;
         const currentManager = managerRef.current;
 
+        // `cascadeReceived` is "since the last user dispatch" (core
+        // `TraitStateSnapshot`): a dispatch with no emitting trait and no
+        // tick — a click, a mount lifecycle, a direct processEvent — opens a
+        // new window, so every trait's cascade buffer starts empty.
+        if (sourceTrait === undefined && tick === undefined) {
+            for (const snap of traitSnapshotDataRef.current.values()) {
+                snap.cascadeReceived = [];
+            }
+        }
+
         crossTraitLog.debug('processEvent:enter', () => ({
             event: normalizedEvent,
             payload: JSON.stringify(payload ?? null),
@@ -1949,6 +1959,7 @@ export function useTraitStateMachine(
                             // the verifier reads emittedEvents only.
                             orbitalName: '',
                             success: true,
+                            transitioned: true,
                             clientEffects: effectTraces.length,
                             dataEntities: {},
                             emittedEvents,
