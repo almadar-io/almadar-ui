@@ -508,6 +508,44 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
 }
 
 /**
+ * Scale-to-fit wrapper: measures the rendered content's natural size and
+ * uniformly scales it down (never up) so it fits the container without
+ * scrollbars. CSS transforms participate in hit-testing, so game canvas
+ * pointer input keeps working at any scale. Used by `fit` previews (the
+ * hero demo) whose content has a fixed intrinsic size (game canvases).
+ */
+function FitToBox({ children }: { children: React.ReactNode }) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+    const update = () => {
+      const sw = inner.scrollWidth;
+      const sh = inner.scrollHeight;
+      const cw = outer.clientWidth;
+      const ch = outer.clientHeight;
+      if (!sw || !sh || !cw || !ch) return;
+      setScale(Math.min(1, cw / sw, ch / sh));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(outer);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div ref={outerRef} className="relative h-full w-full overflow-hidden">
+      <div ref={innerRef} style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: 'fit-content' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Resolves schema, mounts trait state machines, and renders the UI.
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
@@ -911,6 +949,12 @@ export interface OrbPreviewProps {
    * Default false (standalone previews own the global bridge).
    */
   isolated?: boolean;
+  /**
+   * Scale the rendered content down (never up) so it fits the container
+   * without scrollbars. For fixed-intrinsic-size content (game canvases);
+   * leave off for flow layouts, which should keep their internal scroll.
+   */
+  fit?: boolean;
 }
 
 /**
@@ -937,6 +981,7 @@ export function OrbPreview({
   getAccessToken,
   initialPagePath,
   isolated = false,
+  fit = false,
   user = null,
 }: OrbPreviewProps): React.ReactElement {
   if (serverUrl && transport) {
@@ -1212,7 +1257,7 @@ export function OrbPreview({
   return (
     <Box
       ref={containerRef}
-      className={`overflow-auto border border-[var(--color-border)] rounded-[var(--radius-md)] ${className ?? ''}`}
+      className={`${fit ? 'overflow-hidden' : 'overflow-auto'} border border-[var(--color-border)] rounded-[var(--radius-md)] ${className ?? ''}`}
       style={{ height }}
     >
       {/* GAP-19: visible banner when the preview server bridge fell back to local execution.
@@ -1236,19 +1281,37 @@ export function OrbPreview({
         <NavStackRefBridge apiRef={navStackRef} />
         <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated} user={user}>
           <UISlotProvider>
-            <SchemaRunner
-              schema={parseResult.schema}
-              serverUrl={serverUrl}
-              transport={transport}
-              getAccessToken={getAccessToken}
-              mockData={effectiveMockData}
-              pageName={currentPage}
-              routeParams={routeParams}
-              onNavigate={handleNavigateEffect}
-              onNavigateBack={handleNavigateBack}
-              onLocalFallback={handleLocalFallback}
-              persistence={persistence}
-            />
+            {fit ? (
+              <FitToBox>
+                <SchemaRunner
+                  schema={parseResult.schema}
+                  serverUrl={serverUrl}
+                  transport={transport}
+                  getAccessToken={getAccessToken}
+                  mockData={effectiveMockData}
+                  pageName={currentPage}
+                  routeParams={routeParams}
+                  onNavigate={handleNavigateEffect}
+                  onNavigateBack={handleNavigateBack}
+                  onLocalFallback={handleLocalFallback}
+                  persistence={persistence}
+                />
+              </FitToBox>
+            ) : (
+              <SchemaRunner
+                schema={parseResult.schema}
+                serverUrl={serverUrl}
+                transport={transport}
+                getAccessToken={getAccessToken}
+                mockData={effectiveMockData}
+                pageName={currentPage}
+                routeParams={routeParams}
+                onNavigate={handleNavigateEffect}
+                onNavigateBack={handleNavigateBack}
+                onLocalFallback={handleLocalFallback}
+                persistence={persistence}
+              />
+            )}
           </UISlotProvider>
         </OrbitalProvider>
         </NavStackProvider>

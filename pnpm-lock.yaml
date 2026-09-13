@@ -22,8 +22,8 @@ importers:
         specifier: ^1.12.0
         version: 1.12.0
       '@almadar/runtime':
-        specifier: ^6.77.0
-        version: 6.77.0(express@5.2.1)
+        specifier: ^6.78.0
+        version: 6.78.0(express@5.2.1)
       '@almadar/std':
         specifier: ^16.213.0
         version: 16.213.0
@@ -250,8 +250,8 @@ packages:
   '@almadar/logger@1.12.0':
     resolution: {integrity: sha512-LcNpduM3Mx36u2b9G7ofR0ekYZuJCB8eGTYq9THe00gpnkVJVewbvJxsEza1bRcUa5e81MbYs0NCZsTSWio6Xg==}
 
-  '@almadar/runtime@6.77.0':
-    resolution: {integrity: sha512-s3as/Z32t+yQ0PxXYLQq8mjQcNaHRpa9OEcuaF+WjNY3C8UDiHRPdqaYgFAcjNIO+GMBEC+T2AAW6MaoMsygsw==}
+  '@almadar/runtime@6.78.0':
+    resolution: {integrity: sha512-Mz6Q9eeTOl90NFkFV89Q97djx57pPw/zOm13EnZyHl4ipTstjSFIfuWFZsINdgDjPtmTH0oDL/bALmemivpgZA==}
     peerDependencies:
       express: ^5.0.0
     peerDependenciesMeta:
@@ -4945,7 +4945,7 @@ snapshots:
     dependencies:
       '@almadar/core': 10.92.0
 
-  '@almadar/runtime@6.77.0(express@5.2.1)':
+  '@almadar/runtime@6.78.0(express@5.2.1)':
     dependencies:
       '@almadar/core': 10.92.0
       '@almadar/evaluator': 2.45.0

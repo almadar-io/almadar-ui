@@ -41,6 +41,8 @@ export interface BrowserPlaygroundProps {
   className?: string;
   /** Pause the in-process runtime's tick scheduler. Default: undefined (running, same as today). */
   paused?: boolean;
+  /** Scale content down (never up) to fit the container without scrollbars — for fixed-size content like game canvases. Forwarded to OrbPreview. */
+  fit?: boolean;
 }
 
 export function BrowserPlayground({
@@ -50,6 +52,7 @@ export function BrowserPlayground({
   height,
   className,
   paused,
+  fit,
 }: BrowserPlaygroundProps): React.ReactElement {
   const [runtime] = useState(
     () => new OrbitalServerRuntime({ mode, debug: false }),
@@ -157,6 +160,7 @@ export function BrowserPlayground({
       initialPagePath={initialPagePath}
       height={height}
       className={className}
+      fit={fit}
       // BrowserPlayground is always a sandboxed in-process preview embedded in
       // a host (studio canvas / preview tab). Its bus must stay context-local
       // and must NOT clobber the host's global event bus — otherwise a host
