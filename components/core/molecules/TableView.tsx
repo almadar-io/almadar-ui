@@ -17,7 +17,8 @@ import type { EntityRow, EntityWith, FieldValue, EventKey, EventEmit } from '@al
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
-import { relationDisplayLabels } from '../../../lib/relationLabel';
+import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
+import type { RelationOption } from './RelationSelect';
 import { createLogger } from '@almadar/logger';
 
 const tableViewLog = createLogger('almadar:ui:table-view');
@@ -86,6 +87,7 @@ export interface TableViewItemAction {
  * columns, with inline row actions and grouping.
  *
  * @capabilities admin console table, records list, CRUD data table, user list, manage-users grid, sortable columns, row selection with bulk actions, grouped list view
+ * @fieldsContract display
  */
 export interface TableViewProps extends DataDndProps {
   /** Schema entity data — the collection of rows to render. */
@@ -147,6 +149,11 @@ export interface TableViewProps extends DataDndProps {
    * so authors share one knob name across row renderers.
    */
   look?: 'dense' | 'spacious' | 'striped' | 'borderless' | 'bordered';
+  /** Relation display data: { fieldName: [{value, label}] } — injected
+   *  server-side by the runtime (relation-option injection) or bound by
+   *  compiled codegen; resolves stored foreign ids to display names for a
+   *  column whose field is relation-typed. Same contract DetailPanel takes. */
+  relationsData?: Record<string, readonly RelationOption[]>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -180,13 +187,17 @@ function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' 
   return 'default';
 }
 
-const formatCell = (value: FieldValue | undefined, format?: TableViewColumn['format']): string => {
+const formatCell = (
+  value: FieldValue | undefined,
+  format?: TableViewColumn['format'],
+  relationOptions?: readonly RelationOption[],
+): string => {
   // A hydrated relation row (or array of rows/ids, from `include:` hydration)
-  // reads by its name/title/label — never "[object Object]" or a raw id list.
-  if (value !== null && value !== undefined && typeof value === 'object' && !(value instanceof Date)) {
-    const labels = relationDisplayLabels(value);
-    if (labels.length > 0) return labels.join(', ');
-  }
+  // reads by its name/title/label; a bare foreign id resolves through the
+  // column's injected `relationsData` options — never "[object Object]" or a
+  // raw id when a label is knowable.
+  const relationDisplay = resolveRelationCellDisplay(value, relationOptions);
+  if (relationDisplay !== undefined) return relationDisplay;
   return formatValue(value, format);
 };
 
@@ -274,6 +285,7 @@ export function TableView({
   positionEvent,
   dndItemIdField,
   dndRoot,
+  relationsData,
 }: TableViewProps) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -393,7 +405,7 @@ export function TableView({
   const colFloors = React.useMemo(
     () => colDefs.map((col) => {
       const longest = data.reduce((widest, row) => {
-        const cell = formatCell(asFieldValue(getNestedValue(row, col.field ?? col.key)), col.format);
+        const cell = formatCell(asFieldValue(getNestedValue(row, col.field ?? col.key)), col.format, relationsData?.[col.field ?? col.key]);
         return Math.max(widest, cell.length);
       }, columnLabel(col).length);
       // A badge wraps its text in padding, so the raw character count
@@ -535,15 +547,17 @@ export function TableView({
               col.className,
             );
             if (col.format === 'badge' && raw != null && raw !== '') {
+              const relationDisplay = resolveRelationCellDisplay(raw, relationsData?.[col.field ?? col.key]);
+              const label = relationDisplay ?? humanizeEnumValue(String(raw));
               return (
                 <Box key={col.key} role="cell" className={cellBase}>
-                  <Badge variant={statusVariant(String(raw))} size="sm" className="whitespace-nowrap">{humanizeEnumValue(String(raw))}</Badge>
+                  <Badge variant={statusVariant(String(raw))} size="sm" className="whitespace-nowrap">{label}</Badge>
                 </Box>
               );
             }
             return (
               <Box key={col.key} role="cell" className={cellBase}>
-                <span className="truncate text-foreground">{formatCell(raw, col.format)}</span>
+                <span className="truncate text-foreground">{formatCell(raw, col.format, relationsData?.[col.field ?? col.key])}</span>
               </Box>
             );
           })

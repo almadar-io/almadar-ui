@@ -10,7 +10,7 @@ export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTex
   placeholder?: string;
   /** Number of visible rows */
   rows?: number;
-  /** Declarative event name for trait dispatch */
+  /** Declarative event: fires on ⌘/Ctrl+Enter with `{ value }`. */
   action?: EventKey;
   /** Error message */
   error?: string;
@@ -19,7 +19,7 @@ export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTex
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, error, onChange, ...props }, ref) => {
+  ({ className, error, onChange, action, onKeyDown, ...props }, ref) => {
     const eventBus = useEventBus();
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -30,10 +30,18 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      onKeyDown?.(e);
+      if (!action || e.key !== 'Enter' || !(e.metaKey || e.ctrlKey)) return;
+      e.preventDefault();
+      eventBus.emit(`UI:${action}`, { value: e.currentTarget.value });
+    };
+
     return (
       <textarea
         ref={ref}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         className={cn(
           "block w-full border-[length:var(--border-width)] shadow-sm",
           "px-3 py-2 text-sm text-foreground",

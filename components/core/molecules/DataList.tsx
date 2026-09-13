@@ -18,6 +18,8 @@ import type { EntityRow, EventKey, EventEmit, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatDate, formatValue as libFormatValue, humanizeFieldName, sortRows } from '../../../lib/format';
+import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
+import type { RelationOption } from './RelationSelect';
 import { createLogger } from '@almadar/logger';
 
 const dataListLog = createLogger('almadar:ui:data-list');
@@ -78,6 +80,9 @@ export interface DataListSwipeAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
+/**
+ * @fieldsContract display
+ */
 export interface DataListProps extends DataDndProps {
   /**
    * Schema entity data — the collection of rows to render.
@@ -180,6 +185,11 @@ export interface DataListProps extends DataDndProps {
    * data-grid / data-list / entity-table share one knob name from authors.
    */
   look?: "dense" | "spacious" | "striped" | "borderless" | "card-rows";
+  /** Relation display data: { fieldName: [{value, label}] } — injected
+   *  server-side by the runtime (relation-option injection) or bound by
+   *  compiled codegen; resolves stored foreign ids to display names for a
+   *  field whose type is relation. Same contract DetailPanel takes. */
+  relationsData?: Record<string, readonly RelationOption[]>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -202,12 +212,16 @@ function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' 
 }
 
 // Thin wrapper over the shared formatter that keeps DataList's i18n yes/no
-// labels for boolean fields.
+// labels for boolean fields and resolves relation fields to their label
+// (hydrated row, or a bare foreign id via the field's `relationsData` options).
 function formatValue(
   value: FieldValue | undefined,
   format?: DataListField['format'],
   boolLabels?: { yes: string; no: string },
+  relationOptions?: readonly RelationOption[],
 ): string {
+  const relationDisplay = resolveRelationCellDisplay(value, relationOptions);
+  if (relationDisplay !== undefined) return relationDisplay;
   if (value !== undefined && value !== null && (format === 'boolean' || typeof value === 'boolean')) {
     const isNo = value === false || value === 0 || String(value) === 'false';
     return isNo ? (boolLabels?.no ?? 'No') : (boolLabels?.yes ?? 'Yes');
@@ -287,6 +301,7 @@ export function DataList({
   dndItemIdField,
   dndRoot,
   look = 'dense',
+  relationsData,
 }: DataListProps) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -567,7 +582,7 @@ export function DataList({
                             // `format` applies here too — a boolean field badged
                             // without it renders the raw "false" instead of "No".
                             <Badge key={f.name} variant={statusVariant(String(v))}>
-                              {formatValue(v as FieldValue, f.format)}
+                              {formatValue(v as FieldValue, f.format, undefined, relationsData?.[f.name])}
                             </Badge>
                           ) : (
                             <Typography
@@ -575,7 +590,7 @@ export function DataList({
                               variant="caption"
                               className={cn('text-xs', isSent ? 'opacity-70' : 'text-muted-foreground')}
                             >
-                              {formatValue(v as FieldValue, f.format)}
+                              {formatValue(v as FieldValue, f.format, undefined, relationsData?.[f.name])}
                             </Typography>
                           );
                         })}
@@ -674,6 +689,10 @@ export function DataList({
     // Default fields-based path
     const id = (itemData.id as string) || String(index);
     const titleValue = getNestedValue(itemData, titleField?.name ?? '');
+    const titleDisplay = resolveRelationCellDisplay(
+      titleValue as FieldValue | undefined,
+      titleField ? relationsData?.[titleField.name] : undefined,
+    ) ?? (titleValue !== undefined && titleValue !== null ? String(titleValue) : undefined);
 
     return wrapDnd(
       <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEvent ? handleRowClick(itemData) : undefined} className={cn(rowClickEvent && 'cursor-pointer')}>
@@ -699,7 +718,7 @@ export function DataList({
                   variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
                   className={cn('font-semibold truncate flex-1', isCompact && 'text-sm')}
                 >
-                  {String(titleValue)}
+                  {titleDisplay}
                 </Typography>
               )}
               {/* Inline badges */}
@@ -710,7 +729,7 @@ export function DataList({
                   <HStack key={field.name} gap="xs" className="items-center flex-shrink-0">
                     {field.icon && renderIconInput(field.icon, { size: 'xs' })}
                     <Badge variant={statusVariant(String(val))}>
-                      {formatValue(val as FieldValue, field.format)}
+                      {formatValue(val as FieldValue, field.format, undefined, relationsData?.[field.name])}
                     </Badge>
                   </HStack>
                 );
@@ -749,7 +768,7 @@ export function DataList({
                         {field.label ?? fieldLabel(field.name)}:
                       </Typography>
                       <Typography variant="small" color="secondary">
-                        {formatValue(value, field.format, { yes: t('common.yes'), no: t('common.no') })}
+                        {formatValue(value, field.format, { yes: t('common.yes'), no: t('common.no') }, relationsData?.[field.name])}
                       </Typography>
                     </HStack>
                   );

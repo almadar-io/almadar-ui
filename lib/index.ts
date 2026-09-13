@@ -46,6 +46,9 @@ export * from './format';
 
 export * from './getNestedValue';
 
+// Keyboard input layer (device keycode → semantic event, shared by every keyMap consumer)
+export * from './keyMapEvent';
+
 // Visualizer
 export * from './visualizer/index';
 

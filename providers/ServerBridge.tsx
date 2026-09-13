@@ -27,6 +27,7 @@ import { useEventBus } from '../hooks/useEventBus';
 import type { EventBusContextType } from '../types/event-bus-types';
 import { createTickSendRelay, type TickSendRelay } from '../lib/tick-send-relay';
 import { createCommandSendPump } from '../lib/command-send-pump';
+import { stampLocallyDeliveredEchoes } from '../lib/cascadeEcho';
 import { createLogger } from '@almadar/logger';
 
 /** Wire-format client effect tuple from the server response. */
@@ -262,7 +263,7 @@ export interface SendEventResult {
 
 export interface ServerBridgeContextValue {
   connected: boolean;
-  sendEvent: (orbitalName: string, event: string, payload?: EventPayload, tick?: string, sourceTrait?: string) => Promise<SendEventResult>;
+  sendEvent: (orbitalName: string, event: string, payload?: EventPayload, tick?: string, sourceTrait?: string, locallyEmitted?: readonly string[]) => Promise<SendEventResult>;
 }
 
 /**
@@ -474,6 +475,7 @@ export function ServerBridgeProvider({
     payload?: EventPayload,
     tick?: string,
     sourceTrait?: string,
+    locallyEmitted?: readonly string[],
   ): Promise<SendEventResult> => {
     const emptyMeta: ServerResponseMeta = { success: false, transitioned: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
     if (!connected) return { effects: [], meta: emptyMeta };
@@ -565,33 +567,12 @@ export function ServerBridgeProvider({
 
         // Gap #13: re-emit server-cascade events on the qualified bus key
         // (shared with the SSE push leg below — see `reEmitServerEvent`).
-        //
-        // R-DUAL-EXEC-SERVER-ECHO: this response is the echo of THIS tab's
-        // own dispatch — under dual execution the tab already delivered
-        // every entry locally (the dispatched event via its click-time
-        // qualified emit; cascade emits via the bare-cascade `UI:EVENT`
-        // subscription), so a raw re-emit re-fires self-subscriptions and
-        // `listens` a second time. Multiplayer is unaffected: other tabs
-        // receive this same cascade over the SSE push leg (the server
-        // excludes the origin clientId), which stays unstamped below.
+        // Stamping is `stampLocallyDeliveredEchoes`'s contract (see there);
+        // multiplayer is unaffected — other tabs get this cascade over the
+        // unstamped SSE push leg.
         if (result.emittedEvents) {
-          for (const emitted of result.emittedEvents) {
-            // The dispatched event's own echo: the click-time qualified
-            // emit already fired both the self-subscription and every
-            // `listens` subscriber on that key — the echo adds only the
-            // duplicate.
-            if (emitted.event === event) continue;
-            // Cascade echoes: stamp `dispatched` so the emitting trait's
-            // self-subscription skips (the bare-cascade subscription
-            // already delivered it locally) while cross-trait `listens`
-            // subscribers — which don't filter on `dispatched` — still
-            // fire: the qualified key is their only delivery for a
-            // cascade emit.
-            reEmitServerEvent(
-              eventBus,
-              { ...emitted, source: { ...emitted.source, dispatched: true } },
-              orbitalName,
-            );
+          for (const emitted of stampLocallyDeliveredEchoes(event, result.emittedEvents, locallyEmitted ?? [])) {
+            reEmitServerEvent(eventBus, emitted, orbitalName);
           }
         }
       } else if (result.error) {

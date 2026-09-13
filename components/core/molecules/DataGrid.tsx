@@ -16,6 +16,8 @@ import type { EntityRow, EventKey, EventEmit, FieldValue } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
+import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
+import type { RelationOption } from './RelationSelect';
 import { createLogger } from '@almadar/logger';
 
 const dataGridLog = createLogger('almadar:ui:data-grid');
@@ -84,6 +86,7 @@ export interface DataGridItemAction {
  * with sort, select, and drag-reorder.
  *
  * @capabilities admin table, records grid, user list, CRUD list, manage-records view, spreadsheet-style data grid, sortable columns
+ * @fieldsContract display
  */
 export interface DataGridProps extends DataDndProps {
   /**
@@ -148,6 +151,11 @@ export interface DataGridProps extends DataDndProps {
    * data-grid / data-list / entity-table share one knob name from authors.
    */
   look?: "dense" | "spacious" | "striped" | "borderless" | "card-rows";
+  /** Relation display data: { fieldName: [{value, label}] } — injected
+   *  server-side by the runtime (relation-option injection) or bound by
+   *  compiled codegen; resolves stored foreign ids to display names for a
+   *  field whose type is relation. Same contract DetailPanel takes. */
+  relationsData?: Record<string, readonly RelationOption[]>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -243,6 +251,7 @@ export function DataGrid({
   dndItemIdField,
   dndRoot,
   look = 'dense',
+  relationsData,
 }: DataGridProps) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -546,6 +555,10 @@ export function DataGrid({
 
           // Default fields-based path
           const titleValue = getNestedValue(itemData, titleField?.name ?? '');
+          const titleDisplay = resolveRelationCellDisplay(
+            titleValue as FieldValue | undefined,
+            titleField ? relationsData?.[titleField.name] : undefined,
+          ) ?? (titleValue !== undefined && titleValue !== null ? String(titleValue) : undefined);
 
           return wrapDnd(
             <Box
@@ -571,7 +584,7 @@ export function DataGrid({
                 <Box className="w-full aspect-video overflow-hidden rounded-t-lg">
                   <img
                     src={imgUrl}
-                    alt={titleValue !== undefined ? String(titleValue) : ''}
+                    alt={titleDisplay ?? ''}
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
@@ -589,18 +602,18 @@ export function DataGrid({
                     onChange={() => toggleSelection(id)}
                     onClick={(e) => e.stopPropagation()}
                     className="w-4 h-4 mt-1 flex-shrink-0 accent-primary"
-                    aria-label={t('card.selectItem', { item: titleValue !== undefined ? String(titleValue) : t('card.itemFallback') })}
+                    aria-label={t('card.selectItem', { item: titleDisplay ?? t('card.itemFallback') })}
                   />
                 )}
                 <VStack gap="xs" className="flex-1 min-w-0">
-                  {titleValue !== undefined && titleValue !== null && (
+                  {titleDisplay !== undefined && (
                     <HStack gap="xs" className="items-center min-w-0">
                       {titleField?.icon && renderIconInput(titleField.icon, { size: 'sm', className: 'text-primary flex-shrink-0' })}
                       <Typography
                         variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
                         className="font-semibold truncate min-w-0"
                       >
-                        {String(titleValue)}
+                        {titleDisplay}
                       </Typography>
                     </HStack>
                   )}
@@ -613,7 +626,7 @@ export function DataGrid({
                           <HStack key={field.name} gap="xs" className="items-center">
                             {field.icon && renderIconInput(field.icon, { size: 'xs' })}
                             <Badge variant={resolveBadgeVariant(field, String(val))}>
-                              {humanizeEnumValue(formatValue(val, field.format))}
+                              {resolveRelationCellDisplay(val as FieldValue, relationsData?.[field.name]) ?? humanizeEnumValue(formatValue(val, field.format))}
                             </Badge>
                           </HStack>
                         );
@@ -682,7 +695,7 @@ export function DataGrid({
                     if (value === undefined || value === null || value === '') return null;
                     return (
                       <Typography key={field.name} variant="small" color="secondary" className="line-clamp-2">
-                        {formatValue(value, field.format)}
+                        {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format)}
                       </Typography>
                     );
                   })}
@@ -717,7 +730,7 @@ export function DataGrid({
                             {(field.label ?? fieldLabel(field.name)) + ':'}
                           </Typography>
                           <Typography variant="small" color="secondary">
-                            {formatValue(value, field.format)}
+                            {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format)}
                           </Typography>
                         </HStack>
                       );

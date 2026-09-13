@@ -401,6 +401,8 @@ export interface UseTraitStateMachineOptions {
          */
         tick?: string,
         sourceTrait?: string,
+        /** Every event name this dispatch's local effect execution emitted, one entry per emit (multiplicity matters — see `stampLocallyDeliveredEchoes`). */
+        locallyEmitted?: readonly string[],
     ) => void | Promise<void>;
     /** Router navigate function for navigate effects. `crumb` labels the
      * target page's navigation-stack entry (from the effect's options). */
@@ -851,17 +853,6 @@ export function useTraitStateMachine(
     // post-fetch write-through, no payload mirror. Initial empty per trait.
     const traitFieldStatesRef = useRef<Map<string, EntityRow>>(new Map());
 
-    // Events THIS dispatch's local effect execution emitted (event key →
-    // pending echo count). The R-DUAL-EXEC-SERVER-ECHO skip must drop ONLY
-    // the response-cascade echo of an emit the tab already delivered via the
-    // bare-cascade key. A server-executed async result (a fetch/persist
-    // success emit) was never delivered locally — its stamped qualified
-    // relay is the ONLY copy, and unconditionally skipping it froze every
-    // browse trait on its loading skeleton. Populated when effects run,
-    // consumed one echo per skip, cleared at the next dispatch (echoes for
-    // dispatch N arrive inside dispatch N's awaited bridge round-trip).
-    const bridgeEchoPendingRef = useRef<Map<string, number>>(new Map());
-
     // Render-time binding snapshots: after a non-shared trait's execution
     // writes `@entity` fields, the fresh row is published here as a NEW
     // object (the live store is mutated in place, so without a copy
@@ -1144,6 +1135,10 @@ export function useTraitStateMachine(
             // nothing persists client-side, the server owns the write and
             // reports it — never read the placeholder as a denial.
             persistDelegated: (syncOnly ? undefined : optionsRef.current?.persistence) === undefined,
+            // Bridge mode with no consumer-supplied callService: the server
+            // runs every call-service and its cascade carries the result —
+            // the client's mock must not also run one.
+            callServiceDelegated: optionsRef.current?.callService === undefined && (syncOnly ? undefined : optionsRef.current?.persistence) === undefined,
         });
 
         // Offline-preview mode: when `persistence` is supplied, layer
@@ -1764,12 +1759,6 @@ export function useTraitStateMachine(
         // executor's actual outcome instead of a hard-coded 'executed'.
         const serverEffectResultsByTrait = new Map<string, ServerEffectResult[]>();
 
-        // Fresh dispatch — the previous dispatch's bridge echoes have all
-        // arrived (the bridge round-trip is awaited below), so leftovers are
-        // local emits the server chose not to echo; keeping them would make
-        // a FUTURE genuine server cascade of the same name skip wrongly.
-        bridgeEchoPendingRef.current.clear();
-
         // Execute effects for each transition that occurred
         for (const { traitName, result } of results) {
             const binding = bindingMap.get(traitName);
@@ -1858,12 +1847,6 @@ export function useTraitStateMachine(
                 perfEnd('processEvent:executeAll', _perfT2);
                 emittedByTrait.set(traitName, emittedDuringExec);
                 serverEffectResultsByTrait.set(traitName, transitionServerEffectResults);
-                for (const emittedKey of emittedDuringExec) {
-                    bridgeEchoPendingRef.current.set(
-                        emittedKey,
-                        (bridgeEchoPendingRef.current.get(emittedKey) ?? 0) + 1,
-                    );
-                }
                 // A JSX-hoisted inline child embedded via `@trait.X`
                 // (`@callsitePayload.<field>` capture) renders once at its
                 // own mount-time INIT and never again — re-run its lifecycle
@@ -2013,7 +1996,8 @@ export function useTraitStateMachine(
             // machinery); tick broadcasts go through the coalescing relay
             // (lossy by contract, §3a). Local transitions — the user-visible
             // behavior — run the moment the drain reaches the entry.
-            void onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals, tick, sourceTrait);
+            const locallyEmitted = Array.from(emittedByTrait.values()).flat();
+            void onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals, tick, sourceTrait, locallyEmitted);
         }
         // One start token feeds both buckets: the aggregate and the
         // per-event-name split (mark/measure degrades gracefully on the
@@ -2148,26 +2132,12 @@ export function useTraitStateMachine(
                 subscribedBusKeys.add(selfBusKey);
                 crossTraitLog.debug('self:subscribe', { traitName, busKey: selfBusKey, eventKey });
                 const unsub = eventBus.on(selfBusKey, (event) => {
-                    // Skip bridge echoes this tab already processed.
-                    // ServerBridge stamps response-cascade echoes with
-                    // `dispatched: true` (R-DUAL-EXEC-SERVER-ECHO). The
-                    // stamp alone is NOT proof of local delivery: only an
-                    // emit this tab's own effects ran went out on the
-                    // bare-cascade key — a SERVER-executed async result
-                    // (fetch/persist success emit) arrives ONLY as this
-                    // stamped relay, and dropping it froze every browse
-                    // trait at its loading skeleton. Skip one echo per
-                    // locally-delivered emit; let server-only cascade
-                    // results through. Push-leg events from OTHER tabs
-                    // (multiplayer) carry no stamp and fire normally.
-                    if (event.source && (event.source as { dispatched?: boolean }).dispatched) {
-                        const pendingEchoes = bridgeEchoPendingRef.current.get(eventKey) ?? 0;
-                        if (pendingEchoes > 0) {
-                            bridgeEchoPendingRef.current.set(eventKey, pendingEchoes - 1);
-                            crossTraitLog.debug('self:fire-skipped-bridge-echo', { traitName, busKey: selfBusKey, eventKey });
-                            return;
-                        }
-                        crossTraitLog.debug('self:fire-server-cascade', { traitName, busKey: selfBusKey, eventKey });
+                    // ServerBridge stamps `dispatched` on exactly the echoes
+                    // this tab delivered locally (`stampLocallyDeliveredEchoes`);
+                    // server-only results arrive unstamped and must still fire.
+                    if (event.source?.dispatched) {
+                        crossTraitLog.debug('self:fire-skipped-bridge-echo', { traitName, busKey: selfBusKey, eventKey });
+                        return;
                     }
                     crossTraitLog.debug('self:fire', { traitName, busKey: selfBusKey, eventKey });
                     // The qualified key addresses exactly this trait — scope the

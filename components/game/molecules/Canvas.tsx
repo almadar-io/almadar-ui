@@ -28,7 +28,7 @@
 import * as React from 'react';
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { createLogger } from '@almadar/logger';
-import type { Asset, AssetUrl, Camera, EventEmit } from '@almadar/core';
+import type { Asset, AssetUrl, Camera, EventEmit, EventKey } from '@almadar/core';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import { DrawableRegistryContext, type DrawableRegistrar } from '../../../lib/drawable/registry';
 import { Canvas2D, type CameraMode as Canvas2DCameraMode, type Projection } from './Canvas2D';
@@ -104,8 +104,10 @@ export interface CanvasProps {
     tileLeaveEvent?: EventEmit<Record<string, never>>;
     /** Feature-click event (3D only). */
     featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
-    keyMap?: Record<string, string>;
-    keyUpMap?: Record<string, string>;
+    /** Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}`; keystrokes inside inputs/textareas never route. */
+    keyMap?: Record<string, EventKey>;
+    /** Maps a keyup `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event, emitted as `UI:{event}`; keystrokes inside inputs/textareas never route. */
+    keyUpMap?: Record<string, EventKey>;
 
     // --- Scene-edit mode (a game studio selecting/dragging drawables). Purely
     //     additive; suppresses `tileClickEvent`/`unitClickEvent` while active.

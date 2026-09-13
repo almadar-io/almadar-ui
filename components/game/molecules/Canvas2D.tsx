@@ -31,7 +31,7 @@
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLogger } from '@almadar/logger';
-import type { Asset, AssetUrl, EventEmit, ScenePos } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit, EventKey, ScenePos } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -46,6 +46,7 @@ import { resolveAssetSource, blit, getAtlas, isAtlasAsset } from '../../../lib/a
 import { useCamera } from '../../../hooks/useCamera';
 import { useCanvasGestures } from '../../../hooks/useCanvasGestures';
 import { bindCanvasCapture, bindLastDrawables } from '../../../lib/verificationRegistry';
+import { resolveKeyMapEvent } from '../../../lib/keyMapEvent';
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { create2DProjector, type Projection2D } from '../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
@@ -158,10 +159,10 @@ export interface Canvas2DProps {
     tileHoverEvent?: EventEmit<{ x: number; y: number }>;
     /** Emits UI:{tileLeaveEvent} with {} on pointer leave. */
     tileLeaveEvent?: EventEmit<Record<string, never>>;
-    /** Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input). */
-    keyMap?: Record<string, string>;
-    /** Maps a keyup `e.code` → the board's SEMANTIC event. */
-    keyUpMap?: Record<string, string>;
+    /** Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}`; keystrokes inside inputs/textareas never route. */
+    keyMap?: Record<string, EventKey>;
+    /** Maps a keyup `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event, emitted as `UI:{event}`; keystrokes inside inputs/textareas never route. */
+    keyUpMap?: Record<string, EventKey>;
 
     // --- Scene-edit mode (a game studio selecting/dragging drawables). Purely
     //     additive: undefined/false behaves exactly like today. Suppresses
@@ -875,11 +876,11 @@ export function Canvas2D({
     useEffect(() => {
         if (!keyMap && !keyUpMap) return;
         const onDown = (e: KeyboardEvent) => {
-            const ev = keyMap?.[e.code];
+            const ev = resolveKeyMapEvent(keyMap, e);
             if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
         };
         const onUp = (e: KeyboardEvent) => {
-            const ev = keyUpMap?.[e.code];
+            const ev = resolveKeyMapEvent(keyUpMap, e);
             if (ev) eventBus.emit(`UI:${ev}`, {});
         };
         window.addEventListener('keydown', onDown);

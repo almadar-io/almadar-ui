@@ -14,6 +14,7 @@ import * as React from 'react';
 import { useEffect, useMemo } from 'react';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { perfEnd, perfStart } from '../../../lib/perf';
+import { resolveKeyMapEvent } from '../../../lib/keyMapEvent';
 import { Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { resolveGameFontFamily } from '../../../lib/gameFonts';
@@ -22,7 +23,7 @@ import type { LearningShape, LearningPoint, LearningReadout, LearningTracePanel 
 import type { UiError } from '../../core/atoms/types';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import type { Projector } from '../../../lib/drawable/contract';
-import type { ScenePos } from '@almadar/core';
+import type { EventKey, ScenePos } from '@almadar/core';
 
 export interface MathCurve {
   label?: string;
@@ -195,10 +196,10 @@ export interface MathCanvasProps {
   interactive?: boolean;
   animate?: boolean;
   onShapeClick?: (payload: { id?: string; type?: string; index: number }) => void;
-  /** Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}` — same contract as the game canvas keyMap. */
-  keyMap?: Record<string, string>;
-  /** Maps a keyup `e.code` → the board's SEMANTIC event. */
-  keyUpMap?: Record<string, string>;
+  /** Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}` — same contract as the game canvas keyMap; keystrokes inside inputs/textareas never route. */
+  keyMap?: Record<string, EventKey>;
+  /** Maps a keyup `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event, emitted as `UI:{event}`; keystrokes inside inputs/textareas never route. */
+  keyUpMap?: Record<string, EventKey>;
   isLoading?: boolean;
   error?: UiError | null;
 }
@@ -261,11 +262,11 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   useEffect(() => {
     if (!stableKeyMap && !stableKeyUpMap) return;
     const onDown = (e: KeyboardEvent) => {
-      const ev = stableKeyMap?.[e.code];
+      const ev = resolveKeyMapEvent(stableKeyMap, e);
       if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
     };
     const onUp = (e: KeyboardEvent) => {
-      const ev = stableKeyUpMap?.[e.code];
+      const ev = resolveKeyMapEvent(stableKeyUpMap, e);
       if (ev) eventBus.emit(`UI:${ev}`, {});
     };
     window.addEventListener('keydown', onDown);

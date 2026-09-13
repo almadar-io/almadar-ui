@@ -51,6 +51,8 @@ export interface CreateClientEffectHandlersOptions {
      * it (the hook always binds one for `(set @entity.X)`).
      */
     persistDelegated?: boolean;
+    /** Same bridge-mode delegation as `persistDelegated`, for `(call-service …)`: set when no consumer `callService` is wired, so the executor skips the mock fallback below and the server's cascade carries the result. */
+    callServiceDelegated?: boolean;
     /**
      * Optional consumer-supplied call-service handler. When set, it runs
      * instead of the default mock fallback — use to wire the playground
@@ -68,7 +70,7 @@ export interface CreateClientEffectHandlersOptions {
 export function createClientEffectHandlers(
     options: CreateClientEffectHandlersOptions
 ): EffectHandlers {
-    const { eventBus, slotSetter, navigate, navigateBack, callService, liveEntity, persistDelegated } = options;
+    const { eventBus, slotSetter, navigate, navigateBack, callService, liveEntity, persistDelegated, callServiceDelegated } = options;
 
     return {
         emit: (event: string, payload?: EventPayload, source?: BusEventSource) => {
@@ -92,6 +94,7 @@ export function createClientEffectHandlers(
         // carries its outcome — tell the executor so the placeholder above is
         // never read as a denial (see `EffectHandlers.persistDelegated`).
         ...(persistDelegated === true ? { persistDelegated: true as const } : {}),
+        ...(callServiceDelegated === true ? { callServiceDelegated: true as const } : {}),
         // @almadar/runtime EffectHandlers.set types value:unknown — should be FieldValue (upstream fix queued)
         set: ((_entityId: string, field: string, value: FieldValue) => {
             // `[runtime]` entities live only in the browser — `(set @entity.X)`

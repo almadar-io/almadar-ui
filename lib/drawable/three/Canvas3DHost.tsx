@@ -36,8 +36,9 @@ import React, {
     useImperativeHandle,
 } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
-import type { EventEmit, Asset, ScenePos } from '@almadar/core';
+import type { EventEmit, EventKey, Asset, ScenePos } from '@almadar/core';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { keyMapCode, resolveKeyMapEvent } from '../../keyMapEvent';
 import { collectDrawnItems, buildHitIndex, withPreviewPosition } from '../hitTest';
 import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -200,10 +201,10 @@ export interface Canvas3DHostProps {
     /** Enable the orbit camera controls. Default true; `follow`/`chase` modes always
      *  disable them (the follow camera is authoritative). */
     controlsEnabled?: boolean;
-    /** Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input). */
-    keyMap?: Record<string, string>;
-    /** Maps a keyup `e.code` → the board's SEMANTIC event. */
-    keyUpMap?: Record<string, string>;
+    /** Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}`; keystrokes inside inputs/textareas never route. */
+    keyMap?: Record<string, EventKey>;
+    /** Maps a keyup `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event, emitted as `UI:{event}`; keystrokes inside inputs/textareas never route. */
+    keyUpMap?: Record<string, EventKey>;
     /** Side-view world size in pixels (accepted for API parity). */
     worldWidth?: number;
     /** Side-view world size in pixels (accepted for API parity). */
@@ -400,17 +401,18 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
         useEffect(() => {
             if (!keyMap && !keyUpMap) return;
             const down = (e: KeyboardEvent): void => {
-                if (keysRef.current.has(e.code)) return;
-                keysRef.current.add(e.code);
-                const ev = keyMap?.[e.code];
+                const code = keyMapCode(e);
+                if (keysRef.current.has(code)) return;
+                keysRef.current.add(code);
+                const ev = resolveKeyMapEvent(keyMap, e);
                 if (ev) {
                     eventBus.emit(`UI:${ev}`, {});
                     e.preventDefault();
                 }
             };
             const up = (e: KeyboardEvent): void => {
-                keysRef.current.delete(e.code);
-                const ev = keyUpMap?.[e.code];
+                keysRef.current.delete(keyMapCode(e));
+                const ev = resolveKeyMapEvent(keyUpMap, e);
                 if (ev) eventBus.emit(`UI:${ev}`, {});
             };
             window.addEventListener('keydown', down);

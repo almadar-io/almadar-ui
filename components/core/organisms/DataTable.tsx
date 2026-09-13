@@ -5,6 +5,8 @@ import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { humanizeFieldName } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
+import { resolveRelationCellDisplay } from "../../../lib/relationLabel";
+import type { RelationOption } from "../molecules/RelationSelect";
 import { Button, Input, Badge, Checkbox, Spinner } from "../atoms/index";
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
@@ -94,6 +96,9 @@ export interface DataTableEmptyAction {
   event?: EventKey;
 }
 
+/**
+ * @fieldsContract display
+ */
 export interface DataTableProps<T extends EntityRow & { id: string | number }>
   extends DisplayStateProps {
   /** Entity rows to display (collection cardinality). */
@@ -145,6 +150,11 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
 
   /** Layer 2 visual treatment — orthogonal to the semantic variant. */
   look?: EntityTableLook;
+  /** Relation display data: { fieldName: [{value, label}] } — injected
+   *  server-side by the runtime (relation-option injection) or bound by
+   *  compiled codegen; resolves stored foreign ids to display names for a
+   *  column whose field is relation-typed. Same contract DetailPanel takes. */
+  relationsData?: Record<string, readonly RelationOption[]>;
 }
 
 // Layer 2 look styles — applied on the outer Box AFTER baseline classes so
@@ -188,6 +198,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
   showTotal = true,
   className,
   look = "dense",
+  relationsData,
 }: DataTableProps<T>) {
   const [openActionMenu, setOpenActionMenu] = useState<string | number | null>(
     null,
@@ -571,6 +582,11 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                         {col.render
                           ? col.render(cellValue, row, rowIndex)
                           : (() => {
+                              const relationDisplay = resolveRelationCellDisplay(
+                                cellValue,
+                                relationsData?.[String(col.key)],
+                              );
+                              if (relationDisplay !== undefined) return relationDisplay;
                               const boolVal = asBooleanValue(cellValue);
                               if (boolVal !== null) {
                                 return boolVal ? (

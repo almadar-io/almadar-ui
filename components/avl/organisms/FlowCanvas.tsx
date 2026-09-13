@@ -43,6 +43,7 @@ import { SCREEN_SIZE_PRESETS, detectScreenSize } from '../types/avl-preview-type
 import { OrbInspector } from './OrbInspector';
 import { validateWire } from '../lib/wire-validation';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { isEditableTarget } from '../../../lib/keyMapEvent';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { BehaviorComposeNode } from '../molecules/BehaviorComposeNode';
 import { behaviorsToComposeGraph } from '../lib/avl-behavior-compose-converter';
@@ -588,8 +589,7 @@ function FlowCanvasInner({
       }
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       // Don't intercept when user is typing in an input
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      if (isEditableTarget(e.target)) return;
       if (selectedPattern && selectedPattern.nodeData) {
         onPatternDelete?.({ patternId: selectedPattern.patternId ?? '', nodeData: selectedPattern.nodeData });
         setSelectedPattern(null);

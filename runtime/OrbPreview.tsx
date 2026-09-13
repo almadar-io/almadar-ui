@@ -376,6 +376,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
     dispatchedOrbitals?: Set<string>,
     tick?: string,
     sourceTrait?: string,
+    locallyEmitted?: readonly string[],
   ) => {
     if (!bridge.connected || !orbitalNames?.length) return;
     const targets = dispatchedOrbitals && dispatchedOrbitals.size > 0
@@ -399,7 +400,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
       // T7: the drain no longer awaits the round trip — response application
       // continues here, and the bridge's command pump keeps the applications
       // in dispatch order (request N+1 leaves only after response N landed).
-      void bridge.sendEvent(name, event, withActiveTraits(payload)).then(({ effects, meta }) => {
+      void bridge.sendEvent(name, event, withActiveTraits(payload), undefined, undefined, locallyEmitted).then(({ effects, meta }) => {
         recordServerResponse(name, event, { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
         applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);
       });

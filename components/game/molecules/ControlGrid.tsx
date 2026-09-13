@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import type { EventEmit, Asset } from '@almadar/core';
+import type { EventEmit, EventKey, Asset } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../core/atoms/Box';
@@ -41,9 +41,9 @@ export interface ControlGridProps {
   directionEvent?: EventEmit<{ direction: DPadDirection; pressed: boolean }>;
   /** Per-direction PRESS → the board's SEMANTIC event (kind="dpad"), e.g. `{ left: "LEFT", right: "RIGHT", up: "JUMP" }`.
    *  Lets the d-pad emit the SAME intent events as the keyboard so the FSM stays device-agnostic. */
-  directionEvents?: Partial<Record<DPadDirection, string>>;
+  directionEvents?: Partial<Record<DPadDirection, EventKey>>;
   /** Per-direction RELEASE → semantic event, e.g. `{ left: "STOP", right: "STOP" }`. Omit a direction to ignore its release. */
-  directionReleaseEvents?: Partial<Record<DPadDirection, string>>;
+  directionReleaseEvents?: Partial<Record<DPadDirection, EventKey>>;
   /** Per-direction sprite assets for kind="dpad" buttons (e.g. Kenny arrow PNGs). Falls back to arrow emoji. */
   directionAssets?: Partial<Record<DPadDirection, Asset>>;
   size?: 'sm' | 'md' | 'lg';
