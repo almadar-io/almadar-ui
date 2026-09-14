@@ -84,6 +84,18 @@
 }
 
 /**
+ * currentColor anchor. A nested [data-theme] container re-scopes every
+ * var-based color utility, but the raw `color` property inherits straight
+ * through from the outer theme — `text-current` icons painted the outer
+ * theme's foreground on the inner theme's surface (white-on-white when a
+ * behavior pins a light theme inside a dark shell). Re-anchor `color` to
+ * the innermost theme's foreground so currentColor always matches.
+ */
+[data-theme] {
+    color: var(--color-foreground, inherit);
+}
+
+/**
  * Font inheritance for headings.
  *
  * Host apps (Docusaurus, builder) often set their own heading font-family
