@@ -1256,6 +1256,24 @@ function renderPatternChildren(
     if (_childChildren !== undefined && nestedProps === undefined) {
       resolvedProps.children = _childChildren;
     }
+    // A childless stack with no styling of its own is the pattern authors'
+    // "render nothing" idiom (std-calendar's `(if @config.bodySearch {...}
+    // { stack children: [] })` else-branch). Painted as an empty flex div it
+    // still consumes the parent's `gap`, leaving dead vertical space that
+    // pushes real content (the calendar grid) below the fold of bounded
+    // previews. Skip it entirely. Stacks carrying className/style keep
+    // rendering — those can be intentional spacers.
+    const childKids = resolvedProps.children;
+    const childlessStack =
+      (_childType === 'stack' || _childType === 'vstack' || _childType === 'hstack') &&
+      resolvedProps.className === undefined &&
+      resolvedProps.style === undefined &&
+      (childKids === undefined ||
+        childKids === null ||
+        (Array.isArray(childKids) && !(childKids as ReadonlyArray<SlotPropValue>).length));
+    if (childlessStack) {
+      return null;
+    }
     const childContent: SlotContent = {
       id: childId,
       pattern: child.type,

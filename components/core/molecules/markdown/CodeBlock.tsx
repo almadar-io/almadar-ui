@@ -1741,6 +1741,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
             ref={scrollRef}
             onCopy={handleSelectionCopy}
             dir="ltr"
+            // Host pages (Docusaurus/Infima) style every inline `code` with a
+            // light background + border + padding; inside this dark card that
+            // paints a light box behind every token. Strip it for descendants
+            // — same resets CodePreviewTabs used to apply locally per call site.
+            className="[&_code]:!bg-transparent [&_code]:!p-0 [&_code]:!border-0 [&_code]:!shadow-none [&_span]:!bg-transparent"
             style={{
               flex: 1,
               minHeight: 0,

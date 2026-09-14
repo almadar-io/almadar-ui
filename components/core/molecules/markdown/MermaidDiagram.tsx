@@ -66,6 +66,11 @@ export const MermaidDiagram = React.memo<MermaidDiagramProps>(
           startOnLoad: false,
           securityLevel: 'strict',
           theme: resolvedMode === 'dark' ? 'dark' : 'default',
+          // Mermaid's default is to append its "Syntax error in text" bomb
+          // graphic to <body> on a failed parse, outside any error boundary —
+          // the catch below owns failure presentation (source + log), so the
+          // library must not paint its own.
+          suppressErrorRendering: true,
         });
         // render() requires a document-unique element id; useId emits `:`
         // which is invalid inside the CSS selectors mermaid builds from it.
