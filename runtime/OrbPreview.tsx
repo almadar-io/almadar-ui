@@ -24,7 +24,7 @@ import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots, type SlotProps } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
-import type { OrbitalSchema, EntityData, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, OrbitalDefinition, TraitRef } from '@almadar/core';
+import type { OrbitalSchema, EntityData, EntityRow, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, OrbitalDefinition, TraitRef } from '@almadar/core';
 import { buildResolvedTraitConfigs, collectCallsiteCaptureChildren } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { matchPathAmong } from '../providers/navigation';
@@ -42,7 +42,7 @@ import { recordTransition, recordServerResponse, type EffectTrace } from '../lib
 import { prepareSchemaForPreview } from '../lib/prepareSchemaForPreview';
 import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
 // Server-only shape (action/entityType/data/denied) — see ServerBridge.tsx.
-import type { ServerEffectResult } from '@almadar/runtime';
+import type { ServerEffectResult, TransitionResult } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital cascade tracing on
@@ -377,6 +377,8 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
     tick?: string,
     sourceTrait?: string,
     locallyEmitted?: readonly string[],
+    results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
+    entityByTrait?: Readonly<Record<string, EntityRow>>,
   ) => {
     if (!bridge.connected || !orbitalNames?.length) return;
     const targets = dispatchedOrbitals && dispatchedOrbitals.size > 0
@@ -400,7 +402,10 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
       // T7: the drain no longer awaits the round trip — response application
       // continues here, and the bridge's command pump keeps the applications
       // in dispatch order (request N+1 leaves only after response N landed).
-      void bridge.sendEvent(name, event, withActiveTraits(payload), undefined, undefined, locallyEmitted).then(({ effects, meta }) => {
+      // `results`/`entityByTrait` are additive (Part G) — a stateless server
+      // consults them instead of shared server-side state; an unmodified
+      // server ignores them (already-safe extra JSON fields).
+      void bridge.sendEvent(name, event, withActiveTraits(payload), undefined, undefined, locallyEmitted, results, entityByTrait).then(({ effects, meta }) => {
         recordServerResponse(name, event, { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
         applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);
       });

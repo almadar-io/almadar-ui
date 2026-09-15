@@ -42,6 +42,7 @@ import {
     type EffectContext,
     type CreateServerEffectHandlersOptions,
     type ServerEffectResult,
+    type TransitionResult,
 } from '@almadar/runtime';
 import { evaluate, evaluateGuard, executeEffects, createMinimalContext, evaluateListenPayloadExpr, type EvaluationContext } from '@almadar/evaluator';
 import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
@@ -403,6 +404,23 @@ export interface UseTraitStateMachineOptions {
         sourceTrait?: string,
         /** Every event name this dispatch's local effect execution emitted, one entry per emit (multiplicity matters — see `stampLocallyDeliveredEchoes`). */
         locallyEmitted?: readonly string[],
+        /**
+         * Every trait whose LOCAL dispatch actually executed a transition
+         * for this event (Part G, stateless dual-execution) — always a
+         * subset of successfully-transitioned traits, never filtered
+         * further here. A stateless server consults this instead of
+         * rediscovering "which traits match this event" against its own
+         * shared state.
+         */
+        results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
+        /**
+         * The client's own current entity snapshot per trait (built the
+         * same way as the `entityByTrait` already passed to
+         * `currentManager.sendEvent` above) — the input a stateless server
+         * needs for `[runtime]`-persistence entities, which have nowhere
+         * else to live.
+         */
+        entityByTrait?: Readonly<Record<string, EntityRow>>,
     ) => void | Promise<void>;
     /** Router navigate function for navigate effects. `crumb` labels the
      * target page's navigation-stack entry (from the effect's options). */
@@ -1997,7 +2015,7 @@ export function useTraitStateMachine(
             // (lossy by contract, §3a). Local transitions — the user-visible
             // behavior — run the moment the drain reaches the entry.
             const locallyEmitted = Array.from(emittedByTrait.values()).flat();
-            void onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals, tick, sourceTrait, locallyEmitted);
+            void onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals, tick, sourceTrait, locallyEmitted, results, entityByTrait);
         }
         // One start token feeds both buckets: the aggregate and the
         // per-event-name split (mark/measure degrades gracefully on the

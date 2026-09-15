@@ -22,7 +22,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback, us
 import type { ReactNode } from 'react';
 import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr } from '@almadar/core';
 import type { AnyPatternConfig } from '@almadar/core/patterns';
-import type { ServerEffectResult } from '@almadar/runtime';
+import type { ServerEffectResult, TransitionResult } from '@almadar/runtime';
 import { useEventBus } from '../hooks/useEventBus';
 import type { EventBusContextType } from '../types/event-bus-types';
 import { createTickSendRelay, type TickSendRelay } from '../lib/tick-send-relay';
@@ -263,7 +263,18 @@ export interface SendEventResult {
 
 export interface ServerBridgeContextValue {
   connected: boolean;
-  sendEvent: (orbitalName: string, event: string, payload?: EventPayload, tick?: string, sourceTrait?: string, locallyEmitted?: readonly string[]) => Promise<SendEventResult>;
+  sendEvent: (
+    orbitalName: string,
+    event: string,
+    payload?: EventPayload,
+    tick?: string,
+    sourceTrait?: string,
+    locallyEmitted?: readonly string[],
+    /** Part G: traits the client's own local dispatch already executed for this event. */
+    results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
+    /** Part G: the client's own current entity snapshot per trait. */
+    entityByTrait?: Readonly<Record<string, EntityRow>>,
+  ) => Promise<SendEventResult>;
 }
 
 /**
@@ -292,16 +303,35 @@ export interface ServerBridgeTransport {
    * tick-originated latest-state broadcast: the server coalesces these
    * newest-per-key and relays them to other tabs at snapshot rate.
    */
-  sendEvent: (orbitalName: string, event: string, payload?: EventPayload, clientId?: string, tick?: string, sourceTrait?: string) => Promise<OrbitalEventResponse>;
+  sendEvent: (
+    orbitalName: string,
+    event: string,
+    payload?: EventPayload,
+    clientId?: string,
+    tick?: string,
+    sourceTrait?: string,
+    results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
+    entityByTrait?: Readonly<Record<string, EntityRow>>,
+  ) => Promise<OrbitalEventResponse>;
 }
 
-/** Request body posted to `POST /:orbital/events` — the local `OrbitalEventRequest` wire shape this transport owns. */
+/**
+ * Request body posted to `POST /:orbital/events` — the local
+ * `OrbitalEventRequest` wire shape this transport owns. `traits`/
+ * `entityByTrait` are additive (Part G, stateless dual-execution): an
+ * unmodified server ignores them (already-safe extra JSON fields, see
+ * `OrbitalServerRuntime.processOrbitalEvent`'s `{...req.body, user}` spread);
+ * a server running the hosted stateless path consults them instead of its
+ * own shared state.
+ */
 interface OrbitalEventRequestBody {
   event: string;
   payload?: EventPayload;
   clientId?: string;
   tick?: string;
   sourceTrait?: string;
+  traits?: Array<{ trait: string; from: string }>;
+  entityByTrait?: Record<string, EntityRow>;
 }
 
 /**
@@ -350,8 +380,32 @@ function createHttpTransport(serverUrl: string, getAccessToken?: AccessTokenProv
         // Ignore cleanup errors
       }
     },
-    sendEvent: async (orbitalName, event, payload, clientId, tick, sourceTrait) => {
-      const body: OrbitalEventRequestBody = { event, payload, clientId, tick, sourceTrait };
+    sendEvent: async (orbitalName, event, payload, clientId, tick, sourceTrait, results, entityByTrait) => {
+      // Every `results` entry is already an EXECUTED transition
+      // (`StateMachineCore.sendEvent` only pushes into `results` inside
+      // `if (result.executed)`) — no filtering needed before it becomes
+      // the wire's `traits` scoping list.
+      const traits = results?.map((r) => ({ trait: r.traitName, from: r.result.previousState }));
+      const body: OrbitalEventRequestBody = {
+        event,
+        payload,
+        clientId,
+        tick,
+        sourceTrait,
+        // `results === undefined` (as opposed to an explicit, possibly-empty
+        // array) distinguishes two genuinely different cases a stateless
+        // server must tell apart: the mount-time INIT dispatch (OrbPreview's
+        // "Server INIT when bridge connects" effect) calls this WITHOUT ever
+        // running a local dispatch first — by design, the server is
+        // authoritative for that one case — so there is no local `traits`
+        // list to send at all; a command-class dispatch (via
+        // `onEventProcessed`) always supplies `results`, even as `[]` when
+        // local dispatch genuinely matched nothing. Collapsing both to "omit
+        // `traits`" would make the mount-time case indistinguishable from
+        // "do nothing" and break every organism's INIT on the stateless path.
+        ...(results !== undefined ? { traits: traits ?? [] } : {}),
+        ...(entityByTrait ? { entityByTrait } : {}),
+      };
       const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
         method: 'POST',
         headers: await authHeaders(getAccessToken),
@@ -476,6 +530,8 @@ export function ServerBridgeProvider({
     tick?: string,
     sourceTrait?: string,
     locallyEmitted?: readonly string[],
+    results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
+    entityByTrait?: Readonly<Record<string, EntityRow>>,
   ): Promise<SendEventResult> => {
     const emptyMeta: ServerResponseMeta = { success: false, transitioned: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
     if (!connected) return { effects: [], meta: emptyMeta };
@@ -496,7 +552,7 @@ export function ServerBridgeProvider({
       if (disposedRef.current) return { effects: [], meta: emptyMeta };
 
       try {
-      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId(), tick, sourceTrait);
+      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId(), tick, sourceTrait, results, entityByTrait);
       const effects: ServerClientEffect[] = [];
 
       // Build metadata from raw response
