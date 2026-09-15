@@ -11,6 +11,7 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { Coachmark, useAnchorRect, type CoachmarkAnchor, type CoachmarkPlacement } from "./Coachmark";
 import { cn } from "../../../lib/cn";
+import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 
 export interface SpotlightStep {
   anchor: CoachmarkAnchor;
@@ -71,7 +72,7 @@ export const OnboardingSpotlight: React.FC<OnboardingSpotlightProps> = ({
 
   return (
     <>
-      {createPortal(backdrop, document.body)}
+      {createPortal(backdrop, getOrCreatePortalRoot())}
       <Coachmark
         open
         anchor={step.anchor}

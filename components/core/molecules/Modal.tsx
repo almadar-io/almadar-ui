@@ -14,6 +14,7 @@ import { Button } from "../atoms/Button";
 import { Dialog } from "../atoms/Dialog";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
+import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { usePresence } from "../atoms/Presence";
@@ -169,8 +170,9 @@ export const Modal: React.FC<ModalProps> = ({
     }
   };
 
-  // Portal to <body> so the dialog escapes any ancestor stacking/overflow
-  // context (sticky sidebars, transformed panes) and overlays the whole app.
+  // Portal into the theme-synced portal root so the dialog escapes any
+  // ancestor stacking/overflow context (sticky sidebars, transformed panes)
+  // while still inheriting the app's data-theme.
   // Single div is both the dark backdrop AND the flex-centering container —
   // two sibling `fixed inset-0` layers cause a ghost compositor artifact.
   // No aria-hidden here: this div is also the open Dialog's ancestor, and
@@ -289,7 +291,7 @@ export const Modal: React.FC<ModalProps> = ({
           )}
         </Dialog>
     </div>,
-    document.body,
+    getOrCreatePortalRoot(),
   );
 };
 

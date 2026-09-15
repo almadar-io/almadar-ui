@@ -36,6 +36,7 @@ import { Icon } from '../atoms/Icon';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { useEventListener } from '../../../hooks/useEventBus';
 import { cn } from '../../../lib/cn';
+import { getOrCreatePortalRoot } from '../../../lib/portalRoot';
 // StateMachineView is a state-machine visualization organism; DomLayoutData
 // is a nested structural type that doesn't fit EntityRow's primitive-field
 // constraint. Takes its layout directly via the `layoutData` prop.
@@ -645,7 +646,7 @@ const BundleTooltip: React.FC<{
         </VStack>
       </Box>
     </Box>,
-    document.body,
+    getOrCreatePortalRoot(),
   );
 };
 

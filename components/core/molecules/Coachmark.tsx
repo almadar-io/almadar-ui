@@ -6,7 +6,7 @@
  * Popover (uncontrolled, wraps its own trigger), a Coachmark is driven by
  * `open` and points at an element it does not own — a tab button, the persona
  * menu, a canvas node — resolved from a ref, a CSS selector, or a DOMRect.
- * Portals to document.body so it escapes the canvas/preview transform contexts.
+ * Portals into the shared portal root so it escapes the canvas/preview transform contexts.
  */
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
@@ -15,6 +15,7 @@ import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
 import { Icon } from "../atoms/Icon";
 import { cn } from "../../../lib/cn";
+import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { useTranslate } from "../../../hooks/useTranslate";
 
 export type CoachmarkPlacement = "top" | "bottom" | "left" | "right";
@@ -272,7 +273,7 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
       {beacon}
       {card}
     </>,
-    document.body,
+    getOrCreatePortalRoot(),
   );
 };
 

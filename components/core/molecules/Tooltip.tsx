@@ -10,6 +10,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Typography } from '../atoms/Typography';
 import { cn } from '../../../lib/cn';
+import { getOrCreatePortalRoot } from '../../../lib/portalRoot';
 import { useTapReveal } from '../../../hooks/useTapReveal';
 
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
@@ -198,7 +199,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
     <>
       {trigger}
       {typeof window !== 'undefined' && tooltipContent
-        ? createPortal(tooltipContent, document.body)
+        ? createPortal(tooltipContent, getOrCreatePortalRoot())
         : tooltipContent}
     </>
   );

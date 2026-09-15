@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { Typography } from "../atoms/Typography";
 import { usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
+import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 
 export type PopoverPosition = "top" | "bottom" | "left" | "right";
@@ -275,8 +276,8 @@ export const Popover: React.FC<PopoverProps> = ({
     },
   );
 
-  // Portal the panel to document.body so `position: fixed` resolves
-  // against the viewport. Without this, any ancestor with a non-`none`
+  // Portal the panel into the theme-synced portal root so `position: fixed`
+  // resolves against the viewport. Without this, any ancestor with a non-`none`
   // `transform` (ReactFlow's `.react-flow__viewport`, PreviewFrame's
   // `translate3d(0,0,0)` chrome-scoping trick, etc.) becomes the
   // containing block for the fixed panel and shifts it off the trigger.
@@ -318,7 +319,7 @@ export const Popover: React.FC<PopoverProps> = ({
     <>
       {triggerElement}
       {panel && typeof document !== "undefined"
-        ? createPortal(panel, document.body)
+        ? createPortal(panel, getOrCreatePortalRoot())
         : panel}
     </>
   );

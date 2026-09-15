@@ -42,6 +42,7 @@ import { useTranslate } from "../../../hooks/useTranslate";
 import { slotLog, refId } from "../../../types/slot-types";
 import { cn } from "../../../lib/cn";
 import { humanizeFieldName } from "../../../lib/format";
+import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
 import { createLogger } from '@almadar/logger';
 
@@ -840,41 +841,6 @@ function UISlotComponentInner({
       <MaybeTraitScope sourceTrait={content.sourceTrait}>{wrappedContent}</MaybeTraitScope>
     </Box>
   );
-}
-
-// ============================================================================
-// Portal root helper — shared by SlotPortal and CompiledPortal
-// ============================================================================
-
-/**
- * Find or create the portal root element, inheriting theme from the page.
- * Portal content renders outside the React tree on document.body, so it
- * needs the data-theme attribute for CSS variable resolution and a high
- * z-index to paint above the host page (e.g. Docusaurus navbar).
- */
-function getOrCreatePortalRoot(): HTMLElement {
-  let root = document.getElementById("ui-slot-portal-root");
-  if (!root) {
-    root = document.createElement("div");
-    root.id = "ui-slot-portal-root";
-    // High z-index stacking context so portal content paints above host page
-    root.style.position = "relative";
-    root.style.zIndex = "9999";
-    document.body.appendChild(root);
-  }
-  // Sync data-theme from the Almadar themed element so CSS variables resolve.
-  // Prefer compound theme names (e.g. "wireframe-light") over simple ones
-  // ("light"/"dark") which may come from the host page (e.g. Docusaurus).
-  const themed =
-    document.querySelector('[data-theme*="-"]') ??
-    document.querySelector("[data-theme]");
-  if (themed) {
-    const theme = themed.getAttribute("data-theme");
-    if (theme && root.getAttribute("data-theme") !== theme) {
-      root.setAttribute("data-theme", theme);
-    }
-  }
-  return root;
 }
 
 // ============================================================================

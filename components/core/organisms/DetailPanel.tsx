@@ -34,6 +34,7 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../../lib/cn";
+import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { humanizeFieldName, humanizeEnumValue } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { relationDisplayLabels } from "../../../lib/relationLabel";
@@ -1112,7 +1113,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     return <Box className={className}>{content}</Box>;
   }
 
-  // Portal to <body>, for the same reason Modal does: `position: fixed` is
+  // Portal into the theme-synced portal root, for the same reason Modal does:
+  // `position: fixed` is
   // resolved against the nearest ancestor that establishes containment, and
   // DashboardLayout's root carries `@container/dashboard`
   // (`container-type: inline-size`, which implies `contain: layout`). Left in
@@ -1126,7 +1128,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       {content}
     </Box>
   );
-  return typeof document === "undefined" ? panel : createPortal(panel, document.body);
+  return typeof document === "undefined" ? panel : createPortal(panel, getOrCreatePortalRoot());
 };
 
 DetailPanel.displayName = "DetailPanel";

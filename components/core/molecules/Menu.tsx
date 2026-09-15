@@ -16,6 +16,7 @@ import { Divider } from "../atoms/Divider";
 import { Typography } from "../atoms/Typography";
 import { Badge } from "../atoms/Badge";
 import { cn } from "../../../lib/cn";
+import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { EventKey } from "@almadar/core";
@@ -216,7 +217,7 @@ function SubMenu({
     </div>
   );
 
-  return typeof document !== "undefined" ? createPortal(panel, document.body) : panel;
+  return typeof document !== "undefined" ? createPortal(panel, getOrCreatePortalRoot()) : panel;
 }
 
 // One menu row. Submenus open on hover, which never fires on touch — so a tap
@@ -455,7 +456,8 @@ export const Menu: React.FC<MenuProps> = ({
       );
     });
 
-  // Portal the dropdown to document.body with fixed coords so no ancestor
+  // Portal the dropdown into the theme-synced portal root with fixed coords so
+  // no ancestor
   // transform (ReactFlow viewport, catalog sidebar, PreviewFrame chrome) can
   // create a new containing block and trap the panel behind sibling layers.
   const panel = isOpen && triggerRect ? (
@@ -475,7 +477,7 @@ export const Menu: React.FC<MenuProps> = ({
     <>
       {triggerElement}
       {panel && typeof document !== "undefined"
-        ? createPortal(panel, document.body)
+        ? createPortal(panel, getOrCreatePortalRoot())
         : panel}
     </>
   );

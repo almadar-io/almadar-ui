@@ -15,6 +15,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import type { EventKey, EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { Card, Typography, Badge, Button, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
@@ -1079,7 +1080,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         >
                             {hoveredObj?.label}
                         </div>,
-                        document.body
+                        getOrCreatePortalRoot()
                     )}
                 </Box>
 
