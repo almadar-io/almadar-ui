@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "6.25.0",
+  "version": "6.26.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [

@@ -346,6 +346,21 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
     () => new Set(traits.map((b) => b.trait.name).filter((n): n is string => !!n)),
     [traits],
   );
+  // `onEventProcessed`'s `bridge.sendEvent(...).then(...)` below is never
+  // awaited by its caller (T7: the drain doesn't wait on the round trip),
+  // so a superseded navigation's callback closure can still be the one
+  // whose response arrives — with the `activeTraitNames` it closed over at
+  // CREATION time, not the page's CURRENT one. `applyServerEffects`'s
+  // filter would then correctly-per-that-stale-set admit the old page's
+  // own off-page-by-now effects and paint them into the shared `uiSlots`
+  // (verified live 2026-09-16: a late Sprint response landed after
+  // navigating to Project/Task, stacking both AppLayouts). Read this ref
+  // at response time instead of the closed-over value so a late response
+  // is judged against whichever page is ACTUALLY active when it lands.
+  const activeTraitNamesRef = useRef(activeTraitNames);
+  useEffect(() => {
+    activeTraitNamesRef.current = activeTraitNames;
+  }, [activeTraitNames]);
   // Stamp the page-scoped execution set onto an outgoing bridge payload. The
   // server strips `_activeTraits` before state-machine processing
   // (OrbitalServerRuntime.processOrbitalEvent) and executes effects only for
@@ -417,7 +432,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
       // server ignores them (already-safe extra JSON fields).
       void bridge.sendEvent(name, event, withActiveTraits(payload), undefined, undefined, locallyEmitted, results, entityByTrait).then(({ effects, meta }) => {
         recordServerResponse(name, event, { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
-        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);
+        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNamesRef.current, onNavigateBack);
       });
     }
   }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits]);
@@ -512,7 +527,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
         // event bus via typed emit payloads, bound into the pattern tree by
         // the listener / render-ui pipeline. The server effects carry the
         // resolved data; no store hydration needed.
-        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);
+        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNamesRef.current, onNavigateBack);
       }
     })();
   }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits, routeParams]);
