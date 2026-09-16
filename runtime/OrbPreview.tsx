@@ -276,7 +276,7 @@ function NavStackRefBridge({ apiRef }: { apiRef: React.MutableRefObject<NavStack
   return null;
 }
 
-function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, serverActiveTraits, children }: {
+function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, serverActiveTraits, children }: {
   traits: ResolvedTraitBinding[];
   /** Route params from a parameterized page path — merged into every INIT payload. */
   routeParams?: Record<string, string>;
@@ -293,6 +293,16 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
    * surface a UI indicator so the silent fallback isn't actually silent.
    */
   onLocalFallback?: () => void;
+  /**
+   * Overrides the 5s default below (~line 460) for how long to wait for
+   * the server bridge before firing `onLocalFallback`. A huge organism's
+   * FIRST cold `/register` (rebuilding every StateMachineManager +
+   * cross-orbital listener server-side) can genuinely take longer than
+   * 5s — e.g. project-friday's 53-orbital schema measured ~14.5s in
+   * production. Default unchanged for every existing caller that doesn't
+   * pass this.
+   */
+  localFallbackTimeoutMs?: number;
   /**
    * Offline-preview persistence layer. Forwarded to `useTraitStateMachine`
    * so server-side effects (fetch/persist/set/ref/deref/swap!/atomic) run
@@ -457,16 +467,18 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
       const t = setTimeout(() => sendEvent('INIT', routeParams), 50);
       return () => clearTimeout(t);
     }
-    // Fallback: if server bridge doesn't connect within 5s, fire local INIT
-    // and notify the parent so it can surface the fallback (GAP-19).
+    // Fallback: if server bridge doesn't connect within the timeout, fire
+    // local INIT and notify the parent so it can surface the fallback
+    // (GAP-19). Default 5s; a caller with an unusually large schema (see
+    // `localFallbackTimeoutMs` doc) can widen this.
     const fallback = setTimeout(() => {
       if (!initSentRef.current) {
         sendEvent('INIT', routeParams);
         onLocalFallback?.();
       }
-    }, 5000);
+    }, localFallbackTimeoutMs ?? 5000);
     return () => clearTimeout(fallback);
-  }, [traits, orbitalNames, sendEvent, onLocalFallback, routeParams]);
+  }, [traits, orbitalNames, sendEvent, onLocalFallback, localFallbackTimeoutMs, routeParams]);
 
   // Server INIT when bridge connects. Apply enriched effects to slots.
   useEffect(() => {
@@ -555,7 +567,7 @@ function FitToBox({ children }: { children: React.ReactNode }) {
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, persistence }: {
+function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence }: {
   schema: OrbitalSchema;
   serverUrl?: string;
   transport?: ServerBridgeTransport;
@@ -569,6 +581,8 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
   onNavigateBack?: () => void;
   /** GAP-19: forwarded to TraitInitializer to surface server-bridge fallback. */
   onLocalFallback?: () => void;
+  /** Forwarded to TraitInitializer — see OrbPreviewProps doc. */
+  localFallbackTimeoutMs?: number;
   /** Offline-preview persistence layer. */
   persistence?: PersistenceAdapter;
 }) {
@@ -849,6 +863,7 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
           onNavigate={onNavigate}
           onNavigateBack={onNavigateBack}
           onLocalFallback={onLocalFallback}
+          localFallbackTimeoutMs={localFallbackTimeoutMs}
           persistence={persistence}
         >
         {/* Sizing model:
@@ -934,6 +949,15 @@ export interface OrbPreviewProps {
   /** Bearer token for `serverUrl` requests (see `ServerBridgeProviderProps.getAccessToken`). */
   getAccessToken?: AccessTokenProvider;
   /**
+   * How long (ms) to wait for the server bridge to connect before assuming
+   * it's unreachable and falling back to local-only execution. Default
+   * 5000 (unchanged unless you pass this). Widen it for a caller whose
+   * schema is large enough that the server's first `register()` genuinely
+   * takes longer than 5s (e.g. a 53-orbital organism measured ~14.5s in
+   * production) — see `TraitInitializer`'s `localFallbackTimeoutMs` doc.
+   */
+  localFallbackTimeoutMs?: number;
+  /**
    * Initial page path to render (e.g. `/deals`). Resolves against the
    * schema's `pages[]` to seed `currentPage` so the right orbital's traits
    * mount on first render. Without this the playground falls back to the
@@ -988,6 +1012,7 @@ export function OrbPreview({
   isolated = false,
   fit = false,
   user = null,
+  localFallbackTimeoutMs,
 }: OrbPreviewProps): React.ReactElement {
   if (serverUrl && transport) {
     throw new Error('OrbPreview accepts serverUrl OR transport, not both');
@@ -1299,6 +1324,7 @@ export function OrbPreview({
                   onNavigate={handleNavigateEffect}
                   onNavigateBack={handleNavigateBack}
                   onLocalFallback={handleLocalFallback}
+                  localFallbackTimeoutMs={localFallbackTimeoutMs}
                   persistence={persistence}
                 />
               </FitToBox>
@@ -1314,6 +1340,7 @@ export function OrbPreview({
                 onNavigate={handleNavigateEffect}
                 onNavigateBack={handleNavigateBack}
                 onLocalFallback={handleLocalFallback}
+                localFallbackTimeoutMs={localFallbackTimeoutMs}
                 persistence={persistence}
               />
             )}
