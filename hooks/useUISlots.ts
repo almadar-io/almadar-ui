@@ -258,7 +258,7 @@ const MULTI_SOURCE_STACK_TRAIT = '__multi_source_stack__';
 // to today. This previously omitted `system` and `content` even though
 // core declared them — `render({target:'system'})` was stored but never
 // surfaced (see docs/Almadar_UI_Gaps.md, 2026-09-04).
-const ALL_SLOTS: readonly UISlot[] = UI_SLOTS.filter(
+export const ALL_SLOTS: readonly UISlot[] = UI_SLOTS.filter(
   (slot) => !slot.includes('.') && slot !== 'hud' && slot !== 'screen',
 );
 

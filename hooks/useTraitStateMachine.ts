@@ -51,6 +51,7 @@ import { perfEnd, perfGauge, perfStart, perfTimeAsync } from '../lib/perf';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from '../types/runtime-types';
 import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
 import type { useUISlots, SlotProps } from '../providers/UISlotContext';
+import { ALL_SLOTS } from './useUISlots';
 import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useEntitySchema } from '../providers/EntitySchemaContext';
 import { useUser } from '../providers/UserContext';
@@ -222,6 +223,27 @@ export function effectsCallOp(effects: SExpr[], ops: ReadonlySet<string>): boole
         if (found) return true;
     }
     return false;
+}
+
+/**
+ * Trait names present in `prev` but absent from `next` — the set that just
+ * dropped out of the active page's trait bindings (e.g. navigating from one
+ * whole-orbital-imported page to another). Used to clear a dropped trait's
+ * stale slot content instead of leaving it to stack with whatever the new
+ * page's traits render into the same slot (verified 2026-09-16: this was
+ * the one place nothing ever told a no-longer-active trait to leave a UI
+ * slot — `flushSlot`'s own `clearBySource` call only fires when a trait's
+ * OWN pattern list goes empty, never on a `traitBindings` set change).
+ */
+export function diffDroppedTraitNames(
+    prev: ReadonlySet<string>,
+    next: ReadonlySet<string>,
+): string[] {
+    const dropped: string[] = [];
+    for (const name of prev) {
+        if (!next.has(name)) dropped.push(name);
+    }
+    return dropped;
 }
 
 /** Classify one tick's effects for shared-entity scheduling. */
@@ -751,6 +773,11 @@ export function useTraitStateMachine(
     const embeddedTraitsRef = useRef(options?.embeddedTraits);
     const optionsRef = useRef(options);
 
+    // Previous render's active trait NAMES — set at the end of the
+    // trait-bindings-changed effect below, read at the START of its next
+    // run to find which traits just dropped out (see `diffDroppedTraitNames`).
+    const prevActiveTraitNamesRef = useRef<ReadonlySet<string>>(new Set());
+
     useEffect(() => {
         traitBindingsRef.current = traitBindings;
     }, [traitBindings]);
@@ -940,6 +967,30 @@ export function useTraitStateMachine(
 
     // Reinitialize when trait bindings change (e.g., page navigation)
     useEffect(() => {
+        // Clear a dropped trait's stale content from every slot BEFORE
+        // anything else — a trait that simply stops being part of the
+        // active page's `traitBindings` (as opposed to itself emitting an
+        // empty render) never told `useUISlots` to remove its last render,
+        // so it would otherwise sit there and stack with whatever the new
+        // page's traits write into the same slot (verified 2026-09-16:
+        // navigating between whole-orbital-imported pages stacked two full
+        // AppLayout traits in `main` via the store's legitimate multi-
+        // source-stack aggregator, fed stale input it was never meant to
+        // receive). `clearBySource` is a documented no-op for a slot a
+        // trait never wrote to, so iterating every slot is safe.
+        const nextActiveTraitNames = new Set(
+            traitBindings.map((b) => b.trait.name).filter((n): n is string => !!n),
+        );
+        const dropped = diffDroppedTraitNames(prevActiveTraitNamesRef.current, nextActiveTraitNames);
+        if (dropped.length > 0) {
+            for (const traitName of dropped) {
+                for (const slot of ALL_SLOTS) {
+                    uiSlotsRef.current.clearBySource(slot, traitName);
+                }
+            }
+        }
+        prevActiveTraitNamesRef.current = nextActiveTraitNames;
+
         const newManager = managerRef.current;
         newManager.resetAll();
         setTraitStates(newManager.getAllStates());
