@@ -75,6 +75,9 @@ export { ScaledDiagram, type ScaledDiagramProps } from './ScaledDiagram';
 // Calendar
 export { CalendarGrid, type CalendarGridProps } from './CalendarGrid';
 
+// Gantt / timeline schedule
+export { Gantt, type GanttProps, type GanttLink } from './Gantt';
+
 // Inspection form components
 export { RepeatableFormSection, type RepeatableFormSectionProps, type RepeatableItem } from './RepeatableFormSection';
 export { ViolationAlert, type ViolationAlertProps, type ViolationRecord } from './ViolationAlert';
