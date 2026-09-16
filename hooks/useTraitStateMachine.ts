@@ -1441,20 +1441,36 @@ export function useTraitStateMachine(
                 slotsTouched: Array.from(pendingSlots.keys()).join(','),
             }));
 
-            for (const [slot, patterns] of pendingSlots) {
-                log.debug('flush:slot', {
-                    traitName,
-                    slot,
-                    patternCount: patterns.length,
-                    event: flushEvent,
-                    transition: `${previousState}->${newState}`,
-                    cleared: patterns.length === 0,
-                });
-                flushSlot(traitName, slot, patterns, {
-                    event: flushEvent,
-                    state: previousState,
-                    entity: binding.linkedEntity,
-                });
+            // This whole function is async and can suspend mid-`executeAll`
+            // at any await (a `fetch`/`persist` effect's network round
+            // trip) — during that suspension a page/route change can drop
+            // `traitName` out of the active `traitBindings` set entirely
+            // (verified 2026-09-16: a late-arriving response from a
+            // superseded navigation re-wrote a since-cleared slot's content,
+            // re-introducing the exact stacking `diffDroppedTraitNames`'s
+            // cleanup, above, was fixing). Only the UI paint is skipped for
+            // an off-page trait — emit/persist/set already ran and their
+            // side effects stand, same policy `applyServerEffects`'s own
+            // activeTraits filter already applies to server-driven renders.
+            const stillActive = traitBindingsRef.current.some((b) => b.trait.name === traitName);
+            if (!stillActive) {
+                log.debug('flush:skip-stale-navigation', { traitName, event: flushEvent });
+            } else {
+                for (const [slot, patterns] of pendingSlots) {
+                    log.debug('flush:slot', {
+                        traitName,
+                        slot,
+                        patternCount: patterns.length,
+                        event: flushEvent,
+                        transition: `${previousState}->${newState}`,
+                        cleared: patterns.length === 0,
+                    });
+                    flushSlot(traitName, slot, patterns, {
+                        event: flushEvent,
+                        state: previousState,
+                        entity: binding.linkedEntity,
+                    });
+                }
             }
 
             // Render-time binding publish (compiled-shell parity): this
