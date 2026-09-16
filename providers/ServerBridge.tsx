@@ -312,6 +312,19 @@ export interface ServerBridgeTransport {
     sourceTrait?: string,
     results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
     entityByTrait?: Readonly<Record<string, EntityRow>>,
+    /**
+     * The mounted top-level schema's own `name` (`ServerBridgeProvider`'s
+     * `schema` prop). Orbital names are not unique across a hosting
+     * server's whole catalog — a "whole orbital import" copies an existing
+     * orbital wholesale into a new behavior, so two catalog entries can
+     * declare an orbital with the identical name — this disambiguates
+     * which one a stateless server should resolve against instead of it
+     * guessing from a global orbital-name reverse index (verified
+     * 2026-09-16: project-friday's own imported `TaskOrbital` was
+     * misrouted to the standalone `std-project-manager` orbital of the
+     * same name). An unmodified server ignores the extra field.
+     */
+    behaviorHint?: string,
   ) => Promise<OrbitalEventResponse>;
 }
 
@@ -332,6 +345,7 @@ interface OrbitalEventRequestBody {
   sourceTrait?: string;
   traits?: Array<{ trait: string; from: string }>;
   entityByTrait?: Record<string, EntityRow>;
+  behavior?: string;
 }
 
 /**
@@ -380,7 +394,7 @@ function createHttpTransport(serverUrl: string, getAccessToken?: AccessTokenProv
         // Ignore cleanup errors
       }
     },
-    sendEvent: async (orbitalName, event, payload, clientId, tick, sourceTrait, results, entityByTrait) => {
+    sendEvent: async (orbitalName, event, payload, clientId, tick, sourceTrait, results, entityByTrait, behaviorHint) => {
       // Every `results` entry is already an EXECUTED transition
       // (`StateMachineCore.sendEvent` only pushes into `results` inside
       // `if (result.executed)`) — no filtering needed before it becomes
@@ -405,6 +419,7 @@ function createHttpTransport(serverUrl: string, getAccessToken?: AccessTokenProv
         // "do nothing" and break every organism's INIT on the stateless path.
         ...(results !== undefined ? { traits: traits ?? [] } : {}),
         ...(entityByTrait ? { entityByTrait } : {}),
+        ...(behaviorHint !== undefined ? { behavior: behaviorHint } : {}),
       };
       const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
         method: 'POST',
@@ -503,9 +518,9 @@ export function ServerBridgeProvider({
   // and starving command fetches (R-CLIENT-TICK-POST-BACKLOG).
   const tickRelay: TickSendRelay<TickSnapshot> = useMemo(
     () => createTickSendRelay<TickSnapshot>(async (_key, snap) => {
-      await transport.sendEvent(snap.orbitalName, snap.event, snap.payload, getTabClientId(), snap.tick, snap.sourceTrait);
+      await transport.sendEvent(snap.orbitalName, snap.event, snap.payload, getTabClientId(), snap.tick, snap.sourceTrait, undefined, undefined, schema.name);
     }),
-    [transport],
+    [transport, schema.name],
   );
   useEffect(() => () => tickRelay.clear(), [tickRelay]);
 
@@ -552,7 +567,7 @@ export function ServerBridgeProvider({
       if (disposedRef.current) return { effects: [], meta: emptyMeta };
 
       try {
-      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId(), tick, sourceTrait, results, entityByTrait);
+      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId(), tick, sourceTrait, results, entityByTrait, schema.name);
       const effects: ServerClientEffect[] = [];
 
       // Build metadata from raw response
@@ -680,7 +695,7 @@ export function ServerBridgeProvider({
       return { effects: [], meta: { ...emptyMeta, error: msg } };
       }
     });
-  }, [connected, transport, eventBus, tickRelay, commandPump]);
+  }, [connected, transport, eventBus, tickRelay, commandPump, schema.name]);
 
   // Register on mount, unregister on unmount
   useEffect(() => {
