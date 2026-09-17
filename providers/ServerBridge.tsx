@@ -20,7 +20,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr } from '@almadar/core';
+import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr, UserContext } from '@almadar/core';
 import type { AnyPatternConfig } from '@almadar/core/patterns';
 import type { ServerEffectResult, TransitionResult } from '@almadar/runtime';
 import { useEventBus } from '../hooks/useEventBus';
@@ -274,6 +274,17 @@ export interface ServerBridgeContextValue {
     results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
     /** Part G: the client's own current entity snapshot per trait. */
     entityByTrait?: Readonly<Record<string, EntityRow>>,
+    /**
+     * The current viewer (persona), for `@user.X` guard/effect bindings.
+     * The persona-switcher's picked viewer never used to reach server-side
+     * effects on the stateless path — it only ever drove client-side guard
+     * evaluation — so a `fetch`/`persist` comparing against `@user.id`
+     * (e.g. a chat channel's `member == @user.id` scope filter, a profile
+     * page's self-lookup) always compared against `undefined` (confirmed
+     * 2026-09-17). `undefined` here sends the request unauthenticated,
+     * exactly as before this field existed.
+     */
+    user?: UserContext,
   ) => Promise<SendEventResult>;
 }
 
@@ -325,6 +336,8 @@ export interface ServerBridgeTransport {
      * same name). An unmodified server ignores the extra field.
      */
     behaviorHint?: string,
+    /** See `ServerBridgeContextValue.sendEvent`'s `user` param. */
+    user?: UserContext,
   ) => Promise<OrbitalEventResponse>;
 }
 
@@ -346,6 +359,7 @@ interface OrbitalEventRequestBody {
   traits?: Array<{ trait: string; from: string }>;
   entityByTrait?: Record<string, EntityRow>;
   behavior?: string;
+  user?: UserContext;
 }
 
 /**
@@ -394,7 +408,7 @@ function createHttpTransport(serverUrl: string, getAccessToken?: AccessTokenProv
         // Ignore cleanup errors
       }
     },
-    sendEvent: async (orbitalName, event, payload, clientId, tick, sourceTrait, results, entityByTrait, behaviorHint) => {
+    sendEvent: async (orbitalName, event, payload, clientId, tick, sourceTrait, results, entityByTrait, behaviorHint, user) => {
       // Every `results` entry is already an EXECUTED transition
       // (`StateMachineCore.sendEvent` only pushes into `results` inside
       // `if (result.executed)`) — no filtering needed before it becomes
@@ -420,6 +434,7 @@ function createHttpTransport(serverUrl: string, getAccessToken?: AccessTokenProv
         ...(results !== undefined ? { traits: traits ?? [] } : {}),
         ...(entityByTrait ? { entityByTrait } : {}),
         ...(behaviorHint !== undefined ? { behavior: behaviorHint } : {}),
+        ...(user ? { user } : {}),
       };
       const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
         method: 'POST',
@@ -547,6 +562,7 @@ export function ServerBridgeProvider({
     locallyEmitted?: readonly string[],
     results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
     entityByTrait?: Readonly<Record<string, EntityRow>>,
+    user?: UserContext,
   ): Promise<SendEventResult> => {
     const emptyMeta: ServerResponseMeta = { success: false, transitioned: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
     if (!connected) return { effects: [], meta: emptyMeta };
@@ -567,7 +583,7 @@ export function ServerBridgeProvider({
       if (disposedRef.current) return { effects: [], meta: emptyMeta };
 
       try {
-      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId(), tick, sourceTrait, results, entityByTrait, schema.name);
+      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId(), tick, sourceTrait, results, entityByTrait, schema.name, user);
       const effects: ServerClientEffect[] = [];
 
       // Build metadata from raw response

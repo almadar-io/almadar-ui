@@ -276,7 +276,7 @@ function NavStackRefBridge({ apiRef }: { apiRef: React.MutableRefObject<NavStack
   return null;
 }
 
-function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, serverActiveTraits, children }: {
+function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, serverActiveTraits, user, children }: {
   traits: ResolvedTraitBinding[];
   /** Route params from a parameterized page path — merged into every INIT payload. */
   routeParams?: Record<string, string>;
@@ -310,6 +310,12 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
    * when `autoMock` is active and no `serverUrl` is supplied.
    */
   persistence?: PersistenceAdapter;
+  /**
+   * The current viewer (persona) — forwarded to `bridge.sendEvent` so
+   * `@user.X` guard/effect bindings resolve server-side the same way they
+   * already resolve client-side via `OrbitalProvider`'s `UserProvider`.
+   */
+  user?: UserData | null;
   /**
    * Set of trait names referenced via `@trait.X` by some sibling layout
    * in the resolved schema. When an effect's `traitName` is in this set,
@@ -429,13 +435,15 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
       // in dispatch order (request N+1 leaves only after response N landed).
       // `results`/`entityByTrait` are additive (Part G) — a stateless server
       // consults them instead of shared server-side state; an unmodified
-      // server ignores them (already-safe extra JSON fields).
-      void bridge.sendEvent(name, event, withActiveTraits(payload), undefined, undefined, locallyEmitted, results, entityByTrait).then(({ effects, meta }) => {
+      // server ignores them (already-safe extra JSON fields). `user` reaches
+      // server-side `fetch`/`persist` effects the same way it already drives
+      // client-side guard evaluation (`OrbitalProvider`'s `UserProvider`).
+      void bridge.sendEvent(name, event, withActiveTraits(payload), undefined, undefined, locallyEmitted, results, entityByTrait, user ?? undefined).then(({ effects, meta }) => {
         recordServerResponse(name, event, { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
         applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNamesRef.current, onNavigateBack);
       });
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits, user]);
 
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate, navigateBack: onNavigateBack, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams }
@@ -501,7 +509,17 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
     initSentRef.current = true;
     (async () => {
       for (const name of orbitalNames) {
-        const { effects, meta } = await bridge.sendEvent(name, 'INIT', withActiveTraits({ ...(routeParams ?? {}) }));
+        const { effects, meta } = await bridge.sendEvent(
+          name,
+          'INIT',
+          withActiveTraits({ ...(routeParams ?? {}) }),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          user ?? undefined,
+        );
 
         // Record server response in verification timeline
         recordServerResponse(name, 'INIT', { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
@@ -530,7 +548,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
         applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNamesRef.current, onNavigateBack);
       }
     })();
-  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits, routeParams]);
+  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits, routeParams, user]);
 
   return (
     <EntityBindingContext.Provider value={entityBindingSource}>
@@ -582,7 +600,7 @@ function FitToBox({ children }: { children: React.ReactNode }) {
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence }: {
+function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, user }: {
   schema: OrbitalSchema;
   serverUrl?: string;
   transport?: ServerBridgeTransport;
@@ -600,6 +618,8 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
   localFallbackTimeoutMs?: number;
   /** Offline-preview persistence layer. */
   persistence?: PersistenceAdapter;
+  /** Forwarded to TraitInitializer — see OrbPreviewProps doc. */
+  user?: UserData | null;
 }) {
   const { traits, allEntities, allTraits, ir } = useResolvedSchema(schema, pageName);
 
@@ -880,6 +900,7 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
           onLocalFallback={onLocalFallback}
           localFallbackTimeoutMs={localFallbackTimeoutMs}
           persistence={persistence}
+          user={user}
         >
         {/* Sizing model:
             - `h-full` resolves to 100% of the parent's `style.height`. When
@@ -1341,6 +1362,7 @@ export function OrbPreview({
                   onLocalFallback={handleLocalFallback}
                   localFallbackTimeoutMs={localFallbackTimeoutMs}
                   persistence={persistence}
+                  user={user}
                 />
               </FitToBox>
             ) : (
@@ -1357,6 +1379,7 @@ export function OrbPreview({
                 onLocalFallback={handleLocalFallback}
                 localFallbackTimeoutMs={localFallbackTimeoutMs}
                 persistence={persistence}
+                user={user}
               />
             )}
           </UISlotProvider>
