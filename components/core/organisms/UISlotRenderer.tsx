@@ -43,6 +43,7 @@ import { slotLog, refId } from "../../../types/slot-types";
 import { cn } from "../../../lib/cn";
 import { humanizeFieldName } from "../../../lib/format";
 import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
+import { SlotContainedContext } from "../../../lib/slotContained";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
 import { createLogger } from '@almadar/logger';
 
@@ -88,12 +89,11 @@ const SuspenseConfigContext = createContext<SuspenseConfig>({ enabled: false });
 // Slot Containment Context
 // ============================================================================
 
-/**
- * When true, portal slots render inline with absolute positioning instead of
- * via createPortal with fixed positioning. This keeps all content contained
- * within the UISlotRenderer's bounds (used by playground/builder previews).
- */
-const SlotContainedContext = createContext<boolean>(false);
+// Slot containment: SlotContainedContext lives in ../../../lib/slotContained
+// (dependency-free owner so any component can consume it without an import
+// cycle) and is re-exported at the bottom of this file. When true, portal
+// slots render inline with absolute positioning, contained within the
+// UISlotRenderer's bounds (used by playground/builder previews).
 
 /**
  * Provider for Suspense configuration.
@@ -475,6 +475,26 @@ function renderContainedPortal(
       );
 
     case "drawer":
+      // A slide-over DetailPanel brings its own full-height chrome (header,
+      // actions, X) — the w-80 shell would double the header and clamp its
+      // width. Same self-overlay rationale as the modal case above.
+      if (content.pattern === "detail-panel" && content.props.slideOver === true) {
+        return (
+          <Box
+            id={slotId}
+            className="absolute inset-0 z-50 overflow-hidden"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+            onClick={onDismiss}
+          >
+            <Box
+              className="absolute inset-y-0 right-0 pointer-events-auto"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              {slotContent}
+            </Box>
+          </Box>
+        );
+      }
       return (
         <Box
           id={slotId}
@@ -2065,4 +2085,4 @@ UISlotRenderer.displayName = "UISlotRenderer";
 // Exports
 // ============================================================================
 
-export { UISlotComponent, SlotContentRenderer };
+export { UISlotComponent, SlotContentRenderer, SlotContainedContext };

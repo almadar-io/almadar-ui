@@ -205,6 +205,17 @@ interface OrbitalEventResponse {
     source?: BusEventSource;
   }>;
   data?: Record<string, EntityRow[]>;
+  /**
+   * The entity row each trait's effects left behind THIS request, keyed by
+   * trait name (Fix C, the stateless entity round-trip). The stateless
+   * deployment holds no server-side memory across requests — a `set`-only
+   * field a trait wrote here would otherwise vanish on the client's next
+   * request, since `entityByTrait` in the REQUEST only ever reflects the
+   * client's own prior local writes. Undefined on a server that doesn't
+   * send it (older servers, the stateful path) — the client simply keeps
+   * behaving as it always has.
+   */
+  entityByTrait?: Record<string, EntityRow>;
   clientEffects?: ClientEffectTuple[];
   /**
    * Same effects as `clientEffects`, paired with the trait that produced
@@ -250,6 +261,8 @@ export interface ServerResponseMeta {
   dataEntities: Record<string, number>;
   /** Raw entity data from server response (for EntityStore advancement) */
   data?: Record<string, EntityRow[]>;
+  /** See `OrbitalEventResponse.entityByTrait`'s doc. */
+  entityByTrait?: Record<string, EntityRow>;
   emittedEvents: string[];
   /** Server-side effect outcomes — see `OrbitalEventResponse.effectResults`. */
   effectResults?: ServerEffectResult[];
@@ -599,6 +612,7 @@ export function ServerBridgeProvider({
         clientEffects: result.clientEffects?.length ?? 0,
         dataEntities,
         data: responseData,
+        entityByTrait: result.entityByTrait,
         emittedEvents: result.emittedEvents?.map((e) => e.event) ?? [],
         emitted: result.emittedEvents?.map((e) => ({ event: e.event, ...(e.payload !== undefined && { payload: e.payload }) })) ?? [],
         effectResults: result.effectResults,

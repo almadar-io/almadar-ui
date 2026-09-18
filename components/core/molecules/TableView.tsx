@@ -259,7 +259,6 @@ export function TableView({
   columns,
   fields,
   itemActions,
-  maxInlineActions,
   itemClickEvent = '',
   selectable = false,
   selectEvent,
@@ -301,11 +300,12 @@ export function TableView({
   const colDefs: readonly TableViewColumn[] =
     (Array.isArray(columns) ? columns : undefined) ?? (Array.isArray(fields) ? fields : undefined) ?? [];
   const actionDefs: readonly TableViewItemAction[] = Array.isArray(itemActions) ? itemActions : [];
-  // Same split DataList uses: up to `maxInlineActions` buttons stay on the
-  // row, the rest collapse into the "⋯" menu (no cap → everything in the menu,
-  // the table's historical default).
-  const inlineActions = maxInlineActions != null ? actionDefs.slice(0, maxInlineActions) : [];
-  const overflowActions = maxInlineActions != null ? actionDefs.slice(maxInlineActions) : actionDefs;
+  // UX doctrine (see the maxInlineActions prop doc): row actions ALWAYS live
+  // under the single "⋯" menu. An inline strip cannot fit the fixed 3rem
+  // actions track — the buttons overflow and the pinned opaque cell paints
+  // over the data columns beside it (observed 2026-09-17 on std-browse
+  // dense tables, e.g. PF Timesheets: View/Edit covering the Status pill).
+  const overflowActions = actionDefs;
   const fireAction = (action: TableViewItemAction, row: EntityRow) =>
     eventBus.emit(`UI:${action.event}`, {
       id: row.id as string | number,
@@ -580,20 +580,6 @@ export function TableView({
                 : 'bg-[var(--color-card)] group-hover:bg-[var(--color-surface-subtle)]',
             )}
           >
-            {inlineActions.map((action) => (
-              <Button
-                key={action.event}
-                variant={action.variant ?? 'ghost'}
-                size="sm"
-                onClick={() => fireAction(action, row)}
-                data-testid={`action-${action.event}`}
-                data-row-id={String(row.id)}
-                className={cn(action.variant === 'danger' && 'text-error hover:bg-error/10')}
-              >
-                {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
-                {action.label}
-              </Button>
-            ))}
             {overflowActions.length > 0 && (
               <Menu
                 position="bottom-end"

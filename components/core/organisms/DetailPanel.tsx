@@ -8,7 +8,7 @@
  * Extends DisplayStateProps (see ./types.ts) and declares `entity?: EntityRow`.
  */
 
-import React, { useCallback, useEffect, Suspense, lazy } from "react";
+import React, { useCallback, useContext, useEffect, Suspense, lazy } from "react";
 import { createPortal } from "react-dom";
 import type { EventPayload, EntityRow, FieldValue, EventKey } from "@almadar/core";
 import type { RelationFieldCardinality } from "../molecules/RelationSelect";
@@ -35,6 +35,7 @@ import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../../lib/cn";
 import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
+import { SlotContainedContext } from "../../../lib/slotContained";
 import { humanizeFieldName, humanizeEnumValue } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { relationDisplayLabels } from "../../../lib/relationLabel";
@@ -559,6 +560,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
+  // Inside a contained preview (playground/builder canvas card) a portaled
+  // slide-over would dock to the host viewport instead of the preview box.
+  const contained = useContext(SlotContainedContext);
   // null = not editing; a string = the in-flight title draft.
   const [titleDraft, setTitleDraft] = React.useState<string | null>(null);
 
@@ -1124,11 +1128,15 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   // hand-authored slide-over showed it identically, while a non-slide-over
   // DetailPanel rendered fine, which is how it was isolated.
   const panel = (
-    <Box className={cn("fixed inset-y-0 right-0 w-full max-w-2xl bg-card shadow-lg z-50 overflow-y-auto p-6", className)}>
+    <Box className={cn(contained ? "absolute" : "fixed", "inset-y-0 right-0 w-full max-w-2xl bg-card shadow-lg z-50 overflow-y-auto p-6", className)}>
       {content}
     </Box>
   );
-  return typeof document === "undefined" ? panel : createPortal(panel, getOrCreatePortalRoot());
+  // Contained previews render inline against the UISlotRenderer root (relative);
+  // only real app pages portal to the shared root (fixed resolves to viewport —
+  // but see the dashboard containment note above for why the portal exists).
+  if (contained || typeof document === "undefined") return panel;
+  return createPortal(panel, getOrCreatePortalRoot());
 };
 
 DetailPanel.displayName = "DetailPanel";

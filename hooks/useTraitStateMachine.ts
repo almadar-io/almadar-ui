@@ -83,6 +83,20 @@ export interface TraitStateMachineResult {
     /** Live per-trait binding surface for `EntityBindingContext` — the
      * renderer resolves `RenderBindingMarker` prop leaves against it. */
     entityBindingSource: EntityBindingSource;
+    /**
+     * Commit a trait's authoritative entity row, as returned by a stateless
+     * server response's `entityByTrait[traitName]` (Fix C, the entity
+     * round-trip). The stateless deployment has no server-held memory
+     * across requests, so a `set`-only field a trait wrote on a PRIOR
+     * request would otherwise vanish on the next one (`traitFieldStatesRef`
+     * only ever reflects THIS client's own local writes) — replacing it
+     * here with the server's own post-effects row keeps the two in sync,
+     * the same way a fresh `getById` already does within a single request.
+     * A full replace, not a merge: the server sends the whole row after its
+     * own effects ran, the same authoritative shape a `fetch`/`getById`
+     * would return.
+     */
+    commitServerEntity: (traitName: string, entity: EntityRow) => void;
 }
 
 const crossTraitLog = createLogger('almadar:ui:cross-trait');
@@ -2170,6 +2184,10 @@ export function useTraitStateMachine(
         return managerRef.current.canHandleEvent(traitName, normalizedEvent);
     }, []);
 
+    const commitServerEntity = useCallback((traitName: string, entity: EntityRow): void => {
+        traitFieldStatesRef.current.set(traitName, entity);
+    }, []);
+
     // Subscribe to eventBus events -- uses enqueueAndDrain for actor model ordering
     useEffect(() => {
         const allEvents = new Set<string>();
@@ -2396,6 +2414,7 @@ export function useTraitStateMachine(
         getTraitState,
         canHandleEvent,
         entityBindingSource,
+        commitServerEntity,
     };
 }
 

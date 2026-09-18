@@ -387,6 +387,14 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
   // just written. Removed entirely; this is the single source of truth.
   const uiSlots = useUISlots();
 
+  // Fix C: `onEventProcessed` (below) needs `commitServerEntity` from
+  // `useTraitStateMachine`'s return value, but that hook call itself takes
+  // `onEventProcessed` (via `opts`) — a genuine circular dependency within
+  // one render. A ref breaks the cycle: `onEventProcessed`'s closure reads
+  // it at CALL time (always after this render committed the assignment
+  // below), never at definition time.
+  const commitServerEntityRef = useRef<(traitName: string, entity: EntityRow) => void>(() => {});
+
   // Forward events to server, apply enriched effects directly to slots.
   // V2 Phase 6: the server response no longer carries `meta.data`; fetched
   // entities flow through the event bus via typed emit payloads, which the
@@ -440,6 +448,15 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
       // client-side guard evaluation (`OrbitalProvider`'s `UserProvider`).
       void bridge.sendEvent(name, event, withActiveTraits(payload), undefined, undefined, locallyEmitted, results, entityByTrait, user ?? undefined).then(({ effects, meta }) => {
         recordServerResponse(name, event, { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
+        // Fix C: carry each trait's post-effects row forward so the NEXT
+        // request's own entityByTrait (built above from local writes)
+        // reflects what the server actually persisted, not just what this
+        // client wrote locally — see `commitServerEntity`'s doc.
+        if (meta.entityByTrait) {
+          for (const [traitName, entity] of Object.entries(meta.entityByTrait)) {
+            commitServerEntityRef.current(traitName, entity);
+          }
+        }
         applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNamesRef.current, onNavigateBack);
       });
     }
@@ -448,7 +465,8 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate, navigateBack: onNavigateBack, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams }
     : { navigate: onNavigate, navigateBack: onNavigateBack, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams };
-  const { sendEvent, entityBindingSource } = useTraitStateMachine(traits, uiSlots, opts);
+  const { sendEvent, entityBindingSource, commitServerEntity } = useTraitStateMachine(traits, uiSlots, opts);
+  commitServerEntityRef.current = commitServerEntity;
 
   const initSentRef = useRef(false);
 
@@ -523,6 +541,15 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
 
         // Record server response in verification timeline
         recordServerResponse(name, 'INIT', { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
+
+        // Fix C: same carry-forward as the interaction path above — INIT's
+        // own effects can already set fields worth preserving into the
+        // trait's next request.
+        if (meta.entityByTrait) {
+          for (const [traitName, entity] of Object.entries(meta.entityByTrait)) {
+            commitServerEntityRef.current(traitName, entity);
+          }
+        }
 
         const effectTraces: EffectTrace[] = [
           { type: 'fetch', args: [], status: 'executed' as const },
