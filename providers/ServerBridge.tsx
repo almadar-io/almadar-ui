@@ -20,7 +20,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr, UserContext } from '@almadar/core';
+import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr, UserContext, ClientEffectTuple, OrbitalEventRequest, OrbitalEventResponse } from '@almadar/core';
 import type { AnyPatternConfig } from '@almadar/core/patterns';
 import type { ServerEffectResult, TransitionResult } from '@almadar/runtime';
 import { useEventBus } from '../hooks/useEventBus';
@@ -30,11 +30,8 @@ import { createCommandSendPump } from '../lib/command-send-pump';
 import { stampLocallyDeliveredEchoes } from '../lib/cascadeEcho';
 import { createLogger } from '@almadar/logger';
 
-/** Wire-format client effect tuple from the server response. */
-type ClientEffectTuple =
-  | ['render-ui', string, AnyPatternConfig | null, ...SExpr[]]
-  | ['navigate', string, ...SExpr[]]
-  | ['navigate-back'];
+// `ClientEffectTuple` — wire-format client effect tuple from the server
+// response — is owned by `@almadar/core` (imported above).
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital re-broadcast
 // tracing. Each server-cascade event — carried back in-response (gap #13)
@@ -189,50 +186,7 @@ function deriveEventsUrl(serverUrl: string): string {
 // Types
 // ---------------------------------------------------------------------------
 
-interface OrbitalEventResponse {
-  success: boolean;
-  transitioned: boolean;
-  states: Record<string, string>;
-  /**
-   * Server-cascade events carried back in the response. Each entry has a
-   * `source: BusEventSource` stamped by the compiled handler (`emit ...
-   * { source: __ORBITAL_SOURCE }`) so the client can re-broadcast on the
-   * qualified `UI:Orbital.Trait.EVENT` bus key (gap #13).
-   */
-  emittedEvents?: Array<{
-    event: string;
-    payload?: EventPayload;
-    source?: BusEventSource;
-  }>;
-  data?: Record<string, EntityRow[]>;
-  /**
-   * The entity row each trait's effects left behind THIS request, keyed by
-   * trait name (Fix C, the stateless entity round-trip). The stateless
-   * deployment holds no server-side memory across requests — a `set`-only
-   * field a trait wrote here would otherwise vanish on the client's next
-   * request, since `entityByTrait` in the REQUEST only ever reflects the
-   * client's own prior local writes. Undefined on a server that doesn't
-   * send it (older servers, the stateful path) — the client simply keeps
-   * behaving as it always has.
-   */
-  entityByTrait?: Record<string, EntityRow>;
-  clientEffects?: ClientEffectTuple[];
-  /**
-   * Same effects as `clientEffects`, paired with the trait that produced
-   * each one. When present, prefer this for trait attribution. Falls back
-   * to legacy `clientEffects` parsing on older servers.
-   */
-  clientEffectsByTrait?: Array<{ traitName: string; effect: ClientEffectTuple }>;
-  /**
-   * Results from server-side effects (persist, call-service, set, …) —
-   * `ServerEffectResult`, JSON-serialized. Carries the
-   * persist effect's real outcome (action, entity, resulting id, denied)
-   * so the verification trace can read it instead of inferring success
-   * from a row-count delta.
-   */
-  effectResults?: ServerEffectResult[];
-  error?: string;
-}
+// `OrbitalEventResponse` is owned by `@almadar/core` (imported above).
 
 export interface ServerClientEffect {
   type: 'render-ui' | 'navigate' | 'navigate-back';
@@ -354,26 +308,13 @@ export interface ServerBridgeTransport {
   ) => Promise<OrbitalEventResponse>;
 }
 
-/**
- * Request body posted to `POST /:orbital/events` — the local
- * `OrbitalEventRequest` wire shape this transport owns. `traits`/
- * `entityByTrait` are additive (Part G, stateless dual-execution): an
- * unmodified server ignores them (already-safe extra JSON fields, see
- * `OrbitalServerRuntime.processOrbitalEvent`'s `{...req.body, user}` spread);
- * a server running the hosted stateless path consults them instead of its
- * own shared state.
- */
-interface OrbitalEventRequestBody {
-  event: string;
-  payload?: EventPayload;
-  clientId?: string;
-  tick?: string;
-  sourceTrait?: string;
-  traits?: Array<{ trait: string; from: string }>;
-  entityByTrait?: Record<string, EntityRow>;
-  behavior?: string;
-  user?: UserContext;
-}
+// The request body posted to `POST /:orbital/events` IS `OrbitalEventRequest`
+// now (owned by `@almadar/core`, imported above) — `traits`/`entityByTrait`
+// are additive (Part G, stateless dual-execution): an unmodified server
+// ignores them (already-safe extra JSON fields, see
+// `OrbitalServerRuntime.processOrbitalEvent`'s `{...req.body, user}` spread);
+// a server running the hosted stateless path consults them instead of its
+// own shared state.
 
 /**
  * Supplies the bearer token the hosting server authenticates with. Resolved
@@ -427,7 +368,7 @@ function createHttpTransport(serverUrl: string, getAccessToken?: AccessTokenProv
       // `if (result.executed)`) — no filtering needed before it becomes
       // the wire's `traits` scoping list.
       const traits = results?.map((r) => ({ trait: r.traitName, from: r.result.previousState }));
-      const body: OrbitalEventRequestBody = {
+      const body: OrbitalEventRequest = {
         event,
         payload,
         clientId,
@@ -613,8 +554,8 @@ export function ServerBridgeProvider({
         dataEntities,
         data: responseData,
         entityByTrait: result.entityByTrait,
-        emittedEvents: result.emittedEvents?.map((e) => e.event) ?? [],
-        emitted: result.emittedEvents?.map((e) => ({ event: e.event, ...(e.payload !== undefined && { payload: e.payload }) })) ?? [],
+        emittedEvents: result.emittedEvents.map((e) => e.event),
+        emitted: result.emittedEvents.map((e) => ({ event: e.event, ...(e.payload !== undefined && { payload: e.payload }) })),
         effectResults: result.effectResults,
         error: result.error,
       };
@@ -671,10 +612,8 @@ export function ServerBridgeProvider({
         // Stamping is `stampLocallyDeliveredEchoes`'s contract (see there);
         // multiplayer is unaffected — other tabs get this cascade over the
         // unstamped SSE push leg.
-        if (result.emittedEvents) {
-          for (const emitted of stampLocallyDeliveredEchoes(event, result.emittedEvents, locallyEmitted ?? [])) {
-            reEmitServerEvent(eventBus, emitted, orbitalName);
-          }
+        for (const emitted of stampLocallyDeliveredEchoes(event, result.emittedEvents, locallyEmitted ?? [])) {
+          reEmitServerEvent(eventBus, emitted, orbitalName);
         }
       } else if (result.error) {
         // Match compiled-path bridge (`useOrbitalBridge.ts`'s

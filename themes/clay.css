@@ -1,60 +1,20 @@
 /**
- * Clay Theme — "Claymorphism / Soft UI"
- *
- * Puffy pastel 3D surfaces that look molded from soft clay. Large diffuse
- * drop shadows paired with an inner top highlight make cards and buttons
- * bulge gently off the background. Big soft radii, a lavender-pink / mint /
- * cream pastel palette, chubby paddings, rounded Manrope type, and a quick
- * spring bounce on every interaction give it a friendly consumer-SaaS feel.
+ * GENERATED — do not edit by hand.
+ * Source: packages/almadar-core/themes/clay.json
+ * Regenerate: node tools/almadar-pattern-sync/dist/index.js themes (or `almadar-sync themes`)
  */
 
-/* ==========================================================================
- * LIGHT MODE
- * ========================================================================== */
 [data-theme="clay-light"] {
-    /* Shadows - Soft diffuse drop + inner top highlight (the clay bulge) */
-    --shadow-main:
-        0 12px 24px -6px rgba(93, 62, 110, 0.18), inset 0 2px 4px rgba(255, 255, 255, 0.7);
-    --shadow-sm:
-        0 6px 12px -4px rgba(93, 62, 110, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.6);
-    --shadow-lg:
-        0 20px 40px -8px rgba(93, 62, 110, 0.22), inset 0 2px 6px rgba(255, 255, 255, 0.7);
-    --shadow-inner:
-        inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 6px rgba(93, 62, 110, 0.12);
-    --shadow-none: none;
-    --shadow-hover:
-        0 16px 32px -6px rgba(93, 62, 110, 0.24), inset 0 2px 4px rgba(255, 255, 255, 0.8);
-    --shadow-active:
-        0 4px 8px -2px rgba(93, 62, 110, 0.15), inset 0 3px 6px rgba(93, 62, 110, 0.12);
-
-    /* Border radius - Big, soft, puffy */
-    --radius-none: 0px;
-    --radius-sm: 12px;
-    --radius-md: 16px;
-    --radius-lg: 20px;
-    --radius-xl: 24px;
-    --radius-full: 9999px;
-
-    /* Border width - Barely-there, clay edges are soft */
-    --border-width: 1px;
-    --border-width-thin: 1px;
-    --border-width-thick: 2px;
-
-    /* Colors - Pastel lavender-pink on warm cream */
     --color-primary: #b97fd8;
     --color-primary-hover: #a569c7;
     --color-primary-foreground: #251038;
-
     --color-secondary: #c9ecdc;
     --color-secondary-hover: #b2e3cd;
     --color-secondary-foreground: #1f4a38;
-
     --color-accent: #f2a172;
     --color-accent-foreground: #4a2410;
-
     --color-muted: #f2e9e4;
     --color-muted-foreground: #6a5560;
-
     --color-background: #faf5f0;
     --color-foreground: #3d2c3a;
     --color-card: #fffdf9;
@@ -63,8 +23,6 @@
     --color-border: rgba(93, 62, 110, 0.14);
     --color-input: rgba(93, 62, 110, 0.2);
     --color-ring: #b97fd8;
-
-    /* Semantic colors - Softened pastels, still readable */
     --color-error: #c92847;
     --color-error-foreground: #ffffff;
     --color-success: #20835b;
@@ -73,40 +31,41 @@
     --color-warning-foreground: #3d2a00;
     --color-info: #3f6fd1;
     --color-info-foreground: #ffffff;
-
-    /* Typography - Rounded, friendly, medium-plus */
-    --font-family:
-        "Manrope", "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --radius-none: 0px;
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 2px;
+    --font-family: "Manrope", "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-weight-normal: 500;
     --font-weight-medium: 600;
     --font-weight-bold: 800;
     --letter-spacing: 0.005em;
     --line-height: 1.55;
-
-    /* Icon styling - Chubby strokes */
-    --icon-stroke-width: 2.25;
     --icon-color: #b97fd8;
-
-    /* Transitions - Bouncy but quick */
     --transition-fast: 120ms;
     --transition-normal: 180ms;
     --transition-slow: 280ms;
     --transition-timing: cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    /* Hover/Active transforms - Puffy press-and-bounce */
     --hover-scale: 1.03;
     --hover-translate-y: -1px;
     --hover-translate-x: 0;
     --active-scale: 0.97;
     --active-translate-y: 1px;
-
-    /* Focus ring */
     --focus-ring-width: 3px;
     --focus-ring-offset: 2px;
     --focus-ring-color: rgba(185, 127, 216, 0.5);
-
-    /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
-    /* Density axis — spacing scale */
+    --shadow-main: 0 12px 24px -6px rgba(93, 62, 110, 0.18), inset 0 2px 4px rgba(255, 255, 255, 0.7);
+    --shadow-sm: 0 6px 12px -4px rgba(93, 62, 110, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+    --shadow-lg: 0 20px 40px -8px rgba(93, 62, 110, 0.22), inset 0 2px 6px rgba(255, 255, 255, 0.7);
+    --shadow-inner: inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 6px rgba(93, 62, 110, 0.12);
+    --shadow-none: none;
+    --shadow-hover: 0 16px 32px -6px rgba(93, 62, 110, 0.24), inset 0 2px 4px rgba(255, 255, 255, 0.8);
+    --shadow-active: 0 4px 8px -2px rgba(93, 62, 110, 0.15), inset 0 3px 6px rgba(93, 62, 110, 0.12);
     --space-0: 0px;
     --space-1: 4px;
     --space-2: 8px;
@@ -120,7 +79,6 @@
     --space-10: 40px;
     --space-11: 44px;
     --space-12: 48px;
-    /* Density axis — per-element heights (slightly taller, chubby) */
     --button-height-sm: 32px;
     --button-height-md: 40px;
     --button-height-lg: 50px;
@@ -130,17 +88,14 @@
     --row-height-compact: 36px;
     --row-height-normal: 44px;
     --row-height-spacious: 56px;
-    /* Density axis — per-element padding (generous, pillowy) */
     --card-padding-sm: 16px;
     --card-padding-md: 20px;
     --card-padding-lg: 32px;
     --dialog-padding: 32px;
     --section-gap: 40px;
-    /* Type axis — family triplet (aliases existing --font-family for backward compat) */
     --font-family-display: var(--font-family);
     --font-family-body: var(--font-family);
     --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    /* Type axis — size scale */
     --text-xs: 12px;
     --leading-xs: 16px;
     --text-sm: 14px;
@@ -161,7 +116,6 @@
     --leading-display-1: 52px;
     --text-display-2: 60px;
     --leading-display-2: 64px;
-    /* Type axis — intent mapping */
     --intent-heading-major-size: var(--text-2xl);
     --intent-heading-major-weight: var(--font-weight-bold);
     --intent-heading-major-leading: var(--leading-2xl);
@@ -183,82 +137,41 @@
     --intent-numeric-size: var(--text-sm);
     --intent-numeric-weight: var(--font-weight-medium);
     --intent-numeric-leading: var(--leading-sm);
-    /* Motion axis — duration palette */
     --duration-instant: 0ms;
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
     --duration-slow: var(--transition-slow);
     --duration-dramatic: 700ms;
-    /* Motion axis — easing palette (spring IS the standard here) */
     --easing-linear: linear;
     --easing-standard: var(--transition-timing);
     --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
     --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    /* Iconography axis */
     --icon-family: lucide;
+    --icon-stroke-width: 2.25;
     --icon-default-size: 18px;
-    /* Elevation axis — per-layer mapping */
     --elevation-card: var(--shadow-sm);
     --elevation-popover: var(--shadow-main);
     --elevation-dialog: var(--shadow-lg);
     --elevation-toast: var(--shadow-main);
-    /* Geometry axis — radius rhythm with intent */
     --radius-container: var(--radius-lg);
     --radius-interactive: var(--radius-md);
     --radius-pill: var(--radius-full);
-    /* Geometry axis — border-width rhythm */
     --border-hairline: 1px;
     --border-standard: var(--border-width);
     --border-heavy: var(--border-width-thick);
 }
 
-/* ==========================================================================
- * DARK MODE
- * ========================================================================== */
 [data-theme="clay-dark"] {
-    /* Shadows - Deep diffuse drop + faint inner top light */
-    --shadow-main:
-        0 14px 28px -6px rgba(0, 0, 0, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.08);
-    --shadow-sm:
-        0 8px 16px -4px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.06);
-    --shadow-lg:
-        0 24px 48px -8px rgba(0, 0, 0, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.1);
-    --shadow-inner:
-        inset 0 2px 4px rgba(255, 255, 255, 0.06), inset 0 -4px 8px rgba(0, 0, 0, 0.35);
-    --shadow-none: none;
-    --shadow-hover:
-        0 18px 36px -6px rgba(0, 0, 0, 0.5), inset 0 2px 3px rgba(255, 255, 255, 0.1);
-    --shadow-active:
-        0 4px 10px -2px rgba(0, 0, 0, 0.4), inset 0 3px 8px rgba(0, 0, 0, 0.4);
-
-    /* Border radius - Big, soft, puffy */
-    --radius-none: 0px;
-    --radius-sm: 12px;
-    --radius-md: 16px;
-    --radius-lg: 20px;
-    --radius-xl: 24px;
-    --radius-full: 9999px;
-
-    /* Border width - Barely-there, clay edges are soft */
-    --border-width: 1px;
-    --border-width-thin: 1px;
-    --border-width-thick: 2px;
-
-    /* Colors - Muted pastels on deep warm plum */
     --color-primary: #cf9ce8;
     --color-primary-hover: #bb84d8;
     --color-primary-foreground: #2a1538;
-
     --color-secondary: #35544a;
     --color-secondary-hover: #406457;
     --color-secondary-foreground: #c8ecdc;
-
     --color-accent: #f0ab82;
     --color-accent-foreground: #3a1c0a;
-
     --color-muted: #3a2d42;
     --color-muted-foreground: #bfa8c4;
-
     --color-background: #241c2a;
     --color-foreground: #f3e9f2;
     --color-card: #2f2438;
@@ -267,8 +180,6 @@
     --color-border: rgba(207, 156, 232, 0.16);
     --color-input: rgba(207, 156, 232, 0.22);
     --color-ring: #cf9ce8;
-
-    /* Semantic colors - Pastel-bright for dark mode, dark text on top */
     --color-error: #f08a9a;
     --color-error-foreground: #3d0f18;
     --color-success: #8fd8b0;
@@ -277,40 +188,41 @@
     --color-warning-foreground: #332400;
     --color-info: #9ab8f0;
     --color-info-foreground: #0f1f3d;
-
-    /* Typography - Rounded, friendly, medium-plus */
-    --font-family:
-        "Manrope", "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --radius-none: 0px;
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 2px;
+    --font-family: "Manrope", "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-weight-normal: 500;
     --font-weight-medium: 600;
     --font-weight-bold: 800;
     --letter-spacing: 0.005em;
     --line-height: 1.55;
-
-    /* Icon styling - Chubby strokes */
-    --icon-stroke-width: 2.25;
     --icon-color: #cf9ce8;
-
-    /* Transitions - Bouncy but quick */
     --transition-fast: 120ms;
     --transition-normal: 180ms;
     --transition-slow: 280ms;
     --transition-timing: cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    /* Hover/Active transforms - Puffy press-and-bounce */
     --hover-scale: 1.03;
     --hover-translate-y: -1px;
     --hover-translate-x: 0;
     --active-scale: 0.97;
     --active-translate-y: 1px;
-
-    /* Focus ring */
     --focus-ring-width: 3px;
     --focus-ring-offset: 2px;
     --focus-ring-color: rgba(207, 156, 232, 0.5);
-
-    /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
-    /* Density axis — spacing scale */
+    --shadow-main: 0 14px 28px -6px rgba(0, 0, 0, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.08);
+    --shadow-sm: 0 8px 16px -4px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.06);
+    --shadow-lg: 0 24px 48px -8px rgba(0, 0, 0, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    --shadow-inner: inset 0 2px 4px rgba(255, 255, 255, 0.06), inset 0 -4px 8px rgba(0, 0, 0, 0.35);
+    --shadow-none: none;
+    --shadow-hover: 0 18px 36px -6px rgba(0, 0, 0, 0.5), inset 0 2px 3px rgba(255, 255, 255, 0.1);
+    --shadow-active: 0 4px 10px -2px rgba(0, 0, 0, 0.4), inset 0 3px 8px rgba(0, 0, 0, 0.4);
     --space-0: 0px;
     --space-1: 4px;
     --space-2: 8px;
@@ -324,7 +236,6 @@
     --space-10: 40px;
     --space-11: 44px;
     --space-12: 48px;
-    /* Density axis — per-element heights (slightly taller, chubby) */
     --button-height-sm: 32px;
     --button-height-md: 40px;
     --button-height-lg: 50px;
@@ -334,17 +245,14 @@
     --row-height-compact: 36px;
     --row-height-normal: 44px;
     --row-height-spacious: 56px;
-    /* Density axis — per-element padding (generous, pillowy) */
     --card-padding-sm: 16px;
     --card-padding-md: 20px;
     --card-padding-lg: 32px;
     --dialog-padding: 32px;
     --section-gap: 40px;
-    /* Type axis — family triplet (aliases existing --font-family for backward compat) */
     --font-family-display: var(--font-family);
     --font-family-body: var(--font-family);
     --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    /* Type axis — size scale */
     --text-xs: 12px;
     --leading-xs: 16px;
     --text-sm: 14px;
@@ -365,7 +273,6 @@
     --leading-display-1: 52px;
     --text-display-2: 60px;
     --leading-display-2: 64px;
-    /* Type axis — intent mapping */
     --intent-heading-major-size: var(--text-2xl);
     --intent-heading-major-weight: var(--font-weight-bold);
     --intent-heading-major-leading: var(--leading-2xl);
@@ -387,30 +294,25 @@
     --intent-numeric-size: var(--text-sm);
     --intent-numeric-weight: var(--font-weight-medium);
     --intent-numeric-leading: var(--leading-sm);
-    /* Motion axis — duration palette */
     --duration-instant: 0ms;
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
     --duration-slow: var(--transition-slow);
     --duration-dramatic: 700ms;
-    /* Motion axis — easing palette (spring IS the standard here) */
     --easing-linear: linear;
     --easing-standard: var(--transition-timing);
     --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
     --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    /* Iconography axis */
     --icon-family: lucide;
+    --icon-stroke-width: 2.25;
     --icon-default-size: 18px;
-    /* Elevation axis — per-layer mapping */
     --elevation-card: var(--shadow-sm);
     --elevation-popover: var(--shadow-main);
     --elevation-dialog: var(--shadow-lg);
     --elevation-toast: var(--shadow-main);
-    /* Geometry axis — radius rhythm with intent */
     --radius-container: var(--radius-lg);
     --radius-interactive: var(--radius-md);
     --radius-pill: var(--radius-full);
-    /* Geometry axis — border-width rhythm */
     --border-hairline: 1px;
     --border-standard: var(--border-width);
     --border-heavy: var(--border-width-thick);

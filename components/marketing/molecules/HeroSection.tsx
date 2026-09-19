@@ -44,11 +44,10 @@ const tagVariantMap: Record<string, 'primary' | 'secondary' | 'info'> = {
 
 const backgroundStyles: Record<string, string> = {
   dark: 'bg-foreground text-background',
-  gradient: [
-    'bg-[radial-gradient(ellipse_at_top,var(--color-primary)/0.08,transparent_60%),',
-    'radial-gradient(ellipse_at_bottom_right,var(--color-accent)/0.06,transparent_50%)]',
-    'bg-background',
-  ].join(' '),
+  // A single bracket value: joining this as two array entries put a space
+  // inside the class (Tailwind splits utilities on whitespace), so neither
+  // half was a valid utility and the gradient rendered as nothing.
+  gradient: 'bg-[radial-gradient(ellipse_at_top,var(--color-primary)/0.08,transparent_60%),radial-gradient(ellipse_at_bottom_right,var(--color-accent)/0.06,transparent_50%)] bg-background',
   subtle: 'bg-muted/30',
 };
 

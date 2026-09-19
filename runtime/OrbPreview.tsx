@@ -94,9 +94,10 @@ function normalizeChild(child: PatternNode | string | null | readonly PatternNod
 function effectResultsToTraces(results: ServerEffectResult[] | undefined): EffectTrace[] {
   if (!results) return [];
   return results.map((r): EffectTrace => {
-    const resultId = r.data !== undefined && r.data !== null && 'id' in r.data && typeof r.data.id === 'string'
-      ? r.data.id
-      : undefined;
+    const resultId =
+      typeof r.data === 'object' && r.data !== null && !Array.isArray(r.data) && 'id' in r.data && typeof r.data.id === 'string'
+        ? r.data.id
+        : undefined;
     const outcome: EffectTrace['outcome'] = r.denied ? 'denied' : r.success ? 'success' : 'failed';
     return {
       type: r.effect,

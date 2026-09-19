@@ -22,6 +22,13 @@
  *   element. The provider scopes overrides to an orbital subtree without
  *   shadowing inherited defaults.
  *
+ * The per-axis var tables below (`DENSITY_SPACING_VARS`, `TYPE_INTENT_VARS`, …)
+ * are the ONE mapping between a typed-axis field and its CSS variable name.
+ * `themeTokensToCssVars` reads them forward (token → CSS); `almadar-core`'s
+ * one-time `scripts/migrate-css-themes.ts` reads them in reverse (CSS →
+ * token) to build `packages/almadar-core/themes/*.json` from the checked-in
+ * preset CSS — see that script for the inverse direction.
+ *
  * @packageDocumentation
  */
 
@@ -30,13 +37,17 @@ import type {
   ElevationTokens,
   GeometryTokens,
   IconographyTokens,
+  MotionDurationKey,
+  MotionEasingKey,
   MotionIntent,
+  MotionIntentMap,
   MotionTokens,
   ThemeDefinition,
   ThemeRef,
   ThemeTokens,
   ThemeVariant,
   TypeIntent,
+  TypeIntentMap,
   TypeScaleTokens,
   TypeSizeKey,
   TypeWeight,
@@ -44,6 +55,141 @@ import type {
 
 /** Resolved color mode. Mirrors `ThemeContext.resolvedMode`. */
 export type ThemeMode = 'light' | 'dark';
+
+/** The keys of `T` whose value is a plain (optional) string — excludes
+ * nested-object fields like `DensityTokens['spacing']` or
+ * `TypeScaleTokens['scale']`, which are never single CSS values. */
+export type StringValueKey<T> = { [K in keyof T]-?: T[K] extends string | undefined ? K : never }[keyof T] &
+  string;
+
+/** One flat scalar field on an axis object and the CSS var name it maps to. */
+export interface FlatVarEntry<T> {
+  readonly cssVar: string;
+  readonly key: StringValueKey<T>;
+}
+
+function applyFlat<T>(obj: T | undefined, table: ReadonlyArray<FlatVarEntry<T>>, vars: Record<string, string>): void {
+  if (!obj) return;
+  for (const { cssVar, key } of table) {
+    // `key: StringValueKey<T>` (a conditional/mapped derived type) proves
+    // `obj[key]` is `string | undefined` for every real call site, but a
+    // generic function body can't collapse that correlation on its own —
+    // a direct `string` cast (never through `any`/`unknown`), not a type hole.
+    const value = obj[key] as string | undefined;
+    if (value !== undefined) vars[cssVar] = value;
+  }
+}
+
+/** Density axis — spacing scale steps (`density.spacing.space<N>` → `--space-<N>`). */
+export const DENSITY_SPACING_VARS: ReadonlyArray<FlatVarEntry<NonNullable<DensityTokens['spacing']>>> = [
+  { cssVar: '--space-0', key: 'space0' },
+  { cssVar: '--space-1', key: 'space1' },
+  { cssVar: '--space-2', key: 'space2' },
+  { cssVar: '--space-3', key: 'space3' },
+  { cssVar: '--space-4', key: 'space4' },
+  { cssVar: '--space-5', key: 'space5' },
+  { cssVar: '--space-6', key: 'space6' },
+  { cssVar: '--space-7', key: 'space7' },
+  { cssVar: '--space-8', key: 'space8' },
+  { cssVar: '--space-9', key: 'space9' },
+  { cssVar: '--space-10', key: 'space10' },
+  { cssVar: '--space-11', key: 'space11' },
+  { cssVar: '--space-12', key: 'space12' },
+];
+
+/** Density axis — per-element heights + paddings. */
+export const DENSITY_ELEMENT_VARS: ReadonlyArray<FlatVarEntry<DensityTokens>> = [
+  { cssVar: '--button-height-sm', key: 'buttonHeightSm' },
+  { cssVar: '--button-height-md', key: 'buttonHeightMd' },
+  { cssVar: '--button-height-lg', key: 'buttonHeightLg' },
+  { cssVar: '--input-height-sm', key: 'inputHeightSm' },
+  { cssVar: '--input-height-md', key: 'inputHeightMd' },
+  { cssVar: '--input-height-lg', key: 'inputHeightLg' },
+  { cssVar: '--row-height-compact', key: 'rowHeightCompact' },
+  { cssVar: '--row-height-normal', key: 'rowHeightNormal' },
+  { cssVar: '--row-height-spacious', key: 'rowHeightSpacious' },
+  { cssVar: '--card-padding-sm', key: 'cardPaddingSm' },
+  { cssVar: '--card-padding-md', key: 'cardPaddingMd' },
+  { cssVar: '--card-padding-lg', key: 'cardPaddingLg' },
+  { cssVar: '--dialog-padding', key: 'dialogPadding' },
+  { cssVar: '--section-gap', key: 'sectionGap' },
+];
+
+/** Type axis — family triplet. */
+export const TYPE_FAMILY_VARS: ReadonlyArray<FlatVarEntry<TypeScaleTokens>> = [
+  { cssVar: '--font-family-display', key: 'displayFamily' },
+  { cssVar: '--font-family-body', key: 'bodyFamily' },
+  { cssVar: '--font-family-mono', key: 'monoFamily' },
+];
+
+/** Type axis — size scale keys, ordered exactly as emitted. Each pairs `--text-<k>` / `--leading-<k>`. */
+export const TYPE_SIZE_KEYS: ReadonlyArray<TypeSizeKey> = [
+  'xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', 'display-1', 'display-2',
+];
+
+/** Type axis — intent names, ordered exactly as emitted. Each is 3 vars: `-size` / `-weight` / `-leading`. */
+export const TYPE_INTENT_VARS: ReadonlyArray<{ key: keyof TypeIntentMap & string; cssName: string }> = [
+  { key: 'headingMajor', cssName: 'heading-major' },
+  { key: 'headingMinor', cssName: 'heading-minor' },
+  { key: 'bodyEmphasis', cssName: 'body-emphasis' },
+  { key: 'bodyDefault', cssName: 'body-default' },
+  { key: 'bodyQuiet', cssName: 'body-quiet' },
+  { key: 'caption', cssName: 'caption' },
+  { key: 'numeric', cssName: 'numeric' },
+];
+
+/** Motion axis — duration palette keys, ordered exactly as emitted. */
+export const MOTION_DURATION_KEYS: ReadonlyArray<MotionDurationKey> = [
+  'instant', 'fast', 'normal', 'slow', 'dramatic',
+];
+
+/** Motion axis — easing palette keys, ordered exactly as emitted. */
+export const MOTION_EASING_KEYS: ReadonlyArray<MotionEasingKey> = [
+  'linear', 'standard', 'emphasized', 'spring',
+];
+
+/** Motion axis — intent names, ordered exactly as emitted. Each is 2 vars: `-duration` / `-easing`. */
+export const MOTION_INTENT_VARS: ReadonlyArray<{ key: keyof MotionIntentMap & string; cssName: string }> = [
+  { key: 'enter', cssName: 'enter' },
+  { key: 'exit', cssName: 'exit' },
+  { key: 'hover', cssName: 'hover' },
+  { key: 'press', cssName: 'press' },
+  { key: 'expand', cssName: 'expand' },
+  { key: 'transition', cssName: 'transition' },
+];
+
+/** Iconography axis — flat fields. */
+export const ICONOGRAPHY_VARS: ReadonlyArray<FlatVarEntry<IconographyTokens>> = [
+  { cssVar: '--icon-family', key: 'family' },
+  { cssVar: '--icon-stroke-width', key: 'strokeWidth' },
+  { cssVar: '--icon-default-size', key: 'defaultSize' },
+];
+
+/** Elevation axis — flat fields. */
+export const ELEVATION_VARS: ReadonlyArray<FlatVarEntry<ElevationTokens>> = [
+  { cssVar: '--elevation-card', key: 'cardElevation' },
+  { cssVar: '--elevation-popover', key: 'popoverElevation' },
+  { cssVar: '--elevation-dialog', key: 'dialogElevation' },
+  { cssVar: '--elevation-toast', key: 'toastElevation' },
+];
+
+/** Geometry axis — flat fields. */
+export const GEOMETRY_VARS: ReadonlyArray<FlatVarEntry<GeometryTokens>> = [
+  { cssVar: '--radius-container', key: 'radiusContainer' },
+  { cssVar: '--radius-interactive', key: 'radiusInteractive' },
+  { cssVar: '--radius-pill', key: 'radiusPill' },
+  { cssVar: '--border-hairline', key: 'borderHairline' },
+  { cssVar: '--border-standard', key: 'borderStandard' },
+  { cssVar: '--border-heavy', key: 'borderHeavy' },
+];
+
+/** Legacy free-form map prefixes (`ThemeTokens.colors`/`radii`/`spacing`/`shadows`). `typography` has no prefix — see below. */
+export const LEGACY_PREFIXES = {
+  colors: '--color-',
+  radii: '--radius-',
+  spacing: '--space-',
+  shadows: '--shadow-',
+} as const;
 
 /**
  * Convert `ThemeTokens` (+ optional dark variant) into a CSS custom-property
@@ -73,14 +219,14 @@ export function themeTokensToCssVars(
   const pickColors = isDark && darkVariant?.colors ? darkVariant.colors : tokens.colors;
   if (pickColors) {
     for (const [key, value] of Object.entries(pickColors)) {
-      vars[`--color-${key}`] = value;
+      vars[`${LEGACY_PREFIXES.colors}${key}`] = value;
     }
     // When dark variant supplies *some* colors but not all, layer base
     // tokens.colors under the variant (mirrors theme.rs:269-285 which
     // includes custom colors not present in dark defaults).
     if (isDark && darkVariant?.colors && tokens.colors) {
       for (const [key, value] of Object.entries(tokens.colors)) {
-        const varName = `--color-${key}`;
+        const varName = `${LEGACY_PREFIXES.colors}${key}`;
         if (!(varName in vars)) vars[varName] = value;
       }
     }
@@ -89,14 +235,14 @@ export function themeTokensToCssVars(
   const pickRadii = isDark && darkVariant?.radii ? darkVariant.radii : tokens.radii;
   if (pickRadii) {
     for (const [key, value] of Object.entries(pickRadii)) {
-      vars[`--radius-${key}`] = value;
+      vars[`${LEGACY_PREFIXES.radii}${key}`] = value;
     }
   }
 
   const pickSpacing = isDark && darkVariant?.spacing ? darkVariant.spacing : tokens.spacing;
   if (pickSpacing) {
     for (const [key, value] of Object.entries(pickSpacing)) {
-      vars[`--space-${key}`] = value;
+      vars[`${LEGACY_PREFIXES.spacing}${key}`] = value;
     }
   }
 
@@ -113,14 +259,13 @@ export function themeTokensToCssVars(
   const pickShadows = isDark && darkVariant?.shadows ? darkVariant.shadows : tokens.shadows;
   if (pickShadows) {
     for (const [key, value] of Object.entries(pickShadows)) {
-      vars[`--shadow-${key}`] = value;
+      vars[`${LEGACY_PREFIXES.shadows}${key}`] = value;
     }
   }
 
   // Layer 1 skin axes (density / typeScale / motion / iconography / elevation / geometry).
   // Cascade: per category, prefer darkVariant.<axis> if Some in dark mode, else base tokens.<axis>.
-  // Mirrors orbital-shell-typescript/src/codegen/theme.rs `emit_skin_axes_dark`. Round-trip
-  // tests in packages/almadar-ui/test/theme-roundtrip/ gate parity.
+  // Mirrors orbital-shell-typescript/src/codegen/theme.rs `emit_skin_axes_dark`.
   const pickDensity = isDark && darkVariant?.density ? darkVariant.density : tokens.density;
   emitDensity(pickDensity, vars);
 
@@ -148,37 +293,8 @@ export function themeTokensToCssVars(
 
 function emitDensity(density: DensityTokens | undefined, vars: Record<string, string>): void {
   if (!density) return;
-  if (density.spacing) {
-    const s = density.spacing;
-    const pairs: ReadonlyArray<[string, string | undefined]> = [
-      ['0', s.space0], ['1', s.space1], ['2', s.space2], ['3', s.space3],
-      ['4', s.space4], ['5', s.space5], ['6', s.space6], ['7', s.space7],
-      ['8', s.space8], ['9', s.space9], ['10', s.space10], ['11', s.space11],
-      ['12', s.space12],
-    ];
-    for (const [k, v] of pairs) {
-      if (v !== undefined) vars[`--space-${k}`] = v;
-    }
-  }
-  const pairs: ReadonlyArray<[string, string | undefined]> = [
-    ['button-height-sm', density.buttonHeightSm],
-    ['button-height-md', density.buttonHeightMd],
-    ['button-height-lg', density.buttonHeightLg],
-    ['input-height-sm', density.inputHeightSm],
-    ['input-height-md', density.inputHeightMd],
-    ['input-height-lg', density.inputHeightLg],
-    ['row-height-compact', density.rowHeightCompact],
-    ['row-height-normal', density.rowHeightNormal],
-    ['row-height-spacious', density.rowHeightSpacious],
-    ['card-padding-sm', density.cardPaddingSm],
-    ['card-padding-md', density.cardPaddingMd],
-    ['card-padding-lg', density.cardPaddingLg],
-    ['dialog-padding', density.dialogPadding],
-    ['section-gap', density.sectionGap],
-  ];
-  for (const [k, v] of pairs) {
-    if (v !== undefined) vars[`--${k}`] = v;
-  }
+  applyFlat(density.spacing, DENSITY_SPACING_VARS, vars);
+  applyFlat(density, DENSITY_ELEMENT_VARS, vars);
 }
 
 function typeSizeKeyStr(k: TypeSizeKey): string {
@@ -199,17 +315,11 @@ function emitTypeIntent(name: string, intent: TypeIntent, vars: Record<string, s
 
 function emitTypeScale(ts: TypeScaleTokens | undefined, vars: Record<string, string>): void {
   if (!ts) return;
-  if (ts.displayFamily !== undefined) vars['--font-family-display'] = ts.displayFamily;
-  if (ts.bodyFamily !== undefined) vars['--font-family-body'] = ts.bodyFamily;
-  if (ts.monoFamily !== undefined) vars['--font-family-mono'] = ts.monoFamily;
+  applyFlat(ts, TYPE_FAMILY_VARS, vars);
   if (ts.scale) {
     const s = ts.scale;
-    const pairs: ReadonlyArray<[string, { size: string; lineHeight: string } | undefined]> = [
-      ['xs', s.xs], ['sm', s.sm], ['base', s.base], ['lg', s.lg], ['xl', s.xl],
-      ['2xl', s['2xl']], ['3xl', s['3xl']], ['4xl', s['4xl']],
-      ['display-1', s['display-1']], ['display-2', s['display-2']],
-    ];
-    for (const [k, entry] of pairs) {
+    for (const k of TYPE_SIZE_KEYS) {
+      const entry = s[k];
       if (entry !== undefined) {
         vars[`--text-${k}`] = entry.size;
         vars[`--leading-${k}`] = entry.lineHeight;
@@ -218,13 +328,10 @@ function emitTypeScale(ts: TypeScaleTokens | undefined, vars: Record<string, str
   }
   if (ts.intents) {
     const i = ts.intents;
-    if (i.headingMajor) emitTypeIntent('heading-major', i.headingMajor, vars);
-    if (i.headingMinor) emitTypeIntent('heading-minor', i.headingMinor, vars);
-    if (i.bodyEmphasis) emitTypeIntent('body-emphasis', i.bodyEmphasis, vars);
-    if (i.bodyDefault) emitTypeIntent('body-default', i.bodyDefault, vars);
-    if (i.bodyQuiet) emitTypeIntent('body-quiet', i.bodyQuiet, vars);
-    if (i.caption) emitTypeIntent('caption', i.caption, vars);
-    if (i.numeric) emitTypeIntent('numeric', i.numeric, vars);
+    for (const { key, cssName } of TYPE_INTENT_VARS) {
+      const intent = i[key];
+      if (intent) emitTypeIntent(cssName, intent, vars);
+    }
   }
 }
 
@@ -237,58 +344,37 @@ function emitMotion(m: MotionTokens | undefined, vars: Record<string, string>): 
   if (!m) return;
   if (m.durations) {
     const d = m.durations;
-    const pairs: ReadonlyArray<[string, string | undefined]> = [
-      ['instant', d.instant], ['fast', d.fast], ['normal', d.normal],
-      ['slow', d.slow], ['dramatic', d.dramatic],
-    ];
-    for (const [k, v] of pairs) {
+    for (const k of MOTION_DURATION_KEYS) {
+      const v = d[k];
       if (v !== undefined) vars[`--duration-${k}`] = v;
     }
   }
   if (m.easings) {
     const e = m.easings;
-    const pairs: ReadonlyArray<[string, string | undefined]> = [
-      ['linear', e.linear], ['standard', e.standard],
-      ['emphasized', e.emphasized], ['spring', e.spring],
-    ];
-    for (const [k, v] of pairs) {
+    for (const k of MOTION_EASING_KEYS) {
+      const v = e[k];
       if (v !== undefined) vars[`--easing-${k}`] = v;
     }
   }
   if (m.intents) {
     const i = m.intents;
-    if (i.enter) emitMotionIntent('enter', i.enter, vars);
-    if (i.exit) emitMotionIntent('exit', i.exit, vars);
-    if (i.hover) emitMotionIntent('hover', i.hover, vars);
-    if (i.press) emitMotionIntent('press', i.press, vars);
-    if (i.expand) emitMotionIntent('expand', i.expand, vars);
-    if (i.transition) emitMotionIntent('transition', i.transition, vars);
+    for (const { key, cssName } of MOTION_INTENT_VARS) {
+      const intent = i[key];
+      if (intent) emitMotionIntent(cssName, intent, vars);
+    }
   }
 }
 
 function emitIconography(i: IconographyTokens | undefined, vars: Record<string, string>): void {
-  if (!i) return;
-  if (i.family !== undefined) vars['--icon-family'] = i.family;
-  if (i.strokeWidth !== undefined) vars['--icon-stroke-width'] = i.strokeWidth;
-  if (i.defaultSize !== undefined) vars['--icon-default-size'] = i.defaultSize;
+  applyFlat(i, ICONOGRAPHY_VARS, vars);
 }
 
 function emitElevation(e: ElevationTokens | undefined, vars: Record<string, string>): void {
-  if (!e) return;
-  if (e.cardElevation !== undefined) vars['--elevation-card'] = e.cardElevation;
-  if (e.popoverElevation !== undefined) vars['--elevation-popover'] = e.popoverElevation;
-  if (e.dialogElevation !== undefined) vars['--elevation-dialog'] = e.dialogElevation;
-  if (e.toastElevation !== undefined) vars['--elevation-toast'] = e.toastElevation;
+  applyFlat(e, ELEVATION_VARS, vars);
 }
 
 function emitGeometry(g: GeometryTokens | undefined, vars: Record<string, string>): void {
-  if (!g) return;
-  if (g.radiusContainer !== undefined) vars['--radius-container'] = g.radiusContainer;
-  if (g.radiusInteractive !== undefined) vars['--radius-interactive'] = g.radiusInteractive;
-  if (g.radiusPill !== undefined) vars['--radius-pill'] = g.radiusPill;
-  if (g.borderHairline !== undefined) vars['--border-hairline'] = g.borderHairline;
-  if (g.borderStandard !== undefined) vars['--border-standard'] = g.borderStandard;
-  if (g.borderHeavy !== undefined) vars['--border-heavy'] = g.borderHeavy;
+  applyFlat(g, GEOMETRY_VARS, vars);
 }
 
 /**

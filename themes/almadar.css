@@ -1,54 +1,20 @@
 /**
- * Almadar Theme
- *
- * Inspired by the Almadar/KFlow branding. Features teal-to-cyan
- * gradients, dark slate backgrounds, and glowing accent effects.
- * Premium, futuristic aesthetic with glowing interactions.
+ * GENERATED — do not edit by hand.
+ * Source: packages/almadar-core/themes/almadar.json
+ * Regenerate: node tools/almadar-pattern-sync/dist/index.js themes (or `almadar-sync themes`)
  */
 
-/* ==========================================================================
- * LIGHT MODE
- * ========================================================================== */
 [data-theme="almadar-light"] {
-    /* Shadows - Soft teal glow */
-    --shadow-main:
-        0 4px 14px rgba(20, 184, 166, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
-    --shadow-sm: 0 2px 4px rgba(20, 184, 166, 0.08);
-    --shadow-lg:
-        0 8px 30px rgba(20, 184, 166, 0.18), 0 4px 10px rgba(0, 0, 0, 0.06);
-    --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-none: none;
-    --shadow-hover: 0 12px 40px rgba(20, 184, 166, 0.2);
-    --shadow-active: 0 2px 8px rgba(20, 184, 166, 0.15);
-
-    /* Border radius - Modern rounded */
-    --radius-none: 0px;
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 20px;
-    --radius-full: 9999px;
-
-    /* Border width - Clean */
-    --border-width: 1px;
-    --border-width-thin: 1px;
-    --border-width-thick: 2px;
-
-    /* Colors - Teal on light background */
     --color-primary: #0f766e;
     --color-primary-hover: #115e59;
     --color-primary-foreground: #ffffff;
-
     --color-secondary: #f1f5f9;
     --color-secondary-hover: #e2e8f0;
     --color-secondary-foreground: #0f172a;
-
     --color-accent: #0e7490;
     --color-accent-foreground: #ffffff;
-
     --color-muted: #f1f5f9;
     --color-muted-foreground: #607080;
-
     --color-background: #f8fafc;
     --color-foreground: #0f172a;
     --color-card: #ffffff;
@@ -57,8 +23,6 @@
     --color-border: rgba(20, 184, 166, 0.3);
     --color-input: rgba(20, 184, 166, 0.2);
     --color-ring: #14b8a6;
-
-    /* Semantic colors */
     --color-error: #dc2626;
     --color-error-foreground: #ffffff;
     --color-success: #15803d;
@@ -67,103 +31,70 @@
     --color-warning-foreground: #000000;
     --color-info: #0369a1;
     --color-info-foreground: #ffffff;
-
-    /* Icon styling */
-    --icon-stroke-width: 1.75;
-    --icon-color: #0d9488;
-
-    /* Transitions - Smooth */
-    --transition-fast: 150ms;
-    --transition-normal: 250ms;
-    --transition-slow: 400ms;
-    --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
-
-    /* Hover/Active transforms */
-    --hover-scale: 1.02;
-    --hover-translate-y: -2px;
-    --hover-translate-x: 0;
-    --active-scale: 0.98;
-    --active-translate-y: 0;
-
-    /* Focus ring - Teal */
-    --focus-ring-width: 2px;
-    --focus-ring-offset: 2px;
-    --focus-ring-color: #14b8a6;
-
-    /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
-    /* Motion axis — duration palette (aliases existing --transition-* for backward compat) */
-    --duration-instant: 0ms;
-    --duration-fast: var(--transition-fast);
-    --duration-normal: var(--transition-normal);
-    --duration-slow: var(--transition-slow);
-    --duration-dramatic: 600ms;
-    /* Motion axis — easing palette (aliases existing --transition-timing for backward compat) */
-    --easing-linear: linear;
-    --easing-standard: var(--transition-timing);
-    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
-    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    /* Iconography axis */
-    --icon-family: lucide;
-    --icon-default-size: 16px;
-    /* Elevation axis — per-layer mapping */
-    --elevation-card: var(--shadow-sm);
-    --elevation-popover: var(--shadow-main);
-    --elevation-dialog: var(--shadow-lg);
-    --elevation-toast: var(--shadow-main);
-    /* Geometry axis — radius rhythm with intent */
-    --radius-container: var(--radius-md);
-    --radius-interactive: var(--radius-md);
-    --radius-pill: var(--radius-full);
-    /* Geometry axis — border-width rhythm */
-    --border-hairline: 1px;
-    --border-standard: var(--border-width);
-    --border-heavy: var(--border-width-thick);
-}
-
-/* ==========================================================================
- * DARK MODE
- * ========================================================================== */
-[data-theme="almadar-dark"] {
-    /* Shadows - Glowing teal accents */
-    --shadow-main:
-        0 4px 14px rgba(20, 184, 166, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
-    --shadow-sm: 0 2px 4px rgba(20, 184, 166, 0.1);
-    --shadow-lg:
-        0 8px 30px rgba(20, 184, 166, 0.25), 0 4px 10px rgba(0, 0, 0, 0.1);
-    --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-    --shadow-none: none;
-    --shadow-hover:
-        0 12px 40px rgba(20, 184, 166, 0.35), 0 4px 12px rgba(6, 182, 212, 0.2);
-    --shadow-active: 0 2px 8px rgba(20, 184, 166, 0.2);
-
-    /* Border radius - Modern rounded */
     --radius-none: 0px;
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 14px;
     --radius-xl: 20px;
     --radius-full: 9999px;
-
-    /* Border width - Clean */
     --border-width: 1px;
     --border-width-thin: 1px;
     --border-width-thick: 2px;
+    --icon-color: #0d9488;
+    --transition-fast: 150ms;
+    --transition-normal: 250ms;
+    --transition-slow: 400ms;
+    --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    --hover-scale: 1.02;
+    --hover-translate-y: -2px;
+    --hover-translate-x: 0;
+    --active-scale: 0.98;
+    --active-translate-y: 0;
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #14b8a6;
+    --shadow-main: 0 4px 14px rgba(20, 184, 166, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-sm: 0 2px 4px rgba(20, 184, 166, 0.08);
+    --shadow-lg: 0 8px 30px rgba(20, 184, 166, 0.18), 0 4px 10px rgba(0, 0, 0, 0.06);
+    --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-none: none;
+    --shadow-hover: 0 12px 40px rgba(20, 184, 166, 0.2);
+    --shadow-active: 0 2px 8px rgba(20, 184, 166, 0.15);
+    --duration-instant: 0ms;
+    --duration-fast: var(--transition-fast);
+    --duration-normal: var(--transition-normal);
+    --duration-slow: var(--transition-slow);
+    --duration-dramatic: 600ms;
+    --easing-linear: linear;
+    --easing-standard: var(--transition-timing);
+    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --icon-family: lucide;
+    --icon-stroke-width: 1.75;
+    --icon-default-size: 16px;
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-lg);
+    --elevation-toast: var(--shadow-main);
+    --radius-container: var(--radius-md);
+    --radius-interactive: var(--radius-md);
+    --radius-pill: var(--radius-full);
+    --border-hairline: 1px;
+    --border-standard: var(--border-width);
+    --border-heavy: var(--border-width-thick);
+}
 
-    /* Colors - Teal/Cyan with dark slate */
+[data-theme="almadar-dark"] {
     --color-primary: #14b8a6;
     --color-primary-hover: #2dd4bf;
     --color-primary-foreground: #042f2e;
-
     --color-secondary: #1e293b;
     --color-secondary-hover: #334155;
     --color-secondary-foreground: #f1f5f9;
-
     --color-accent: #06b6d4;
     --color-accent-foreground: #083344;
-
     --color-muted: #1e293b;
     --color-muted-foreground: #94a3b8;
-
     --color-background: #0f172a;
     --color-foreground: #f1f5f9;
     --color-card: #1e293b;
@@ -172,8 +103,6 @@
     --color-border: rgba(20, 184, 166, 0.25);
     --color-input: rgba(20, 184, 166, 0.3);
     --color-ring: #14b8a6;
-
-    /* Semantic colors - Brighter for dark mode */
     --color-error: #f87171;
     --color-error-foreground: #000000;
     --color-success: #4ade80;
@@ -182,54 +111,54 @@
     --color-warning-foreground: #000000;
     --color-info: #38bdf8;
     --color-info-foreground: #000000;
-
-    /* Icon styling - Medium with teal color */
-    --icon-stroke-width: 1.75;
+    --radius-none: 0px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 2px;
     --icon-color: #14b8a6;
-
-    /* Transitions - Smooth with glow */
     --transition-fast: 150ms;
     --transition-normal: 250ms;
     --transition-slow: 400ms;
     --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
-
-    /* Hover/Active transforms - Glowing lift */
     --hover-scale: 1.02;
     --hover-translate-y: -2px;
     --hover-translate-x: 0;
     --active-scale: 0.98;
     --active-translate-y: 0;
-
-    /* Focus ring - Teal glow */
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
     --focus-ring-color: #14b8a6;
-
-    /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
-    /* Motion axis — duration palette (aliases existing --transition-* for backward compat) */
+    --shadow-main: 0 4px 14px rgba(20, 184, 166, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 2px 4px rgba(20, 184, 166, 0.1);
+    --shadow-lg: 0 8px 30px rgba(20, 184, 166, 0.25), 0 4px 10px rgba(0, 0, 0, 0.1);
+    --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    --shadow-none: none;
+    --shadow-hover: 0 12px 40px rgba(20, 184, 166, 0.35), 0 4px 12px rgba(6, 182, 212, 0.2);
+    --shadow-active: 0 2px 8px rgba(20, 184, 166, 0.2);
     --duration-instant: 0ms;
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
     --duration-slow: var(--transition-slow);
     --duration-dramatic: 600ms;
-    /* Motion axis — easing palette (aliases existing --transition-timing for backward compat) */
     --easing-linear: linear;
     --easing-standard: var(--transition-timing);
     --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
     --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    /* Iconography axis */
     --icon-family: lucide;
+    --icon-stroke-width: 1.75;
     --icon-default-size: 16px;
-    /* Elevation axis — per-layer mapping */
     --elevation-card: var(--shadow-sm);
     --elevation-popover: var(--shadow-main);
     --elevation-dialog: var(--shadow-lg);
     --elevation-toast: var(--shadow-main);
-    /* Geometry axis — radius rhythm with intent */
     --radius-container: var(--radius-md);
     --radius-interactive: var(--radius-md);
     --radius-pill: var(--radius-full);
-    /* Geometry axis — border-width rhythm */
     --border-hairline: 1px;
     --border-standard: var(--border-width);
     --border-heavy: var(--border-width-thick);

@@ -234,4 +234,8 @@ if (fix) {
 } else {
   console.log();
   console.log('Run with --fix to add missing classes to the preset.');
+  // A missing entry here means a component ships a class Tailwind will silently
+  // drop CSS for (the Gantt bar defect: axis rendered, bars were invisible on
+  // every reload) — CI must fail so it is caught at merge, not in production.
+  process.exit(1);
 }

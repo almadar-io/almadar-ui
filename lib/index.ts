@@ -62,3 +62,13 @@ export * from './jazari/index';
 
 // Pure vim-flavored editor motions (CodeBlock consumes these — no DOM here)
 export * from './editorMotions';
+
+// Theme tokens → CSS custom-property mapping (forward direction) + the
+// per-axis var tables it shares with @almadar/core's one-time CSS→JSON
+// theme migration script (the inverse direction) — single source of the
+// var-name mapping, read both ways.
+export * from './themeTokens';
+
+// Lucide canonical name → SF Symbol / Material Symbol (native shells icon path) —
+// consumed by pattern-sync's `icon-map` command to emit IconMap.swift/IconMap.kt.
+export * from './iconNativeMap';

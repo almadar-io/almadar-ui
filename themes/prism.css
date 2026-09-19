@@ -1,51 +1,20 @@
 /**
- * Prism Theme
- *
- * Compact tech aesthetic — Linear-influenced but louder. Tight 4pt rhythm,
- * mono-heavy numerics, electric violet + lime accents, mechanical linear motion.
+ * GENERATED — do not edit by hand.
+ * Source: packages/almadar-core/themes/prism.json
+ * Regenerate: node tools/almadar-pattern-sync/dist/index.js themes (or `almadar-sync themes`)
  */
 
-/* ==========================================================================
- * LIGHT MODE
- * ========================================================================== */
 [data-theme="prism-light"] {
-    /* Shadows - Flat-ish, hairline-led */
-    --shadow-none: none;
-    --shadow-sm: 0 1px 0 rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.04);
-    --shadow-main: 0 1px 2px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.04);
-    --shadow-lg: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
-    --shadow-inner: inset 0 1px 1px rgba(15, 23, 42, 0.04);
-    --shadow-hover: 0 2px 6px rgba(124, 58, 237, 0.12);
-    --shadow-active: 0 1px 2px rgba(124, 58, 237, 0.08);
-
-    /* Border radius - Mixed: containers sharp-ish, interactive softer */
-    --radius-none: 0px;
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 10px;
-    --radius-xl: 12px;
-    --radius-full: 9999px;
-
-    /* Border width - Hairline */
-    --border-width: 1px;
-    --border-width-thin: 1px;
-    --border-width-thick: 2px;
-
-    /* Colors - Electric violet primary, lime accent, clean off-white */
     --color-primary: #7c3aed;
     --color-primary-hover: #6d28d9;
     --color-primary-foreground: #ffffff;
-
     --color-secondary: #f1f5f9;
     --color-secondary-hover: #e2e8f0;
     --color-secondary-foreground: #0f172a;
-
     --color-accent: #84cc16;
     --color-accent-foreground: #1a2e05;
-
     --color-muted: #f1f5f9;
     --color-muted-foreground: #59677c;
-
     --color-background: #fafafa;
     --color-foreground: #0f172a;
     --color-card: #ffffff;
@@ -54,8 +23,6 @@
     --color-border: #e2e8f0;
     --color-input: #cbd5e1;
     --color-ring: #7c3aed;
-
-    /* Semantic colors */
     --color-error: #dc2626;
     --color-error-foreground: #ffffff;
     --color-success: #15803d;
@@ -64,99 +31,70 @@
     --color-warning-foreground: #ffffff;
     --color-info: #2563eb;
     --color-info-foreground: #ffffff;
-
-    /* Icon styling - Thin */
-    --icon-stroke-width: 1.5;
-    --icon-color: currentColor;
-
-    /* Transitions - Snappy, mechanical linear */
-    --transition-fast: 80ms;
-    --transition-normal: 120ms;
-    --transition-slow: 180ms;
-    --transition-timing: linear;
-
-    /* Hover/Active transforms - Subtle */
-    --hover-scale: 1.0;
-    --hover-translate-y: -1px;
-    --hover-translate-x: 0;
-    --active-scale: 0.99;
-    --active-translate-y: 0;
-
-    /* Focus ring - Electric violet */
-    --focus-ring-width: 2px;
-    --focus-ring-offset: 2px;
-    --focus-ring-color: #7c3aed;
-
-    /* Motion axis - snappy, mechanical linear */
-    --duration-instant: 0ms;
-    --duration-fast: 80ms;
-    --duration-normal: 120ms;
-    --duration-slow: 180ms;
-    --duration-dramatic: 240ms;
-    /* Motion axis - everything linear, mechanical */
-    --easing-linear: linear;
-    --easing-standard: linear;
-    --easing-emphasized: linear;
-    --easing-spring: linear;
-    /* Iconography axis - thin lucide */
-    --icon-family: lucide;
-    --icon-default-size: 14px;
-    /* Elevation axis - flat-ish */
-    --elevation-card: var(--shadow-sm);
-    --elevation-popover: var(--shadow-main);
-    --elevation-dialog: var(--shadow-main);
-    --elevation-toast: var(--shadow-sm);
-    /* Geometry axis - containers sharp-ish, interactive softer, pill full */
-    --radius-container: 6px;
-    --radius-interactive: 10px;
-    --radius-pill: 9999px;
-    /* Geometry axis - hairline borders */
-    --border-hairline: 1px;
-    --border-standard: 1px;
-    --border-heavy: 2px;
-}
-
-/* ==========================================================================
- * DARK MODE
- * ========================================================================== */
-[data-theme="prism-dark"] {
-    /* Shadows - Flat, deep shadows */
-    --shadow-none: none;
-    --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-main: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
-    --shadow-inner: inset 0 1px 1px rgba(0, 0, 0, 0.3);
-    --shadow-hover: 0 2px 8px rgba(167, 139, 250, 0.2);
-    --shadow-active: 0 1px 2px rgba(167, 139, 250, 0.15);
-
-    /* Border radius - Mixed: containers sharp-ish, interactive softer */
     --radius-none: 0px;
     --radius-sm: 4px;
     --radius-md: 6px;
     --radius-lg: 10px;
     --radius-xl: 12px;
     --radius-full: 9999px;
-
-    /* Border width - Hairline */
     --border-width: 1px;
     --border-width-thin: 1px;
     --border-width-thick: 2px;
+    --icon-color: currentColor;
+    --transition-fast: 80ms;
+    --transition-normal: 120ms;
+    --transition-slow: 180ms;
+    --transition-timing: linear;
+    --hover-scale: 1.0;
+    --hover-translate-y: -1px;
+    --hover-translate-x: 0;
+    --active-scale: 0.99;
+    --active-translate-y: 0;
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #7c3aed;
+    --shadow-none: none;
+    --shadow-sm: 0 1px 0 rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-main: 0 1px 2px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
+    --shadow-inner: inset 0 1px 1px rgba(15, 23, 42, 0.04);
+    --shadow-hover: 0 2px 6px rgba(124, 58, 237, 0.12);
+    --shadow-active: 0 1px 2px rgba(124, 58, 237, 0.08);
+    --duration-instant: 0ms;
+    --duration-fast: 80ms;
+    --duration-normal: 120ms;
+    --duration-slow: 180ms;
+    --duration-dramatic: 240ms;
+    --easing-linear: linear;
+    --easing-standard: linear;
+    --easing-emphasized: linear;
+    --easing-spring: linear;
+    --icon-family: lucide;
+    --icon-stroke-width: 1.5;
+    --icon-default-size: 14px;
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-main);
+    --elevation-toast: var(--shadow-sm);
+    --radius-container: 6px;
+    --radius-interactive: 10px;
+    --radius-pill: 9999px;
+    --border-hairline: 1px;
+    --border-standard: 1px;
+    --border-heavy: 2px;
+}
 
-    /* Colors - Brighter violet on very dark slate */
+[data-theme="prism-dark"] {
     --color-primary: #a78bfa;
     --color-primary-hover: #c4b5fd;
     --color-primary-foreground: #1e1b4b;
-
     --color-secondary: #1f1d3a;
     --color-secondary-hover: #2a2748;
     --color-secondary-foreground: #e2e8f0;
-
     --color-accent: #bef264;
     --color-accent-foreground: #1a2e05;
-
     --color-muted: #1f1d3a;
     --color-muted-foreground: #94a3b8;
-
     --color-background: #0c0a1a;
     --color-foreground: #e2e8f0;
     --color-card: #14122a;
@@ -165,8 +103,6 @@
     --color-border: #2a2748;
     --color-input: #3a3658;
     --color-ring: #a78bfa;
-
-    /* Semantic colors - Brighter for dark */
     --color-error: #f87171;
     --color-error-foreground: #000000;
     --color-success: #4ade80;
@@ -175,53 +111,54 @@
     --color-warning-foreground: #000000;
     --color-info: #60a5fa;
     --color-info-foreground: #000000;
-
-    /* Icon styling - Thin */
-    --icon-stroke-width: 1.5;
+    --radius-none: 0px;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 10px;
+    --radius-xl: 12px;
+    --radius-full: 9999px;
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 2px;
     --icon-color: currentColor;
-
-    /* Transitions - Snappy linear */
     --transition-fast: 80ms;
     --transition-normal: 120ms;
     --transition-slow: 180ms;
     --transition-timing: linear;
-
-    /* Hover/Active transforms - Subtle */
     --hover-scale: 1.0;
     --hover-translate-y: -1px;
     --hover-translate-x: 0;
     --active-scale: 0.99;
     --active-translate-y: 0;
-
-    /* Focus ring - Bright violet */
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
     --focus-ring-color: #a78bfa;
-
-    /* Motion axis - snappy, mechanical linear */
+    --shadow-none: none;
+    --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-main: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-inner: inset 0 1px 1px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 2px 8px rgba(167, 139, 250, 0.2);
+    --shadow-active: 0 1px 2px rgba(167, 139, 250, 0.15);
     --duration-instant: 0ms;
     --duration-fast: 80ms;
     --duration-normal: 120ms;
     --duration-slow: 180ms;
     --duration-dramatic: 240ms;
-    /* Motion axis - everything linear, mechanical */
     --easing-linear: linear;
     --easing-standard: linear;
     --easing-emphasized: linear;
     --easing-spring: linear;
-    /* Iconography axis - thin lucide */
     --icon-family: lucide;
+    --icon-stroke-width: 1.5;
     --icon-default-size: 14px;
-    /* Elevation axis - flat-ish */
     --elevation-card: var(--shadow-sm);
     --elevation-popover: var(--shadow-main);
     --elevation-dialog: var(--shadow-main);
     --elevation-toast: var(--shadow-sm);
-    /* Geometry axis - containers sharp-ish, interactive softer, pill full */
     --radius-container: 6px;
     --radius-interactive: 10px;
     --radius-pill: 9999px;
-    /* Geometry axis - hairline borders */
     --border-hairline: 1px;
     --border-standard: 1px;
     --border-heavy: 2px;
