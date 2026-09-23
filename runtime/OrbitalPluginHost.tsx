@@ -66,18 +66,16 @@ import { UI_SLOTS } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../hooks/useEventBus';
 import { useUISlots, type UISlotManager } from '../providers/UISlotContext';
-import type { ServerBridgeTransport } from '../providers/ServerBridge';
+import type { EventTransport } from '@almadar/runtime';
 import type { KeyCaptureEntry, KeyCaptureTable } from '../hooks/useKeyboardRouter';
 
 const log = createLogger('almadar:ui:plugin-host');
 
 /**
  * The two dispatch paths (`OrbitalServerRuntime.processOrbitalEvent` and
- * `ServerBridgeTransport.sendEvent`) return SEPARATE `OrbitalEventResponse`
- * declarations (the transport's is a module-private interface in
- * `ServerBridge.tsx`, structurally close but not the same nominal type —
- * `emittedEvents` is optional there, required on the runtime's). This is
- * the structural subset this file actually reads, satisfied by both.
+ * `EventTransport.send`) both return `@almadar/core`'s `OrbitalEventResponse`
+ * now (plan P5 unified the transport onto that wire shape). This remains the
+ * structural subset this file actually reads.
  */
 interface PluginDispatchResponse {
   success: boolean;
@@ -115,7 +113,7 @@ export interface OrbitalPluginHostProps {
    *  'server': dispatch through `transport` instead of a local runtime, as `AlmadarApp`. */
   mode?: 'mock' | 'server';
   /** Required when `mode === 'server'`. */
-  transport?: ServerBridgeTransport;
+  transport?: EventTransport;
   /** OPTIONAL policy: verbs listed here are denied with a logged warning, never a throw. Default: none denied. */
   deny?: PluginHostDenyVerb[];
   navigate?: (path: string) => void;
@@ -306,7 +304,7 @@ function buildMockEffectHandlers(opts: {
 interface PluginRuntimeMountProps {
   plugin: PluginHostPlugin;
   mode: 'mock' | 'server';
-  transport?: ServerBridgeTransport;
+  transport?: EventTransport;
   deny?: PluginHostDenyVerb[];
   navigate?: (path: string) => void;
   onTransition?: OrbitalPluginHostProps['onTransition'];
@@ -547,7 +545,7 @@ function PluginRuntimeMount({
           targetTrait: row.trait,
         });
       } else if (mode === 'server' && transport) {
-        response = await transport.sendEvent(row.orbital, row.trigger, payload);
+        response = await transport.send(row.orbital, { event: row.trigger, payload });
       } else {
         return;
       }

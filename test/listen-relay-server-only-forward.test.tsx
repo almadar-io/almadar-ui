@@ -33,7 +33,6 @@ import {
   ServerBridgeProvider,
   useServerBridge,
   type ServerBridgeContextValue,
-  type ServerBridgeTransport,
 } from '../providers/ServerBridge';
 import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
 import { UISlotProvider, useUISlots, type UISlotManager } from '../providers/UISlotContext';
@@ -46,12 +45,13 @@ import {
   type EntityRow,
   type EventPayload,
   type OrbitalSchema,
+  type OrbitalEventRequest,
   type OrbitalEventResponse,
   type ResolvedEntity,
   type ResolvedTraitBinding,
   type SExpr,
 } from '@almadar/core';
-import type { TransitionResult } from '@almadar/runtime';
+import type { EventTransport, TransitionResult } from '@almadar/runtime';
 
 const ORBITAL = 'ChatOrbital';
 const COMPOSER = 'ChatComposer';
@@ -147,17 +147,17 @@ function Probe({ bindings }: { bindings: ResolvedTraitBinding[] }) {
 interface RecordedSend {
   orbitalName: string;
   event: string;
-  payload?: unknown;
-  results?: ReadonlyArray<{ traitName: string; result: { previousState: string } }>;
-  entityByTrait?: Readonly<Record<string, unknown>>;
+  payload?: EventPayload;
+  traits?: OrbitalEventRequest['traits'];
+  entityByTrait?: OrbitalEventRequest['entityByTrait'];
 }
 
-function makeStubTransport(sends: RecordedSend[]): ServerBridgeTransport {
+function makeStubTransport(sends: RecordedSend[]): EventTransport {
   return {
-    register: async () => true,
+    register: async () => ({ success: true, carriesCircuitState: false }),
     unregister: async () => {},
-    sendEvent: async (orbitalName, event, payload, _clientId, _tick, _sourceTrait, results, entityByTrait) => {
-      sends.push({ orbitalName, event, payload, results, entityByTrait });
+    send: async (orbitalName, request) => {
+      sends.push({ orbitalName, event: request.event, payload: request.payload, traits: request.traits, entityByTrait: request.entityByTrait });
       const response: OrbitalEventResponse = {
         success: true,
         transitioned: true,
@@ -269,9 +269,7 @@ describe('listen relay: server-only arms on the stateful in-process topology', (
     expect(send.event).toBe('INIT');
     // Scoped to the listening trait from its CURRENT state — the server
     // evaluates exactly that arm, nothing else.
-    expect(send.results?.map((r) => ({ trait: r.traitName, from: r.result.previousState }))).toEqual([
-      { trait: THREAD, from: 'loading' },
-    ]);
+    expect(send.traits).toEqual([{ trait: THREAD, from: 'loading' }]);
     // The Fix C entity snapshot rides along (the fetch filter reads
     // @entity.activeChannel server-side).
     expect(send.entityByTrait).toBeDefined();

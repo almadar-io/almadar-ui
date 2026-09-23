@@ -29,6 +29,7 @@ import {
     interpolateValue,
     createContextFromBindings,
     createServerEffectHandlers,
+    createClientEffectHandlers,
     collectDeclaredConfigDefaults,
     normalizeCallSiteConfigToValues,
     createTickScheduler,
@@ -46,7 +47,6 @@ import {
     type TransitionResult,
 } from '@almadar/runtime';
 import { evaluate, evaluateGuard, executeEffects, createMinimalContext, evaluateListenPayloadExpr, type EvaluationContext } from '@almadar/evaluator';
-import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
 import { enqueueEvent, type QueuedEventEntry } from '../lib/event-queue-coalesce';
 import { perfEnd, perfGauge, perfStart, perfTimeAsync } from '../lib/perf';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from '../types/runtime-types';

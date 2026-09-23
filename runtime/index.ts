@@ -46,7 +46,7 @@ export {
     type ClientEventBus,
     type SlotSetter,
     type CreateClientEffectHandlersOptions,
-} from '../lib/createClientEffectHandlers';
+} from '@almadar/runtime';
 
 // OrbPreview — live orbital schema renderer
 export { OrbPreview, type OrbPreviewProps } from './OrbPreview';

@@ -4,9 +4,10 @@
  * BrowserPlayground — in-browser Almadar runtime mount.
  *
  * Runs `OrbitalServerRuntime` (mock mode) in-process and threads it through
- * `<OrbPreview>` via the `ServerBridgeTransport` adapter. Equivalent to
- * canonical playground-runtime's server-mode mount, but without Express,
- * fork, or HTTP — invokes `runtime.processOrbitalEvent` directly.
+ * `<OrbPreview>` via an `EventTransport` (`createInProcessTransport`, plan
+ * P5). Equivalent to canonical playground-runtime's server-mode mount, but
+ * without Express, fork, or HTTP — invokes `runtime.processOrbitalEvent`
+ * directly.
  *
  * Same React tree as `runtime-verify` (and apps/builder server-mode) speak,
  * so any `@almadar/runtime` fix flows in through one bump cycle.
@@ -21,10 +22,10 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
-import type { EventPayload, OrbitalSchema } from '@almadar/core';
+import { createInProcessTransport, type EventTransport } from '@almadar/runtime';
+import type { OrbitalSchema } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { OrbPreview } from './OrbPreview';
-import type { ServerBridgeTransport } from '../providers/ServerBridge';
 
 const playgroundLog = createLogger('almadar:ui:browser-playground');
 
@@ -115,43 +116,34 @@ export function BrowserPlayground({
     };
   }, [runtime]);
 
-  const transport = useMemo<ServerBridgeTransport>(() => ({
-    register: async (s) => {
-      await runtime.register(s as OrbitalSchema);
-      return true;
-    },
-    unregister: async () => {
-      runtime.unregisterAll();
-    },
-    sendEvent: async (orbitalName, event, payload?, _clientId?, tick?, sourceTrait?) => {
-      // Gate every dispatch on registration completing. TraitInitializer's
-      // INIT useEffect runs before our parent register useMemo's promise
-      // resolves; without this await, INIT lands in an empty runtime and
-      // gets `Orbital not found`. The await is a no-op once registration
-      // has resolved.
-      await registrationReady;
-      // OrbitalServerRuntime.processOrbitalEvent returns the same
-      // OrbitalEventResponse shape ServerBridge consumes from HTTP, so the
-      // cascade-rebroadcast logic in ServerBridge runs identically against
-      // both transports.
-      // ServerBridgeTransport widens payload to `Record<string, unknown>`
-      // (HTTP semantics: arbitrary JSON in transit). OrbitalServerRuntime
-      // narrows to `EventPayload` (structured value type). Single-step cast
-      // at this boundary is the same widening every HTTP transport already
-      // does on JSON.parse — runtime contract enforced server-side.
-      // tick/sourceTrait (T6) pass through to the request; the coalesced
-      // cross-tab relay is a no-op here — in-process is single-tab by
-      // construction, no SSE sink is wired.
-      return runtime.processOrbitalEvent(orbitalName, {
-        event,
-        payload: payload as EventPayload | undefined,
-        tick,
-        sourceTrait,
-        // @almadar/runtime OrbitalEventResponse.clientEffects uses a wider ClientEffectTuple than
-        // ServerBridge's local definition — cast at this boundary (upstream fix queued).
-      }) as ReturnType<ServerBridgeTransport['sendEvent']>;
-    },
-  }), [runtime, registrationReady]);
+  // `createInProcessTransport` (plan P5, `@almadar/runtime`) is the ONE
+  // owner of the in-process leg now — `send`'s request/response are
+  // `@almadar/core`'s `OrbitalEventRequest`/`OrbitalEventResponse` directly
+  // (the same shapes `OrbitalServerRuntime.processOrbitalEvent` already
+  // takes/returns), so no boundary cast is needed the way the old
+  // `ServerBridgeTransport`-shaped adapter needed one.
+  const transport = useMemo<EventTransport>(
+    () => createInProcessTransport(
+      async (orbitalName, request) => {
+        // Gate every dispatch on registration completing. TraitInitializer's
+        // INIT useEffect runs before our parent register useMemo's promise
+        // resolves; without this await, INIT lands in an empty runtime and
+        // gets `Orbital not found`. The await is a no-op once registration
+        // has resolved. tick/sourceTrait (T6) pass through on `request`; the
+        // coalesced cross-tab relay is a no-op here — in-process is
+        // single-tab by construction, no SSE sink is wired.
+        await registrationReady;
+        return runtime.processOrbitalEvent(orbitalName, request);
+      },
+      {
+        onRegister: (s) => runtime.register(s),
+        onUnregister: () => {
+          runtime.unregisterAll();
+        },
+      },
+    ),
+    [runtime, registrationReady],
+  );
 
   return (
     <OrbPreview

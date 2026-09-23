@@ -20,9 +20,15 @@
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr, UserContext, ClientEffectTuple, OrbitalEventRequest, OrbitalEventResponse } from '@almadar/core';
+import type { EmittedEvent, EntityRow, EventPayload, OrbitalSchema, SExpr, UserContext, ClientEffectTuple, OrbitalEventRequest, OrbitalEventResponse } from '@almadar/core';
 import type { AnyPatternConfig } from '@almadar/core/patterns';
-import type { ServerEffectResult, TransitionResult } from '@almadar/runtime';
+import {
+  createHttpTransport as createRuntimeHttpTransport,
+  type EventTransport,
+  type AccessTokenProvider,
+  type ServerEffectResult,
+  type TransitionResult,
+} from '@almadar/runtime';
 import { useEventBus } from '../hooks/useEventBus';
 import type { EventBusContextType } from '../types/event-bus-types';
 import { createTickSendRelay, type TickSendRelay } from '../lib/tick-send-relay';
@@ -31,7 +37,10 @@ import { stampLocallyDeliveredEchoes } from '../lib/cascadeEcho';
 import { createLogger } from '@almadar/logger';
 
 // `ClientEffectTuple` — wire-format client effect tuple from the server
-// response — is owned by `@almadar/core` (imported above).
+// response — is owned by `@almadar/core` (imported above). `EventTransport`
+// (plan P5, `docs/Almadar_Runtime_Stateless_Stateful_PLAN.md` §4.2) is the
+// ONE owner of the HTTP request/response leg — this provider is a context
+// around it, not a second transport implementation.
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital re-broadcast
 // tracing. Each server-cascade event — carried back in-response (gap #13)
@@ -42,13 +51,6 @@ import { createLogger } from '@almadar/logger';
 // surfaces the gap.
 const xOrbitalLog = createLogger('almadar:runtime:cross-orbital');
 const serverBridgeLog = createLogger('almadar:ui:server-bridge');
-
-/** A single server-cascade event, however it arrived (response or push). */
-interface RemoteBusEvent {
-  event: string;
-  payload?: EventPayload;
-  source?: BusEventSource;
-}
 
 /** One tick snapshot in the T8 send relay's lane (newest-wins per key). */
 interface TickSnapshot {
@@ -69,7 +71,7 @@ interface TickSnapshot {
  * `origin` is a debug label only (dispatch orbital for the response path,
  * `'push'` for the SSE path) — it never affects the re-emit key.
  */
-function reEmitServerEvent(eventBus: EventBusContextType, emitted: RemoteBusEvent, origin: string): void {
+function reEmitServerEvent(eventBus: EventBusContextType, emitted: EmittedEvent, origin: string): void {
   const evTrait = emitted.source?.trait;
   if (!evTrait) {
     // Absent source means we don't know the trait, so the emit is dropped
@@ -112,23 +114,6 @@ function reEmitServerEvent(eventBus: EventBusContextType, emitted: RemoteBusEven
 }
 
 /**
- * Push message shape on the `/api/events` SSE channel (Almadar_Live_Push.md).
- * The channel also carries dev `reload` messages, so only `type: 'bus'`
- * entries are cascade events — everything else is ignored by the subscriber.
- */
-interface ServerPushEnvelope {
-  type: string;
-  event?: string;
-  payload?: EventPayload;
-  source?: BusEventSource;
-  timestamp?: number;
-}
-
-function isBusPushEnvelope(value: ServerPushEnvelope): value is ServerPushEnvelope & { type: 'bus'; event: string } {
-  return value.type === 'bus' && typeof value.event === 'string';
-}
-
-/**
  * Per-TAB identity (Almadar_Live_Push.md) — module-scoped, NOT per provider.
  * A page mounting several orbital providers is still ONE origin: the server's
  * broadcast exclusion keys on this id, and per-provider ids would let one
@@ -140,64 +125,10 @@ function getTabClientId(): string {
   return tabClientId;
 }
 
-type BusPushEnvelope = ServerPushEnvelope & { type: 'bus'; event: string };
-
-interface SharedPushChannel {
-  source: EventSource;
-  subscribers: Set<(envelope: BusPushEnvelope) => void>;
-}
-
-/**
- * One shared EventSource per events URL, fanned out to every mounted
- * provider. SSE connections are long-lived HTTP: one per provider exhausts
- * Chromium's ~6-per-host HTTP/1.1 pool on multi-orbital pages and starves
- * the bridge's own dispatch fetches (proven on std-kflow: every walk
- * dispatch stalled to "driver did not deliver").
- */
-const pushChannels = new Map<string, SharedPushChannel>();
-
-function acquirePushChannel(url: string, subscriber: (envelope: BusPushEnvelope) => void): () => void {
-  let channel = pushChannels.get(url);
-  if (channel === undefined) {
-    const source = new EventSource(url);
-    const created: SharedPushChannel = { source, subscribers: new Set() };
-    source.onmessage = (ev: MessageEvent<string>) => {
-      let parsed: ServerPushEnvelope;
-      try {
-        parsed = JSON.parse(ev.data) as ServerPushEnvelope;
-      } catch (err) {
-        serverBridgeLog.warn('push:parse-failed', { error: err instanceof Error ? err.message : String(err) });
-        return;
-      }
-      if (!isBusPushEnvelope(parsed)) return;
-      for (const sub of created.subscribers) sub(parsed);
-    };
-    source.onerror = () => {
-      serverBridgeLog.warn('push:connection-error', { url });
-    };
-    pushChannels.set(url, created);
-    channel = created;
-  }
-  channel.subscribers.add(subscriber);
-  return () => {
-    channel.subscribers.delete(subscriber);
-    if (channel.subscribers.size === 0) {
-      channel.source.close();
-      pushChannels.delete(url);
-    }
-  };
-}
-
-/**
- * `/api/events` sits alongside the API root the provider already posts to
- * (`serverUrl` = `.../orbitals`; the SSE channel is `.../events`, its
- * sibling) — derive it structurally rather than hardcoding a second base.
- */
-function deriveEventsUrl(serverUrl: string): string {
-  const trimmed = serverUrl.replace(/\/+$/, '');
-  const apiRoot = trimmed.replace(/\/[^/]*$/, '');
-  return `${apiRoot}/events`;
-}
+// The SSE push channel (Almadar_Live_Push.md), its shared-connection pooling
+// and its `/api/events` URL derivation are `EventTransport.subscribe`'s
+// contract now (`@almadar/runtime`'s `createHttpTransport`) — this provider
+// only calls it, it no longer implements a second copy.
 
 // ---------------------------------------------------------------------------
 // Types
@@ -245,13 +176,11 @@ export interface ServerResponseMeta {
    */
   states?: Record<string, string>;
   /**
-   * Which server topology produced `states`: `'stateless-http'` (the hosted
-   * HTTP transport — the server holds no state, so the client must adopt its
-   * snapshot) or `'in-process'` (a local `OrbitalServerRuntime` transport —
-   * the local machine is already the source of truth; syncing is skipped to
-   * leave the stateful path untouched).
+   * Which server topology produced `states` — see `ServerBridgeContextValue.stateSource`'s
+   * doc for the three values. Mirrors the context's current `stateSource`
+   * at send time (not re-derived per call).
    */
-  stateSource?: 'stateless-http' | 'in-process';
+  stateSource?: 'stateless-http' | 'stateful-http' | 'in-process';
   error?: string;
 }
 
@@ -302,57 +231,12 @@ export interface ServerBridgeContextValue {
 }
 
 /**
- * Transport adapter for ServerBridgeProvider. Decouples the bridge's
- * cascade-rebroadcast / effect-parsing logic from its wire format.
- *
- * - The `serverUrl` mode (default) uses an HTTP transport that POSTs to
- *   `/register`, `/unregister`, `/:orbital/events`. This is what canonical
- *   playground-runtime (`tools/runtime-verify`) and apps/builder-server
- *   speak.
- * - The `transport` mode lets a consumer plug in a direct function-call
- *   adapter — used by `<BrowserPlayground>` to invoke
- *   `OrbitalServerRuntime.processOrbitalEvent` in-process, no HTTP, no
- *   server. Both modes return the same `OrbitalEventResponse` shape so the
- *   cascade-rebroadcast logic is identical downstream.
+ * @deprecated Alias for `@almadar/runtime`'s `EventTransport` (plan P5) —
+ * kept only because in-package consumers (`OrbPreview.tsx`,
+ * `BrowserPlayground.tsx`, `OrbitalPluginHost.tsx`) still import the name.
+ * Import `EventTransport` directly in new code.
  */
-export interface ServerBridgeTransport {
-  register: (schema: OrbitalSchema) => Promise<boolean | { success: boolean; topology?: 'stateless' | 'stateful' }>;
-  unregister: () => Promise<void>;
-  /**
-   * `clientId` (Almadar_Live_Push.md) is the per-tab id stamped on every
-   * dispatch so the server's push broadcast can exclude the origin tab
-   * (it already got this cascade in-response).
-   *
-   * `tick`/`sourceTrait` (T6, docs/Almadar_Tick_Loop.md §3a) mark a
-   * tick-originated latest-state broadcast: the server coalesces these
-   * newest-per-key and relays them to other tabs at snapshot rate.
-   */
-  sendEvent: (
-    orbitalName: string,
-    event: string,
-    payload?: EventPayload,
-    clientId?: string,
-    tick?: string,
-    sourceTrait?: string,
-    results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
-    entityByTrait?: Readonly<Record<string, EntityRow>>,
-    /**
-     * The mounted top-level schema's own `name` (`ServerBridgeProvider`'s
-     * `schema` prop). Orbital names are not unique across a hosting
-     * server's whole catalog — a "whole orbital import" copies an existing
-     * orbital wholesale into a new behavior, so two catalog entries can
-     * declare an orbital with the identical name — this disambiguates
-     * which one a stateless server should resolve against instead of it
-     * guessing from a global orbital-name reverse index (verified
-     * 2026-09-16: project-friday's own imported `TaskOrbital` was
-     * misrouted to the standalone `std-project-manager` orbital of the
-     * same name). An unmodified server ignores the extra field.
-     */
-    behaviorHint?: string,
-    /** See `ServerBridgeContextValue.sendEvent`'s `user` param. */
-    user?: UserContext,
-  ) => Promise<OrbitalEventResponse>;
-}
+export type ServerBridgeTransport = EventTransport;
 
 // The request body posted to `POST /:orbital/events` IS `OrbitalEventRequest`
 // now (owned by `@almadar/core`, imported above) — `traits`/`entityByTrait`
@@ -362,94 +246,51 @@ export interface ServerBridgeTransport {
 // a server running the hosted stateless path consults them instead of its
 // own shared state.
 
+// `AccessTokenProvider` is `@almadar/runtime`'s (imported above) — re-exported
+// below for consumers that import it from this module.
+export type { AccessTokenProvider };
+
 /**
- * Supplies the bearer token the hosting server authenticates with. Resolved
- * per request (tokens expire); `undefined` sends the request unauthenticated
- * (dev servers with an auth bypass, standalone playground).
+ * Builds the `OrbitalEventRequest` `EventTransport.send` takes, from the
+ * rich positional args `ServerBridgeContextValue.sendEvent` accepts — the
+ * same mapping the old local `createHttpTransport`'s `sendEvent` did
+ * inline, moved here now that the transport itself takes the wire shape
+ * directly instead of a bespoke method signature.
  */
-export type AccessTokenProvider = () => Promise<string | undefined>;
-
-async function authHeaders(getAccessToken: AccessTokenProvider | undefined): Promise<Record<string, string>> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const token = getAccessToken ? await getAccessToken() : undefined;
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
-}
-
-/** HTTP transport — POSTs to a server speaking the canonical playground-runtime contract. */
-function createHttpTransport(serverUrl: string, getAccessToken?: AccessTokenProvider): ServerBridgeTransport {
+function buildEventRequest(
+  event: string,
+  payload: EventPayload | undefined,
+  tick: string | undefined,
+  sourceTrait: string | undefined,
+  /** Every entry is already an EXECUTED transition (`StateMachineCore.sendEvent` only pushes into `results` inside `if (result.executed)`) — no filtering needed before it becomes the wire's `traits` scoping list. */
+  results: ReadonlyArray<{ traitName: string; result: TransitionResult }> | undefined,
+  entityByTrait: Readonly<Record<string, EntityRow>> | undefined,
+  /** The mounted top-level schema's own `name` — see the field's original doc on the retired `ServerBridgeTransport.sendEvent`. */
+  behaviorHint: string | undefined,
+  user: UserContext | undefined,
+): OrbitalEventRequest {
+  const traits = results?.map((r) => ({ trait: r.traitName, from: r.result.previousState }));
   return {
-    register: async (schema) => {
-      try {
-        const res = await fetch(`${serverUrl}/register`, {
-          method: 'POST',
-          headers: await authHeaders(getAccessToken),
-          body: JSON.stringify({ schema }),
-        });
-        const result = await res.json();
-        // The parsed result (not just `!!success`) so the provider can read
-        // the server's own topology declaration (`topology: 'stateless' |
-        // 'stateful'`) — the deterministic signal for which listen-relay
-        // completion path applies (the stateful fan-out skips
-        // client-originated events; the stateless one runs off-page fan-outs
-        // itself). Older servers omit the field → the provider's transport
-        // fallback applies.
-        return { success: !!result.success, ...(typeof result.topology === 'string' ? { topology: result.topology } : {}) };
-      } catch (err) {
-        // Network-level failure (TypeError from fetch) is expected in
-        // standalone playground mode during reload/registration race —
-        // demote so the verifier's console-error verdict doesn't trip.
-        // Server-side errors still log at error level.
-        if (err instanceof TypeError) {
-          serverBridgeLog.warn('Registration failed', { error: err.message });
-        } else {
-          serverBridgeLog.error('Registration failed', { error: err instanceof Error ? err : String(err) });
-        }
-        return false;
-      }
-    },
-    unregister: async () => {
-      try {
-        await fetch(`${serverUrl}/unregister`, { method: 'DELETE', headers: await authHeaders(getAccessToken) });
-      } catch {
-        // Ignore cleanup errors
-      }
-    },
-    sendEvent: async (orbitalName, event, payload, clientId, tick, sourceTrait, results, entityByTrait, behaviorHint, user) => {
-      // Every `results` entry is already an EXECUTED transition
-      // (`StateMachineCore.sendEvent` only pushes into `results` inside
-      // `if (result.executed)`) — no filtering needed before it becomes
-      // the wire's `traits` scoping list.
-      const traits = results?.map((r) => ({ trait: r.traitName, from: r.result.previousState }));
-      const body: OrbitalEventRequest = {
-        event,
-        payload,
-        clientId,
-        tick,
-        sourceTrait,
-        // `results === undefined` (as opposed to an explicit, possibly-empty
-        // array) distinguishes two genuinely different cases a stateless
-        // server must tell apart: the mount-time INIT dispatch (OrbPreview's
-        // "Server INIT when bridge connects" effect) calls this WITHOUT ever
-        // running a local dispatch first — by design, the server is
-        // authoritative for that one case — so there is no local `traits`
-        // list to send at all; a command-class dispatch (via
-        // `onEventProcessed`) always supplies `results`, even as `[]` when
-        // local dispatch genuinely matched nothing. Collapsing both to "omit
-        // `traits`" would make the mount-time case indistinguishable from
-        // "do nothing" and break every organism's INIT on the stateless path.
-        ...(results !== undefined ? { traits: traits ?? [] } : {}),
-        ...(entityByTrait ? { entityByTrait } : {}),
-        ...(behaviorHint !== undefined ? { behavior: behaviorHint } : {}),
-        ...(user ? { user } : {}),
-      };
-      const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
-        method: 'POST',
-        headers: await authHeaders(getAccessToken),
-        body: JSON.stringify(body),
-      });
-      return res.json() as Promise<OrbitalEventResponse>;
-    },
+    event,
+    payload,
+    clientId: getTabClientId(),
+    tick,
+    sourceTrait,
+    // `results === undefined` (as opposed to an explicit, possibly-empty
+    // array) distinguishes two genuinely different cases a stateless
+    // server must tell apart: the mount-time INIT dispatch (OrbPreview's
+    // "Server INIT when bridge connects" effect) calls this WITHOUT ever
+    // running a local dispatch first — by design, the server is
+    // authoritative for that one case — so there is no local `traits`
+    // list to send at all; a command-class dispatch (via
+    // `onEventProcessed`) always supplies `results`, even as `[]` when
+    // local dispatch genuinely matched nothing. Collapsing both to "omit
+    // `traits`" would make the mount-time case indistinguishable from
+    // "do nothing" and break every organism's INIT on the stateless path.
+    ...(results !== undefined ? { traits: traits ?? [] } : {}),
+    ...(entityByTrait ? { entityByTrait } : {}),
+    ...(behaviorHint !== undefined ? { behavior: behaviorHint } : {}),
+    ...(user ? { user } : {}),
   };
 }
 
@@ -480,11 +321,12 @@ export interface ServerBridgeProviderProps {
   /** HTTP server URL (canonical playground-runtime / apps/builder-server). */
   serverUrl?: string;
   /**
-   * Custom transport adapter. Use this for in-process execution (e.g.
-   * `<BrowserPlayground>` invokes `OrbitalServerRuntime.processOrbitalEvent`
-   * directly). Mutually exclusive with `serverUrl`.
+   * Custom `EventTransport` (plan P5, `@almadar/runtime`). Use this for
+   * in-process execution (e.g. `<BrowserPlayground>` invokes
+   * `OrbitalServerRuntime.processOrbitalEvent` directly via
+   * `createInProcessTransport`). Mutually exclusive with `serverUrl`.
    */
-  transport?: ServerBridgeTransport;
+  transport?: EventTransport;
   /**
    * Bearer token for the HTTP transport (`Authorization` on every fetch;
    * `access_token` on the SSE URL, since EventSource cannot set headers).
@@ -510,23 +352,21 @@ export function ServerBridgeProvider({
 
   const eventBus = useEventBus();
   const [connected, setConnected] = useState(false);
-  // Which server topology the bridge talks to — set from the REGISTER
-  // RESPONSE's own `topology` declaration when the server makes one (the
-  // deterministic signal, no heuristics), else from the transport:
-  // 'stateless-http' (hosted one-shot HTTP server — runs off-page
-  // listen-arm fan-outs itself), 'stateful-http' (long-lived stateful
-  // server over HTTP — its listens fan-out SKIPS client-originated events,
-  // so the client must relay those hops itself), 'in-process' (a local
-  // `OrbitalServerRuntime` transport — same relay obligation).
+  // Which server topology the bridge talks to — see `ServerBridgeContextValue.stateSource`'s
+  // doc. Initial guess before register() resolves, same default as before
+  // the port unification: 'stateless-http' for the HTTP transport this
+  // provider builds itself, 'in-process' for a caller-supplied transport.
   const [stateSource, setStateSource] = useState<'stateless-http' | 'stateful-http' | 'in-process'>(
     customTransport === undefined ? 'stateless-http' : 'in-process',
   );
 
   // Resolve the transport: custom takes precedence (only one is set per the
-  // mutual-exclusion check above). Memo on `serverUrl`/`customTransport` so
-  // useCallback deps don't churn every render.
-  const transport = useMemo<ServerBridgeTransport>(
-    () => customTransport ?? createHttpTransport(serverUrl!, getAccessToken),
+  // mutual-exclusion check above). `@almadar/runtime`'s `createHttpTransport`
+  // (plan P5) is the ONE owner of the HTTP leg — this provider builds an
+  // instance of it rather than implementing a second one. Memo on
+  // `serverUrl`/`customTransport` so useCallback deps don't churn every render.
+  const transport = useMemo<EventTransport>(
+    () => customTransport ?? createRuntimeHttpTransport({ serverUrl: serverUrl!, getAccessToken }),
     [serverUrl, customTransport, getAccessToken],
   );
 
@@ -550,7 +390,7 @@ export function ServerBridgeProvider({
   // and starving command fetches (R-CLIENT-TICK-POST-BACKLOG).
   const tickRelay: TickSendRelay<TickSnapshot> = useMemo(
     () => createTickSendRelay<TickSnapshot>(async (_key, snap) => {
-      await transport.sendEvent(snap.orbitalName, snap.event, snap.payload, getTabClientId(), snap.tick, snap.sourceTrait, undefined, undefined, schema.name);
+      await transport.send(snap.orbitalName, buildEventRequest(snap.event, snap.payload, snap.tick, snap.sourceTrait, undefined, undefined, schema.name, undefined));
     }),
     [transport, schema.name],
   );
@@ -600,7 +440,7 @@ export function ServerBridgeProvider({
       if (disposedRef.current) return { effects: [], meta: emptyMeta };
 
       try {
-      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId(), tick, sourceTrait, results, entityByTrait, schema.name, user);
+      const result: OrbitalEventResponse = await transport.send(orbitalName, buildEventRequest(event, payload, tick, sourceTrait, results, entityByTrait, schema.name, user));
       const effects: ServerClientEffect[] = [];
 
       // Build metadata from raw response
@@ -621,7 +461,7 @@ export function ServerBridgeProvider({
         emitted: result.emittedEvents.map((e) => ({ event: e.event, ...(e.payload !== undefined && { payload: e.payload }) })),
         effectResults: result.effectResults,
         states: result.states,
-        stateSource: customTransport === undefined ? 'stateless-http' : 'in-process',
+        stateSource,
         error: result.error,
       };
 
@@ -750,7 +590,7 @@ export function ServerBridgeProvider({
       return { effects: [], meta: { ...emptyMeta, error: msg } };
       }
     });
-  }, [connected, transport, eventBus, tickRelay, commandPump, schema.name]);
+  }, [connected, transport, eventBus, tickRelay, commandPump, schema.name, stateSource]);
 
   // Register on mount, unregister on unmount
   useEffect(() => {
@@ -758,21 +598,21 @@ export function ServerBridgeProvider({
 
     let cancelled = false;
     registerSchema().then((result) => {
-      const ok = typeof result === 'boolean' ? result : result.success;
-      const topology = typeof result === 'object' ? result.topology : undefined;
-      if (cancelled || !ok) return;
+      if (cancelled || !result.success) return;
       setConnected(true);
-      // The server's own topology declaration wins when present (the
-      // deterministic signal); the transport is only the fallback for
-      // older servers that don't declare one.
+      // `EventTransport.register`'s `carriesCircuitState` (`deriveCarriesCircuitState`,
+      // `@almadar/runtime`) already collapsed the server's `topology`
+      // declaration into the deterministic stateless/not-stateless signal.
+      // `true` = stateless (the client must adopt every response's
+      // `states`); `false` = either a stateful HTTP server or the
+      // in-process transport, distinguished by which one this provider
+      // built (the same fallback as before the port unification).
       setStateSource(
-        topology === 'stateful'
-          ? 'stateful-http'
-          : topology === 'stateless'
-            ? 'stateless-http'
-            : customTransport === undefined
-              ? 'stateless-http'
-              : 'in-process',
+        result.carriesCircuitState
+          ? 'stateless-http'
+          : customTransport === undefined
+            ? 'stateful-http'
+            : 'in-process',
       );
     });
 
@@ -781,42 +621,29 @@ export function ServerBridgeProvider({
       setConnected(false);
       unregisterSchema();
     };
-  }, [schema, registerSchema, unregisterSchema]);
+  }, [schema, registerSchema, unregisterSchema, customTransport]);
 
   // Push subscribe leg (Almadar_Live_Push.md): other clients' persist-envelope
   // emits arrive here and re-emit through the identical `reEmitServerEvent`
   // path the response cascade uses, so existing `listens` routes match the
-  // same way regardless of which leg delivered the event. Only meaningful
-  // for the HTTP transport — the in-process transport has no server to push
-  // from. EventSource auto-reconnects natively; no custom retry loop. The
-  // connection itself is the shared per-tab channel — this effect only
-  // subscribes this provider's bus to it.
+  // same way regardless of which leg delivered the event. `transport.subscribe`
+  // is undefined for the in-process transport (no server to push from) —
+  // its absence IS the gate, no separate `serverUrl` check needed. EventSource
+  // auto-reconnects natively (inside the transport); no custom retry loop
+  // here. The transport shares one connection per events URL across every
+  // subscriber — this effect only attaches this provider's bus to it.
   useEffect(() => {
-    if (!serverUrl) return;
-    if (typeof EventSource === 'undefined') return;
-
-    let release: (() => void) | undefined;
-    let cancelled = false;
-    const subscribe = (parsed: BusPushEnvelope) => {
+    if (!transport.subscribe) return;
+    const release = transport.subscribe((emitted) => {
       serverBridgeLog.debug('push:received', {
-        event: parsed.event,
-        sourceOrbital: parsed.source?.orbital,
-        sourceTrait: parsed.source?.trait,
+        event: emitted.event,
+        sourceOrbital: emitted.source?.orbital,
+        sourceTrait: emitted.source?.trait,
       });
-      reEmitServerEvent(eventBus, parsed, 'push');
-    };
-    void (async () => {
-      const token = getAccessToken ? await getAccessToken() : undefined;
-      if (cancelled) return;
-      const params = new URLSearchParams({ clientId: getTabClientId() });
-      if (token) params.set('access_token', token);
-      release = acquirePushChannel(`${deriveEventsUrl(serverUrl)}?${params.toString()}`, subscribe);
-    })();
-    return () => {
-      cancelled = true;
-      release?.();
-    };
-  }, [serverUrl, eventBus, getAccessToken]);
+      reEmitServerEvent(eventBus, emitted, 'push');
+    }, { clientId: getTabClientId() });
+    return release;
+  }, [transport, eventBus]);
 
   return (
     <ServerBridgeContext.Provider value={{ connected, stateSource, sendEvent }}>
