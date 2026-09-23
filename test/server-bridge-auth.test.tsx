@@ -3,12 +3,20 @@
  * carries `Authorization: Bearer <token>` and the SSE channel carries the same
  * token as `?access_token=` (EventSource cannot set headers). Without a
  * provider nothing is attached (dev servers bypass auth).
+ *
+ * W5b (`docs/Almadar_Runtime_Stateless_Stateful_PLAN.md` §5.1): the SSE
+ * `subscribe()` call itself moved from `ServerBridgeProvider` to
+ * `useCircuitKernel` (push-ingress is a client-role concern now — the
+ * provider only owns register/unregister + exposing `transport`), so this
+ * suite drives a minimal `useCircuitKernel` consumer alongside the provider,
+ * the same pairing `OrbPreview`'s `TraitInitializer` uses.
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { EventBusProvider } from '../providers/EventBusProvider';
-import { ServerBridgeProvider } from '../providers/ServerBridge';
+import { ServerBridgeProvider, useServerBridge } from '../providers/ServerBridge';
+import { useCircuitKernel } from '../hooks/circuit/useCircuitKernel';
 import type { OrbitalSchema } from '@almadar/core';
 
 const schema: OrbitalSchema = { name: 'Probe', orbitals: [] };
@@ -39,13 +47,27 @@ function headerOf(call: [RequestInfo | URL, RequestInit?], name: string): string
   return new Headers(call[1]?.headers).get(name);
 }
 
+const NO_TRAITS: never[] = [];
+
+/** Mounts a `useCircuitKernel` off the bridge's transport — this is what
+ *  actually triggers the SSE `subscribe()` call now. A module-scoped empty
+ *  array (not an inline `[]` literal) keeps `traitBindings` reference-stable
+ *  across renders — `OrbPreview`'s real caller passes a memoized array;
+ *  an unstable one here would rebuild the kernel (and re-subscribe) every
+ *  render, over-counting `FakeEventSource` construction. */
+function KernelConsumer(): null {
+  const bridge = useServerBridge();
+  useCircuitKernel(NO_TRAITS, { orbitals: schema.orbitals, transport: bridge.transport, carriesCircuitState: bridge.carriesCircuitState });
+  return null;
+}
+
 describe('ServerBridgeProvider auth', () => {
   it('sends the bearer token on register and on the SSE url', async () => {
     const getAccessToken = vi.fn(async () => 'id-token-1');
     render(
       <EventBusProvider>
         <ServerBridgeProvider schema={schema} serverUrl="https://api.test/api/orbitals" getAccessToken={getAccessToken}>
-          <div />
+          <KernelConsumer />
         </ServerBridgeProvider>
       </EventBusProvider>,
     );
@@ -64,7 +86,7 @@ describe('ServerBridgeProvider auth', () => {
     render(
       <EventBusProvider>
         <ServerBridgeProvider schema={schema} serverUrl="https://api.test/api/orbitals">
-          <div />
+          <KernelConsumer />
         </ServerBridgeProvider>
       </EventBusProvider>,
     );

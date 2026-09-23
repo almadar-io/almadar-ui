@@ -89,9 +89,6 @@ export {
 export {
   ServerBridgeProvider,
   useServerBridge,
-  type ServerClientEffect,
-  type ServerResponseMeta,
-  type SendEventResult,
   type ServerBridgeContextValue,
   type ServerBridgeTransport,
   type ServerBridgeProviderProps,

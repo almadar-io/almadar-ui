@@ -21,15 +21,14 @@ import { OrbitalProvider } from '../providers/OrbitalProvider';
 import type { UserData } from '../providers/UserContext';
 import { CurrentPagePathProvider } from '../providers/CurrentPagePathContext';
 import { VerificationProvider } from '../providers/VerificationProvider';
-import { UISlotProvider, useUISlots, type SlotProps } from '../providers/UISlotContext';
+import { UISlotProvider, useUISlots } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
-import type { OrbitalSchema, EntityData, EntityRow, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, OrbitalDefinition, TraitRef, OrbitalId } from '@almadar/core';
+import type { OrbitalSchema, EntityData, ResolvedTraitBinding, OrbitalDefinition } from '@almadar/core';
 import { buildResolvedTraitConfigs, collectCallsiteCaptureChildren } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { matchPathAmong } from '../providers/navigation';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
-import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useTraitStateMachine } from '../hooks/useTraitStateMachine';
 import { buildOrbitalsByTrait } from '../lib/orbitalsByTrait';
 import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
@@ -38,236 +37,19 @@ import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport, type
 import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
 import { NavStackProvider, useNavStack, type NavStackApi, type NavPageDecl } from '../providers/NavStackContext';
-import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from '../lib/prepareSchemaForPreview';
 import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
-// Server-only shape (action/entityType/data/denied) — see ServerBridge.tsx.
-import type { ServerEffectResult, TransitionResult } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital cascade tracing on
 // the UI side. Pairs with the server-side `almadar:runtime:cross-orbital`
-// channel; logs `SchemaRunner:mount`, per-trait subscribe in
-// `TraitInitializer`, and slot writes via `applyServerEffects` so the
-// runtime-verify console capture can reconstruct which traits actually
-// rendered into a slot during a dispatch.
+// channel; logs `SchemaRunner:mount` so the runtime-verify console capture
+// can reconstruct which traits the runtime path believes belong on the
+// active page. Slot-write attribution (which trait rendered what) is now
+// `hooks/circuit/useSlotFlush.ts`'s job — the client role's own composition
+// owns the dispatch that produces those writes.
 const xOrbitalLog = createLogger('almadar:runtime:cross-orbital');
 const navLog = createLogger('almadar:runtime:navigation');
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Normalize a PatternConfig child from flat { type, ...props } to
- * { type, props: {...} } format expected by SlotContentRenderer.
- *
- * String children pass through verbatim — they're `@trait.X` binding
- * leaves resolved by `renderPatternChildren`/`TraitFrame` downstream.
- * Destructuring a string here would coerce it to an index-keyed object
- * (`{0:"@",1:"t",…}`) with `type: undefined`, which then hits the
- * "Unknown pattern" fallback in UISlotRenderer.
- */
-function normalizeChild(child: PatternNode | string | null | readonly PatternNode[]): PatternNode | string | null | readonly PatternNode[] {
-  if (typeof child === "string") return child;
-  if (child === null || typeof child !== "object") return child;
-  if (Array.isArray(child)) return child;
-  // child is PatternNode (non-array object); cast to resolve index-sig narrowing gap
-  const node = child as PatternNode;
-  const { type, children, ...rest } = node;
-  const normalizedChildren = Array.isArray(children)
-    ? children.map((c) => normalizeChild(c))
-    : children;
-  return {
-    type,
-    props: { ...rest, ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}) },
-  } as PatternNode;
-}
-
-/**
- * Map the server's `ServerEffectResult[]` (`OrbitalServerRuntime.EffectResult`,
- * JSON-serialized over the bridge) onto core's `EffectTrace[]` for
- * `recordServerResponse`. Carries the real persist outcome — entity, action,
- * resulting id, `denied` — onto the synthetic `server:<orbital>` timeline
- * entry so `assertDataMutation` can read it instead of a row-count delta.
- */
-function effectResultsToTraces(results: ServerEffectResult[] | undefined): EffectTrace[] {
-  if (!results) return [];
-  return results.map((r): EffectTrace => {
-    const resultId =
-      typeof r.data === 'object' && r.data !== null && !Array.isArray(r.data) && 'id' in r.data && typeof r.data.id === 'string'
-        ? r.data.id
-        : undefined;
-    const outcome: EffectTrace['outcome'] = r.denied ? 'denied' : r.success ? 'success' : 'failed';
-    return {
-      type: r.effect,
-      ...(r.entityType !== undefined ? { entityName: r.entityType } : {}),
-      ...(r.action !== undefined && (r.action === 'create' || r.action === 'update' || r.action === 'delete' || r.action === 'batch')
-        ? { action: r.action }
-        : {}),
-      ...(resultId !== undefined ? { resultId } : {}),
-      outcome,
-      args: [],
-      status: outcome === 'success' ? 'executed' : 'failed',
-      error: r.error,
-    };
-  });
-}
-
-/**
- * Push each server-returned effect straight into `useUISlots` so the
- * per-trait index picks up every embedded atom (not just the last one).
- *
- * Going via `slotsActions.setSlotPatterns` would collapse N effects to a
- * single slot entry, because `SlotsProvider` stores one `{patterns, source}`
- * per slot and the next call overwrites it. The per-trait index lives on
- * `useUISlots` (hooks/useUISlots.ts), and `render()` is the only entry
- * point that populates it. Calling `render()` once per effect keeps each
- * trait's latest frame queryable via `getTraitContent(traitName)`.
- *
- * The slot state still converges to whatever the layout-owner last
- * rendered — its render-ui carries the `@trait.X` strings that
- * `<TraitFrame>` uses to embed atom frames.
- */
-export function applyServerEffects(
-  effects: ReadonlyArray<import('../providers/ServerBridge').ServerClientEffect>,
-  uiSlots: ReturnType<typeof useUISlots>,
-  onNavigate?: (path: string, params?: Record<string, string>, crumb?: string) => void,
-  embeddedTraits?: ReadonlySet<string>,
-  activeTraits?: ReadonlySet<string>,
-  onNavigateBack?: () => void,
-): void {
-  // Call uiSlots.render() once per effect. useUISlots is multi-source
-  // internally: each call merges into `slots[target][sourceTrait]`, and
-  // `getContent(slot)` aggregates into a synthetic `stack` wrapper when
-  // 2+ sources are active.
-  //
-  // Embed-aware routing: when an effect's `traitName` is in
-  // `embeddedTraits` (i.e. the trait is referenced via `@trait.X` by a
-  // sibling layout's render-ui), bypass the slot write and update only
-  // the per-trait sidecar. The sibling layout owns the slot; its
-  // `<TraitFrame traitName="X"/>` reads the sidecar at render time.
-  // This mirrors what compiled-path codegen does (atoms inlined as JSX
-  // inside the layout's pattern, never writing a shared slot).
-  for (const eff of effects) {
-    if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
-      // Gap #11 is orbital-granular: the server initializes EVERY trait of an
-      // on-page orbital, so an orbital bundling several page composers returns
-      // render-ui effects for traits that are not mounted on the active page.
-      // The local path never mounts them — drop their server effects for parity.
-      if (eff.traitName && activeTraits && !activeTraits.has(eff.traitName)) {
-        xOrbitalLog.debug('slot:off-page-trait-skipped', {
-          sourceTrait: eff.traitName,
-          slot: eff.slot,
-        });
-        continue;
-      }
-      const patternRecord = eff.pattern as PatternNode;
-      // A bare-string payload — `["render-ui","main","@trait.X"]` — is a
-      // legal pattern tree (trait-embed reference). Destructuring the
-      // string would drop it and land an empty-pattern slot, so it is
-      // preserved as the whole props value and the renderer lifts it to
-      // a TraitFrame (same convention as useTraitStateMachine.flushSlot).
-      const bareTraitRef = typeof patternRecord === 'string' ? patternRecord : undefined;
-      const { type: patternType, children, ...inlineProps } = (bareTraitRef === undefined ? patternRecord : {}) as PatternNode;
-      const normalizedChildren = Array.isArray(children)
-        ? children.map((c) => normalizeChild(c))
-        : children;
-      const sourceTrait = eff.traitName ?? 'server';
-      const isEmbedded = embeddedTraits?.has(sourceTrait) ?? false;
-      // Convert `["fn", argName, body]` lambdas into render-prop
-      // functions before they land in `useUISlots`, so consumers
-      // (DataGrid/DataList/Carousel) see `children` as a callable.
-      const rawProps: SlotProps | string = bareTraitRef !== undefined
-        ? bareTraitRef
-        : {
-            ...(inlineProps as SlotProps),
-            ...(normalizedChildren !== undefined ? { children: normalizedChildren as SlotProps['children'] } : {}),
-          };
-      const props = convertFnFormLambdasInProps(rawProps);
-
-      if (isEmbedded) {
-        xOrbitalLog.debug('slot:embed-routed', {
-          sourceTrait,
-          slot: eff.slot,
-          patternType: typeof patternType === 'string' ? patternType : undefined,
-        });
-        uiSlots.updateTraitContent(sourceTrait, {
-          pattern: patternType as string,
-          props,
-          priority: 0,
-          animation: 'fade',
-        });
-      } else {
-        xOrbitalLog.debug('slot-write', {
-          slot: eff.slot,
-          sourceTrait,
-          patternType: typeof patternType === 'string' ? patternType : undefined,
-        });
-        uiSlots.render({
-          target: eff.slot as Parameters<typeof uiSlots.render>[0]['target'],
-          pattern: patternType as string,
-          props,
-          sourceTrait,
-        });
-      }
-    } else if (eff.type === 'navigate' && eff.route && onNavigate) {
-      onNavigate(eff.route, eff.params as Record<string, string> | undefined, eff.crumb);
-    } else if (eff.type === 'navigate-back' && onNavigateBack) {
-      onNavigateBack();
-    }
-  }
-}
-
-/**
- * Fires INIT event after mount so render-ui effects on the INIT
- * transition execute. Must be inside SlotsProvider + EntitySchemaProvider.
- *
- * When `orbitalNames` is provided (server bridge mode), events are forwarded
- * to the server after local processing. Server response provides enriched
- * patterns with entity data resolved reactively via useEntityRef.
- */
-/**
- * Traits the SERVER should execute for the active page, sent over the bridge
- * as `payload._activeTraits` so `OrbitalServerRuntime.processOrbitalEvent`
- * scopes EXECUTION (not just the client-side render filter) to the page —
- * matching the local path, which only ever mounts the page closure.
- *
- * The set is the mounted closure PLUS every "pageless" trait (a trait in no
- * page's closure: persistors, audit, erasure, notifiers — the side-effectful
- * lifecycle class), so non-UI traits keep executing on every event exactly as
- * before. Only traits bound to OTHER pages' closures are excluded — Gap #11's
- * leak class. `undefined` (single-page schema or no IR) means "no scoping":
- * the server executes the whole orbital, today's behavior.
- */
-export function collectServerActiveTraits(
-  ir: { pages: ReadonlyMap<string, { traits: readonly ResolvedTraitBinding[] }> } | null,
-  allTraits: ReadonlyMap<string, ResolvedTrait>,
-  mountedTraitNames: ReadonlySet<string>,
-): ReadonlySet<string> | undefined {
-  if (!ir?.pages || ir.pages.size <= 1) return undefined;
-  const pageBound = new Set<string>();
-  for (const page of ir.pages.values()) {
-    // Page bindings + transitive `@trait.X` embed closure (the same closure
-    // `allPageTraits` mounts) — an embedded sibling is page-bound through its
-    // embedding page trait.
-    const queue = page.traits
-      .map((b) => b.trait.name)
-      .filter((n): n is string => !!n);
-    for (const name of queue) {
-      if (pageBound.has(name)) continue;
-      pageBound.add(name);
-      const rt = allTraits.get(name);
-      if (!rt) continue;
-      queue.push(...collectTraitRefsFromResolvedTrait(rt));
-    }
-  }
-  const active = new Set(mountedTraitNames);
-  for (const name of allTraits.keys()) {
-    if (!pageBound.has(name)) active.add(name);
-  }
-  return active;
-}
 
 /**
  * Exposes the mounted NavStackProvider's api to OrbPreview through a ref —
@@ -285,70 +67,61 @@ function NavStackRefBridge({ apiRef }: { apiRef: React.MutableRefObject<NavStack
   return null;
 }
 
-function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, orbitalsByTrait, orbitalIdsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, serverActiveTraits, user, children }: {
+/**
+ * Mounts the client-role trait state machine for the active page's trait
+ * bindings and provides the render-time `EntityBindingContext`.
+ *
+ * The old dual round-trip (local dispatch here, THEN a separate
+ * `bridge.sendEvent` + manual `applyServerEffects`/`commitServerEntity`/
+ * `applyServerStates` continuation) is gone: `useTraitStateMachine`'s
+ * kernel posts a dispatch's server leg and folds the response
+ * (`postServerLeg`/`applyOrbitalEventResponse`, `@almadar/runtime`) BEFORE
+ * its own `sendEvent`/mount-time dispatch resolves — this component only
+ * decides WHICH transport (or none) the kernel dispatches through.
+ */
+function TraitInitializer({ traits, routeParams, orbitals, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, embeddedTraits, callsiteCaptureChildrenByTrait, hasBridge, children }: {
   traits: ResolvedTraitBinding[];
   /** Route params from a parameterized page path — merged into every INIT payload. */
   routeParams?: Record<string, string>;
-  orbitalNames?: string[];
+  /** The resolved schema's full orbital set — `useCircuitKernel`'s one input. */
+  orbitals: readonly OrbitalDefinition[];
   traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
-  /** Trait → orbital map; gap #13 qualified bus key. */
-  orbitalsByTrait?: Record<string, string>;
-  /** Trait → orbital V4 id (`orb_…`) map; emit-source stamp for id-scoped listens. */
-  orbitalIdsByTrait?: Record<string, OrbitalId>;
   onNavigate?: (path: string, params?: Record<string, string>, crumb?: string) => void;
   /** navigate-back effect handler: pop the orbital's navigation stack. */
   onNavigateBack?: () => void;
   /**
-   * GAP-19: Called when the 5s server-bridge fallback fires (the preview server
-   * never connected, so the preview is running locally instead). Lets the parent
-   * surface a UI indicator so the silent fallback isn't actually silent.
+   * GAP-19: called when the server bridge hasn't connected within
+   * `localFallbackTimeoutMs`. INIT itself no longer waits on this — the
+   * kernel dispatches every trait's own lifecycle event immediately,
+   * bridged or not — this is purely the "tell the caller we're running
+   * without a live server" signal.
    */
   onLocalFallback?: () => void;
-  /**
-   * Overrides the 5s default below (~line 460) for how long to wait for
-   * the server bridge before firing `onLocalFallback`. A huge organism's
-   * FIRST cold `/register` (rebuilding every StateMachineManager +
-   * cross-orbital listener server-side) can genuinely take longer than
-   * 5s — e.g. project-friday's 53-orbital schema measured ~14.5s in
-   * production. Default unchanged for every existing caller that doesn't
-   * pass this.
-   */
   localFallbackTimeoutMs?: number;
   /**
    * Offline-preview persistence layer. Forwarded to `useTraitStateMachine`
    * so server-side effects (fetch/persist/set/ref/deref/swap!/atomic) run
    * against an in-memory store instead of being no-oped. Set by OrbPreview
-   * when `autoMock` is active and no `serverUrl` is supplied.
+   * when `autoMock` is active and no `serverUrl`/`transport` is supplied.
    */
   persistence?: PersistenceAdapter;
   /**
-   * The current viewer (persona) — forwarded to `bridge.sendEvent` so
-   * `@user.X` guard/effect bindings resolve server-side the same way they
-   * already resolve client-side via `OrbitalProvider`'s `UserProvider`.
-   */
-  user?: UserData | null;
-  /**
    * Set of trait names referenced via `@trait.X` by some sibling layout
    * in the resolved schema. When an effect's `traitName` is in this set,
-   * `applyServerEffects` updates only the per-trait sidecar and skips
-   * the slot write — the layout owns the slot and embeds via TraitFrame.
-   * Mirrors compiled-path codegen semantics.
+   * the flush updates only the per-trait sidecar and skips the slot write —
+   * the layout owns the slot and embeds via TraitFrame.
    */
   embeddedTraits?: ReadonlySet<string>;
   /**
    * Referrer trait name → the DIRECT children (via `@trait.X`) that need
    * their lifecycle transition re-run under the referrer's payload whenever
    * the referrer's own transition fires — forwarded to
-   * `useTraitStateMachine`'s `reRenderCallsiteCaptureChildren`.
+   * `useTraitStateMachine`'s `useCallsiteCapture`.
    */
   callsiteCaptureChildrenByTrait?: ReadonlyMap<string, ReadonlySet<string>>;
-  /**
-   * Page-scoped execution set (`collectServerActiveTraits`): mounted closure
-   * + pageless lifecycle traits. Rides every bridge send as
-   * `payload._activeTraits` so the server executes only these traits'
-   * transitions — the upstream twin of the client-side render filter below.
-   */
-  serverActiveTraits?: ReadonlySet<string>;
+  /** True when OrbPreview was given a `serverUrl`/`transport` — gates
+   *  whether this page dispatches through the bridge's transport. */
+  hasBridge: boolean;
   /**
    * Slot subtree — wrapped in `EntityBindingContext.Provider` so the
    * renderer resolves `RenderBindingMarker` prop leaves against this
@@ -357,269 +130,31 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
   children?: React.ReactNode;
 }) {
   const bridge = useServerBridge();
-  // Traits mounted on the active page (page bindings + embed-routed
-  // siblings). Server effects from any other trait are off-page writes.
-  const activeTraitNames = useMemo(
-    () => new Set(traits.map((b) => b.trait.name).filter((n): n is string => !!n)),
-    [traits],
-  );
-  // `onEventProcessed`'s `bridge.sendEvent(...).then(...)` below is never
-  // awaited by its caller (T7: the drain doesn't wait on the round trip),
-  // so a superseded navigation's callback closure can still be the one
-  // whose response arrives — with the `activeTraitNames` it closed over at
-  // CREATION time, not the page's CURRENT one. `applyServerEffects`'s
-  // filter would then correctly-per-that-stale-set admit the old page's
-  // own off-page-by-now effects and paint them into the shared `uiSlots`
-  // (verified live 2026-09-16: a late Sprint response landed after
-  // navigating to Project/Task, stacking both AppLayouts). Read this ref
-  // at response time instead of the closed-over value so a late response
-  // is judged against whichever page is ACTUALLY active when it lands.
-  const activeTraitNamesRef = useRef(activeTraitNames);
-  useEffect(() => {
-    activeTraitNamesRef.current = activeTraitNames;
-  }, [activeTraitNames]);
-  // Stamp the page-scoped execution set onto an outgoing bridge payload. The
-  // server strips `_activeTraits` before state-machine processing
-  // (OrbitalServerRuntime.processOrbitalEvent) and executes effects only for
-  // the named traits.
-  const withActiveTraits = useCallback(
-    (payload?: EventPayload): EventPayload | undefined => {
-      if (!serverActiveTraits || serverActiveTraits.size === 0) return payload;
-      return { ...(payload ?? {}), _activeTraits: Array.from(serverActiveTraits) };
-    },
-    [serverActiveTraits],
-  );
-  // Single slot store: `useUISlots`. Both the server-bridge path
-  // (`applyServerEffects`) and the local trait state-machine path
-  // (`useTraitStateMachine`) write here directly. Pre-consolidation
-  // there were two stores (`SlotsContext.slots` mirrored into
-  // `useUISlots` by a SlotBridge effect) — those races caused the
-  // SlotBridge to clear the layout that `applyServerEffects` had
-  // just written. Removed entirely; this is the single source of truth.
   const uiSlots = useUISlots();
 
-  // Fix C: `onEventProcessed` (below) needs `commitServerEntity` from
-  // `useTraitStateMachine`'s return value, but that hook call itself takes
-  // `onEventProcessed` (via `opts`) — a genuine circular dependency within
-  // one render. A ref breaks the cycle: `onEventProcessed`'s closure reads
-  // it at CALL time (always after this render committed the assignment
-  // below), never at definition time.
-  const commitServerEntityRef = useRef<(traitName: string, entity: EntityRow) => void>(() => {});
-  // G-RUNTIME-022: same late-binding pattern — the bridge response
-  // continuations below are defined before `useTraitStateMachine` runs.
-  const applyServerStatesRef = useRef<(states: Record<string, string>) => void>(() => {});
-
-  // Forward events to server, apply enriched effects directly to slots.
-  // V2 Phase 6: the server response no longer carries `meta.data`; fetched
-  // entities flow through the event bus via typed emit payloads, which the
-  // state machine listeners bind into `@payload.data` and the renderer
-  // consumes as pre-resolved `entity` props. No EntityStore hydration.
-  //
-  // Gap #11: scope the server fan-out to the orbitals whose traits actually
-  // transitioned this event. Pre-fix, the loop dispatched every event to
-  // every registered orbital, so a single click of DealCreate's CREATE button
-  // also fired ContactCreate.CREATE and NoteCompose.CREATE on the server,
-  // and their render-ui patterns landed in the same modal slot — three
-  // orbitals' UI stacked at once. `dispatchedOrbitals` (passed by
-  // useTraitStateMachine) is the set of owning orbitals for the traits that
-  // actually executed; only those need a server round-trip.
-  const onEventProcessed = useCallback((
-    event: string,
-    payload?: EventPayload,
-    dispatchedOrbitals?: Set<string>,
-    tick?: string,
-    sourceTrait?: string,
-    locallyEmitted?: readonly string[],
-    results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
-    entityByTrait?: Readonly<Record<string, EntityRow>>,
-    /**
-     * Server-bridge rebroadcast (BusEventSource.fromBridge): the local
-     * transition already ran in the drain; forwarding this dispatch back to
-     * the server re-feeds the server's own cascade tail into a fresh request,
-     * an infinite client↔server ping-pong (R-RUNTIME-020 — SnakePlay's
-     * RESTART self-arm produced one unconsumed echo per response; each
-     * re-forward generated another). The server processed this event before
-     * rebroadcasting it; there is nothing left to send.
-     */
-    fromBridge?: boolean,
-  ) => {
-    if (fromBridge) {
-      xOrbitalLog.debug('TraitInitializer:skip-server-forward-fromBridge', { event });
-      return;
-    }
-    if (!bridge.connected || !orbitalNames?.length) return;
-    const targets = dispatchedOrbitals && dispatchedOrbitals.size > 0
-      ? orbitalNames.filter((n) => dispatchedOrbitals.has(n))
-      : orbitalNames;
-    xOrbitalLog.debug('TraitInitializer:fanout', () => ({
-      event,
-      sentTo: targets,
-      skipped: orbitalNames.filter((n) => !targets.includes(n)),
-      dispatchedOrbitalsSize: dispatchedOrbitals?.size ?? 0,
-    }));
-    for (const name of targets) {
-      // T6: a tick-stamped broadcast's response is discarded — the local
-      // tick already applied the newest state, and the server relays the
-      // position to OTHER tabs coalesced. Applying this stale response
-      // would clobber newer local state (R-DUAL-EXEC-SERVER-ECHO doctrine).
-      if (tick !== undefined) {
-        void bridge.sendEvent(name, event, withActiveTraits(payload), tick, sourceTrait);
-        continue;
-      }
-      // T7: the drain no longer awaits the round trip — response application
-      // continues here, and the bridge's command pump keeps the applications
-      // in dispatch order (request N+1 leaves only after response N landed).
-      // `results`/`entityByTrait` are additive (Part G) — a stateless server
-      // consults them instead of shared server-side state; an unmodified
-      // server ignores them (already-safe extra JSON fields). `user` reaches
-      // server-side `fetch`/`persist` effects the same way it already drives
-      // client-side guard evaluation (`OrbitalProvider`'s `UserProvider`).
-      void bridge.sendEvent(name, event, withActiveTraits(payload), undefined, undefined, locallyEmitted, results, entityByTrait, user ?? undefined).then(({ effects, meta }) => {
-        recordServerResponse(name, event, { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
-        // G-RUNTIME-022: adopt the stateless server's authoritative per-trait
-        // states so the NEXT request's client-supplied `from` is current
-        // (fetch-success echoes arrive `dispatched`-stamped and never advance
-        // the local machine on their own). No-op on the stateful in-process
-        // path (`meta.stateSource` gate).
-        if (meta.stateSource === 'stateless-http' && meta.states) {
-          applyServerStatesRef.current(meta.states);
-        }
-        // Fix C: carry each trait's post-effects row forward so the NEXT
-        // request's own entityByTrait (built above from local writes)
-        // reflects what the server actually persisted, not just what this
-        // client wrote locally — see `commitServerEntity`'s doc.
-        if (meta.entityByTrait) {
-          for (const [traitName, entity] of Object.entries(meta.entityByTrait)) {
-            commitServerEntityRef.current(traitName, entity);
-          }
-        }
-        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNamesRef.current, onNavigateBack);
-      });
-    }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits, user]);
-
-  const opts = orbitalNames
-    ? { onEventProcessed, navigate: onNavigate, navigateBack: onNavigateBack, traitConfigsByName, orbitalsByTrait, orbitalIdsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams }
-    : { navigate: onNavigate, navigateBack: onNavigateBack, persistence, traitConfigsByName, orbitalsByTrait, orbitalIdsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams };
-  const { sendEvent, entityBindingSource, commitServerEntity, applyServerStates } = useTraitStateMachine(traits, uiSlots, opts);
-  commitServerEntityRef.current = commitServerEntity;
-  applyServerStatesRef.current = applyServerStates;
-
-  const initSentRef = useRef(false);
-
-  // Reset cached UI + INIT guard whenever the resolved trait set itself
-  // changes reference. `useResolvedSchema` returns a new `traits` array
-  // iff `schema` or `pageName` actually changed — covers BOTH page nav
-  // and live schema edits (palette drop / styles tab / agent mutation).
-  // Requires `schemaToIR` to be called with `useCache: false` upstream;
-  // the @almadar/core cache keys on name+version and would otherwise
-  // return the same IR (and same traits array) across mutations.
-  const prevTraitsRef = useRef<ResolvedTraitBinding[] | undefined>(undefined);
-  // Same-page param nav (`/threads/1` -> `/threads/2`) keeps the traits ref
-  // stable; the params key is the second reset trigger so INIT re-fires with
-  // the new id.
-  const paramsKey = JSON.stringify(routeParams ?? {});
-  const prevParamsKeyRef = useRef<string | undefined>(undefined);
+  // GAP-19: unrelated to INIT dispatch now — `useTraitStateMachine` fires
+  // every trait's own lifecycle event immediately regardless of bridge
+  // state. This timer only tells the caller the bridge never connected.
   useEffect(() => {
-    const refChanged = prevTraitsRef.current !== undefined && prevTraitsRef.current !== traits;
-    const paramsChanged = prevParamsKeyRef.current !== undefined && prevParamsKeyRef.current !== paramsKey;
-    navLog.debug('page:traits-effect', () => ({
-      refChanged,
-      paramsChanged,
-      traitsCount: Array.isArray(traits) ? traits.length : -1,
-      hadPrev: prevTraitsRef.current !== undefined,
-    }));
-    if (refChanged || paramsChanged) {
-      navLog.info('page:traits-reset', { traitsCount: Array.isArray(traits) ? traits.length : -1, paramsChanged });
-      uiSlots.clearAll();
-      initSentRef.current = false;
-    }
-    prevTraitsRef.current = traits;
-    prevParamsKeyRef.current = paramsKey;
-  }, [traits, uiSlots, paramsKey]);
-
-  // Local INIT - fires immediately when no server bridge,
-  // or after 5s fallback if server bridge fails to connect.
-  useEffect(() => {
-    if (!orbitalNames?.length) {
-      const t = setTimeout(() => sendEvent('INIT', routeParams), 50);
-      return () => clearTimeout(t);
-    }
-    // Fallback: if server bridge doesn't connect within the timeout, fire
-    // local INIT and notify the parent so it can surface the fallback
-    // (GAP-19). Default 5s; a caller with an unusually large schema (see
-    // `localFallbackTimeoutMs` doc) can widen this.
-    const fallback = setTimeout(() => {
-      if (!initSentRef.current) {
-        sendEvent('INIT', routeParams);
-        onLocalFallback?.();
-      }
+    if (!hasBridge) return;
+    const timer = setTimeout(() => {
+      if (!bridge.connected) onLocalFallback?.();
     }, localFallbackTimeoutMs ?? 5000);
-    return () => clearTimeout(fallback);
-  }, [traits, orbitalNames, sendEvent, onLocalFallback, localFallbackTimeoutMs, routeParams]);
+    return () => clearTimeout(timer);
+  }, [hasBridge, bridge.connected, onLocalFallback, localFallbackTimeoutMs]);
 
-  // Server INIT when bridge connects. Apply enriched effects to slots.
-  useEffect(() => {
-    if (!bridge.connected || !orbitalNames?.length || initSentRef.current) return;
-    initSentRef.current = true;
-    (async () => {
-      for (const name of orbitalNames) {
-        const { effects, meta } = await bridge.sendEvent(
-          name,
-          'INIT',
-          withActiveTraits({ ...(routeParams ?? {}) }),
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          user ?? undefined,
-        );
-
-        // Record server response in verification timeline
-        recordServerResponse(name, 'INIT', { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
-
-        // G-RUNTIME-022: same stateless state-sync as the interaction path —
-        // without it the local machine sits on the initial state until some
-        // locally-delivered echo advances it (which never comes on this path).
-        if (meta.stateSource === 'stateless-http' && meta.states) {
-          applyServerStatesRef.current(meta.states);
-        }
-
-        // Fix C: same carry-forward as the interaction path above — INIT's
-        // own effects can already set fields worth preserving into the
-        // trait's next request.
-        if (meta.entityByTrait) {
-          for (const [traitName, entity] of Object.entries(meta.entityByTrait)) {
-            commitServerEntityRef.current(traitName, entity);
-          }
-        }
-
-        const effectTraces: EffectTrace[] = [
-          { type: 'fetch', args: [], status: 'executed' as const },
-          ...effects.map((eff) => ({
-            type: eff.type,
-            args: eff.type === 'render-ui' && eff.slot !== undefined ? [eff.slot] : [],
-            status: 'executed' as const,
-          })),
-        ];
-        recordTransition({
-          traitName: name,
-          from: 'init',
-          to: 'init',
-          event: 'INIT',
-          effects: effectTraces,
-          timestamp: Date.now(),
-        });
-
-        // V2 Phase 6: `meta.data` is gone; entity data arrives through the
-        // event bus via typed emit payloads, bound into the pattern tree by
-        // the listener / render-ui pipeline. The server effects carry the
-        // resolved data; no store hydration needed.
-        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNamesRef.current, onNavigateBack);
-      }
-    })();
-  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits, routeParams, user]);
+  const { entityBindingSource } = useTraitStateMachine(traits, uiSlots, {
+    orbitals,
+    ...(onNavigate !== undefined ? { navigate: onNavigate } : {}),
+    ...(onNavigateBack !== undefined ? { navigateBack: onNavigateBack } : {}),
+    ...(traitConfigsByName !== undefined ? { traitConfigsByName } : {}),
+    ...(embeddedTraits !== undefined ? { embeddedTraits } : {}),
+    ...(callsiteCaptureChildrenByTrait !== undefined ? { callsiteCaptureChildrenByTrait } : {}),
+    initPayload: routeParams,
+    ...(hasBridge
+      ? { transport: bridge.transport, carriesCircuitState: bridge.carriesCircuitState }
+      : { persistence }),
+  });
 
   return (
     <EntityBindingContext.Provider value={entityBindingSource}>
@@ -671,7 +206,7 @@ function FitToBox({ children }: { children: React.ReactNode }) {
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, user }: {
+function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence }: {
   schema: OrbitalSchema;
   serverUrl?: string;
   transport?: ServerBridgeTransport;
@@ -689,8 +224,6 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
   localFallbackTimeoutMs?: number;
   /** Offline-preview persistence layer. */
   persistence?: PersistenceAdapter;
-  /** Forwarded to TraitInitializer — see OrbPreviewProps doc. */
-  user?: UserData | null;
 }) {
   const { traits, allEntities, allTraits, ir } = useResolvedSchema(schema, pageName);
 
@@ -762,13 +295,6 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
     return extra.length > 0 ? [...base, ...extra] : base;
   }, [ir, traits, pageName, allTraits]);
 
-  // Extract orbital names from schema for server event forwarding
-  const orbitalNames = useMemo(() => {
-    const orbitals: Orbital[] | undefined = schema?.orbitals;
-    if (!orbitals) return [];
-    return orbitals.map((o) => o.name);
-  }, [schema]);
-
   // Gap #13: trait-name → owning-orbital-name map. Built from
   // `schema.orbitals[].traits[]` so `useTraitStateMachine` can construct
   // the qualified `UI:Orbital.Trait.EVENT` bus key at both subscribe and
@@ -786,24 +312,6 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
       ),
     [schema, ir],
   );
-
-  // Trait-name → owning-orbital V4 id (`orb_…`) map, built from
-  // `schema.orbitals[].id`. Threaded into `useTraitStateMachine`'s
-  // emit-source stamp so an id-scoped `listens` (`kind: 'orbital'` with
-  // `orbitalId`) matches by id — `buildSourceMatcher` compares ids ONLY.
-  const orbitalIdsByTrait = useMemo<Record<string, OrbitalId>>(() => {
-    const map: Record<string, OrbitalId> = {};
-    for (const orbital of (schema?.orbitals ?? []) as Array<{ id?: OrbitalId; traits?: Array<string | { name?: string }> }>) {
-      if (typeof orbital.id !== 'string') continue;
-      for (const traitRef of orbital.traits ?? []) {
-        const traitName = typeof traitRef === 'string' ? traitRef : traitRef.name;
-        if (typeof traitName === 'string') {
-          map[traitName] = orbital.id;
-        }
-      }
-    }
-    return map;
-  }, [schema]);
 
   // Per-trait linkedEntity map for EntitySchemaProvider. Walks every
   // page's bindings once. Wrapped in `useMemo` so the resulting `Map`
@@ -851,20 +359,6 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
     }
     return Array.from(set);
   }, [allPageTraits, orbitalsByTrait]);
-
-  // Gap #11 upstream twin: page-scoped SERVER execution. The mounted closure
-  // plus pageless lifecycle traits, sent as `payload._activeTraits` so
-  // `OrbitalServerRuntime` skips other pages' composers entirely instead of
-  // the client dropping their renders after the fact.
-  const serverActiveTraits = useMemo<ReadonlySet<string> | undefined>(
-    () =>
-      collectServerActiveTraits(
-        ir,
-        allTraits,
-        new Set(allPageTraits.map((b) => b.trait.name).filter((n): n is string => !!n)),
-      ),
-    [ir, allTraits, allPageTraits],
-  );
 
   // Gap #11: emit allPageTraits at mount/page-change so runtime-verify's
   // console capture shows which traits the runtime path believes belong on
@@ -978,19 +472,16 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
         <TraitInitializer
           traits={allPageTraits}
           routeParams={routeParams}
-          orbitalNames={(serverUrl || transport) ? pageOrbitalNames : undefined}
+          orbitals={schema.orbitals}
+          hasBridge={Boolean(serverUrl || transport)}
           traitConfigsByName={traitConfigsByName}
-          orbitalsByTrait={orbitalsByTrait}
-          orbitalIdsByTrait={orbitalIdsByTrait}
           embeddedTraits={embeddedTraits}
           callsiteCaptureChildrenByTrait={callsiteCaptureChildrenByTrait}
-          serverActiveTraits={serverActiveTraits}
           onNavigate={onNavigate}
           onNavigateBack={onNavigateBack}
           onLocalFallback={onLocalFallback}
           localFallbackTimeoutMs={localFallbackTimeoutMs}
           persistence={persistence}
-          user={user}
         >
         {/* Sizing model:
             - `h-full` resolves to 100% of the parent's `style.height`. When
@@ -1452,7 +943,6 @@ export function OrbPreview({
                   onLocalFallback={handleLocalFallback}
                   localFallbackTimeoutMs={localFallbackTimeoutMs}
                   persistence={persistence}
-                  user={user}
                 />
               </FitToBox>
             ) : (
@@ -1469,7 +959,6 @@ export function OrbPreview({
                 onLocalFallback={handleLocalFallback}
                 localFallbackTimeoutMs={localFallbackTimeoutMs}
                 persistence={persistence}
-                user={user}
               />
             )}
           </UISlotProvider>

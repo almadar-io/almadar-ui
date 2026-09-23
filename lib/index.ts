@@ -31,8 +31,6 @@ export * from './traitRegistry';
 
 // Transport discipline (T7/T8) — consumed by the interpreted ServerBridge and
 // the compiled TS shell's generated hooks alike (single owner, no dupe).
-export * from './command-send-pump';
-export * from './tick-send-relay';
 
 // Perf instrumentation (runtime-path hot spots) — the React-facing layer over
 // @almadar/runtime/ui's framework-free ring + aggregation
