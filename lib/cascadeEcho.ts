@@ -8,6 +8,16 @@
  * result and passes through unstamped). The dispatched event's own echo is
  * always dropped: the click-time qualified emit already reached every
  * subscriber.
+ *
+ * `dispatched` therefore means EXACTLY "locally delivered" — never "the
+ * server consumed it". A SERVER-stamped `dispatched: true` (the server's own
+ * cascade/fan-out consumed the event for a next hop,
+ * `TraitCascade.ts`/`transition-handler.ts`) is cleared here: the local
+ * machine never ran that transition, so the self-subscribe must NOT drop
+ * the echo — its payload is the only delivery of server-produced render
+ * data (fetch results bound as `@payload.data`). Dropping it stranded every
+ * server-consumed echo's payload (the chat thread's post-refetch render,
+ * 2026-09-22).
  */
 import type { BusEventSource } from '@almadar/core';
 
@@ -33,7 +43,7 @@ export function stampLocallyDeliveredEchoes<T extends CascadeEcho>(
       remainingLocal.set(entry.event, remaining - 1);
       result.push({ ...entry, source: { ...entry.source, dispatched: true } });
     } else {
-      result.push(entry);
+      result.push({ ...entry, source: { ...entry.source, dispatched: false } });
     }
   }
   return result;

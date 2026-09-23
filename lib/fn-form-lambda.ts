@@ -302,6 +302,10 @@ function convertObjectProps(props: SlotProps): SlotProps {
  * function. Pure on inputs without lambdas: returns the props object
  * unchanged by reference.
  */
-export function convertFnFormLambdasInProps(props: SlotProps): SlotProps {
+export function convertFnFormLambdasInProps(props: SlotProps | string): SlotProps | string {
+  // Route through the node-level converter: a bare-string slot payload
+  // (`(render-ui main "@trait.X")`) is not a props object and must pass
+  // through untouched — convertObjectProps would explode it into chars.
+  if (props === null || typeof props !== 'object') return props;
   return convertObjectProps(props);
 }

@@ -132,7 +132,16 @@ function shareValue(prev: SlotPropValue, next: SlotPropValue): ReconcileResult<S
  * props. Equal subtrees keep the PREVIOUS object identity; a fully-equal
  * tree returns `equal: true` so the sink can skip the write entirely.
  */
-export function reconcileSlotProps(prev: SlotProps, next: SlotProps): ReconcileResult<SlotProps> {
+export function reconcileSlotProps(prev: SlotProps | string, next: SlotProps | string): ReconcileResult<SlotProps | string> {
+  // Bare-string payloads (`@trait.X` embeds) reconcile by equality. The two
+  // typeof checks must be SEPARATE returns — a combined `||` guard leaves
+  // both params un-narrowed in the fall-through.
+  if (typeof prev === 'string') return { value: next, equal: prev === next };
+  if (typeof next === 'string') return { value: next, equal: false };
   const result = shareValue(prev, next);
+  // `shareValue`'s value type is the `SlotPropValue` superset (the recursive
+  // walk descends into individual prop values); at THIS top level both operands
+  // are whole props objects, so the reconciled value is `SlotProps` — same
+  // boundary cast the file's own recursive array branch already uses.
   return { value: result.value as SlotProps, equal: result.equal };
 }

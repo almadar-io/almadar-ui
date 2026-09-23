@@ -201,12 +201,18 @@ function walkValue(
  * whenever the entity snapshot did not change.
  */
 export function resolveRenderBindingMarkers(
-  props: SlotProps,
+  props: SlotProps | string,
   scopeTrait: string | undefined,
   entity: EntityRow,
   config: TraitConfig | undefined,
   state: string,
-): SlotProps {
+): SlotProps | string {
+  // A bare-string slot payload (`(render-ui main "@trait.X")`) is not a
+  // props object — `Object.entries` on a string would explode it into
+  // indexed characters. Primitives pass through untouched; the renderer
+  // lifts the `@trait.X` string to a TraitFrame. This guard runs BEFORE the
+  // brand check: the brand set is keyed on objects only.
+  if (props === null || typeof props !== 'object') return props;
   // Already resolved by an enclosing walk (the slot-level renderer resolves
   // the whole tree; nested SlotContentRenderers re-enter per pattern) — the
   // brand certifies marker-free, so re-walking would only re-scan.

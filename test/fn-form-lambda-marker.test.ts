@@ -24,6 +24,7 @@ describe('convertFnFormLambdasInProps × render-binding markers', () => {
       ],
     };
     const out = convertFnFormLambdasInProps(props);
+    if (typeof out === 'string') throw new Error(`expected object props, got ${typeof out}`);
     const layer = (out.drawables as Array<{ items: RenderBindingMarker }>)[0];
     expect(layer.items[RENDER_BINDING_MARKER]).toBe(true);
     const expr = layer.items.expression as unknown[];
@@ -35,6 +36,7 @@ describe('convertFnFormLambdasInProps × render-binding markers', () => {
       renderItem: ['fn', 'item', { type: 'typography', content: '@item.name' }],
     };
     const out = convertFnFormLambdasInProps(props);
+    if (typeof out === 'string') throw new Error(`expected object props, got ${typeof out}`);
     expect(typeof out.renderItem).toBe('function');
   });
 });

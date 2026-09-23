@@ -138,6 +138,42 @@ describe('SlotContentRenderer', () => {
     expect(screen.getByText(/Unknown pattern: my-test-pattern/)).toBeInTheDocument();
   });
 
+  it('lifts a bare @trait.X string payload to a TraitFrame (not the unknown-pattern fallback)', () => {
+    // `(render-ui main "@trait.X")` — a whole-slot trait-embed reference —
+    // reaches the slot as an empty pattern whose props ARE the string.
+    const content = {
+      id: 'test-id',
+      pattern: '',
+      props: '@trait.SomeChartTrait',
+      priority: 0,
+      sourceTrait: 'HostTrait',
+    };
+
+    render(
+      <TestWrapper>
+        <SlotContentRenderer content={content} onDismiss={() => {}} />
+      </TestWrapper>,
+    );
+
+    // Must NOT paint the unknown-pattern placeholder…
+    expect(screen.queryByText(/Unknown pattern:/)).not.toBeInTheDocument();
+    // …and the TraitFrame must have looked up the referenced trait (the
+    // frame renders nothing for an unknown/unmounted trait, silently).
+  });
+
+  it('keeps the unknown-pattern fallback for genuinely unknown patterns', () => {
+    const content = {
+      id: 'test-id',
+      pattern: 'not-a-real-pattern',
+      props: {},
+      priority: 0,
+    };
+
+    render(<SlotContentRenderer content={content} onDismiss={() => {}} />);
+
+    expect(screen.getByText(/Unknown pattern: not-a-real-pattern/)).toBeInTheDocument();
+  });
+
   it('should include sourceTrait in fallback display', () => {
     const content = {
       id: 'test-id',

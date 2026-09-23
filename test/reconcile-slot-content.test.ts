@@ -52,6 +52,7 @@ describe('reconcileSlotProps', () => {
         const r = reconcileSlotProps(prev, next);
         expect(r.equal).toBe(false);
         expect(r.value).not.toBe(prev);
+        if (typeof r.value === 'string') throw new Error(`expected object props, got ${typeof r.value}`);
         expect(r.value.xMin).toBe(next.xMin);
     });
 
@@ -62,6 +63,7 @@ describe('reconcileSlotProps', () => {
         const r = reconcileSlotProps(prev, next);
         expect(r.equal).toBe(false);
         expect(r.value).not.toBe(prev);
+        if (typeof r.value === 'string') throw new Error(`expected object props, got ${typeof r.value}`);
         expect(r.value.title).toBe('b');
         expect((r.value.stats as SlotPropValue[])).toHaveLength(1);
         // deep-equal subtrees are shared even inside a changed tree

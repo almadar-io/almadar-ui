@@ -62,8 +62,12 @@ describe('useUISlots flush sink — structural sharing', () => {
         expect(second).not.toBe(first);
         expect(second?.pattern).toBe('game-shell');
         // The marker subtree inside was untouched by the change — identity kept.
-        const firstChildren = first?.props.children as ReadonlyArray<{ xMin: SlotPropValue }>;
-        const secondChildren = second?.props.children as ReadonlyArray<{ xMin: SlotPropValue }>;
+        const firstProps = first?.props;
+        const secondProps = second?.props;
+        if (typeof firstProps === 'string' || firstProps === undefined) throw new Error(`expected object props, got ${typeof firstProps}`);
+        if (typeof secondProps === 'string' || secondProps === undefined) throw new Error(`expected object props, got ${typeof secondProps}`);
+        const firstChildren = firstProps.children as ReadonlyArray<{ xMin: SlotPropValue }>;
+        const secondChildren = secondProps.children as ReadonlyArray<{ xMin: SlotPropValue }>;
         expect(secondChildren[0].xMin).toBe(firstChildren[0].xMin);
     });
 

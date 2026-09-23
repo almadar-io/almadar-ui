@@ -109,8 +109,10 @@ export interface SlotContent {
   id: string;
   /** Pattern/component type to render */
   pattern: string;
-  /** Props to pass to the pattern component */
-  props: SlotProps;
+  /** Props to pass to the pattern component. A bare string is a whole-slot
+   * trait-embed reference (`(render-ui main "@trait.X")`) — the renderer lifts
+   * it to a TraitFrame. */
+  props: SlotProps | string;
   /** Priority for conflict resolution (higher wins) */
   priority: number;
   /** Animation for showing/hiding */
@@ -141,8 +143,8 @@ export interface SlotRenderConfig {
   target: UISlot;
   /** Pattern/component to render */
   pattern: string;
-  /** Props for the pattern */
-  props?: SlotProps;
+  /** Props for the pattern — or a bare `@trait.X` embed string */
+  props?: SlotProps | string;
   /** Priority (default: 0) */
   priority?: number;
   /** Animation type */
@@ -313,11 +315,18 @@ function aggregateSlot(sources: SlotSources | undefined): SlotContent | null {
   // has no equivalent hazard: codegen emits `<TraitScopeProvider>` lexically
   // around each trait's own markup, so scope is structural there. This keeps
   // the two paths in agreement (see R-SLOT-MULTI-SOURCE-STACK-DROPS-TRAIT-SCOPE).
-  const children = entries.map(([sourceKey, entry]) => ({
-    type: entry.pattern,
-    ...entry.props,
-    ...(sourceKey !== DEFAULT_SOURCE_KEY && { _sourceTrait: sourceKey }),
-  }));
+  const children = entries.map(([sourceKey, entry]) =>
+    // A bare-string payload (`(render-ui main "@trait.X")`) is kept as the
+    // raw string child — the children walker lifts `@trait.X` strings to
+    // TraitFrames — spreading it would explode it into indexed characters.
+    typeof entry.props === 'string'
+      ? entry.props
+      : {
+          type: entry.pattern,
+          ...entry.props,
+          ...(sourceKey !== DEFAULT_SOURCE_KEY && { _sourceTrait: sourceKey }),
+        },
+  );
   const stackId = `slot-content-stack-${entries.map(([k]) => k).join('-')}`;
   return {
     id: stackId,

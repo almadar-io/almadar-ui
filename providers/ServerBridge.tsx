@@ -90,8 +90,25 @@ function reEmitServerEvent(eventBus: EventBusContextType, emitted: RemoteBusEven
   // The source MUST ride the bus event: the self-subscription skip guard
   // (`useTraitStateMachine`) reads `source.dispatched` to drop own-tab
   // echoes — dropping it here re-triggers every transition a second time
-  // (R-DUAL-EXEC-SERVER-ECHO).
-  eventBus.emit(key, emitted.payload, emitted.source);
+  // (R-DUAL-EXEC-SERVER-ECHO). `fromBridge` marks the emission as a
+  // bridge rebroadcast (the documented BusEventSource contract the compiled
+  // path's useOrbitalBridge already sets): the state machine must apply it
+  // locally but NEVER forward it back to the server — the server already
+  // processed this event, and re-forwarding its own cascade tail re-feeds
+  // it a fresh request every round, an infinite client↔server ping-pong
+  // (R-RUNTIME-020: SnakePlay's RESTART self-arm echoed unstamped once per
+  // response; each re-forward produced another unconsumed tail echo).
+  eventBus.emit(key, emitted.payload, { ...emitted.source, fromBridge: true });
+  // ALSO emit on the BARE `UI:EVENT` key (additive fan-out, same shape as
+  // `useEventBus`'s trait-scope chain): a trait that TRANSITIONS on the
+  // event (not a source-scoped listen) is reached only by the bare-cascade
+  // subscription — the qualified key above never reaches it (global search's
+  // SEARCH_RESULTS from a responder on another orbital stalling the flow,
+  // 2026-09-22). The bare emit is purely additive: source-scoped
+  // subscriptions (self-subscribe on the source trait's key, listen relays)
+  // already fired on the qualified key, and the bare-cascade's own
+  // cycle guard (R-RUNTIME-020) covers self-loop traits.
+  eventBus.emit(`UI:${emitted.event}`, emitted.payload, { ...emitted.source, fromBridge: true });
 }
 
 /**
@@ -220,6 +237,21 @@ export interface ServerResponseMeta {
   emittedEvents: string[];
   /** Server-side effect outcomes — see `OrbitalEventResponse.effectResults`. */
   effectResults?: ServerEffectResult[];
+  /**
+   * G-RUNTIME-022: the response's whole-orbital state snapshot
+   * (`OrbitalEventResponse.states`) — the stateless server's authoritative
+   * per-trait final state. Consumed by OrbPreview to sync the local state
+   * machine so the next request's client-supplied `from` is never stale.
+   */
+  states?: Record<string, string>;
+  /**
+   * Which server topology produced `states`: `'stateless-http'` (the hosted
+   * HTTP transport — the server holds no state, so the client must adopt its
+   * snapshot) or `'in-process'` (a local `OrbitalServerRuntime` transport —
+   * the local machine is already the source of truth; syncing is skipped to
+   * leave the stateful path untouched).
+   */
+  stateSource?: 'stateless-http' | 'in-process';
   error?: string;
 }
 
@@ -230,6 +262,20 @@ export interface SendEventResult {
 
 export interface ServerBridgeContextValue {
   connected: boolean;
+  /**
+   * Which server topology this bridge talks to: `'stateless-http'` (the
+   * hosted one-shot HTTP server — it runs off-page listen-arm fan-outs
+   * itself), `'stateful-http'` (a long-lived stateful server over HTTP —
+   * its listens fan-out SKIPS client-originated events (`originClientId`),
+   * so a listen arm carrying server-only effects (fetch/persist/call-service)
+   * is stranded unless the client relays the trigger back as a fresh
+   * dispatch), or `'in-process'` (a local `OrbitalServerRuntime` transport —
+   * same relay obligation). Read from the register response's own
+   * `topology` declaration when the server makes one; the transport is only
+   * the fallback. The listen relay (`useTraitStateMachine`) forwards such
+   * arms on the two stateful topologies.
+   */
+  stateSource: 'stateless-http' | 'stateful-http' | 'in-process';
   sendEvent: (
     orbitalName: string,
     event: string,
@@ -270,7 +316,7 @@ export interface ServerBridgeContextValue {
  *   cascade-rebroadcast logic is identical downstream.
  */
 export interface ServerBridgeTransport {
-  register: (schema: OrbitalSchema) => Promise<boolean>;
+  register: (schema: OrbitalSchema) => Promise<boolean | { success: boolean; topology?: 'stateless' | 'stateful' }>;
   unregister: () => Promise<void>;
   /**
    * `clientId` (Almadar_Live_Push.md) is the per-tab id stamped on every
@@ -341,7 +387,14 @@ function createHttpTransport(serverUrl: string, getAccessToken?: AccessTokenProv
           body: JSON.stringify({ schema }),
         });
         const result = await res.json();
-        return !!result.success;
+        // The parsed result (not just `!!success`) so the provider can read
+        // the server's own topology declaration (`topology: 'stateless' |
+        // 'stateful'`) — the deterministic signal for which listen-relay
+        // completion path applies (the stateful fan-out skips
+        // client-originated events; the stateless one runs off-page fan-outs
+        // itself). Older servers omit the field → the provider's transport
+        // fallback applies.
+        return { success: !!result.success, ...(typeof result.topology === 'string' ? { topology: result.topology } : {}) };
       } catch (err) {
         // Network-level failure (TypeError from fetch) is expected in
         // standalone playground mode during reload/registration race —
@@ -413,7 +466,7 @@ export function useServerBridge(): ServerBridgeContextValue {
   const ctx = useContext(ServerBridgeContext);
   if (!ctx) {
     const emptyMeta: ServerResponseMeta = { success: false, transitioned: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
-    return { connected: false, sendEvent: async () => ({ effects: [], meta: emptyMeta }) };
+    return { connected: false, stateSource: 'stateless-http', sendEvent: async () => ({ effects: [], meta: emptyMeta }) };
   }
   return ctx;
 }
@@ -457,7 +510,17 @@ export function ServerBridgeProvider({
 
   const eventBus = useEventBus();
   const [connected, setConnected] = useState(false);
-
+  // Which server topology the bridge talks to — set from the REGISTER
+  // RESPONSE's own `topology` declaration when the server makes one (the
+  // deterministic signal, no heuristics), else from the transport:
+  // 'stateless-http' (hosted one-shot HTTP server — runs off-page
+  // listen-arm fan-outs itself), 'stateful-http' (long-lived stateful
+  // server over HTTP — its listens fan-out SKIPS client-originated events,
+  // so the client must relay those hops itself), 'in-process' (a local
+  // `OrbitalServerRuntime` transport — same relay obligation).
+  const [stateSource, setStateSource] = useState<'stateless-http' | 'stateful-http' | 'in-process'>(
+    customTransport === undefined ? 'stateless-http' : 'in-process',
+  );
 
   // Resolve the transport: custom takes precedence (only one is set per the
   // mutual-exclusion check above). Memo on `serverUrl`/`customTransport` so
@@ -468,7 +531,7 @@ export function ServerBridgeProvider({
   );
 
   const registerSchema = useCallback(
-    async (): Promise<boolean> => transport.register(schema),
+    async () => transport.register(schema),
     [schema, transport],
   );
 
@@ -557,6 +620,8 @@ export function ServerBridgeProvider({
         emittedEvents: result.emittedEvents.map((e) => e.event),
         emitted: result.emittedEvents.map((e) => ({ event: e.event, ...(e.payload !== undefined && { payload: e.payload }) })),
         effectResults: result.effectResults,
+        states: result.states,
+        stateSource: customTransport === undefined ? 'stateless-http' : 'in-process',
         error: result.error,
       };
 
@@ -612,9 +677,30 @@ export function ServerBridgeProvider({
         // Stamping is `stampLocallyDeliveredEchoes`'s contract (see there);
         // multiplayer is unaffected — other tabs get this cascade over the
         // unstamped SSE push leg.
-        for (const emitted of stampLocallyDeliveredEchoes(event, result.emittedEvents, locallyEmitted ?? [])) {
-          reEmitServerEvent(eventBus, emitted, orbitalName);
-        }
+        //
+        // ORDERING CONTRACT (cold-INIT "No data available" bug, 2026-09-22):
+        // the rebroadcast is deferred one macrotask so the caller's promise
+        // continuation — which commits the response's `entityByTrait` rows
+        // (`commitServerEntity`) — lands BEFORE the local listen-relay the
+        // rebroadcast fires. The server row is authoritative for the fields
+        // its own execution wrote; the relay then completes the on-page
+        // listen arms the server deliberately skipped
+        // (`transition-handler.ts`), and its writes land ON TOP of the
+        // committed row. When the rebroadcast ran synchronously in this
+        // task (before the promise resolved), the commit could clobber the
+        // relay's fresh writes with the server's stale defaults for fields
+        // the server never ran (e.g. a LineChart's `points`). Promise
+        // reactions are microtasks, so the caller's continuation always runs
+        // before this macrotask — do not move the rebroadcast back into the
+        // synchronous task, and never apply server rows in a later task than
+        // the continuation.
+        const stamped = stampLocallyDeliveredEchoes(event, result.emittedEvents, locallyEmitted ?? []);
+        setTimeout(() => {
+          if (disposedRef.current) return;
+          for (const emitted of stamped) {
+            reEmitServerEvent(eventBus, emitted, orbitalName);
+          }
+        }, 0);
       } else if (result.error) {
         // Match compiled-path bridge (`useOrbitalBridge.ts`'s
         // `_bridgeLog.warn('response:fail', ...)`) so the shared
@@ -671,8 +757,23 @@ export function ServerBridgeProvider({
     if (!schema) return;
 
     let cancelled = false;
-    registerSchema().then((ok) => {
-      if (!cancelled && ok) setConnected(true);
+    registerSchema().then((result) => {
+      const ok = typeof result === 'boolean' ? result : result.success;
+      const topology = typeof result === 'object' ? result.topology : undefined;
+      if (cancelled || !ok) return;
+      setConnected(true);
+      // The server's own topology declaration wins when present (the
+      // deterministic signal); the transport is only the fallback for
+      // older servers that don't declare one.
+      setStateSource(
+        topology === 'stateful'
+          ? 'stateful-http'
+          : topology === 'stateless'
+            ? 'stateless-http'
+            : customTransport === undefined
+              ? 'stateless-http'
+              : 'in-process',
+      );
     });
 
     return () => {
@@ -718,7 +819,7 @@ export function ServerBridgeProvider({
   }, [serverUrl, eventBus, getAccessToken]);
 
   return (
-    <ServerBridgeContext.Provider value={{ connected, sendEvent }}>
+    <ServerBridgeContext.Provider value={{ connected, stateSource, sendEvent }}>
       {children}
     </ServerBridgeContext.Provider>
   );

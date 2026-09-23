@@ -22,6 +22,8 @@ export interface QueuedEventEntry {
     tick?: string;
     /** Emitting trait of a tick-originated entry — the server relay's BusEventSource.trait (T6). */
     sourceTrait?: string;
+    /** True when the entry arrived as a bridge rebroadcast (BusEventSource.fromBridge) — apply locally, never re-forward to the server (it already processed this event). */
+    fromBridge?: boolean;
 }
 
 /**

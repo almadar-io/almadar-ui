@@ -19,10 +19,10 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo, type MutableRefObject } from 'react';
 // Use hooks from @almadar/ui
-import { useEventBus, useSharedEntityStore, runTickFrame, type SharedEntityWriter } from './index';
+import { useEventBus, useSharedEntityStore, runTickFrame, type SharedEntityStore, type SharedEntityWriter } from './index';
 import { createLogger, setNamespaceLevel } from '@almadar/logger';
 import { isCircuitEvent, walkSExpr, mergeEntityFrame, applyListenPayloadMapping } from '@almadar/core';
-import type { BusEventSource, PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, TraitConfigValue, SExpr, ServiceParams, ResolvedTrait, FieldValue, EntityFieldWrite, EntityFrameState } from '@almadar/core';
+import type { BusEventSource, PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, TraitConfigValue, SExpr, ServiceParams, ResolvedTrait, FieldValue, EntityFieldWrite, EntityFrameState, OrbitalId } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -34,6 +34,7 @@ import {
     createTickScheduler,
     isValidCronExpression,
     parseDurationString,
+    buildSourceMatcher,
     LIFECYCLE_EVENTS,
     type TraitState,
     type TraitDefinition,
@@ -55,6 +56,7 @@ import { ALL_SLOTS } from './useUISlots';
 import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useEntitySchema } from '../providers/EntitySchemaContext';
 import { useUser } from '../providers/UserContext';
+import { useServerBridge } from '../providers/ServerBridge';
 import type { EntityBindingSource } from '../providers/EntityBindingContext';
 import {
     registerTrait,
@@ -94,9 +96,23 @@ export interface TraitStateMachineResult {
      * the same way a fresh `getById` already does within a single request.
      * A full replace, not a merge: the server sends the whole row after its
      * own effects ran, the same authoritative shape a `fetch`/`getById`
-     * would return.
+     * would return. Ordering: the bridge defers the cascade rebroadcast one
+     * macrotask, so this commit lands BEFORE the local listen-relay's
+     * writes for the same response (see `commitServerEntityRow`).
      */
     commitServerEntity: (traitName: string, entity: EntityRow) => void;
+    /**
+     * G-RUNTIME-022: adopt a stateless server response's `states` snapshot —
+     * a PURE per-trait state set, no effects, no transitions re-run. The
+     * stateless server is authoritative for the traits it touched (its
+     * same-trait fetch cascades advance state server-side, and the stamped
+     * success echo never reaches the local machine — the self-subscribe
+     * drops `dispatched` echoes), so without this sync the local manager
+     * stays on the initial state and every later request sends a stale
+     * `from`. Traits unknown to the local manager (off-page listeners) are
+     * ignored. Scoped to the stateless HTTP path by the caller.
+     */
+    applyServerStates: (states: Record<string, string>) => void;
 }
 
 const crossTraitLog = createLogger('almadar:ui:cross-trait');
@@ -240,6 +256,40 @@ export function effectsCallOp(effects: SExpr[], ops: ReadonlySet<string>): boole
 }
 
 /**
+ * Effect head-operators a bridge-mode client CANNOT execute locally — the
+ * server owns them (`fetch` has no client handler in bridge mode;
+ * `persist`/`call-service` are delegated to it). A listen arm whose
+ * triggered transition calls these is stranded when the server's listens
+ * fan-out skips client-originated events (the stateful in-process
+ * topology): the client relay must forward the trigger to the server as a
+ * fresh dispatch instead of executing it locally.
+ */
+export const SERVER_ONLY_EFFECT_OPS: ReadonlySet<string> = new Set(['fetch', 'persist', 'call-service']);
+
+/**
+ * Does the transition `trigger` fires on `trait` call a server-only op
+ * anywhere in its effect tree? Checks the transition(s) matching
+ * `fromState` first, falling back to every transition on the trigger — the
+ * relay needs the answer BEFORE the manager picks the arm, and a trigger
+ * with a server-only op on ANY of its arms is server-owned regardless of
+ * which arm the state machine lands on.
+ */
+export function listenTriggerCallsServerOnlyOps(
+    trait: ResolvedTrait,
+    trigger: string,
+    fromState: string,
+): boolean {
+    const onTrigger = trait.transitions.filter((t) => t.event === trigger);
+    const matching = onTrigger.filter((t) =>
+        Array.isArray(t.from) ? t.from.includes(fromState) : t.from === fromState,
+    );
+    return effectsCallOp(
+        (matching.length > 0 ? matching : onTrigger).flatMap((t) => t.effects),
+        SERVER_ONLY_EFFECT_OPS,
+    );
+}
+
+/**
  * Trait names present in `prev` but absent from `next` — the set that just
  * dropped out of the active page's trait bindings (e.g. navigating from one
  * whole-orbital-imported page to another). Used to clear a dropped trait's
@@ -344,6 +394,8 @@ export function createSharedEntityWriter(
     traitStatesRef: MutableRefObject<Map<string, TraitState>>,
     emit: (event: string, payload?: EventPayload, source?: BusEventSource) => void,
     traitConfigsByName?: Record<string, TraitConfig>,
+    orbitalsByTrait?: Record<string, string>,
+    orbitalIdsByTrait?: Record<string, OrbitalId>,
 ): SharedEntityWriter {
     return (scratch: EntityFrameState): readonly EntityFieldWrite[] => {
         const traitName = binding.trait.name;
@@ -393,9 +445,18 @@ export function createSharedEntityWriter(
             }
         };
         ctx.emit = (event, payload) => {
-            // Stamp the writer's identity so the bus telemetry can tell this
-            // tick-originated emit from an unscoped component emit.
-            emit(event, payload as EventPayload | undefined, { trait: traitName, tick: tick.name });
+            // Stamp the writer's identity (orbital + trait + tick, with V4
+            // ids when the schema carries them — parity with
+            // `EffectExecutor.sourceStamp`) so the bus telemetry can tell
+            // this tick-originated emit from an unscoped component emit,
+            // and id-scoped `listens` match by id.
+            emit(event, payload as EventPayload | undefined, {
+                orbital: orbitalsByTrait?.[traitName],
+                trait: traitName,
+                tick: tick.name,
+                orbitalId: orbitalIdsByTrait?.[traitName],
+                traitId: binding.trait.id,
+            });
         };
 
         if (tick.guard !== undefined && !evaluateGuard(tick.guard, ctx)) {
@@ -457,6 +518,14 @@ export interface UseTraitStateMachineOptions {
          * else to live.
          */
         entityByTrait?: Readonly<Record<string, EntityRow>>,
+        /**
+         * True when this dispatch originated from a server-bridge rebroadcast
+         * (BusEventSource.fromBridge): the consumer MUST apply it locally but
+         * skip forwarding it back to the server — the server already processed
+         * this event; re-forwarding re-feeds its own cascade tail into a fresh
+         * request, an infinite client↔server ping-pong (R-RUNTIME-020).
+         */
+        fromBridge?: boolean,
     ) => void | Promise<void>;
     /** Router navigate function for navigate effects. `crumb` labels the
      * target page's navigation-stack entry (from the effect's options). */
@@ -493,6 +562,14 @@ export interface UseTraitStateMachineOptions {
      * `ResolvedTraitBinding`, so the caller assembles the map directly.
      */
     orbitalsByTrait?: Record<string, string>;
+    /**
+     * Trait → orbital V4 id (`orb_…`) map, built by the caller from
+     * `schema.orbitals[].id`. Threaded into the emit-source stamp so an
+     * id-scoped `listens` (`kind: 'orbital'` with `orbitalId`) matches by
+     * id — `buildSourceMatcher` compares ids ONLY, so a name-only stamp
+     * never matches (parity with `OrbitalServerRuntime`'s emit stamp).
+     */
+    orbitalIdsByTrait?: Record<string, OrbitalId>;
     /**
      * Set of trait names referenced via `@trait.X` by some sibling
      * layout in the resolved schema. Slot writes from these traits go
@@ -638,6 +715,61 @@ export function overlayServerEffectResults(
     });
 }
 
+/**
+ * Apply a stateless server's post-effects entity row (`OrbitalEventResponse
+ * entityByTrait`) to the client.
+ *
+ * Server semantics: the stateless server keeps ONE live row per linked
+ * entity (`sharedPersistence`, transition-handler.ts) — the response names
+ * the trait that executed, but the row is authoritative for EVERY mounted
+ * trait bound to the same entity. The client therefore:
+ *
+ * 1. Sets the row as the committing trait's live per-trait row
+ *    (`traitFieldStates`) — its next local execution seeds from it.
+ * 2. Commits it to the shared-entity store when the trait is a `[shared]`
+ *    participant (existing path — `commit` notifies subscribers).
+ * 3. Publishes it to the RENDER surface (`publishRow` — the
+ *    `bindingSnapshots` + listener channel non-shared traits render through)
+ *    of the committing trait AND every mounted trait declaring the same
+ *    `linkedEntity` (G-RUNTIME-026: sibling LineChart kept painting its
+ *    frame-0 empty state; G-RUNTIME-027: same-family table row). Before this
+ *    broadcast the server row reached neither the committing trait's render
+ *    surface nor any sibling's — `commitServerEntity` wrote only the live
+ *    row map, which render bindings never read.
+ *
+ * ORDERING CONTRACT with the bridge's cascade rebroadcast: the commit must
+ * land BEFORE the rebroadcast fires the local listen-relay — the server row
+ * is authoritative for the fields its own execution wrote, and the relay is
+ * authoritative for the on-page listen arms the server deliberately skipped
+ * (`transition-handler.ts`), whose effects then land ON TOP of this row.
+ * `ServerBridge.sendEvent` defers the rebroadcast one macrotask so the
+ * caller's continuation (this commit) always wins the race. A wholesale
+ * apply is correct under that ordering — do NOT "protect" fields here.
+ */
+export function commitServerEntityRow(
+    traitFieldStates: Map<string, EntityRow>,
+    sharedKeyByTraitName: ReadonlyMap<string, string>,
+    sharedEntityStore: SharedEntityStore,
+    linkedEntitySiblings: ReadonlyMap<string, readonly string[]>,
+    publishRow: (traitName: string, entity: EntityRow) => void,
+    traitName: string,
+    entity: EntityRow,
+): void {
+    traitFieldStates.set(traitName, entity);
+    const sharedKey = sharedKeyByTraitName.get(traitName);
+    if (sharedKey !== undefined) {
+        sharedEntityStore.commit(sharedKey, {
+            ...sharedEntityStore.getSnapshot(sharedKey),
+            ...entity,
+        });
+        sharedEntityLog.debug('commitServerEntityRow shared-commit', { traitName, sharedKey });
+    }
+    const targets = linkedEntitySiblings.get(traitName) ?? [traitName];
+    for (const target of targets) {
+        publishRow(target, entity);
+    }
+}
+
 export function useTraitStateMachine(
     traitBindings: ResolvedTraitBinding[],
     uiSlots: ReturnType<typeof useUISlots>,
@@ -650,12 +782,17 @@ export function useTraitStateMachine(
     // the same binding the server carries; without it a client-run
     // `(set … @user.id)` / `(emit … @user.id)` resolves to undefined.
     const { user: viewer } = useUser();
+    // Which server topology the bridge talks to — the listen relay forwards
+    // server-only arms (fetch/persist/call-service) to the server only on the
+    // stateful in-process one (see the relay below).
+    const { stateSource: bridgeStateSource } = useServerBridge();
     // Mirrors OrbitalServerRuntime's setTraitConfig loop so the client-side
     // guard evaluator sees @config.X. Page-level bindings often arrive with
     // config undefined; the caller's `traitConfigsByName` map (built from the
     // orbital schema) backfills the missing entries.
     const traitConfigsByName = options?.traitConfigsByName;
     const orbitalsByTrait = options?.orbitalsByTrait;
+    const orbitalIdsByTrait = options?.orbitalIdsByTrait;
     const callsiteCaptureChildrenByTrait = options?.callsiteCaptureChildrenByTrait;
 
     // One shared-entity store per running orbital instance (stable across
@@ -738,6 +875,27 @@ export function useTraitStateMachine(
         sharedKeyByTraitNameRef.current = map;
         sharedEntityLog.debug('shared-map', { map: Array.from(map.entries()).map(([k, v]) => `${k}->${v}`) });
     }, [sharedGroups]);
+
+    // Trait name -> every mounted trait declaring the SAME `linkedEntity`
+    // (including itself). The stateless server keeps one row per linked
+    // entity, so a server-committed row is published to the render surface
+    // of all of them — see `commitServerEntityRow`.
+    const linkedEntitySiblingsRef = useRef<ReadonlyMap<string, readonly string[]>>(new Map());
+    useEffect(() => {
+        const byEntity = new Map<string, string[]>();
+        for (const binding of traitBindings) {
+            const linkedEntityName = binding.linkedEntity ?? binding.trait.linkedEntity;
+            if (!linkedEntityName) continue;
+            const list = byEntity.get(linkedEntityName);
+            if (list) list.push(binding.trait.name);
+            else byEntity.set(linkedEntityName, [binding.trait.name]);
+        }
+        const map = new Map<string, readonly string[]>();
+        for (const list of byEntity.values()) {
+            for (const name of list) map.set(name, list);
+        }
+        linkedEntitySiblingsRef.current = map;
+    }, [traitBindings]);
 
     const manager = useMemo(() => {
         const traitDefs = traitBindings.map(toTraitDefinition);
@@ -834,16 +992,25 @@ export function useTraitStateMachine(
                 return;
             }
             const last = patterns[patterns.length - 1];
+            // A bare-string payload — `(render-ui main "@trait.X")` — is a
+            // legal pattern tree (trait-embed reference). Destructuring a
+            // string would drop it and land an empty-pattern slot, so the
+            // string is preserved as the whole props value and the renderer
+            // lifts it to a TraitFrame (same convention as
+            // OrbPreview.applyServerEffects).
+            const bareTraitRef = typeof last.pattern === 'string' ? last.pattern : undefined;
             const record = (last.pattern ?? {}) as SlotProps;
             const { type: patternType, children: nested, ...inlineProps } = record;
             // Convert `["fn", argName, body]` lambdas into render-prop
             // functions before they land in `useUISlots` (mirrors
             // OrbPreview.applyServerEffects).
-            const rawProps: SlotProps = {
-                ...inlineProps,
-                ...(last.props as SlotProps),
-                ...(nested !== undefined ? { children: nested } : {}),
-            };
+            const rawProps: SlotProps | string = bareTraitRef !== undefined
+                ? bareTraitRef
+                : {
+                    ...inlineProps,
+                    ...(last.props as SlotProps),
+                    ...(nested !== undefined ? { children: nested } : {}),
+                };
             const props = convertFnFormLambdasInProps(rawProps);
             const isEmbedded = embedded?.has(traitName) ?? false;
             if (isEmbedded) {
@@ -938,6 +1105,36 @@ export function useTraitStateMachine(
             }
         });
     }, []);
+
+    // Server-row publish: merge the authoritative row over the trait's
+    // current render snapshot (fields the server didn't echo survive) and
+    // notify — the render-surface half of `commitServerEntityRow`.
+    const publishServerRow = useCallback((traitName: string, entity: EntityRow) => {
+        const prev = bindingSnapshotsRef.current.get(traitName) ?? {};
+        publishBindingSnapshot(traitName, { ...prev, ...entity });
+    }, [publishBindingSnapshot]);
+
+    // The client-supplied entity snapshot a request round-trips (Fix C):
+    // every non-empty per-trait row, plus the shared-entity store's current
+    // snapshot for `[shared]` participants (their live row never appears in
+    // `traitFieldStatesRef`). Shared by the event dispatch path and the
+    // listen relay's server-only forward — one builder, one shape.
+    const buildEntityByTraitSnapshot = useCallback((): Record<string, EntityRow> => {
+        const snapshot: Record<string, EntityRow> = {};
+        for (const [name, fields] of traitFieldStatesRef.current) {
+            if (fields && Object.keys(fields).length > 0) {
+                snapshot[name] = fields;
+            }
+        }
+        for (const binding of traitBindingsRef.current) {
+            const name = binding.trait.name;
+            const sharedKey = sharedKeyByTraitNameRef.current.get(name);
+            if (sharedKey !== undefined) {
+                snapshot[name] = { ...sharedEntityStore.getSnapshot(sharedKey) };
+            }
+        }
+        return snapshot;
+    }, [sharedEntityStore]);
 
 
     // Register traits with debug registry and clean up on unmount/rebind
@@ -1118,8 +1315,17 @@ export function useTraitStateMachine(
          * Surfaced on the binding context as `@callsitePayload.<field>`.
          */
         callsitePayload?: EventPayload;
+        /**
+         * True when this execution completes a server-bridge rebroadcast
+         * (`BusEventSource.fromBridge` — the listen-relay arms the stateless
+         * server deliberately leaves to the client). Such a `set` writes
+         * through to every same-entity sibling's row and fans the render
+         * surface out to them: siblings resolve `@entity.X` markers against
+         * their OWN snapshots, and the server never ran these arms.
+         */
+        fromBridge?: boolean;
     }): Promise<{ emitted: string[]; serverEffectResults: ServerEffectResult[] }> => {
-        const { binding, previousState, newState, payload, flushEvent, syncOnly, log, callsitePayload } = params;
+        const { binding, previousState, newState, payload, flushEvent, syncOnly, log, callsitePayload, fromBridge } = params;
         const traitName = binding.trait.name;
         const linkedEntity = binding.linkedEntity || '';
         const entityId = payload?.entityId as string | undefined;
@@ -1315,11 +1521,12 @@ export function useTraitStateMachine(
         // without owning the write — the canonical client `set` (and, in
         // offline-preview, the server `set`) already mutate `liveEntity`.
         // A second writing wrapper here would be a parallel store; this just
-        // taps the value as it passes through for diagnostics AND (for a
-        // `[shared]` entity) to record exactly which fields THIS trait wrote,
-        // so the commit below can merge instead of replace. `didWrite` gates
-        // the render-time binding snapshot publish below.
-        const sharedWrites: EntityFieldWrite[] = [];
+        // taps the value as it passes through for diagnostics AND to record
+        // exactly which fields THIS trait wrote (so a `[shared]` commit can
+        // merge instead of replace, and so a server-row commit that landed
+        // mid-execution can be repaired onto the current row below).
+        // `didWrite` gates the render-time binding snapshot publish below.
+        const entityWrites: EntityFieldWrite[] = [];
         let didWrite = false;
         const baseSet = handlers.set;
         handlers = {
@@ -1327,8 +1534,35 @@ export function useTraitStateMachine(
             set: async (targetId, field, value) => {
                 if (baseSet) await baseSet(targetId, field, value);
                 didWrite = true;
-                if (sharedKey !== undefined) {
-                    sharedWrites.push({ field, value: value as FieldValue });
+                entityWrites.push({ field, value: value as FieldValue });
+                if (fromBridge) {
+                    // The stateless server keeps ONE row per linked entity,
+                    // but the client keeps a per-trait row per bound trait —
+                    // and a sibling bound to the same `[runtime]` entity
+                    // renders `@entity.X` markers against ITS OWN row/surface
+                    // (e.g. an inline LineChartRender atom whose `data`
+                    // defaults to `@entity.points` — the cold-INIT "No data
+                    // available" bug: the relay computed points on the chart
+                    // trait's row, the render trait's surface never saw them).
+                    // Write the relay's value through to every sibling's row
+                    // so the whole family reads one coherent entity row.
+                    // (Skipped for `[shared]` entities — their siblings read
+                    // the shared store, which the commit below already merges
+                    // into.)
+                    if (sharedKey === undefined) {
+                        const siblings = linkedEntitySiblingsRef.current.get(traitName);
+                        if (siblings !== undefined) {
+                            for (const sibling of siblings) {
+                                if (sibling === traitName) continue;
+                                let siblingRow = traitFieldStatesRef.current.get(sibling);
+                                if (siblingRow === undefined) {
+                                    siblingRow = {};
+                                    traitFieldStatesRef.current.set(sibling, siblingRow);
+                                }
+                                siblingRow[field] = value as FieldValue;
+                            }
+                        }
+                    }
                 }
                 log.debug('set:write', {
                     traitName,
@@ -1374,6 +1608,13 @@ export function useTraitStateMachine(
         const effectContext: EffectContext = {
             traitName,
             orbitalName: orbitalsByTrait?.[traitName],
+            // V4 dual-carry ids (parity with `OrbitalServerRuntime`'s emit
+            // stamp): an id-scoped `listens` matcher compares ids ONLY — a
+            // name-only stamp never matches a `traitId`-carrying listen
+            // (the chat SAVE → DO_CREATE relay died on the stateful path).
+            traitId: binding.trait.id,
+            orbitalId: orbitalIdsByTrait?.[traitName],
+            emits: binding.trait.emits,
             state: previousState,
             transition: `${previousState}->${newState}`,
             linkedEntity,
@@ -1434,15 +1675,30 @@ export function useTraitStateMachine(
             // this call is suspended; when this call resumes, a wholesale
             // replace would clobber that fresher commit with this call's
             // stale entry-time values for every field, not just the ones this
-            // trait actually wrote. Merging `sharedWrites` onto a re-read
+            // trait actually wrote. Merging `entityWrites` onto a re-read
             // snapshot (the same fold `runTickFrame` already uses) means
             // whichever commit lands last only overwrites the fields it
             // actually owns, closing the race regardless of async timing.
             if (sharedKey !== undefined) {
                 sharedEntityStore.commit(
                     sharedKey,
-                    mergeEntityFrame(sharedEntityStore.getSnapshot(sharedKey), sharedWrites),
+                    mergeEntityFrame(sharedEntityStore.getSnapshot(sharedKey), entityWrites),
                 );
+            } else if (didWrite) {
+                // Same race, non-shared flavor: a server-row commit
+                // (`commitServerEntityRow`) can land mid-`executeAll` and
+                // REPLACE the trait's live row object — this execution's
+                // `set`s then wrote into a detached orphan the map no longer
+                // holds, and the next Fix C round-trip would carry the
+                // server's stale row forward, losing the writes. Re-apply
+                // this execution's own writes onto the row the map actually
+                // holds (no-op when nothing replaced it — the common case).
+                const currentRow = traitFieldStatesRef.current.get(traitName);
+                if (currentRow !== undefined && currentRow !== liveEntity) {
+                    for (const { field, value } of entityWrites) {
+                        currentRow[field] = value;
+                    }
+                }
             }
 
             log.debug('effects:executed', () => ({
@@ -1492,9 +1748,26 @@ export function useTraitStateMachine(
             // `RenderBindingMarker` prop leaves this trait's rendered
             // patterns carry. Non-shared traits publish a fresh snapshot
             // (the live store is mutated in place); shared traits already
-            // notified their subscribers via the store commit above.
+            // notified their subscribers via the store commit above. Publish
+            // the row the map CURRENTLY holds — after the orphan-repair
+            // above that is the server row this execution's writes landed
+            // on, so server-authoritative fields (id/timestamps) and the
+            // local writes surface together. A relay (fromBridge) write ALSO
+            // publishes to every same-entity sibling's surface: siblings
+            // render `@entity.X` markers against their OWN snapshots, so
+            // without the fan-out a sibling render atom (e.g. an inline
+            // LineChartRender) keeps painting the pre-relay frame — the
+            // cold-INIT "No data available" bug. An SSE-push rebroadcast has
+            // no response commit at all, so this publish is the ONLY surface
+            // update those siblings get.
             if (didWrite && sharedKey === undefined) {
-                publishBindingSnapshot(traitName, liveEntity);
+                const currentRow = traitFieldStatesRef.current.get(traitName) ?? liveEntity;
+                publishBindingSnapshot(traitName, currentRow);
+                if (fromBridge) {
+                    for (const sibling of linkedEntitySiblingsRef.current.get(traitName) ?? []) {
+                        if (sibling !== traitName) publishBindingSnapshot(sibling, currentRow);
+                    }
+                }
             }
         } catch (error: unknown) {
             log.error('effects:error', {
@@ -1695,7 +1968,7 @@ export function useTraitStateMachine(
                 const interval = entries[0].tick.interval;
                 const onDue = timedTick(`tick:shared:${group.storeKey}@${String(interval)}`, () => {
                     const writers = entries.map(({ binding, tick }) =>
-                        createSharedEntityWriter(binding, tick, traitStatesRef, emitFromSharedWriter, traitConfigsByName),
+                        createSharedEntityWriter(binding, tick, traitStatesRef, emitFromSharedWriter, traitConfigsByName, orbitalsByTrait, orbitalIdsByTrait),
                     );
                     // The store commit notifies every subscriber — including
                     // the render-time binding markers sibling render traits
@@ -1763,7 +2036,10 @@ export function useTraitStateMachine(
         // T6 broadcast class: tick-originated entries fan out to the server
         // fire-and-forget (see the onEventProcessed call below).
         tick?: string,
-        sourceTrait?: string
+        /** Emitting trait, for the server relay's BusEventSource. */
+        sourceTrait?: string,
+        /** True when the entry is a server-bridge rebroadcast: the local transition still runs, but `onEventProcessed` must NOT forward it back to the server (R-RUNTIME-020 client↔server ping-pong). */
+        fromBridge?: boolean,
     ): Promise<void> => {
         const normalizedEvent = normalizeEventKey(eventKey);
         const _perfT0 = perfStart('processEvent:total');
@@ -1797,35 +2073,9 @@ export function useTraitStateMachine(
         // to reload — otherwise guard ctx.entity is `{}` and any `@entity.X`
         // reference resolves undefined, blocking step-skip protection guards
         // (e.g. wizard step3 requiring step1 + step2 to have committed values).
-        const entityByTrait: Record<string, EntityRow> = {};
-        for (const [name, fields] of traitFieldStatesRef.current) {
-            if (fields && Object.keys(fields).length > 0) {
-                entityByTrait[name] = fields;
-            }
-        }
-
-        // A trait bound to a `[shared]` entity never appears in
-        // `traitFieldStatesRef` (its live state lives in `sharedEntityStore`
-        // instead — see `executeTransitionEffects`'s `liveEntity` setup), so
-        // without this it falls through to `entityData` (`undefined`) in
-        // `StateMachineCore.sendEvent`'s `entityByTrait?.[traitName] ??
-        // entityData`. That silently blocks every guarded transition on a
-        // shared-entity trait (`@entity.X` reads `undefined`) whether or not
-        // the trait itself writes — a pure-relay interaction trait
-        // (FroggerPlay/GemPlay) or a mechanic trait reacting to a keyboard-
-        // triggered event (Breaker's PADDLE_SET, PongRally's PADDLE_MOVE).
-        // Mirrors the tick-guard path's already-correct lookup above
-        // (`runTickEffects`, guard evaluation against
-        // `sharedEntityStore.getSnapshot(sharedKey)`). A trait is never both
-        // shared and non-shared, so this never overwrites an entry the loop
-        // above already set.
-        for (const binding of bindings) {
-            const name = binding.trait.name;
-            const sharedKey = sharedKeyByTraitNameRef.current.get(name);
-            if (sharedKey !== undefined) {
-                entityByTrait[name] = { ...sharedEntityStore.getSnapshot(sharedKey) };
-            }
-        }
+        // (`[shared]` participants are backfilled from the shared store inside
+        // the helper — a shared trait never appears in `traitFieldStatesRef`.)
+        const entityByTrait = buildEntityByTraitSnapshot();
 
         // Send event through StateMachineManager (shared runtime)
         const _perfT1 = perfStart('processEvent:guardMatch');
@@ -1836,6 +2086,19 @@ export function useTraitStateMachine(
             entityByTrait,
             undefined,
             targetTrait,
+            undefined,
+            undefined,
+            // R-RUNTIME-020: an untargeted bare-cascade re-delivery of a
+            // trait's own emit must not reach that same trait again, or a
+            // transition whose effects re-emit the triggering event loops
+            // forever (SnakePlay.RESTART -> playing re-emitting RESTART
+            // wedged the whole game). Only meaningful when targetTrait is
+            // unset — a genuine top-level dispatch (sourceTrait undefined)
+            // is never excluded. Complements drainVisitedRef's same-trait
+            // cycle guard below (a general backstop after one bounce) by
+            // preventing the redundant self-delivery from being attempted
+            // at all.
+            sourceTrait,
         );
         perfEnd('processEvent:guardMatch', _perfT1);
         crossTraitLog.debug('processEvent:results', {
@@ -1918,6 +2181,19 @@ export function useTraitStateMachine(
             }
 
             if (result.executed && result.effects.length > 0) {
+                // R-RUNTIME-020 same-trait cycle guard (see drainEventQueue's
+                // doc): an identical (trait, event, fromState, payload)
+                // transition already executed earlier in THIS drain pass adds
+                // nothing but its effects re-queue the same event — skip the
+                // effects and the loop dies here. Genuinely-progressing
+                // self-loops (decrementing fan-out payloads, state changes)
+                // key differently each hop and pass.
+                const cycleKey = `${traitName}:${normalizedEvent}:${result.previousState}:${JSON.stringify(payload) ?? ''}`;
+                if (drainVisitedRef.current.has(cycleKey)) {
+                    drainVisitedLog.warn('drain:cycle-dropped', { traitName, event: normalizedEvent, from: result.previousState });
+                    continue;
+                }
+                drainVisitedRef.current.add(cycleKey);
                 stateLog.debug('executing-effects', () => ({
                     effectCount: result.effects.length,
                     traitName,
@@ -1942,6 +2218,7 @@ export function useTraitStateMachine(
                     flushEvent: eventKey,
                     syncOnly: false,
                     log: stateLog,
+                    fromBridge,
                 });
                 perfEnd('processEvent:executeAll', _perfT2);
                 emittedByTrait.set(traitName, emittedDuringExec);
@@ -2096,14 +2373,14 @@ export function useTraitStateMachine(
             // (lossy by contract, §3a). Local transitions — the user-visible
             // behavior — run the moment the drain reaches the entry.
             const locallyEmitted = Array.from(emittedByTrait.values()).flat();
-            void onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals, tick, sourceTrait, locallyEmitted, results, entityByTrait);
+            void onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals, tick, sourceTrait, locallyEmitted, results, entityByTrait, fromBridge);
         }
         // One start token feeds both buckets: the aggregate and the
         // per-event-name split (mark/measure degrades gracefully on the
         // second use; the summary buckets are what we read).
         perfEnd('processEvent:total', _perfT0);
         perfEnd(`event:${normalizedEvent}`, _perfT0);
-    }, [entities, eventBus, sharedEntityStore, reRenderCallsiteCaptureChildren]);
+    }, [entities, eventBus, sharedEntityStore, reRenderCallsiteCaptureChildren, buildEntityByTraitSnapshot]);
 
     /**
      * Drain the event queue one entry at a time (actor model).
@@ -2114,18 +2391,40 @@ export function useTraitStateMachine(
      * draining: if an emit causes a synchronous bus delivery that calls
      * enqueueAndDrain, the new event is queued but drainEventQueue returns
      * immediately because processingRef is already true.
+     *
+     * `drainVisitedRef` carries the SAME-trait cycle guard across the whole
+     * pass, keyed `${trait}:${event}:${fromState}:${payload}` — the key shape
+     * `runTraitCascade` (TraitCascade.ts) and orbital-core's
+     * `RuntimeKernel::dispatch` already use. A transition whose effects
+     * re-emit its own triggering event with an unchanged payload and from-
+     * state (std-snake's `RESTART -> playing (emit RESTART)`) would otherwise
+     * re-queue itself forever and wedge the main thread (R-RUNTIME-020).
+     * Genuinely-progressing self-loops (fan-out counters, import queues) change
+     * payload or state each hop, so their keys stay distinct and are
+     * unaffected. Cleared per pass — a fresh user dispatch starts a new pass.
      */
+    const drainVisitedRef = useRef<Set<string>>(new Set());
+    const drainVisitedLog = createLogger('almadar:ui:drain-cycle-guard');
     const drainEventQueue = useCallback(async () => {
         if (processingRef.current) return;
         processingRef.current = true;
+        drainVisitedRef.current = new Set();
 
         const _perfT = perfStart('drain:pass');
         let _perfN = 0;
         try {
             while (eventQueueRef.current.length > 0) {
+                // Backstop mirroring runTraitCascade's maxSteps: a cascade
+                // that somehow never converges (cross-trait payload-churning
+                // cycle) must not wedge the pass — log loudly and stop.
+                if (_perfN >= 1000) {
+                    drainVisitedLog.error('drain:pass-cap-hit', { processed: _perfN });
+                    eventQueueRef.current.length = 0;
+                    break;
+                }
                 const entry = eventQueueRef.current.shift()!;
                 _perfN++;
-                await processEventQueued(entry.eventKey, entry.payload, entry.targetTrait, entry.tick, entry.sourceTrait);
+                await processEventQueued(entry.eventKey, entry.payload, entry.targetTrait, entry.tick, entry.sourceTrait, entry.fromBridge);
             }
         } finally {
             processingRef.current = false;
@@ -2142,8 +2441,8 @@ export function useTraitStateMachine(
      * A `tick` stamp marks the entry as a latest-state broadcast: it coalesces
      * onto a pending same-(event, trait) tick entry instead of appending.
      */
-    const enqueueAndDrain = useCallback((eventKey: string, payload?: EventPayload, targetTrait?: string, tick?: string, sourceTrait?: string) => {
-        enqueueEvent(eventQueueRef.current, { eventKey, payload, targetTrait, tick, sourceTrait });
+    const enqueueAndDrain = useCallback((eventKey: string, payload?: EventPayload, targetTrait?: string, tick?: string, sourceTrait?: string, fromBridge?: boolean) => {
+        enqueueEvent(eventQueueRef.current, { eventKey, payload, targetTrait, tick, sourceTrait, fromBridge });
         perfGauge('queue:depthAtEnqueue', eventQueueRef.current.length);
         void drainEventQueue();
     }, [drainEventQueue]);
@@ -2185,7 +2484,34 @@ export function useTraitStateMachine(
     }, []);
 
     const commitServerEntity = useCallback((traitName: string, entity: EntityRow): void => {
-        traitFieldStatesRef.current.set(traitName, entity);
+        commitServerEntityRow(
+            traitFieldStatesRef.current,
+            sharedKeyByTraitNameRef.current,
+            sharedEntityStore,
+            linkedEntitySiblingsRef.current,
+            publishServerRow,
+            traitName,
+            entity,
+        );
+    }, [sharedEntityStore, publishServerRow]);
+
+    const applyServerStates = useCallback((states: Record<string, string>): void => {
+        const manager = managerRef.current;
+        // `getAllStates()` iterates REGISTERED traits only — `getState`
+        // lazy-inits unknown names, so it can't serve as the existence guard.
+        const known = manager.getAllStates();
+        let changed = false;
+        for (const [traitName, stateName] of Object.entries(states)) {
+            // Guard: only traits the local manager tracks — unknown traits
+            // (off-page listeners, other orbitals in a multi-orbital response)
+            // have no local state to set.
+            if (!known.has(traitName)) continue;
+            // `setCascadeFinalState` is the existing pure state-set API (it
+            // commits a cascade's final state without re-running effects).
+            manager.setCascadeFinalState(traitName, undefined, stateName, 'server-sync');
+            changed = true;
+        }
+        if (changed) setTraitStates(manager.getAllStates());
     }, []);
 
     // Subscribe to eventBus events -- uses enqueueAndDrain for actor model ordering
@@ -2247,7 +2573,7 @@ export function useTraitStateMachine(
                     // dispatch so a name-shared event (TableViewLoaded on two
                     // table traits) can't drain into every sibling
                     // (R-TABLEVIEW-LOADED-UNSCOPED-CROSS-PAGE-BLEED).
-                    enqueueAndDrain(eventKey, event.payload, traitName, event.source?.tick, event.source?.trait);
+                    enqueueAndDrain(eventKey, event.payload, traitName, event.source?.tick, event.source?.trait, event.source?.fromBridge);
                 });
                 unsubscribes.push(() => {
                     crossTraitLog.debug('self:unsubscribe', { traitName, busKey: selfBusKey, eventKey });
@@ -2276,7 +2602,7 @@ export function useTraitStateMachine(
                 const bareKey = `UI:${eventKey}`;
                 const unsub = eventBus.on(bareKey, (event) => {
                     crossTraitLog.debug('bare-cascade:fire', { bareKey, eventKey });
-                    enqueueAndDrain(eventKey, event.payload, undefined, event.source?.tick, event.source?.trait);
+                    enqueueAndDrain(eventKey, event.payload, undefined, event.source?.tick, event.source?.trait, event.source?.fromBridge);
                 });
                 unsubscribes.push(() => {
                     crossTraitLog.debug('bare-cascade:unsubscribe', { bareKey, eventKey });
@@ -2305,25 +2631,110 @@ export function useTraitStateMachine(
             });
             for (const listen of listens) {
                 const src = listen.source;
-                const sourceTrait = src && src.kind !== 'any' ? src.trait : undefined;
-                if (!sourceTrait) continue; // wildcard listens are out-of-scope post-unification
-                const sourceOrbital = (src?.kind === 'orbital' ? src.orbital : undefined) ?? ownOrbital;
+                if (src === undefined || src.kind === 'any') continue; // wildcard listens are out-of-scope post-unification
+                const sourceTrait = src.trait;
+                const sourceOrbital = (src.kind === 'orbital' ? src.orbital : undefined) ?? ownOrbital;
                 if (!sourceOrbital) continue;
+                // The shared fire decision for one delivered listen event:
+                // forward (in-process server-only), skip (server-only the
+                // server completes), or execute locally.
+                const fireListenRelay = (event: { payload?: EventPayload; source?: BusEventSource }): void => {
+                    const mappedPayload = applyListenPayloadMapping(listen.payloadMapping, event.payload, evaluateListenPayloadExpr);
+                    const currentState = traitStatesRef.current.get(binding.trait.name)?.currentState
+                        ?? binding.trait.states[0]?.name
+                        ?? '';
+                    // Server-only arms (fetch/persist/call-service): the
+                    // client CANNOT execute them — never run them locally
+                    // (the op would no-op and the arm's skeleton/loading
+                    // render would clobber the server's real render when it
+                    // lands: the deferred rebroadcast macrotask runs after
+                    // the response continuation). Who completes them:
+                    //   - stateful topologies ('in-process' or
+                    //     'stateful-http'), rebroadcast-delivered and
+                    //     not locally delivered → forward to the server as
+                    //     a FRESH dispatch (never fromBridge —
+                    //     R-RUNTIME-020); a stateful listens fan-out skips
+                    //     client-originated events, so without the forward
+                    //     the arm is stranded (the chat thread's
+                    //     post-MESSAGE_SAVED refetch, 2026-09-22). A
+                    //     dispatched-stamped echo is NOT forwarded — its
+                    //     local leg already delivered (and forwarded) that
+                    //     hop, so forwarding would double-execute it (the
+                    //     double-persist the originClientId guard stops).
+                    //   - anything else → skip. The server runs the arm:
+                    //     the stateless fan-out for off-page listeners, or
+                    //     the forwarded original dispatch for locally
+                    //     emitted triggers. An on-page listener's arm on
+                    //     the stateless path is the documented latent
+                    //     class (the server deliberately skips on-page
+                    //     arms), not a silent drop.
+                    if (listenTriggerCallsServerOnlyOps(binding.trait, listen.triggers, currentState)) {
+                        if (
+                            bridgeStateSource !== 'stateless-http'
+                            && event.source?.fromBridge === true
+                            && event.source?.dispatched !== true
+                        ) {
+                            crossTraitLog.debug('listen:forward-server-only', { targetTrait: binding.trait.name, triggers: listen.triggers });
+                            const ownOrbital = orbitalsByTrait?.[binding.trait.name];
+                            optionsRef.current?.onEventProcessed?.(
+                                listen.triggers,
+                                mappedPayload,
+                                ownOrbital !== undefined ? new Set([ownOrbital]) : undefined,
+                                undefined,
+                                event.source?.trait,
+                                [],
+                                [{
+                                    traitName: binding.trait.name,
+                                    // The local machine deliberately did NOT
+                                    // execute the arm — the server is about to.
+                                    result: { executed: false, newState: currentState, previousState: currentState, effects: [] },
+                                }],
+                                buildEntityByTraitSnapshot(),
+                                false,
+                            );
+                            return;
+                        }
+                        crossTraitLog.debug('listen:skip-server-only', { targetTrait: binding.trait.name, triggers: listen.triggers, fromBridge: event.source?.fromBridge, stateSource: bridgeStateSource });
+                        return;
+                    }
+                    enqueueAndDrain(
+                        listen.triggers,
+                        mappedPayload,
+                        binding.trait.name,
+                        event.source?.tick,
+                        event.source?.trait,
+                        event.source?.fromBridge,
+                    );
+                };
                 const busKey = `UI:${sourceOrbital}.${sourceTrait}.${listen.event}`;
                 crossTraitLog.debug('listen:subscribed', { busKey, targetTrait: binding.trait.name, sourceOrbital, sourceTrait, listenEvent: listen.event, triggers: listen.triggers });
                 const unsub = eventBus.on(busKey, (event) => {
                     crossTraitLog.debug('listen:fired', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
-                    enqueueAndDrain(
-                        listen.triggers,
-                        applyListenPayloadMapping(listen.payloadMapping, event.payload, evaluateListenPayloadExpr),
-                        binding.trait.name,
-                        event.source?.tick,
-                        event.source?.trait,
-                    );
+                    fireListenRelay(event);
                 });
                 unsubscribes.push(() => {
                     crossTraitLog.debug('listen:unsubscribe', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
                     unsub();
+                });
+                // A trait's own `(emit …)` effects land on the BARE
+                // `UI:EVENT` key by design (`createClientEffectHandlers`'s
+                // emit) — the qualified key above never sees them, so the
+                // listen relay would never fire for a local machine emit
+                // (the chat SAVE → DO_CREATE chain dying on the stateful
+                // path, 2026-09-22). Subscribe on the bare key too and gate
+                // on the canonical `buildSourceMatcher` so it fires only
+                // for an emit from the declared source (name OR V4 id) —
+                // never a foreign trait's same-named emit.
+                const bareKey = `UI:${listen.event}`;
+                const matcher = buildSourceMatcher(src, ownOrbital ?? '');
+                const unsubBare = eventBus.on(bareKey, (event) => {
+                    if (!matcher(event.source)) return;
+                    crossTraitLog.debug('listen:fired-bare', { bareKey, targetTrait: binding.trait.name, triggers: listen.triggers });
+                    fireListenRelay(event);
+                });
+                unsubscribes.push(() => {
+                    crossTraitLog.debug('listen:unsubscribe-bare', { bareKey, targetTrait: binding.trait.name, triggers: listen.triggers });
+                    unsubBare();
                 });
             }
         }
@@ -2335,7 +2746,7 @@ export function useTraitStateMachine(
             }
             crossTraitLog.debug('cleanup:done', {});
         };
-    }, [traitBindings, eventBus, enqueueAndDrain]);
+    }, [traitBindings, eventBus, enqueueAndDrain, bridgeStateSource, buildEntityByTraitSnapshot]);
 
     // Fire the mount-time lifecycle transition (INIT / LOAD / $MOUNT) once per
     // event kind. `StateMachineManager.sendEvent` dispatches the event to EVERY
@@ -2415,6 +2826,7 @@ export function useTraitStateMachine(
         canHandleEvent,
         entityBindingSource,
         commitServerEntity,
+        applyServerStates,
     };
 }
 

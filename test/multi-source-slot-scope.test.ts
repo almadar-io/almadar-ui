@@ -47,7 +47,9 @@ describe('multi-source slot aggregation — trait attribution', () => {
     expect(content?.sourceTrait).toBe('__multi_source_stack__');
     // … but every child names the trait that produced it, which is what
     // lets the renderer establish that trait's scope for its own subtree.
-    const children = childrenOf(content?.props);
+    const mainProps = content?.props;
+    if (typeof mainProps === 'string' || mainProps === undefined) throw new Error(`expected object props, got ${typeof mainProps}`);
+    const children = childrenOf(mainProps);
     expect(children).toHaveLength(2);
     expect(children.map((c) => c._sourceTrait)).toEqual(['KitchenBoard', 'KitchenTicketStats']);
     expect(children.map((c) => c.type)).toEqual(['data-grid', 'stat-display']);
@@ -73,7 +75,9 @@ describe('multi-source slot aggregation — trait attribution', () => {
       result.current.render({ target: 'main', pattern: 'stat-display', sourceTrait: 'RealTrait' });
     });
 
-    const children = childrenOf(result.current.slots['main']?.props);
+    const stackProps = result.current.slots['main']?.props;
+    if (typeof stackProps === 'string' || stackProps === undefined) throw new Error(`expected object props, got ${typeof stackProps}`);
+    const children = childrenOf(stackProps);
     expect(children).toHaveLength(2);
     // The anonymous source carries no `_sourceTrait` — a name it does not
     // have must not be fabricated, or the renderer would scope to a

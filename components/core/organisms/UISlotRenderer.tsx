@@ -72,6 +72,11 @@ import { TraitFrame } from "../atoms/TraitFrame";
  */
 const TRAIT_BINDING_RE = /^@trait\.([A-Z][A-Za-z0-9]*)$/;
 
+/** Object view of slot content props — a bare-string payload (`@trait.X` embed) has no prop fields. */
+function slotPropsOf(content: { props: SlotProps | string }): SlotProps {
+  return typeof content.props === 'string' ? {} : content.props;
+}
+
 // ============================================================================
 // Suspense Configuration Context
 // ============================================================================
@@ -438,7 +443,7 @@ function renderContainedPortal(
             {/*
               The header (with the X close button) always renders. Previously
               the entire header — INCLUDING the close affordance — was gated
-              on `content.props.title` being truthy, so any pattern that
+              on `slotPropsOf(content).title` being truthy, so any pattern that
               didn't set a top-level `title` prop (e.g. a `stack` wrapper
               around a form) painted a modal with NO way to dismiss except
               clicking the overlay. The X also lacked `data-event` /
@@ -449,11 +454,11 @@ function renderContainedPortal(
             */}
             <Box className={cn(
               "flex items-center p-4",
-              content.props.title ? "justify-between border-b border-border" : "justify-end",
+              typeof content.props === 'object' && slotPropsOf(content).title ? "justify-between border-b border-border" : "justify-end",
             )}>
-              {content.props.title ? (
+              {typeof content.props === 'object' && slotPropsOf(content).title ? (
                 <Typography variant="h3" className="text-lg font-semibold">
-                  {String(content.props.title)}
+                  {String(slotPropsOf(content).title)}
                 </Typography>
               ) : null}
               <Box
@@ -478,7 +483,7 @@ function renderContainedPortal(
       // A slide-over DetailPanel brings its own full-height chrome (header,
       // actions, X) — the w-80 shell would double the header and clamp its
       // width. Same self-overlay rationale as the modal case above.
-      if (content.pattern === "detail-panel" && content.props.slideOver === true) {
+      if (content.pattern === "detail-panel" && slotPropsOf(content).slideOver === true) {
         return (
           <Box
             id={slotId}
@@ -506,7 +511,7 @@ function renderContainedPortal(
             bg="surface"
             className={cn(
               "absolute top-0 bottom-0 w-80 max-w-[80%] overflow-auto pointer-events-auto",
-              (content.props.position as string) === "left" ? "left-0" : "right-0",
+              (slotPropsOf(content).position as string) === "left" ? "left-0" : "right-0",
             )}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
@@ -516,11 +521,11 @@ function renderContainedPortal(
                 can drive the close path. */}
             <Box className={cn(
               "flex items-center p-4",
-              content.props.title ? "justify-between border-b border-border" : "justify-end",
+              typeof content.props === 'object' && slotPropsOf(content).title ? "justify-between border-b border-border" : "justify-end",
             )}>
-              {content.props.title ? (
+              {typeof content.props === 'object' && slotPropsOf(content).title ? (
                 <Typography variant="h3" className="text-lg font-semibold">
-                  {String(content.props.title)}
+                  {String(slotPropsOf(content).title)}
                 </Typography>
               ) : null}
               <Box
@@ -546,10 +551,10 @@ function renderContainedPortal(
         <Box id={slotId} className="absolute top-4 right-4 z-50">
           <Toast
             variant={
-              (content.props.variant as "success" | "error" | "warning" | "info") ?? "info"
+              (slotPropsOf(content).variant as "success" | "error" | "warning" | "info") ?? "info"
             }
-            title={content.props.title as string | undefined}
-            message={(content.props.message as string) ?? ""}
+            title={slotPropsOf(content).title as string | undefined}
+            message={(slotPropsOf(content).message as string) ?? ""}
             onDismiss={onDismiss}
           />
         </Box>
@@ -676,7 +681,7 @@ function UISlotComponentInner({
   // host's layout gives the region, as if mounted directly.
   const regionClassName = fallback !== undefined ? cn("contents", className) : className;
   // Render-time binding resolution for the slot wrappers below (Modal /
-  // Drawer / Toast read `content.props.title` etc. directly). Nested
+  // Drawer / Toast read `slotPropsOf(content).title` etc. directly). Nested
   // patterns re-resolve inside SlotContentRenderer with their own
   // sourceTrait — both passes are identity-preserving when no markers
   // are present.
@@ -1050,9 +1055,9 @@ function SlotPortal({
         <Modal
           isOpen={true}
           onClose={onDismiss}
-          title={content.props.title as string | undefined}
+          title={slotPropsOf(content).title as string | undefined}
           size={
-            content.props.size as "sm" | "md" | "lg" | "xl" | "full" | undefined
+            slotPropsOf(content).size as "sm" | "md" | "lg" | "xl" | "full" | undefined
           }
         >
           <Box id={slotId}>{slotContent}</Box>
@@ -1065,9 +1070,9 @@ function SlotPortal({
         <Drawer
           isOpen={true}
           onClose={onDismiss}
-          title={content.props.title as string | undefined}
-          position={(content.props.position as "left" | "right") ?? "right"}
-          width={content.props.width as string | undefined}
+          title={slotPropsOf(content).title as string | undefined}
+          position={(slotPropsOf(content).position as "left" | "right") ?? "right"}
+          width={slotPropsOf(content).width as string | undefined}
         >
           <Box id={slotId}>{slotContent}</Box>
         </Drawer>
@@ -1079,14 +1084,14 @@ function SlotPortal({
         <Box id={slotId} className={cn("fixed z-50", getToastPosition(position))}>
           <Toast
             variant={
-              (content.props.variant as
+              (slotPropsOf(content).variant as
                 | "success"
                 | "error"
                 | "warning"
                 | "info") ?? "info"
             }
-            title={content.props.title as string | undefined}
-            message={(content.props.message as string) ?? ""}
+            title={slotPropsOf(content).title as string | undefined}
+            message={(slotPropsOf(content).message as string) ?? ""}
             onDismiss={onDismiss}
           />
         </Box>
@@ -1618,7 +1623,11 @@ function SlotContentRenderer({
   // If a stale `entity: "StringName"` literal is still present at render time
   // (e.g. non-migrated project content), dev-mode throws so the author fixes
   // the schema; prod silently renders nothing.
-  const entityProp = liveProps.entity;
+  // After the bare-trait-ref early return above, a string here is a
+  // non-trait string payload — treat as empty props (no pattern component
+  // consumes it; the fallback path below handles it).
+  const propsObj: SlotProps = typeof liveProps === 'string' ? {} : liveProps;
+  const entityProp = propsObj.entity;
   // Trace every render of every form-section so we can see whether
   // typing in the form causes the parent SlotContentRenderer to re-
   // render with a fresh entity reference (which would invalidate
@@ -1674,6 +1683,18 @@ function SlotContentRenderer({
 
   const PatternComponent = getComponentForPattern(content.pattern);
 
+  // Bare trait-embed payload: `(render-ui main "@trait.X")` reaches the
+  // slot as an empty pattern whose PROPS are the `@trait.X` string itself
+  // (preserved by the flush/server-effects producers). Lift it to a
+  // TraitFrame — the same lens used for `@trait.X` string children —
+  // instead of falling into the unknown-pattern placeholder.
+  if (!PatternComponent && typeof liveProps === 'string') {
+    const traitRefMatch = TRAIT_BINDING_RE.exec(liveProps);
+    if (traitRefMatch) {
+      return <TraitFrame key={`${content.id}:trait`} traitName={traitRefMatch[1]} />;
+    }
+  }
+
   // If we have a registered component, render it with props
   if (PatternComponent) {
     // Check if this pattern has children to render.
@@ -1683,7 +1704,7 @@ function SlotContentRenderer({
     // `children` can be an array (stack/grid/etc) or a single pattern
     // config (popover trigger, tooltip target). renderPatternChildren
     // accepts both shapes — see its normalization branch.
-    const childrenConfig = liveProps.children as
+    const childrenConfig = propsObj.children as
       | Array<string | { type: string; props?: SlotProps; _id?: string }>
       | { type: string; props?: SlotProps; _id?: string }
       | string
@@ -1734,9 +1755,9 @@ function SlotContentRenderer({
     // conversion (`runtime/fn-form-lambda.ts`) and are render-prop
     // callbacks for DataGrid/DataList/Carousel — keep them in restProps
     // instead of treating them as a pattern array.
-    const incomingChildren = liveProps.children;
+    const incomingChildren = propsObj.children;
     const childrenIsRenderFn = typeof incomingChildren === "function";
-    const { children: _childrenConfig, ...restPropsNoChildren } = liveProps;
+    const { children: _childrenConfig, ...restPropsNoChildren } = propsObj;
     const restProps: SlotProps = childrenIsRenderFn
       ? { ...restPropsNoChildren, children: incomingChildren }
       : restPropsNoChildren;
@@ -1940,7 +1961,7 @@ function SlotContentRenderer({
       data-orb-pattern={content.pattern}
       data-orb-orbital={orbitalName}
     >
-      {(liveProps.children as React.ReactNode) ?? (
+      {(propsObj.children as React.ReactNode) ?? (
         <Box className="p-4 text-sm text-muted-foreground border border-dashed border-border rounded">
           Unknown pattern: {content.pattern}
           {content.sourceTrait && (

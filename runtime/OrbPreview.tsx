@@ -24,7 +24,7 @@ import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots, type SlotProps } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
-import type { OrbitalSchema, EntityData, EntityRow, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, OrbitalDefinition, TraitRef } from '@almadar/core';
+import type { OrbitalSchema, EntityData, EntityRow, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, OrbitalDefinition, TraitRef, OrbitalId } from '@almadar/core';
 import { buildResolvedTraitConfigs, collectCallsiteCaptureChildren } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { matchPathAmong } from '../providers/navigation';
@@ -163,7 +163,13 @@ export function applyServerEffects(
         continue;
       }
       const patternRecord = eff.pattern as PatternNode;
-      const { type: patternType, children, ...inlineProps } = patternRecord;
+      // A bare-string payload — `["render-ui","main","@trait.X"]` — is a
+      // legal pattern tree (trait-embed reference). Destructuring the
+      // string would drop it and land an empty-pattern slot, so it is
+      // preserved as the whole props value and the renderer lifts it to
+      // a TraitFrame (same convention as useTraitStateMachine.flushSlot).
+      const bareTraitRef = typeof patternRecord === 'string' ? patternRecord : undefined;
+      const { type: patternType, children, ...inlineProps } = (bareTraitRef === undefined ? patternRecord : {}) as PatternNode;
       const normalizedChildren = Array.isArray(children)
         ? children.map((c) => normalizeChild(c))
         : children;
@@ -172,10 +178,12 @@ export function applyServerEffects(
       // Convert `["fn", argName, body]` lambdas into render-prop
       // functions before they land in `useUISlots`, so consumers
       // (DataGrid/DataList/Carousel) see `children` as a callable.
-      const rawProps: SlotProps = {
-        ...(inlineProps as SlotProps),
-        ...(normalizedChildren !== undefined ? { children: normalizedChildren as SlotProps['children'] } : {}),
-      };
+      const rawProps: SlotProps | string = bareTraitRef !== undefined
+        ? bareTraitRef
+        : {
+            ...(inlineProps as SlotProps),
+            ...(normalizedChildren !== undefined ? { children: normalizedChildren as SlotProps['children'] } : {}),
+          };
       const props = convertFnFormLambdasInProps(rawProps);
 
       if (isEmbedded) {
@@ -277,7 +285,7 @@ function NavStackRefBridge({ apiRef }: { apiRef: React.MutableRefObject<NavStack
   return null;
 }
 
-function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, serverActiveTraits, user, children }: {
+function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, orbitalsByTrait, orbitalIdsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, serverActiveTraits, user, children }: {
   traits: ResolvedTraitBinding[];
   /** Route params from a parameterized page path — merged into every INIT payload. */
   routeParams?: Record<string, string>;
@@ -285,6 +293,8 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
   traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
   /** Trait → orbital map; gap #13 qualified bus key. */
   orbitalsByTrait?: Record<string, string>;
+  /** Trait → orbital V4 id (`orb_…`) map; emit-source stamp for id-scoped listens. */
+  orbitalIdsByTrait?: Record<string, OrbitalId>;
   onNavigate?: (path: string, params?: Record<string, string>, crumb?: string) => void;
   /** navigate-back effect handler: pop the orbital's navigation stack. */
   onNavigateBack?: () => void;
@@ -395,6 +405,9 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
   // it at CALL time (always after this render committed the assignment
   // below), never at definition time.
   const commitServerEntityRef = useRef<(traitName: string, entity: EntityRow) => void>(() => {});
+  // G-RUNTIME-022: same late-binding pattern — the bridge response
+  // continuations below are defined before `useTraitStateMachine` runs.
+  const applyServerStatesRef = useRef<(states: Record<string, string>) => void>(() => {});
 
   // Forward events to server, apply enriched effects directly to slots.
   // V2 Phase 6: the server response no longer carries `meta.data`; fetched
@@ -419,7 +432,21 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
     locallyEmitted?: readonly string[],
     results?: ReadonlyArray<{ traitName: string; result: TransitionResult }>,
     entityByTrait?: Readonly<Record<string, EntityRow>>,
+    /**
+     * Server-bridge rebroadcast (BusEventSource.fromBridge): the local
+     * transition already ran in the drain; forwarding this dispatch back to
+     * the server re-feeds the server's own cascade tail into a fresh request,
+     * an infinite client↔server ping-pong (R-RUNTIME-020 — SnakePlay's
+     * RESTART self-arm produced one unconsumed echo per response; each
+     * re-forward generated another). The server processed this event before
+     * rebroadcasting it; there is nothing left to send.
+     */
+    fromBridge?: boolean,
   ) => {
+    if (fromBridge) {
+      xOrbitalLog.debug('TraitInitializer:skip-server-forward-fromBridge', { event });
+      return;
+    }
     if (!bridge.connected || !orbitalNames?.length) return;
     const targets = dispatchedOrbitals && dispatchedOrbitals.size > 0
       ? orbitalNames.filter((n) => dispatchedOrbitals.has(n))
@@ -449,6 +476,14 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
       // client-side guard evaluation (`OrbitalProvider`'s `UserProvider`).
       void bridge.sendEvent(name, event, withActiveTraits(payload), undefined, undefined, locallyEmitted, results, entityByTrait, user ?? undefined).then(({ effects, meta }) => {
         recordServerResponse(name, event, { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
+        // G-RUNTIME-022: adopt the stateless server's authoritative per-trait
+        // states so the NEXT request's client-supplied `from` is current
+        // (fetch-success echoes arrive `dispatched`-stamped and never advance
+        // the local machine on their own). No-op on the stateful in-process
+        // path (`meta.stateSource` gate).
+        if (meta.stateSource === 'stateless-http' && meta.states) {
+          applyServerStatesRef.current(meta.states);
+        }
         // Fix C: carry each trait's post-effects row forward so the NEXT
         // request's own entityByTrait (built above from local writes)
         // reflects what the server actually persisted, not just what this
@@ -464,10 +499,11 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
   }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits, user]);
 
   const opts = orbitalNames
-    ? { onEventProcessed, navigate: onNavigate, navigateBack: onNavigateBack, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams }
-    : { navigate: onNavigate, navigateBack: onNavigateBack, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams };
-  const { sendEvent, entityBindingSource, commitServerEntity } = useTraitStateMachine(traits, uiSlots, opts);
+    ? { onEventProcessed, navigate: onNavigate, navigateBack: onNavigateBack, traitConfigsByName, orbitalsByTrait, orbitalIdsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams }
+    : { navigate: onNavigate, navigateBack: onNavigateBack, persistence, traitConfigsByName, orbitalsByTrait, orbitalIdsByTrait, embeddedTraits, callsiteCaptureChildrenByTrait, initPayload: routeParams };
+  const { sendEvent, entityBindingSource, commitServerEntity, applyServerStates } = useTraitStateMachine(traits, uiSlots, opts);
   commitServerEntityRef.current = commitServerEntity;
+  applyServerStatesRef.current = applyServerStates;
 
   const initSentRef = useRef(false);
 
@@ -542,6 +578,13 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
 
         // Record server response in verification timeline
         recordServerResponse(name, 'INIT', { ...meta, effectResults: effectResultsToTraces(meta.effectResults) });
+
+        // G-RUNTIME-022: same stateless state-sync as the interaction path —
+        // without it the local machine sits on the initial state until some
+        // locally-delivered echo advances it (which never comes on this path).
+        if (meta.stateSource === 'stateless-http' && meta.states) {
+          applyServerStatesRef.current(meta.states);
+        }
 
         // Fix C: same carry-forward as the interaction path above — INIT's
         // own effects can already set fields worth preserving into the
@@ -744,6 +787,24 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
     [schema, ir],
   );
 
+  // Trait-name → owning-orbital V4 id (`orb_…`) map, built from
+  // `schema.orbitals[].id`. Threaded into `useTraitStateMachine`'s
+  // emit-source stamp so an id-scoped `listens` (`kind: 'orbital'` with
+  // `orbitalId`) matches by id — `buildSourceMatcher` compares ids ONLY.
+  const orbitalIdsByTrait = useMemo<Record<string, OrbitalId>>(() => {
+    const map: Record<string, OrbitalId> = {};
+    for (const orbital of (schema?.orbitals ?? []) as Array<{ id?: OrbitalId; traits?: Array<string | { name?: string }> }>) {
+      if (typeof orbital.id !== 'string') continue;
+      for (const traitRef of orbital.traits ?? []) {
+        const traitName = typeof traitRef === 'string' ? traitRef : traitRef.name;
+        if (typeof traitName === 'string') {
+          map[traitName] = orbital.id;
+        }
+      }
+    }
+    return map;
+  }, [schema]);
+
   // Per-trait linkedEntity map for EntitySchemaProvider. Walks every
   // page's bindings once. Wrapped in `useMemo` so the resulting `Map`
   // reference is stable across renders — downstream provider memo
@@ -920,6 +981,7 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
           orbitalNames={(serverUrl || transport) ? pageOrbitalNames : undefined}
           traitConfigsByName={traitConfigsByName}
           orbitalsByTrait={orbitalsByTrait}
+          orbitalIdsByTrait={orbitalIdsByTrait}
           embeddedTraits={embeddedTraits}
           callsiteCaptureChildrenByTrait={callsiteCaptureChildrenByTrait}
           serverActiveTraits={serverActiveTraits}

@@ -13,8 +13,15 @@ import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface ChartDataPoint {
   /** Optional: chronological x-axis. Absent for a categorical line chart
-   * (label-as-x), which plots points in author order. */
+   * (label-as-x), which plots points in author order. Sorts the points but
+   * does NOT space them proportionally to elapsed time — use `x` for a
+   * numeric axis that needs true linear spacing. */
   date?: string | Date;
+  /** Optional: numeric x-axis (e.g. volume, distance, dosage). Points are
+   * sorted AND spaced proportionally to their true numeric position, unlike
+   * `date` (sort only) or the index-based categorical fallback. Ignored
+   * when `date` is present. */
+  x?: number;
   value: number;
   label?: string;
 }
@@ -65,12 +72,18 @@ export const LineChart: React.FC<LineChartProps> = ({
 
   const sortedData = useMemo(() => {
     if (safeData.length === 0) return [];
-    // Only sort chronologically when points carry dates; a categorical line
-    // chart (no date) plots in author order (x is the point index).
-    if (!safeData.some((d) => d.date != null)) return [...safeData];
-    return [...safeData].sort(
-      (a, b) => new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime()
-    );
+    // Chronological x-axis wins when present. Otherwise a numeric x-axis
+    // sorts by value. A categorical line chart (neither) plots in author
+    // order (x is the point index).
+    if (safeData.some((d) => d.date != null)) {
+      return [...safeData].sort(
+        (a, b) => new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime()
+      );
+    }
+    if (safeData.some((d) => d.x != null)) {
+      return [...safeData].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
+    }
+    return [...safeData];
   }, [safeData]);
 
   const points: NormalizedPoint[] = useMemo(() => {
@@ -85,8 +98,19 @@ export const LineChart: React.FC<LineChartProps> = ({
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding * 2;
 
+    // A numeric `x` (and no `date`, which only sorts) spaces points at their
+    // true linear position instead of evenly by index — a titration curve
+    // mixing 1mL/0.1mL increments needs volume-linear spacing, not just
+    // volume-correct order.
+    const hasNumericX = !sortedData.some((d) => d.date != null) && sortedData.some((d) => d.x != null);
+    const xValues = hasNumericX ? sortedData.map((d) => d.x ?? 0) : [];
+    const minX = hasNumericX ? Math.min(...xValues) : 0;
+    const xRange = hasNumericX ? Math.max(...xValues) - minX || 1 : 1;
+
     return sortedData.map((point, index) => ({
-      x: padding + (index / (sortedData.length - 1 || 1)) * chartWidth,
+      x: hasNumericX
+        ? padding + ((point.x ?? 0) - minX) / xRange * chartWidth
+        : padding + (index / (sortedData.length - 1 || 1)) * chartWidth,
       y: padding + chartHeight - ((point.value - minVal) / range) * chartHeight,
       value: point.value,
       label: point.label,

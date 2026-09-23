@@ -1,5 +1,5 @@
 import React from "react";
-import type { EventKey, EventEmit } from "@almadar/core";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 
@@ -11,7 +11,7 @@ export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTex
   /** Number of visible rows */
   rows?: number;
   /** Declarative event: fires on ⌘/Ctrl+Enter with `{ value }`. */
-  action?: EventKey;
+  action?: EventEmit<{ value: string }>;
   /** Error message */
   error?: string;
   /** onChange handler or declarative event key for trait dispatch */
