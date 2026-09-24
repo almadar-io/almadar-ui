@@ -396,6 +396,11 @@ module.exports = {
   'w-[400px]',
   'z-[1]',
   'z-[45]',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-09-24)
+  'border-border/60',
+  'hover:bg-accent/40',
+  'w-[243px]',
 ],
   theme: {
     fontFamily: {

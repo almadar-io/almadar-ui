@@ -27,10 +27,16 @@ export const FormField: React.FC<FormFieldProps> = ({
   className,
   children,
 }) => {
+  // A single field child is named by the label (its own id kept when given).
+  const generatedId = React.useId();
+  const field = React.Children.count(children) === 1 && React.isValidElement<{ id?: string }>(children)
+    ? children
+    : null;
+  const fieldId = field ? field.props.id ?? generatedId : undefined;
   return (
     <div className={cn('space-y-1.5', className)}>
-      <Label required={required}>{label}</Label>
-      {children}
+      <Label required={required} htmlFor={fieldId}>{label}</Label>
+      {field ? React.cloneElement(field, { id: fieldId }) : children}
       {error && (
         <Typography variant="caption" color="error">
           {error}

@@ -99,6 +99,17 @@ export const Input = React.forwardRef<
     // inputType takes precedence over type, default to "text"
     const type = inputType || htmlType || "text";
 
+    // The label names the field and the helper/error text describes it, so a
+    // label click focuses it and assistive tech (and getByLabelText) find it.
+    const generatedId = React.useId();
+    const fieldId = props.id ?? generatedId;
+    const descriptionId = helperText || error ? `${fieldId}-description` : undefined;
+    const a11yProps = {
+      id: fieldId,
+      "aria-invalid": error ? true : undefined,
+      "aria-describedby": descriptionId,
+    };
+
     // Declarative mode (onChange is an event-key string): the value round-trips
     // through the circuit — emit → set → frame → re-render — with arbitrary
     // lag, and a plain controlled input clobbers the DOM back to the lagging
@@ -206,13 +217,13 @@ export const Input = React.forwardRef<
     const wrapField = (field: React.ReactNode, fullWidth = true) => (
       <div className={fullWidth ? "w-full" : "w-fit"}>
         {label && (
-          <label className="block text-sm font-medium text-foreground mb-1">
+          <label htmlFor={fieldId} className="block text-sm font-medium text-foreground mb-1">
             {label}
           </label>
         )}
         {field}
         {(helperText || error) && (
-          <p className={cn("mt-1 text-xs", error ? "text-error" : "text-muted-foreground")}>
+          <p id={descriptionId} className={cn("mt-1 text-xs", error ? "text-error" : "text-muted-foreground")}>
             {error ?? helperText}
           </p>
         )}
@@ -233,6 +244,7 @@ export const Input = React.forwardRef<
             value={displayValue as string}
             onChange={handleChange as React.ChangeEventHandler<HTMLSelectElement>}
             className={cn(baseClassName, "appearance-none pr-10", className)}
+            {...a11yProps}
             {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
           >
             <option value="">{t('form.selectPlaceholder', { label: '' })}</option>
@@ -259,6 +271,7 @@ export const Input = React.forwardRef<
             onChange={handleChange as React.ChangeEventHandler<HTMLTextAreaElement>}
             rows={rows}
             className={baseClassName}
+            {...a11yProps}
             {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
           />
         </div>
@@ -280,6 +293,7 @@ export const Input = React.forwardRef<
             "disabled:opacity-50 disabled:cursor-not-allowed",
             className,
           )}
+          {...a11yProps}
           {...props}
         />,
         false,
@@ -301,6 +315,7 @@ export const Input = React.forwardRef<
           onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>}
           onKeyDown={handleKeyDown}
           className={baseClassName}
+          {...a11yProps}
           {...props}
         />
         {showClearButton && (
