@@ -24,11 +24,26 @@
  * @see docs/Almadar_Std_Gaps.md §3.8 for the full language design.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import { useUISlots } from "../../../providers/UISlotContext";
 import type { SlotContent } from "../../../hooks/useUISlots";
 import { TraitScopeProvider } from "../../../providers/TraitScopeProvider";
 import { useEntitySchemaOptional } from "../../../providers/EntitySchemaContext";
+
+// `UISlotRenderer.tsx` imports from this file via
+// `trait-binding-resolver`, which embeds `<TraitFrame>` — a static import
+// would close the cycle at module-init time. A lazy dynamic import defers
+// the module's execution until first render, which breaks the cycle by
+// construction, and stays loader-portable (the previous CJS `require`
+// resolved only inside the compiled bundle — under any source-native ESM
+// loader such as vitest, `require('../organisms/UISlotRenderer')` cannot
+// resolve the `.tsx` source and the embedded frame crashed to the error
+// boundary).
+const LazySlotContentRenderer = lazy(() =>
+  import("../../../components/core/organisms/UISlotRenderer").then((m) => ({
+    default: m.SlotContentRenderer,
+  })),
+);
 
 export interface TraitFrameProps {
   /**
@@ -106,20 +121,20 @@ export function TraitFrame({
 
   // We lean on the existing slot-renderer machinery so children of
   // embedded patterns (including nested `@trait.*` references) go
-  // through the same recursive walker. The import is lazy-required
-  // below to avoid a module-graph cycle — `TraitFrame` is referenced
-  // from the renderer, and importing it up-front would close the loop.
-  const SlotContentRenderer = getSlotContentRenderer();
-
+  // through the same recursive walker. The renderer is lazy-loaded
+  // (module-level `lazy()` above) to avoid the TraitFrame ↔
+  // UISlotRenderer module-graph cycle.
   const rendered = (
-    <SlotContentRenderer
-      content={content}
-      onDismiss={() => {
-        // Embedded frames are read-only lenses. Dismissals surface via
-        // the host trait's own state-machine transitions (its emits on
-        // the shared event bus), not through this component.
-      }}
-    />
+    <Suspense fallback={fallback}>
+      <LazySlotContentRenderer
+        content={content}
+        onDismiss={() => {
+          // Embedded frames are read-only lenses. Dismissals surface via
+          // the host trait's own state-machine transitions (its emits on
+          // the shared event bus), not through this component.
+        }}
+      />
+    </Suspense>
   );
 
   if (!orbital) {
@@ -133,25 +148,3 @@ export function TraitFrame({
   );
 }
 TraitFrame.displayName = "TraitFrame";
-
-// Lazy, deferred module resolution to sidestep a circular-import loop:
-// `UISlotRenderer.tsx` imports from this file via
-// `trait-binding-resolver`, which embeds `<TraitFrame>`. Requiring the
-// SlotContentRenderer at module top would close the cycle.
-type SlotContentRendererComponent = React.ComponentType<{
-  content: SlotContent;
-  onDismiss: () => void;
-}>;
-let _slotContentRenderer: SlotContentRendererComponent | null = null;
-function getSlotContentRenderer(): SlotContentRendererComponent {
-  if (_slotContentRenderer) return _slotContentRenderer;
-  // Runtime require is intentional — breaks the TraitFrame ↔ UISlotRenderer
-  // module cycle. `require` here is CommonJS-style resolution inside the
-  // bundled output; the function is only invoked after both modules have
-  // finished their top-level initialization.
-  const mod = require("../organisms/UISlotRenderer") as {
-    SlotContentRenderer: SlotContentRendererComponent;
-  };
-  _slotContentRenderer = mod.SlotContentRenderer;
-  return _slotContentRenderer;
-}

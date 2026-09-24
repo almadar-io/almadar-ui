@@ -72,6 +72,7 @@ export const SLOT_DEFINITIONS: Partial<Record<UISlot, SlotDefinition>> & Record<
     type: 'portal',
     portalTarget: 'body',
     zIndex: 1200,
+    notification: true,
   },
 
   // -------------------------------------------------------------------------
@@ -116,6 +117,14 @@ export function getSlotDefinition(slot: UISlot): SlotDefinition | undefined {
  */
 export function isPortalSlot(slot: string): boolean {
   return SLOT_DEFINITIONS[slot as UISlot]?.type === 'portal';
+}
+
+/**
+ * A notification slot (toast): an embedded trait's render there escapes its
+ * host frame; any other slot's render of an embedded trait is frame content.
+ */
+export function isNotificationSlot(slot: string): boolean {
+  return SLOT_DEFINITIONS[slot as UISlot]?.notification === true;
 }
 
 /**

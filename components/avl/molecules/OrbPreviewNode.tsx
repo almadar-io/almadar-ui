@@ -13,23 +13,12 @@
  */
 
 import React, { useMemo, useState, useCallback, useContext, createContext, useRef, useEffect } from 'react';
-import { Handle, Position, useReactFlow, type NodeProps } from '@xyflow/react';
-import type {
-  OrbitalSchema,
-  OrbitalDefinition,
-  Trait,
-  Transition,
-  Effect,
-  EntityData,
-  EntityRow,
-  EventPayloadField,
-  TraitEventContract,
-  EventPayload,
-  EventPayloadValue,
-  PageRef,
-} from '@almadar/core';
+import { Handle, NodeResizeControl, Position, ResizeControlVariant, useReactFlow, type NodeProps } from '@xyflow/react';
+import type { OrbitalSchema, OrbitalDefinition, Trait, Transition, Effect, EntityData, EntityRow, EventPayloadField, TraitEventContract, EventPayload, EventPayloadValue, PageRef } from '@almadar/core';
 import { isInlineTrait, isPageReference } from '@almadar/core';
 import type { EntityRef } from '@almadar/core';
+
+import { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../lib/canvas-tools';
 
 function entityNameOf(ref: EntityRef | undefined): string | undefined {
   if (!ref) return undefined;
@@ -38,6 +27,14 @@ function entityNameOf(ref: EntityRef | undefined): string | undefined {
 }
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
+import { Button } from '../../core/atoms/Button';
+import { Icon } from '../../core/atoms/Icon';
+import { resolvePatternConfig, patternNodeAt, parseClipboardPatterns, PATTERN_CLIPBOARD_TYPE } from '../lib/resolve-pattern-config';
+import { isEditableTarget } from '../../../lib/keyMapEvent';
+import { useInlineTextEdit } from '../hooks/useInlineTextEdit';
+import { DesignSelectionOverlay } from './DesignSelectionOverlay';
+import { axisPositionFrom, distanceLines, insertionLineRect, layoutBoxOf, marqueeHits, marqueeRect, offsetWithin, renderedAlignment, renderedSpacing, snapMove, spacingScaleOf, type GuideLine, type MeasureLine, type OffsetInParent, type OverlayRect } from '../lib/selection-geometry';
+import { DesignGuidesOverlay } from './DesignGuidesOverlay';
 import { BrowserPlayground } from '../../../runtime/BrowserPlayground';
 import type { PreviewNodeData, PatternEventSource, ScreenSize } from '../types/avl-preview-types';
 import { SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
@@ -54,6 +51,7 @@ import { deriveEditFocusFromElement, withNodeTransition } from '../lib/derive-ed
 import { computeInsertionIndex, type DOMRectLike, type InsertionAxis } from '../lib/compute-insertion-index';
 import { resolveDirectChildren } from '../lib/resolve-direct-children';
 import { createLogger } from '@almadar/logger';
+import { type SpacingStepPx, positionOf, withPosition } from '../../../lib/design-classes';
 
 const eventHandleLog = createLogger('almadar:ui:nan-coord');
 const orbPreviewLog = createLogger('almadar:ui:orb-preview-node');
@@ -70,6 +68,9 @@ orbPreviewLog.debug('module-init', () => ({ browserPlayground: typeof BrowserPla
 
 export const ScreenSizeContext = createContext<ScreenSize>('tablet');
 
+const CARD_MIN_WIDTH = 240;
+const CARD_MAX_WIDTH = 1600;
+
 /** Selected pattern info, emitted when user clicks a UI element in the node. */
 export interface SelectedPattern {
   /** The pattern type (e.g., "button", "input", "stack"). */
@@ -82,12 +83,19 @@ export interface SelectedPattern {
   sourceTrait?: string;
   /** Bounding rect relative to the node for floating inspector positioning. */
   rect?: { top: number; left: number; width: number; height: number };
+  /** Every selected pattern path in this node (multi-select), this one — the primary — last. */
+  selection?: string[];
+  /** Its distances from its parent's four sides and the parent's size (card px), when it has a parent pattern. */
+  offsetInParent?: OffsetInParent;
 }
 
 export const PatternSelectionContext = createContext<{
   selected: SelectedPattern | null;
   select: (pattern: SelectedPattern | null) => void;
 }>({ selected: null, select: () => {} });
+
+/** The canvas editing tools the host turned on (a persona's shell manifest declares them); all by default. */
+export const CanvasToolsContext = createContext<readonly CanvasTool[]>(CANVAS_TOOLS);
 
 /**
  * `useCanvasDraggable`'s `'pattern-instance'` payload data (see
@@ -534,6 +542,46 @@ function absUnion(el: Element): { top: number; left: number; right: number; bott
  * `zoom` to undo the transform. The overlay (a child of the same transformed
  * container) is then re-scaled by ReactFlow to land exactly on the element.
  */
+/** `root.children.2` → parent `root`, index 2; the root has no position. */
+function childPosition(path: string): { parentPath: string; index: number } | null {
+  const match = /^(.*)\.children\.(\d+)$/.exec(path);
+  return match ? { parentPath: match[1], index: Number(match[2]) } : null;
+}
+
+interface InsertionTarget {
+  parentPath: string;
+  index: number;
+  containerBox: DOMRectLike;
+  childRects: DOMRectLike[];
+  axis: InsertionAxis;
+}
+
+interface SelectedLayout {
+  axis: InsertionAxis;
+  alignment: ReturnType<typeof renderedAlignment>;
+  spacing: ReturnType<typeof renderedSpacing>;
+  childRects: RectLike[];
+}
+
+/** A layout container's flow direction and its direct children's boxes; null for anything else. */
+function measureLayout(el: Element, container: Element, zoom: number): SelectedLayout | null {
+  if (el.getAttribute('data-accepts-children') !== 'true') return null;
+  const path = el.getAttribute('data-pattern-path') ?? 'root';
+  const children = resolveDirectChildren(
+    path,
+    Array.from(el.querySelectorAll('[data-pattern-path]')).map((child) => ({
+      path: child.getAttribute('data-pattern-path') ?? '',
+      ref: child,
+    })),
+  );
+  const childRects = children
+    .map((child) => rectRelativeTo(child, container, zoom))
+    .filter((r): r is RectLike => r !== null);
+  const axis = resolveLayoutAxis(el);
+  const style = getComputedStyle(layoutBoxOf(el));
+  return { axis, alignment: renderedAlignment(style), spacing: renderedSpacing(style, axis), childRects };
+}
+
 function rectRelativeTo(el: Element, container: Element, zoom: number): RectLike | null {
   const u = absUnion(el);
   if (!u) return null;
@@ -548,19 +596,38 @@ function rectRelativeTo(el: Element, container: Element, zoom: number): RectLike
 }
 
 /**
- * `[data-accepts-children]` containers are the same `display:contents`
- * wrappers as `absUnion` handles above, so the container's OWN computed
- * flex-direction is meaningless — walk down through nested contents
- * wrappers to the first element that actually generates a box (the real
- * Stack/Grid/etc. div) and read flex-direction there; fall back to the
- * container itself when no such descendant exists.
+ * Where an element sits in its parent pattern, as an absolute child would be
+ * placed: against the parent's padding box (inside its border). Undefined for
+ * the root, which has no parent pattern.
  */
+function offsetInParentOf(el: Element, rect: RectLike | null, container: Element, zoom: number): OffsetInParent | undefined {
+  const parent = rect ? parentBoxOf(el, container, zoom) : null;
+  return rect && parent ? offsetWithin(rect, parent.box) : undefined;
+}
+
+/** The parent pattern of `el` and its padding box (what an absolute child is placed against), in content coordinates. */
+function parentBoxOf(el: Element, container: Element, zoom: number): { el: Element; box: RectLike } | null {
+  const parentPattern = el.parentElement?.closest('[data-pattern-path]');
+  if (!parentPattern || !container.contains(parentPattern)) return null;
+  const box = layoutBoxOf(parentPattern);
+  if (!(box instanceof HTMLElement)) return null;
+  const z = zoom > 0 ? zoom : 1;
+  const b = box.getBoundingClientRect();
+  const base = container.getBoundingClientRect();
+  return {
+    el: parentPattern,
+    box: {
+      top: (b.top - base.top) / z + box.clientTop,
+      left: (b.left - base.left) / z + box.clientLeft,
+      width: box.clientWidth,
+      height: box.clientHeight,
+    },
+  };
+}
+
+/** Flow direction of a container, read from the element that lays it out. */
 function resolveLayoutAxis(el: Element): InsertionAxis {
-  let cur: Element = el;
-  while (getComputedStyle(cur).display === 'contents' && cur.firstElementChild) {
-    cur = cur.firstElementChild;
-  }
-  return getComputedStyle(cur).flexDirection === 'row' ? 'horizontal' : 'vertical';
+  return getComputedStyle(layoutBoxOf(el)).flexDirection === 'row' ? 'horizontal' : 'vertical';
 }
 
 // ---------------------------------------------------------------------------
@@ -577,12 +644,33 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const reactFlow = useReactFlow();
   const contentRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
+  // Paused by default: an edit surface first. While paused the card's ticks
+  // stop and clicks select elements instead of driving its trait machine.
+  const [playing, setPlaying] = useState(false);
+  const tools = useContext(CanvasToolsContext);
+  // Multi-select: every selected path (primary last), the others' outlines, and a marquee in progress.
+  const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
+  const [extraRects, setExtraRects] = useState<RectLike[]>([]);
+  const [marquee, setMarquee] = useState<OverlayRect | null>(null);
+  const [guides, setGuides] = useState<GuideLine[]>([]);
+  const [measures, setMeasures] = useState<MeasureLine[]>([]);
+  const suppressClickRef = useRef(false);
+  const togglePlaying = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPlaying((p) => !p);
+  }, []);
   const handleMouseEnter = useCallback(() => setHovered(true), []);
   const handleMouseLeave = useCallback(() => setHovered(false), []);
 
   // Contextual-edit selection/hover overlays (sized to the union of the
   // clicked/hovered element's rendered children; see rectRelativeTo).
   const [selectedRect, setSelectedRect] = useState<RectLike | null>(null);
+  // The selected element's address in the render-ui tree, for edits made on the canvas.
+  const [selectedAddress, setSelectedAddress] = useState<{ patternId: string; patternType: string } | null>(null);
+  // The selected element's layout (when it is a layout container), for spacing handles.
+  const [selectedLayout, setSelectedLayout] = useState<SelectedLayout | null>(null);
+  // What each spacing step renders at on the selection (its theme's --space-N tokens).
+  const [selectedScale, setSelectedScale] = useState<SpacingStepPx | undefined>(undefined);
   const [hoverRect, setHoverRect] = useState<RectLike | null>(null);
   const lastHoverElRef = useRef<Element | null>(null);
 
@@ -602,16 +690,21 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const isRunning = status === 'running';
   const isSuccess = status === 'success';
   const isError = status === 'error';
+  const isScreen = data.cardLabel === 'screen';
   const label = isImportedGroup
     ? (data.behaviorAlias ?? '')
-    : isExpanded
-      ? `${data.transitionEvent ?? ''}`
-      : data.orbitalName;
+    : isScreen
+      ? `${data.toState ?? ''}`
+      : isExpanded
+        ? `${data.transitionEvent ?? ''}`
+        : data.orbitalName;
   const sublabel = isImportedGroup
     ? `${data.behaviorName ?? ''}${typeof data.transitionCount === 'number' && data.transitionCount > 1 ? ` \u00b7 ${t('orbPreview.screensCount', { count: data.transitionCount })}` : ''}`
-    : isExpanded
-      ? `${data.fromState ?? ''} \u2192 ${data.toState ?? ''}`
-      : data.entityName ?? '';
+    : isScreen
+      ? (data.enteredBy ?? []).join(' \u00b7 ')
+      : isExpanded
+        ? `${data.fromState ?? ''} \u2192 ${data.toState ?? ''}`
+        : data.entityName ?? '';
 
   const orbitalSchema = useMemo(() => {
     const fullSchema = data._fullSchema as OrbitalSchema | undefined;
@@ -633,11 +726,9 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   }, [data._fullSchema, data._mockData, data.orbitalName, data.traitName, data.transitionEvent, data.fromState, data.toState, isExpanded]);
 
   // Click delegation: find the closest [data-pattern] ancestor of the click target
-  const handleContentClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent React Flow from interpreting as node click
-
-    const target = e.target as HTMLElement;
-    const patternEl = target.closest('[data-pattern]') as HTMLElement | null;
+  // Select one rendered pattern element (or clear the selection with null) —
+  // shared by clicks and keyboard navigation.
+  const selectPatternElement = useCallback((patternEl: HTMLElement | null, paths?: string[]) => {
     const container = contentRef.current;
 
     // Clear previous selection highlights
@@ -652,6 +743,20 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       // (0×0 own rect), so its own getBoundingClientRect is useless.
       const rect = rectRelativeTo(patternEl, container, zoom);
       setSelectedRect(rect);
+      setSelectedLayout(measureLayout(patternEl, container, zoom));
+      setSelectedScale(() => spacingScaleOf(layoutBoxOf(patternEl)));
+      const primaryPath = patternEl.getAttribute('data-pattern-path') ?? 'root';
+      setSelectedAddress({
+        patternId: primaryPath,
+        patternType: patternEl.getAttribute('data-pattern') ?? 'unknown',
+      });
+      const selection = paths ?? [primaryPath];
+      setSelectedPaths(selection);
+      setExtraRects(selection.filter((p) => p !== primaryPath).flatMap((p) => {
+        const el = container.querySelector(`[data-pattern-path="${CSS.escape(p)}"]`);
+        const r = el ? rectRelativeTo(el, container, zoom) : null;
+        return r ? [r] : [];
+      }));
 
       select({
         patternType: patternEl.getAttribute('data-pattern') ?? 'unknown',
@@ -664,6 +769,8 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         sourceTrait: patternEl.getAttribute('data-source-trait') ?? undefined,
         nodeData: data,
         rect: rect ?? undefined,
+        offsetInParent: offsetInParentOf(patternEl, rect, container, zoom),
+        selection,
       });
 
       // Feed the studio chatbox's contextual-edit flow with the element's
@@ -682,33 +789,337 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       }
     } else {
       setSelectedRect(null);
+      setSelectedLayout(null);
+      setSelectedScale(undefined);
+      setSelectedAddress(null);
+      setSelectedPaths([]);
+      setExtraRects([]);
       select(null);
       eventBus.emit('UI:ELEMENT_SELECTED', { focus: null });
     }
   }, [data, select, eventBus, reactFlow]);
 
+  // Shift-click (with the multi-select tool) adds an element to the selection,
+  // or takes a selected one out; the last one picked is the primary.
+  const pickElement = useCallback((el: HTMLElement | null, additive: boolean) => {
+    const path = el?.getAttribute('data-pattern-path');
+    if (!el || !path || !additive || !hasCanvasTool(tools, 'multiSelect') || selectedPaths.length === 0) {
+      selectPatternElement(el);
+      return;
+    }
+    if (selectedPaths.includes(path)) {
+      const rest = selectedPaths.filter((p) => p !== path);
+      const primaryPath = rest[rest.length - 1];
+      const primaryEl = primaryPath ? contentRef.current?.querySelector(`[data-pattern-path="${CSS.escape(primaryPath)}"]`) : null;
+      selectPatternElement(primaryEl instanceof HTMLElement ? primaryEl : null, rest);
+      return;
+    }
+    selectPatternElement(el, [...selectedPaths, path]);
+  }, [tools, selectedPaths, selectPatternElement]);
+
+  const handleContentClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent React Flow from interpreting as node click
+    const target = e.target as HTMLElement;
+    pickElement(target.closest('[data-pattern]') as HTMLElement | null, e.shiftKey);
+  }, [pickElement]);
+
+  const patternElementAt = useCallback((path: string): HTMLElement | null => {
+    const el = contentRef.current?.querySelector(`[data-pattern-path="${CSS.escape(path)}"]`);
+    return el instanceof HTMLElement ? el : null;
+  }, []);
+
+  // Paused: take the click in the capture phase so it selects and never
+  // reaches the rendered control (whose handler would dispatch an event).
+  const handlePausedClickCapture = useCallback((e: React.MouseEvent) => {
+    // The selection overlay's own controls, and text being edited in place, handle their clicks.
+    if (e.target instanceof Element && e.target.closest('[data-design-overlay]')) return;
+    if (isEditableTarget(e.target)) return;
+    // A marquee drag ends in a click on the card; it already selected.
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      e.preventDefault();
+      return;
+    }
+    handleContentClick(e);
+    e.preventDefault();
+    // Keys go to the focused element; take focus so the ones pressed next
+    // (Enter, Esc, arrows, ⌘D, ⇧A) reach handlePausedKeyDown.
+    contentRef.current?.focus({ preventScroll: true });
+  }, [handleContentClick]);
+  const swallowWhilePaused = useCallback((e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+  // Paused keys edit the selection like Figma and never reach the preview's
+  // controls: Enter selects the first child, Esc / Shift+Enter the parent,
+  // the arrow keys move the selection among its siblings, ⌘D duplicates it
+  // and ⇧A wraps it in an auto-layout stack. Delete (and Esc
+  // with nothing selected) belong to FlowCanvas's own document-level handler,
+  // so those keep propagating.
+  const handlePausedKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Keys typed into the selection overlay's fields, or into text being edited in place, are theirs.
+    if (e.target instanceof Element && e.target.closest('[data-design-overlay]')) return;
+    if (isEditableTarget(e.target)) return;
+    const path = selectedAddress?.patternId;
+    const position = path ? childPosition(path) : null;
+    const handled = (): void => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      return;
+    }
+    // Clipboard shortcuts must reach the browser, or it never fires copy/cut/paste.
+    if ((e.metaKey || e.ctrlKey) && ['c', 'x', 'v'].includes(e.key.toLowerCase())) return;
+    // ⇧2 zooms to the selection, ⇧1 fits everything (Figma).
+    if (e.shiftKey && (e.code === 'Digit1' || e.code === 'Digit2') && hasCanvasTool(tools, 'zoomToSelection')) {
+      handled();
+      if (e.code === 'Digit1') {
+        void reactFlow.fitView({ padding: 0.1, duration: 200 });
+        return;
+      }
+      const container = contentRef.current;
+      const paths = selectedPaths.length > 0 ? selectedPaths : path ? [path] : [];
+      const boxes = paths.flatMap((p) => {
+        const el = container?.querySelector(`[data-pattern-path="${CSS.escape(p)}"]`);
+        const box = el ? absUnion(el) : null;
+        return box ? [box] : [];
+      });
+      if (boxes.length === 0) return;
+      const topLeft = reactFlow.screenToFlowPosition({ x: Math.min(...boxes.map((b) => b.left)), y: Math.min(...boxes.map((b) => b.top)) });
+      const bottomRight = reactFlow.screenToFlowPosition({ x: Math.max(...boxes.map((b) => b.right)), y: Math.max(...boxes.map((b) => b.bottom)) });
+      orbPreviewLog.info('zoom-to-selection', { paths, boxes, topLeft, bottomRight });
+      void reactFlow.fitBounds(
+        { x: topLeft.x, y: topLeft.y, width: bottomRight.x - topLeft.x, height: bottomRight.y - topLeft.y },
+        { padding: 0.2, duration: 200 },
+      );
+      return;
+    }
+    if (e.key === 'Escape' || (e.key === 'Enter' && e.shiftKey)) {
+      if (!path) return;
+      handled();
+      selectPatternElement(position ? patternElementAt(position.parentPath) : null);
+      return;
+    }
+    if (e.key === 'Enter') {
+      handled();
+      const child = path ? patternElementAt(`${path}.children.0`) : null;
+      if (child) selectPatternElement(child);
+      return;
+    }
+    const duplicate = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd';
+    const wrap = e.shiftKey && !e.metaKey && !e.ctrlKey && e.key.toLowerCase() === 'a';
+    if (duplicate || wrap) {
+      handled();
+      if (!path || !position || !selectedAddress || !data.traitName || !data.transitionEvent) return;
+      const loc = { orbitalName: data.orbitalName, traitName: data.traitName, transitionEvent: data.transitionEvent };
+      const paths = selectedPaths.length > 0 ? selectedPaths : [path];
+      if (duplicate) {
+        eventBus.emit('UI:PATTERN_DUPLICATE', { paths, loc });
+        if (paths.length > 1) {
+          selectPatternElement(null);
+          return;
+        }
+        const copy = `${position.parentPath}.children.${position.index + 1}`;
+        setSelectedAddress({ patternId: copy, patternType: selectedAddress.patternType });
+        setSelectedPaths([copy]);
+      } else {
+        eventBus.emit('UI:PATTERN_WRAP', { paths, loc });
+        // The wrapper takes the first wrapped element's place.
+        const first = [...paths].sort((a, b) => (childPosition(a)?.index ?? 0) - (childPosition(b)?.index ?? 0))[0];
+        setSelectedAddress({ patternId: first, patternType: 'stack' });
+        setSelectedPaths([first]);
+        setExtraRects([]);
+      }
+      return;
+    }
+    const step = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : 0;
+    // Every other key is swallowed so it can't activate the paused preview.
+    handled();
+    if (step === 0 || !path || !position || !selectedAddress || !data.traitName || !data.transitionEvent) return;
+    const target = position.index + step;
+    if (target < 0 || !patternElementAt(`${position.parentPath}.children.${target}`)) return;
+    eventBus.emit('UI:PATTERN_MOVE', {
+      fromPath: path,
+      loc: { orbitalName: data.orbitalName, traitName: data.traitName, transitionEvent: data.transitionEvent },
+      toParentPath: position.parentPath,
+      // PATTERN_MOVE inserts before `toIndex` in the pre-move list.
+      toIndex: step > 0 ? target + 1 : target,
+    });
+    const moved = `${position.parentPath}.children.${target}`;
+    setSelectedAddress({ patternId: moved, patternType: selectedAddress.patternType });
+    setSelectedPaths([moved]);
+    setExtraRects([]);
+  }, [selectedAddress, selectedPaths, eventBus, patternElementAt, selectPatternElement, data.orbitalName, data.traitName, data.transitionEvent, tools, reactFlow]);
+
+  // ⌘C / ⌘X / ⌘V on a paused card: the browser's own clipboard events (no
+  // permission prompt, works across cards and tabs). Nodes are copied as
+  // stored in the schema; paste goes after the selection, or into a selected
+  // container, or at the end of the card's root.
+  const clipboardPaths = useCallback((): string[] => {
+    const paths = selectedPaths.length > 0 ? selectedPaths : selectedAddress ? [selectedAddress.patternId] : [];
+    return paths.filter((p) => p !== 'root');
+  }, [selectedPaths, selectedAddress]);
+
+  const copySelection = useCallback((e: React.ClipboardEvent): string[] => {
+    const fullSchema = data._fullSchema as OrbitalSchema | undefined;
+    const paths = clipboardPaths();
+    if (!fullSchema || !data.traitName || !data.transitionEvent || paths.length === 0) return [];
+    const nodes = paths.flatMap((path) => {
+      const node = patternNodeAt(fullSchema, data.orbitalName, data.traitName ?? '', data.transitionEvent ?? '', path);
+      return node ? [node] : [];
+    });
+    if (nodes.length === 0) return [];
+    e.preventDefault();
+    e.clipboardData.setData(PATTERN_CLIPBOARD_TYPE, JSON.stringify(nodes));
+    e.clipboardData.setData('text/plain', JSON.stringify({ 'almadar/patterns': nodes }));
+    return paths;
+  }, [data._fullSchema, data.orbitalName, data.traitName, data.transitionEvent, clipboardPaths]);
+
+  // Double-click text to edit it in place (L2 screens; at L1 double-click opens the orbital).
+  const handleInlineText = useInlineTextEdit({
+    schema: data._fullSchema as OrbitalSchema | undefined,
+    enabled: !playing && isExpanded && hasCanvasTool(tools, 'inlineText'),
+    transitionEvent: data.transitionEvent,
+  });
+
+  const handleCopy = useCallback((e: React.ClipboardEvent) => {
+    if (!hasCanvasTool(tools, 'clipboard') || isEditableTarget(e.target)) return;
+    copySelection(e);
+  }, [tools, copySelection]);
+
+  const handleCut = useCallback((e: React.ClipboardEvent) => {
+    if (!hasCanvasTool(tools, 'clipboard') || isEditableTarget(e.target)) return;
+    const paths = copySelection(e);
+    if (paths.length === 0) return;
+    eventBus.emit('UI:DELETE_PATTERN', { patternIds: paths });
+    selectPatternElement(null);
+  }, [tools, copySelection, eventBus, selectPatternElement]);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    if (!hasCanvasTool(tools, 'clipboard') || isEditableTarget(e.target)) return;
+    if (!data.traitName || !data.transitionEvent) return;
+    const patterns = parseClipboardPatterns(e.clipboardData.getData(PATTERN_CLIPBOARD_TYPE))
+      ?? parseClipboardPatterns(e.clipboardData.getData('text/plain'));
+    if (!patterns) return;
+    e.preventDefault();
+    const container = contentRef.current;
+    const childCount = (path: string) => resolveDirectChildren(
+      path,
+      Array.from(container?.querySelectorAll('[data-pattern-path]') ?? []).map((el) => ({ path: el.getAttribute('data-pattern-path') ?? '', ref: el })),
+    ).length;
+    const primary = selectedAddress?.patternId;
+    const primaryEl = primary ? patternElementAt(primary) : null;
+    const position = primary ? childPosition(primary) : null;
+    const target = primary && primaryEl?.getAttribute('data-accepts-children') === 'true'
+      ? { parentPath: primary, index: childCount(primary) }
+      : position
+        ? { parentPath: position.parentPath, index: position.index + 1 }
+        : { parentPath: 'root', index: childCount('root') };
+    eventBus.emit('UI:PATTERN_PASTE', {
+      loc: { orbitalName: data.orbitalName, traitName: data.traitName, transitionEvent: data.transitionEvent },
+      ...target,
+      patternsJson: JSON.stringify(patterns),
+    });
+  }, [tools, data.orbitalName, data.traitName, data.transitionEvent, selectedAddress, patternElementAt, eventBus]);
+
   // Hover overlay — track the nearest [data-pattern] under the cursor.
+  // ⌥-hover (Figma): distances from the selection to the hovered element, or
+  // to its parent when hovering the selection itself.
+  const measureFromSelection = useCallback((hovered: HTMLElement | null) => {
+    const container = contentRef.current;
+    const selectedEl = selectedAddress ? patternElementAt(selectedAddress.patternId) : null;
+    if (!hovered || !container || !selectedEl || !selectedRect || playing || !hasCanvasTool(tools, 'measure')) {
+      setMeasures((prev) => (prev.length === 0 ? prev : []));
+      return;
+    }
+    const zoom = reactFlow.getViewport().zoom;
+    const other = hovered === selectedEl ? parentBoxOf(selectedEl, container, zoom)?.box ?? null : rectRelativeTo(hovered, container, zoom);
+    setMeasures(other ? distanceLines(selectedRect, other) : []);
+  }, [selectedAddress, selectedRect, playing, tools, reactFlow, patternElementAt]);
+
+  // Letting go of ⌥ clears the measurements.
+  useEffect(() => {
+    if (measures.length === 0) return;
+    const up = (e: KeyboardEvent) => { if (e.key === 'Alt') setMeasures([]); };
+    window.addEventListener('keyup', up);
+    return () => window.removeEventListener('keyup', up);
+  }, [measures.length]);
+
   const handleContentMouseMove = useCallback((e: React.MouseEvent) => {
     const container = contentRef.current;
     if (!container) return;
     const el = (e.target as HTMLElement).closest('[data-pattern]') as HTMLElement | null;
+    measureFromSelection(e.altKey ? el : null);
     if (el === lastHoverElRef.current) return;
     lastHoverElRef.current = el;
     setHoverRect(el ? rectRelativeTo(el, container, reactFlow.getViewport().zoom) : null);
-  }, [reactFlow]);
+  }, [reactFlow, measureFromSelection]);
 
   const handleContentMouseLeave = useCallback(() => {
     lastHoverElRef.current = null;
     setHoverRect(null);
+    setMeasures([]);
   }, []);
 
   // Drop stale overlays whenever the rendered schema changes (post-edit
   // re-render moves elements; a stale rect would float over the wrong spot).
+  // The selection itself survives an edit: re-measure the same element once
+  // the new render has painted, like a design tool keeping its selection.
+  const selectedAddressRef = useRef(selectedAddress);
+  selectedAddressRef.current = selectedAddress;
   useEffect(() => {
     setSelectedRect(null);
     setHoverRect(null);
     lastHoverElRef.current = null;
-  }, [orbitalSchema]);
+    const address = selectedAddressRef.current;
+    if (!address) return;
+    const frame = requestAnimationFrame(() => {
+      const container = contentRef.current;
+      const el = container?.querySelector(`[data-pattern-path="${CSS.escape(address.patternId)}"]`);
+      if (container && el) {
+        const zoom = reactFlow.getViewport().zoom;
+        setSelectedRect(rectRelativeTo(el, container, zoom));
+        setSelectedLayout(measureLayout(el, container, zoom));
+        setSelectedScale(() => spacingScaleOf(layoutBoxOf(el)));
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [orbitalSchema, reactFlow]);
+
+  // The selected element's own classes (null when `className` is a binding):
+  // what the design overlay edits. Canvas edits go through the same
+  // `UI:PROP_CHANGE` (scope local) the inspector emits.
+  const selectedClasses = useMemo<string[] | null>(() => {
+    const fullSchema = data._fullSchema as OrbitalSchema | undefined;
+    if (!selectedAddress || !fullSchema || !data.traitName || !data.transitionEvent) return null;
+    const config = resolvePatternConfig(fullSchema, {
+      orbitalName: data.orbitalName,
+      traitName: data.traitName,
+      transitionEvent: data.transitionEvent,
+      patternId: selectedAddress.patternId,
+      patternType: selectedAddress.patternType,
+    });
+    const current = config?.className;
+    if (current === undefined || current === null) return [];
+    return typeof current === 'string' ? current.split(/\s+/).filter(Boolean) : null;
+  }, [data, selectedAddress]);
+
+  const handleClassesChange = useCallback((next: string[]) => {
+    if (!selectedAddress || !data.traitName || !data.transitionEvent) return;
+    eventBus.emit('UI:PROP_CHANGE', {
+      scope: 'local',
+      propName: 'className',
+      value: next.join(' '),
+      selection: {
+        patternPath: selectedAddress.patternId,
+        orbitalName: data.orbitalName,
+        traitName: data.traitName,
+        transitionEvent: data.transitionEvent,
+      },
+    });
+  }, [selectedAddress, data.orbitalName, data.traitName, data.transitionEvent, eventBus]);
 
   const [dragActive, setDragActive] = useState(false);
 
@@ -741,8 +1152,8 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   // insertion index from the cursor's relative position among the container's
   // direct `[data-pattern-path]` children. Runs at drop time via @dnd-kit's
   // resolvePath callback — same logic the legacy `onDrop` ran inline.
-  const resolveL2Path = useCallback(
-    (cursor: { x: number; y: number }): { parentPath: string; index: number } | null => {
+  const resolveInsertion = useCallback(
+    (cursor: { x: number; y: number }): InsertionTarget | null => {
       const hit = document.elementFromPoint(cursor.x, cursor.y) as HTMLElement | null;
       if (!hit) return null;
       let el: HTMLElement | null = hit;
@@ -795,10 +1206,49 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         mids: childRects.map((r) => (axis === 'vertical' ? r.top + r.height / 2 : r.left + r.width / 2)),
         insertIndex,
       });
-      return { parentPath: containerPath, index: insertIndex };
+      const own = absUnion(el);
+      const containerBox: DOMRectLike = own
+        ? { ...own, width: own.right - own.left, height: own.bottom - own.top }
+        : (() => {
+            const raw = el.getBoundingClientRect();
+            return { top: raw.top, left: raw.left, right: raw.right, bottom: raw.bottom, width: raw.width, height: raw.height };
+          })();
+      return { parentPath: containerPath, index: insertIndex, containerBox, childRects, axis };
     },
     [],
   );
+  const resolveL2Path = useCallback(
+    (cursor: { x: number; y: number }): { parentPath: string; index: number } | null => {
+      const hit = resolveInsertion(cursor);
+      return hit ? { parentPath: hit.parentPath, index: hit.index } : null;
+    },
+    [resolveInsertion],
+  );
+
+  // Figma's blue insertion indicator: while a pattern is dragged over this
+  // card, show where it would land among its new siblings.
+  const [insertionLine, setInsertionLine] = useState<RectLike | null>(null);
+  const trackInsertion = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!(dragActive || reorderDragActive) || !isExpanded) return;
+    const content = contentRef.current;
+    const hit = resolveInsertion({ x: e.clientX, y: e.clientY });
+    if (!content || !hit) {
+      setInsertionLine(null);
+      return;
+    }
+    const base = content.getBoundingClientRect();
+    const z = reactFlow.getViewport().zoom || 1;
+    const toContent = (r: DOMRectLike): RectLike => ({
+      top: (r.top - base.top) / z,
+      left: (r.left - base.left) / z,
+      width: r.width / z,
+      height: r.height / z,
+    });
+    setInsertionLine(insertionLineRect(toContent(hit.containerBox), hit.childRects.map(toContent), hit.index, hit.axis));
+  }, [dragActive, reorderDragActive, isExpanded, resolveInsertion, reactFlow]);
+  useEffect(() => {
+    if (!dragActive && !reorderDragActive) setInsertionLine(null);
+  }, [dragActive, reorderDragActive]);
 
   // L2 inner zone — the render-ui slot inside the expanded orbital. Each
   // OrbPreviewNode owns one. @dnd-kit's useCanvasDroppable manages the
@@ -850,9 +1300,111 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   // `reorderDataRef`, then hands off to dnd-kit's own activator. No-ops
   // (never calls the activator) when the pointerdown didn't land on a
   // pattern or reorder is disabled (`reorderListeners` is `undefined` then).
+  // Drag on the card's own frame (its root, not an element in it) draws a
+  // marquee; the root's children it touches become the selection (Figma).
+  const startMarquee = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const container = contentRef.current;
+    if (!container) return;
+    const zoom = reactFlow.getViewport().zoom || 1;
+    const toContent = (clientX: number, clientY: number) => {
+      const base = container.getBoundingClientRect();
+      return { x: (clientX - base.left) / zoom, y: (clientY - base.top) / zoom };
+    };
+    const from = toContent(e.clientX, e.clientY);
+    let box: OverlayRect | null = null;
+    const move = (ev: PointerEvent) => {
+      const to = toContent(ev.clientX, ev.clientY);
+      if (!box && Math.hypot(to.x - from.x, to.y - from.y) < 3) return;
+      box = marqueeRect(from, to);
+      setMarquee(box);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      setMarquee(null);
+      if (!box) return;
+      const children = resolveDirectChildren(
+        'root',
+        Array.from(container.querySelectorAll('[data-pattern-path]')).map((el) => ({ path: el.getAttribute('data-pattern-path') ?? '', ref: el })),
+      );
+      const rects = children.map((el) => rectRelativeTo(el, container, zoom));
+      const hits = marqueeHits(box, rects.map((r) => r ?? { top: 0, left: 0, width: 0, height: 0 }))
+        .filter((i) => rects[i] !== null)
+        .map((i) => children[i]);
+      suppressClickRef.current = true;
+      const paths = hits.map((el) => el.getAttribute('data-pattern-path') ?? '').filter(Boolean);
+      const primary = hits[hits.length - 1];
+      selectPatternElement(primary instanceof HTMLElement ? primary : null, paths.length > 0 ? paths : undefined);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }, [reactFlow, selectPatternElement]);
+
+  // Dragging the selected absolute element moves it (Figma): it follows the
+  // pointer, snapping to its siblings' and parent's edges and centres (smart
+  // guides), and on release its offsets are rewritten for its constraints.
+  const startAbsoluteMove = useCallback((e: React.PointerEvent<HTMLDivElement>, el: HTMLElement, classes: readonly string[]) => {
+    const container = contentRef.current;
+    const zoom = reactFlow.getViewport().zoom || 1;
+    const start = container ? rectRelativeTo(el, container, zoom) : null;
+    const parent = container ? parentBoxOf(el, container, zoom) : null;
+    if (!container || !start || !parent) return;
+    const parentPath = parent.el.getAttribute('data-pattern-path') ?? 'root';
+    const siblings = resolveDirectChildren(
+      parentPath,
+      Array.from(parent.el.querySelectorAll('[data-pattern-path]')).map((c) => ({ path: c.getAttribute('data-pattern-path') ?? '', ref: c })),
+    ).filter((c) => c !== el).map((c) => rectRelativeTo(c, container, zoom)).filter((r): r is RectLike => r !== null);
+    const targets = [...siblings, parent.box];
+    const moved = layoutBoxOf(el);
+    const painted = moved instanceof HTMLElement ? moved : null;
+    const before = painted?.style.translate ?? '';
+    let current: RectLike = start;
+    let dragging = false;
+    const move = (ev: PointerEvent) => {
+      const dx = (ev.clientX - e.clientX) / zoom;
+      const dy = (ev.clientY - e.clientY) / zoom;
+      if (!dragging && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) < 3) return;
+      dragging = true;
+      const raw = { ...start, left: start.left + dx, top: start.top + dy };
+      const snap = snapMove(raw, targets, 4 / zoom);
+      current = { ...raw, left: raw.left + snap.dx, top: raw.top + snap.dy };
+      if (painted) painted.style.translate = `${current.left - start.left}px ${current.top - start.top}px`;
+      setGuides(snap.guides);
+      setSelectedRect(current);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      setGuides([]);
+      if (!dragging) return;
+      if (painted) painted.style.translate = before;
+      suppressClickRef.current = true;
+      const position = positionOf(classes);
+      const offset = offsetWithin(current, parent.box);
+      handleClassesChange(withPosition(classes, {
+        absolute: true,
+        x: axisPositionFrom('x', position.x.constraint, offset),
+        y: axisPositionFrom('y', position.y.constraint, offset),
+      }));
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }, [reactFlow, handleClassesChange]);
+
   const handleContentPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const patternEl = (e.target as HTMLElement).closest('[data-pattern]') as HTMLElement | null;
     const fromPath = patternEl?.getAttribute('data-pattern-path');
+    const selectedEl = selectedAddress ? patternElementAt(selectedAddress.patternId) : null;
+    if (!playing && isExpanded && e.button === 0 && hasCanvasTool(tools, 'absolute') && selectedEl && selectedClasses?.includes('absolute')
+      && e.target instanceof Node && selectedEl.contains(e.target) && !(e.target instanceof Element && e.target.closest('[data-design-overlay]'))) {
+      startAbsoluteMove(e, selectedEl, selectedClasses);
+      return;
+    }
+    if (!playing && isExpanded && hasCanvasTool(tools, 'multiSelect') && (fromPath === 'root' || !fromPath)
+      && !(e.target instanceof Element && e.target.closest('[data-design-overlay]'))) {
+      startMarquee(e);
+      return;
+    }
     if (!fromPath) return;
     reorderDataRef.current.fromPath = fromPath;
     reorderDataRef.current.loc = {
@@ -861,7 +1413,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       transitionEvent: data.transitionEvent,
     };
     reorderListeners?.onPointerDown?.(e);
-  }, [reorderListeners, data.orbitalName, data.traitName, data.transitionEvent]);
+  }, [reorderListeners, data.orbitalName, data.traitName, data.transitionEvent, playing, isExpanded, tools, startMarquee, selectedAddress, selectedClasses, patternElementAt, startAbsoluteMove]);
 
   // Callback ref that fans the same DOM node to both useRef + dnd-kit.
   // contentRef stays read-only for the click-to-select walker; l2SetNodeRef
@@ -907,7 +1459,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       style={{
         borderColor: l1IsOver ? 'var(--color-primary)' : borderColor,
         borderWidth: l1IsOver ? '2px' : borderWidth,
-        width: preset.width,
+        width: typeof data.cardWidth === 'number' ? data.cardWidth : preset.width,
         boxShadow: l1IsOver ? '0 0 0 3px var(--color-primary), 0 0 12px var(--color-primary)' : undefined,
       }}
       onMouseEnter={handleMouseEnter}
@@ -1034,6 +1586,18 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             </Typography>
           )}
         </Box>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="nodrag shrink-0 w-6 h-6 p-0 justify-center"
+          aria-pressed={playing}
+          aria-label={t(playing ? 'orbPreview.pause' : 'orbPreview.play')}
+          title={t(playing ? 'orbPreview.pause' : 'orbPreview.play')}
+          data-testid="orb-preview-play-toggle"
+          onClick={togglePlaying}
+        >
+          <Icon name={playing ? 'pause' : 'play'} size="xs" />
+        </Button>
         {eventSources.length > 0 && (
           <Box className="flex gap-0.5 shrink-0">
             {eventSources.slice(0, 3).map((src) => (
@@ -1062,11 +1626,21 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
           listener can't fight it. */}
       <Box
         ref={setContentRef}
-        className={`orb-preview-live nodrag relative${dragActive || reorderDragActive || l2IsOver ? ' drag-active' : ''}`}
-        onClick={handleContentClick}
+        className={`orb-preview-live nodrag relative outline-none${dragActive || reorderDragActive || l2IsOver ? ' drag-active' : ''}`}
+        data-playing={playing}
+        onClick={playing ? handleContentClick : undefined}
+        onClickCapture={playing ? undefined : handlePausedClickCapture}
+        onKeyDownCapture={playing ? undefined : handlePausedKeyDown}
+        tabIndex={playing ? undefined : -1}
+        onSubmitCapture={playing ? undefined : swallowWhilePaused}
+        onDoubleClickCapture={playing ? undefined : handleInlineText}
+        onCopyCapture={playing ? undefined : handleCopy}
+        onCutCapture={playing ? undefined : handleCut}
+        onPasteCapture={playing ? undefined : handlePaste}
         onMouseMove={handleContentMouseMove}
         onMouseLeave={handleContentMouseLeave}
         onPointerDown={handleContentPointerDown}
+        onPointerMove={trackInsertion}
       >
         {/* Hover + selection overlays. Positioned over the element's painted
             bounds (the [data-pattern] wrapper is display:contents, so CSS
@@ -1088,21 +1662,49 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             }}
           />
         )}
-        {selectedRect && (
-          <div
+        {insertionLine && (
+          <Box
             aria-hidden
+            data-testid="orb-preview-insertion-line"
+            className="rounded-full bg-primary"
             style={{
               position: 'absolute',
               pointerEvents: 'none',
-              top: selectedRect.top,
-              left: selectedRect.left,
-              width: selectedRect.width,
-              height: selectedRect.height,
-              outline: '2px solid var(--color-primary)',
-              outlineOffset: '1px',
-              borderRadius: '2px',
-              zIndex: 21,
+              top: insertionLine.top,
+              left: insertionLine.left,
+              width: insertionLine.width,
+              height: insertionLine.height,
+              zIndex: 22,
             }}
+          />
+        )}
+        {extraRects.map((r, i) => (
+          <Box
+            key={`extra-${i}`}
+            data-testid="orb-preview-selection-extra"
+            style={{ position: 'absolute', pointerEvents: 'none', top: r.top, left: r.left, width: r.width, height: r.height, outline: '2px solid var(--color-primary)', outlineOffset: '1px', borderRadius: '2px', zIndex: 21 }}
+          />
+        ))}
+        {marquee && (
+          <Box
+            data-testid="orb-preview-marquee"
+            className="border border-primary bg-primary/10"
+            style={{ position: 'absolute', pointerEvents: 'none', top: marquee.top, left: marquee.left, width: marquee.width, height: marquee.height, zIndex: 23 }}
+          />
+        )}
+        <DesignGuidesOverlay guides={guides} measures={measures} zoom={reactFlow.getViewport().zoom} />
+        {selectedRect && (
+          <DesignSelectionOverlay
+            rect={selectedRect}
+            childRects={selectedLayout?.childRects ?? []}
+            axis={selectedLayout?.axis ?? null}
+            alignment={selectedLayout?.alignment}
+            pxOfStep={selectedScale}
+            renderedSpacing={selectedLayout?.spacing}
+            classes={!playing && isExpanded && hasCanvasTool(tools, 'designHandles') ? selectedClasses : null}
+            layoutBar={hasCanvasTool(tools, 'autoLayout')}
+            zoom={reactFlow.getViewport().zoom}
+            onChange={handleClassesChange}
           />
         )}
         {orbitalSchema ? (
@@ -1115,6 +1717,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
               schema={orbitalSchema}
               mode="mock"
               height="auto"
+              paused={!playing}
             />
           </Box>
         ) : (
@@ -1125,6 +1728,18 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
           </Box>
         )}
       </Box>
+
+      {/* Frame width: the right edge resizes the card; the width is persisted with its position. */}
+      <NodeResizeControl
+        position="right"
+        variant={ResizeControlVariant.Line}
+        minWidth={CARD_MIN_WIDTH}
+        maxWidth={CARD_MAX_WIDTH}
+        shouldResize={(_event, params) => params.direction[0] !== 0}
+        onResizeEnd={(_event, params) => {
+          eventBus.emit('UI:CANVAS_CARD_RESIZED', { nodeId: props.id, width: Math.round(params.width) });
+        }}
+      />
 
       {/* Handles */}
       <Handle type="target" position={Position.Left} style={TARGET_HANDLE_STYLE} />

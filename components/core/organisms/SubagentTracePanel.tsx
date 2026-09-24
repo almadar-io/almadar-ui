@@ -177,7 +177,20 @@ function coordinatorToActivityItems(activities: TraceActivity[]): TraceActivityI
       case 'plan_committed':
       case 'pending_question':
       case 'clarification_question':
+      case 'analysis':
+      case 'orbital_started':
+      case 'orbital_done':
+      case 'schema_change':
+      case 'done':
+      case 'cancelled':
         return [];
+      case 'llm_response':
+        return [{
+          type: 'message',
+          role: 'assistant',
+          content: a.content,
+          timestamp: a.timestamp,
+        }];
       case 'file_operation':
         return [{
           type: 'file_operation',

@@ -33,6 +33,7 @@
 
 import type React from 'react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { isNotificationSlot } from '../lib/slot-definitions';
 import { UI_SLOTS } from '@almadar/core';
 import type { EventPayloadValue, RenderItemLambda, UISlot } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
@@ -327,6 +328,10 @@ function aggregateSlot(sources: SlotSources | undefined): SlotContent | null {
           ...(sourceKey !== DEFAULT_SOURCE_KEY && { _sourceTrait: sourceKey }),
         },
   );
+  log.info('aggregateSlot:multi-source', {
+    writers: entries.map(([k]) => k).join(','),
+    patterns: entries.map(([, e]) => e.pattern).join(','),
+  });
   const stackId = `slot-content-stack-${entries.map(([k]) => k).join('-')}`;
   return {
     id: stackId,
@@ -551,11 +556,10 @@ export function useUISlotManager(): UISlotManager {
         }
 
         // Maintain the trait-scoped reverse index + notify per-trait
-        // subscribers. The index stores one entry per trait regardless
-        // of slot, so we don't remove the previous trait's entry just
-        // because a new trait took a slot — the old trait's last frame
-        // remains queryable until the owning trait is explicitly cleared.
-        if (content.sourceTrait) {
+        // subscribers. The index holds a trait's INLINE presentation (what
+        // its TraitFrame shows); a portal-slot render (toast, modal, …) is
+        // an overlay and leaves it as it was.
+        if (content.sourceTrait && !isNotificationSlot(config.target)) {
           indexTraitRender(content.sourceTrait, content);
           notifyTraitSubscribers(content.sourceTrait, content);
         }
@@ -593,7 +597,7 @@ export function useUISlotManager(): UISlotManager {
             timersRef.current.delete(content.id);
           }
           content.onDismiss?.();
-          if (content.sourceTrait) {
+          if (content.sourceTrait && !isNotificationSlot(slot)) {
             unindexTrait(content.sourceTrait);
             notifyTraitSubscribers(content.sourceTrait, null);
           }
@@ -622,7 +626,7 @@ export function useUISlotManager(): UISlotManager {
           timersRef.current.delete(content.id);
         }
         content.onDismiss?.();
-        if (content.sourceTrait) {
+        if (content.sourceTrait && !isNotificationSlot(slot)) {
           unindexTrait(content.sourceTrait);
           notifyTraitSubscribers(content.sourceTrait, null);
         }
@@ -654,7 +658,7 @@ export function useUISlotManager(): UISlotManager {
             timersRef.current.delete(id);
           }
           content.onDismiss?.();
-          if (content.sourceTrait) {
+          if (content.sourceTrait && !isNotificationSlot(slot)) {
             unindexTrait(content.sourceTrait);
             notifyTraitSubscribers(content.sourceTrait, null);
           }

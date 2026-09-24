@@ -138,6 +138,12 @@ export interface SlotDefinition {
   portalTarget?: string;
   /** Z-index for portal slots */
   zIndex?: number;
+  /**
+   * A notification surface (toast): an embedded trait's render here shows in
+   * the slot itself, never as its host frame's content. Every other slot's
+   * render of an embedded trait IS its frame content.
+   */
+  notification?: boolean;
 }
 
 // ============================================================================

@@ -111,6 +111,43 @@ describe('UISlotRenderer', () => {
 // and the basic rendering tests above.
 
 describe('SlotContentRenderer', () => {
+  // G-RUNTIME-037: the stale-V1 `entity: "Name"` guard must follow the
+  // pattern's DECLARED `entity` type, not the prop name — filter-group (and
+  // 7 other patterns) declare `entity: string` (an entity NAME).
+  it('accepts a string entity on a pattern whose entity prop is declared string (filter-group)', () => {
+    const content = {
+      id: 'filter',
+      pattern: 'filter-group',
+      props: { entity: 'FilterTarget', filters: [] },
+      priority: 0,
+    };
+    expect(() =>
+      render(
+        <TestWrapper>
+          <SlotContentRenderer content={content} onDismiss={() => {}} />
+        </TestWrapper>,
+      ),
+    ).not.toThrow();
+  });
+
+  it('still rejects a string entity on a data-bound pattern (data-list)', () => {
+    const content = {
+      id: 'list',
+      pattern: 'data-list',
+      props: { entity: 'Task' },
+      priority: 0,
+    };
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() =>
+      render(
+        <TestWrapper>
+          <SlotContentRenderer content={content} onDismiss={() => {}} />
+        </TestWrapper>,
+      ),
+    ).toThrow(/Received string 'entity: "Task"'/);
+    spy.mockRestore();
+  });
+
   it('should render children when provided', () => {
     const content = {
       id: 'test-id',

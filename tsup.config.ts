@@ -207,6 +207,17 @@ export default defineConfig([
     banner: { js: '"use client";' },
     esbuildPlugins: [externalThreeSubpathPlugin],
   },
+  // Design-class vocabulary: plain functions (no React), loaded by the Tailwind preset's CJS require.
+  {
+    entry: { 'design-classes/index': 'lib/design-classes.ts' },
+    format: ['esm', 'cjs'],
+    dts: emitDts,
+    outDir: 'dist',
+    clean: false, // shared outDir: cleaned once upfront by the build script
+    sourcemap: false,
+    splitting: false,
+    treeshake: true,
+  },
   // AVL build: Almadar Visual Language formal notation
   {
     entry: { 'avl/index': 'avl/index.ts' },

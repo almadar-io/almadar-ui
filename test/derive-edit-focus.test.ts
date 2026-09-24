@@ -12,7 +12,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { EditFocus } from '@almadar/core';
-import { withNodeTransition } from '../components/avl/lib/derive-edit-focus';
+import { deriveEditFocusFromElement, withNodeTransition } from '../components/avl/lib/derive-edit-focus';
 
 function baseFocus(overrides: Partial<EditFocus> = {}): EditFocus {
   return { level: 'node', orbital: 'Widgets', label: 'typography', ...overrides };
@@ -43,5 +43,20 @@ describe('withNodeTransition', () => {
     const focus = baseFocus({ trait: 'WidgetInteraction', path: 'root.children.0' });
     const result = withNodeTransition(focus, 'INIT');
     expect(result).toEqual({ ...focus, transition: 'INIT' });
+  });
+});
+
+
+describe('deriveEditFocusFromElement — address attributes on an ancestor (live preview)', () => {
+  it('reads trait / transition / slot from the nearest ancestor carrying them', () => {
+    const host = document.createElement('div');
+    host.innerHTML = `
+      <div data-orb-orbital="Widgets" data-orb-trait="WidgetInteraction" data-orb-transition="INIT" data-orb-slot="main" data-orb-path="root">
+        <div data-pattern-path="root.children.1" data-pattern="typography"><p>Item B</p></div>
+      </div>`;
+    const el = host.querySelector('[data-pattern-path="root.children.1"]') as HTMLElement;
+    expect(deriveEditFocusFromElement(el)).toMatchObject({
+      orbital: 'Widgets', trait: 'WidgetInteraction', transition: 'INIT', slot: 'main', path: 'root.children.1', patternType: 'typography',
+    });
   });
 });

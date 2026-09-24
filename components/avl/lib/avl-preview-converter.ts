@@ -26,7 +26,7 @@ import type {
   EntityData,
   JsonObject,
 } from '@almadar/core';
-import type { AnyPatternConfig } from '@almadar/core/patterns';
+import { renderUiEntriesOf, type AnyPatternConfig } from '@almadar/core/patterns';
 import type {
   PreviewNodeData,
   EventEdgeData,
@@ -149,19 +149,9 @@ function getListens(trait: Trait): string[] {
 // Render-UI extraction
 // ---------------------------------------------------------------------------
 
-/** Extract render-ui patterns from a transition's effects array. */
+/** Every render-ui a transition performs (nested ones included), as preview entries. */
 function extractRenderUI(effects: Effect[]): RenderUIEntry[] {
-  const patterns: RenderUIEntry[] = [];
-  for (const eff of effects) {
-    if (!Array.isArray(eff)) continue;
-    if (eff[0] !== 'render-ui' || eff.length < 3) continue;
-    const slot = eff[1] as string;
-    const pattern = eff[2];
-    if (pattern !== null && pattern !== undefined && typeof pattern === 'object' && !Array.isArray(pattern)) {
-      patterns.push({ slot, pattern: pattern as AnyPatternConfig });
-    }
-  }
-  return patterns;
+  return renderUiEntriesOf(effects).map(({ slot, pattern }) => ({ slot, pattern: pattern as AnyPatternConfig }));
 }
 
 /** Extract effect type names from an effects array. */
@@ -556,6 +546,36 @@ function collectUITransitions(
   return out;
 }
 
+/** How L2 cards are cut: one per transition (architect) or one per distinct render (designer). */
+export type ExpandedGraphView = 'transitions' | 'screens';
+
+interface ScreenEntry {
+  entry: UITransitionEntry;
+  enteredBy: string[];
+}
+
+/**
+ * Collapse a trait's transitions whose rendered output is identical into one
+ * screen, keeping declaration order and recording every event that shows it.
+ * Different renders of the same state (spinner / list / error) stay apart.
+ */
+function collapseToScreens(transitions: UITransitionEntry[]): ScreenEntry[] {
+  const screens: ScreenEntry[] = [];
+  const byRender = new Map<string, ScreenEntry>();
+  for (const entry of transitions) {
+    const key = `${entry.traitName}|${JSON.stringify(entry.patterns)}`;
+    const screen = byRender.get(key);
+    if (screen) {
+      screen.enteredBy.push(entry.transition.event);
+      continue;
+    }
+    const fresh = { entry, enteredBy: [entry.transition.event] };
+    byRender.set(key, fresh);
+    screens.push(fresh);
+  }
+  return screens;
+}
+
 /**
  * Shared assembler: given pre-collected UI transitions + a list of grouped
  * imported-behavior cards, build the React Flow nodes + edges. Factored
@@ -580,6 +600,7 @@ function buildScreenGraph(
   }>,
   mockData?: EntityData,
   screenSize?: ScreenSize,
+  view: ExpandedGraphView = 'transitions',
 ): { nodes: Node<PreviewNodeData>[]; edges: Edge<EventEdgeData>[] } {
   const nodes: Node<PreviewNodeData>[] = [];
   const edges: Edge<EventEdgeData>[] = [];
@@ -604,7 +625,8 @@ function buildScreenGraph(
     }
   }
 
-  const transitionEntries = transitions;
+  const screens = view === 'screens' ? collapseToScreens(transitions) : undefined;
+  const transitionEntries = screens ? screens.map((s) => s.entry) : transitions;
   const totalCards = transitionEntries.length + groupedBehaviors.length;
   if (totalCards === 0) return { nodes, edges };
 
@@ -644,6 +666,7 @@ function buildScreenGraph(
         entityName,
         _fullSchema: schema,
         _mockData: mockData,
+        ...(screens ? { cardLabel: 'screen', enteredBy: screens[i].enteredBy } : {}),
       },
     });
   });
@@ -734,6 +757,7 @@ export function orbitalToExpandedGraph(
   orbitalName: string,
   mockData?: EntityData,
   screenSize?: ScreenSize,
+  view: ExpandedGraphView = 'transitions',
 ): {
   nodes: Node<PreviewNodeData>[];
   edges: Edge<EventEdgeData>[];
@@ -790,6 +814,7 @@ export function orbitalToExpandedGraph(
     groupedBehaviors,
     mockData,
     screenSize,
+    view,
   );
 }
 
@@ -806,6 +831,7 @@ export function orbitalAliasToExpandedGraph(
   alias: string,
   mockData?: EntityData,
   screenSize?: ScreenSize,
+  view: ExpandedGraphView = 'transitions',
 ): {
   nodes: Node<PreviewNodeData>[];
   edges: Edge<EventEdgeData>[];
@@ -827,6 +853,7 @@ export function orbitalAliasToExpandedGraph(
     [],
     mockData,
     screenSize,
+    view,
   );
 }
 

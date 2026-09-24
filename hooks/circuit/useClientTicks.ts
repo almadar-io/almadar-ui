@@ -52,6 +52,7 @@ import {
   collectDeclaredConfigDefaults,
   createContextFromBindings,
   createTickScheduler,
+  isSExpression,
   isValidCronExpression,
   normalizeCallSiteConfigToValues,
   parseDurationString,
@@ -117,16 +118,9 @@ function getBindingConfig(binding: ResolvedTraitBinding): TraitConfig | undefine
  *  (e.g. `(array/flatten (array/map ...))`) — the compiled path evaluates
  *  these once before seeding; the client role must do the same so a render
  *  trait reads concrete values at frame 0. */
-function evalFieldDefault(value: FieldValue): FieldValue {
-  if (!Array.isArray(value) || value.length === 0) return value;
-  const head = value[0];
-  const isSExpr = typeof head === 'string' && (head.includes('/') || head === 'let' || head === 'if' || head === 'lambda');
-  if (!isSExpr) return value;
-  try {
-    return evaluate(value as SExpr, createMinimalContext({}, {}, '')) as FieldValue;
-  } catch {
-    return value;
-  }
+export function evalFieldDefault(value: FieldValue): FieldValue {
+  if (!Array.isArray(value) || !isSExpression(value)) return value;
+  return evaluate(value as SExpr, createMinimalContext({}, {}, '')) as FieldValue;
 }
 
 /**

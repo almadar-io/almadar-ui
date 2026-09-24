@@ -15,6 +15,7 @@
  */
 
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
+import { useArbitraryClassStyles } from '../providers/ArbitraryClassCompiler';
 import { Box } from '../components/core/atoms/Box';
 import { Typography } from '../components/core/atoms/Typography';
 import { OrbitalProvider } from '../providers/OrbitalProvider';
@@ -79,10 +80,12 @@ function NavStackRefBridge({ apiRef }: { apiRef: React.MutableRefObject<NavStack
  * its own `sendEvent`/mount-time dispatch resolves — this component only
  * decides WHICH transport (or none) the kernel dispatches through.
  */
-function TraitInitializer({ traits, routeParams, orbitals, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, embeddedTraits, callsiteCaptureChildrenByTrait, hasBridge, children }: {
+function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, embeddedTraits, callsiteCaptureChildrenByTrait, hasBridge, children }: {
   traits: ResolvedTraitBinding[];
   /** Route params from a parameterized page path — merged into every INIT payload. */
   routeParams?: Record<string, string>;
+  /** The mounted page's identity — keys the once-per-mount INIT guard. */
+  mountKey?: string;
   /** The resolved schema's full orbital set — `useCircuitKernel`'s one input. */
   orbitals: readonly OrbitalDefinition[];
   traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
@@ -132,9 +135,9 @@ function TraitInitializer({ traits, routeParams, orbitals, onNavigate, onNavigat
   const bridge = useServerBridge();
   const uiSlots = useUISlots();
 
-  // GAP-19: unrelated to INIT dispatch now — `useTraitStateMachine` fires
-  // every trait's own lifecycle event immediately regardless of bridge
-  // state. This timer only tells the caller the bridge never connected.
+  // GAP-19: lifecycle events are dispatched on mount; the kernel holds them
+  // only until `register()` reports the topology (resolved or failed). This
+  // timer only tells the caller the bridge never connected.
   useEffect(() => {
     if (!hasBridge) return;
     const timer = setTimeout(() => {
@@ -151,8 +154,9 @@ function TraitInitializer({ traits, routeParams, orbitals, onNavigate, onNavigat
     ...(embeddedTraits !== undefined ? { embeddedTraits } : {}),
     ...(callsiteCaptureChildrenByTrait !== undefined ? { callsiteCaptureChildrenByTrait } : {}),
     initPayload: routeParams,
+    ...(mountKey !== undefined ? { mountKey } : {}),
     ...(hasBridge
-      ? { transport: bridge.transport, carriesCircuitState: bridge.carriesCircuitState }
+      ? { transport: bridge.transport, carriesCircuitState: bridge.carriesCircuitState, awaitTopology: !bridge.topologyKnown }
       : { persistence }),
   });
 
@@ -472,6 +476,7 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
         <TraitInitializer
           traits={allPageTraits}
           routeParams={routeParams}
+          mountKey={pageName}
           orbitals={schema.orbitals}
           hasBridge={Boolean(serverUrl || transport)}
           traitConfigsByName={traitConfigsByName}
@@ -589,10 +594,11 @@ export interface OrbPreviewProps {
    */
   user?: UserData | null;
   /**
-   * Sandbox mode: the preview's event bus stays context-local and does NOT
-   * register as the global bus. Set when embedded inside a host app (e.g. the
-   * studio canvas) so preview events don't clobber the host's global bus.
-   * Default false (standalone previews own the global bridge).
+   * Sandbox mode, for previews embedded in a host app (e.g. the studio
+   * canvas): the event bus stays context-local, navigation stays in memory
+   * (the host URL/history are never touched), in-app links are always
+   * intercepted, and external links open a new tab. Default false
+   * (standalone previews own the global bridge and sync `?page=`).
    */
   isolated?: boolean;
   /**
@@ -682,6 +688,8 @@ export function OrbPreview({
   }, [schema, autoMock, serverUrl, transport, mockData]);
 
   const parsedSchema = parseResult.ok ? parseResult.schema : null;
+  // Arbitrary-value classes exist only in the schema; the host compiles them.
+  useArbitraryClassStyles(parsedSchema);
   const effectiveMockData: EntityData = parseResult.ok ? parseResult.mockData : {};
 
   // Offline-preview persistence. When `autoMock` is on and no `serverUrl`
@@ -813,7 +821,9 @@ export function OrbPreview({
     if (match?.page.name) {
       setRouteParams(params);
       setCurrentPage(match.page.name);
-      if (typeof window !== 'undefined') {
+      // A sandboxed preview navigates in memory only — the host page's URL
+      // and history belong to the host.
+      if (!isolated && typeof window !== 'undefined') {
         const url = new URL(window.location.href);
         url.searchParams.set('page', path);
         window.history.pushState({}, '', url.toString());
@@ -825,7 +835,7 @@ export function OrbPreview({
         window.dispatchEvent(new PopStateEvent('popstate'));
       }
     }
-  }, [pages]);
+  }, [pages, isolated]);
 
   // Effect-facing navigate: stages the nav-stack crumb (when the navigate
   // effect carried one) before the page switch; the provider's sync consumes
@@ -875,7 +885,9 @@ export function OrbPreview({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    if (pages.length <= 1) {
+    // A sandbox intercepts every in-app link, even with one page, so a raw
+    // `<a href>` can never navigate the host.
+    if (pages.length <= 1 && !isolated) {
       navLog.debug('interceptor:skipped', { reason: 'single-page schema', pageCount: pages.length });
       return;
     }
@@ -887,7 +899,16 @@ export function OrbPreview({
         href,
         anchorText: anchor.textContent?.trim().slice(0, 40),
       });
-      if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('#')) {
+      const external = href.startsWith('http') || href.startsWith('mailto:');
+      if (isolated && (external || href.startsWith('#'))) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        if (external) window.open(href, '_blank', 'noopener,noreferrer');
+        navLog.debug('click:sandboxed', { href, external });
+        return;
+      }
+      if (!href || external || href.startsWith('#')) {
         navLog.debug('click:skipped', { href, reason: 'external/empty/hash' });
         return;
       }
@@ -899,7 +920,7 @@ export function OrbPreview({
     el.addEventListener('click', handler, true);
     navLog.info('interceptor:installed', { pageCount: pages.length, paths: pages.map((p) => p.page.path) });
     return () => el.removeEventListener('click', handler, true);
-  }, [pages, handleNavigate]);
+  }, [pages, handleNavigate, isolated]);
 
   return (
     <Box

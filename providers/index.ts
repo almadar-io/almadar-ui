@@ -159,4 +159,12 @@ export type {
   NavPageDecl,
 } from './NavStackContext';
 
+export {
+  ArbitraryClassCompilerProvider,
+  useArbitraryClassStyles,
+  resetArbitraryClassStyles,
+  ARBITRARY_CLASS_STYLE_ID,
+} from './ArbitraryClassCompiler';
+export type { ArbitraryClassCompiler, ArbitraryClassCompilerProviderProps } from './ArbitraryClassCompiler';
+
 // Note: EventBusContextType is exported from hooks/event-bus-types to avoid duplicate exports

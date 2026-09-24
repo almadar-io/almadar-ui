@@ -15,7 +15,12 @@ export function deriveEditFocusFromElement(el: HTMLElement): EditFocus | null {
 
   const path = el.getAttribute('data-orb-path') ?? el.getAttribute('data-pattern-path');
   const patternType = el.getAttribute('data-orb-pattern') ?? el.getAttribute('data-pattern');
-  const trait = el.getAttribute('data-orb-trait') ?? el.getAttribute('data-source-trait');
+  // The element or its nearest ancestor carrying the attribute: in a live
+  // preview the render's address (trait, transition, slot …) sits on the slot
+  // wrapper, not on each nested element.
+  const nearest = (attr: string): string | null => el.closest(`[${attr}]`)?.getAttribute(attr) ?? null;
+  const traitEl = el.closest('[data-orb-trait],[data-source-trait]');
+  const trait = traitEl?.getAttribute('data-orb-trait') ?? traitEl?.getAttribute('data-source-trait') ?? null;
   const focus: EditFocus = {
     level: 'node',
     orbital,
@@ -24,13 +29,13 @@ export function deriveEditFocusFromElement(el: HTMLElement): EditFocus | null {
   if (path !== null) focus.path = path;
   if (trait !== null) focus.trait = trait;
   if (patternType !== null) focus.patternType = patternType;
-  const transition = el.getAttribute('data-orb-transition');
+  const transition = nearest('data-orb-transition');
   if (transition !== null) focus.transition = transition;
-  const state = el.getAttribute('data-orb-state');
+  const state = nearest('data-orb-state');
   if (state !== null) focus.state = state;
-  const slot = el.getAttribute('data-orb-slot');
+  const slot = nearest('data-orb-slot');
   if (slot !== null) focus.slot = slot;
-  const entity = el.getAttribute('data-orb-entity');
+  const entity = nearest('data-orb-entity');
   if (entity !== null) focus.entity = entity;
   return focus;
 }

@@ -7,6 +7,7 @@
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { formatValue } from "../../../lib/format";
+import { INLINE_TEXT_ATTR } from "../../../lib/inlineText";
 
 export type TypographyVariant =
   | "h1"
@@ -208,6 +209,8 @@ export const Typography: React.FC<TypographyProps> = ({
         className,
       ),
       style,
+      // Text that comes from the `content` prop can be edited in place.
+      ...(children == null && typeof content === "string" ? { [INLINE_TEXT_ATTR]: "content" } : {}),
     },
     body,
   );

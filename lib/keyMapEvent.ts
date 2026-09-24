@@ -6,8 +6,10 @@ export function isEditableTarget(target: EventTarget | null): boolean {
     if (!(target instanceof HTMLElement)) return false;
     const tag = target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-    // jsdom never implements the isContentEditable getter, so contentEditable is checked directly too.
-    return target.isContentEditable || target.contentEditable === 'true';
+    if (target.isContentEditable || target.contentEditable === 'true') return true;
+    // jsdom implements neither getter, so the attribute is checked too.
+    const attr = target.getAttribute('contenteditable');
+    return attr === '' || attr === 'true' || attr === 'plaintext-only';
 }
 
 export function keyMapCode(e: KeyboardEvent): string {

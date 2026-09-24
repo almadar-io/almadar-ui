@@ -91,6 +91,7 @@ export { EventFlowEdge } from '../components/avl/molecules/EventFlowEdge';
 // stamped by UISlotRenderer) off a clicked element so consumers (runtime-verify
 // catalog, studio chatbox) can turn a rendered node into an EditFocus.
 export { deriveEditFocusFromElement } from '../components/avl/lib/derive-edit-focus';
+export { useInlineTextEdit, type InlineTextEditOptions } from '../components/avl/hooks/useInlineTextEdit';
 
 // Canvas DnD (mirrors useDataDnd; pointer-sensor based so it works inside
 // React Flow nodes — the HTML5 DnD path was swallowed by RF's pan/zoom).
@@ -156,3 +157,4 @@ export {
   type CrossLink,
   type ZoomLevel,
 } from '../components/avl/organisms/index';
+export { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../components/avl/lib/canvas-tools';

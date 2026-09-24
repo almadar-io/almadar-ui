@@ -28,6 +28,16 @@ describe('isEditableTarget', () => {
         document.body.removeChild(div);
     });
 
+    it('is true for the contenteditable attribute, and false when it is "false"', () => {
+        const div = document.createElement('div');
+        div.setAttribute('contenteditable', 'true');
+        expect(isEditableTarget(div)).toBe(true);
+        div.setAttribute('contenteditable', '');
+        expect(isEditableTarget(div)).toBe(true);
+        div.setAttribute('contenteditable', 'false');
+        expect(isEditableTarget(div)).toBe(false);
+    });
+
     it('is false for a plain element', () => {
         expect(isEditableTarget(document.createElement('canvas'))).toBe(false);
     });

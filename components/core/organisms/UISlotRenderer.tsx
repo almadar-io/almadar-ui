@@ -1641,7 +1641,12 @@ function SlotContentRenderer({
       entityIsObject: entityProp !== null && typeof entityProp === 'object' && !Array.isArray(entityProp),
     });
   }
-  if (typeof entityProp === 'string' && entityProp.length > 0) {
+  // Patterns whose `entity` prop is DECLARED a string (an entity name —
+  // filter-group, search-input, the slot patterns) legitimately receive one;
+  // the stale-binding guard applies only where the registry types it as data.
+  const entityDeclaredString =
+    getPatternDefinition(content.pattern)?.propsSchema?.entity?.types?.includes('string') === true;
+  if (typeof entityProp === 'string' && entityProp.length > 0 && !entityDeclaredString) {
     if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
       throw new Error(
         `[UISlotRenderer] Received string 'entity: "${entityProp}"' at render time. The V2 flow requires pre-resolved data; declare a fetch success listener and pass 'entity: @payload.data'. See docs/Almadar_Entity_V2_Plan.md §6.`,

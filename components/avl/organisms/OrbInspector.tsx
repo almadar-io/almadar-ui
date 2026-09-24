@@ -17,22 +17,7 @@
  */
 
 import React, { useContext, useMemo, useCallback, useState } from 'react';
-import type {
-  Effect,
-  Entity,
-  EntityCall,
-  EntityField,
-  EventPayload,
-  EventPayloadValue,
-  Expression,
-  FieldType,
-  OrbitalDefinition,
-  OrbitalSchema,
-  PatternNode,
-  ThemeDefinition,
-  Trait,
-  Transition,
-} from '@almadar/core';
+import type { Effect, Entity, EntityCall, EntityField, EventPayload, EventPayloadValue, Expression, FieldType, OrbitalDefinition, OrbitalSchema, PatternNode, ThemeDefinition, Trait, Transition } from '@almadar/core';
 import { FieldTypeSchema } from '@almadar/core';
 import type { PatternPropDef } from '@almadar/core/patterns';
 import { Box } from '../../core/atoms/Box';
@@ -54,10 +39,16 @@ import {
 } from '../types/avl-atom-types';
 import type { PreviewNodeData } from '../types/avl-preview-types';
 import { PatternSelectionContext, type SelectedPattern } from '../molecules/OrbPreviewNode';
-import { getPatternDefinition, isEntityAwarePattern } from '@almadar/core/patterns';
+import { axisPositionFrom, type OffsetInParent } from '../lib/selection-geometry';
+import { getPatternDefinition, isEntityAwarePattern, renderUiEntriesOf } from '@almadar/core/patterns';
+
+import { Switch } from '../../core/atoms/Switch';
+import { cn } from '../../../lib/cn';
+import { findTransition, resolvePatternConfig } from '../lib/resolve-pattern-config';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { DESIGN_COLOR_TOKENS, DESIGN_RADIUS_TOKENS, DESIGN_SPACING_SCALE, isArbitraryClass, positionOf, sizeLimitOf, sizingOf, spacingOf, withPosition, withSizeLimit, withSizing, withSpacing, tokenOfDesignClass, type DesignColorUtility, type DesignClassToken, type DesignConstraint, type DesignSizeLimit } from '../../../lib/design-classes';
 
 const inspectorLog = createLogger('almadar:ui:inspector');
 
@@ -98,17 +89,6 @@ function findEntity(schema: OrbitalSchema, orbitalName: string): { name: string;
   return { name: e.name ?? orbitalName, persistence: e.persistence ?? 'runtime', fields };
 }
 
-function findTransition(schema: OrbitalSchema, orbitalName: string, traitName: string, event: string): Transition | null {
-  const orbital = (schema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
-  if (!orbital) return null;
-  const traits = (orbital.traits ?? []) as Trait[];
-  const trait = traits.find(t => typeof t !== 'string' && t.name === traitName);
-  if (!trait || typeof trait === 'string') return null;
-  const sm = trait.stateMachine;
-  if (!sm) return null;
-  return (sm.transitions as Transition[])?.find(t => t.event === event) ?? null;
-}
-
 function findTraits(schema: OrbitalSchema, orbitalName: string): Array<{ name: string; stateCount: number }> {
   const orbital = (schema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
   if (!orbital) return [];
@@ -116,59 +96,6 @@ function findTraits(schema: OrbitalSchema, orbitalName: string): Array<{ name: s
     name: t.name,
     stateCount: t.stateMachine?.states?.length ?? 0,
   }));
-}
-
-/**
- * Navigate a dot-separated path within a pattern config tree.
- *
- * Pattern nodes may carry children at either `node.children` (flat
- * authoring form) or `node.props.children` (nested form some IR
- * transformations emit). UISlotRenderer's path emission uses
- * `<parentPath>.children.<index>` regardless of source form (it
- * normalizes before assigning the `data-pattern-path` attribute), so
- * this walker has to look in both places to keep path → node lookup
- * symmetric with the renderer's emission.
- */
-function findPatternInTree(root: PatternNode, path: string): PatternNode | null {
-  if (!path || path === 'root') return root;
-  // UISlotRenderer emits paths starting with 'root' as the entry-point
-  // name (UISlotRenderer.tsx:1249). `root.children.0.children.0` means
-  // "from root, go children[0] → children[0]" — the leading 'root.' is
-  // a label, not a key to traverse. Without stripping, the first walk
-  // step tries `root['root']`, gets undefined, and every nested lookup
-  // returns null → inspector renders every prop as '—'.
-  const cleanPath = path.startsWith('root.') ? path.slice('root.'.length) : path;
-  const parts = cleanPath.split('.');
-  let current: PatternNode | PatternNode[] | null = root;
-  for (const part of parts) {
-    if (current === null) return null;
-    if (Array.isArray(current)) {
-      const idx = parseInt(part, 10);
-      if (isNaN(idx) || idx < 0 || idx >= current.length) return null;
-      const item: PatternNode = current[idx];
-      current = (item && typeof item === 'object' && !Array.isArray(item)) ? item : null;
-    } else {
-      if (part === 'children') {
-        // Prefer flat `.children`; fall back to `.props.children` for nested
-        // pattern nodes.
-        if (Array.isArray(current.children)) {
-          current = current.children;
-        } else {
-          const nestedProps = current.props;
-          if (nestedProps && typeof nestedProps === 'object' && !Array.isArray(nestedProps)
-              && Array.isArray((nestedProps as PatternNode).children)) {
-            current = (nestedProps as PatternNode).children as PatternNode[];
-          } else {
-            return null;
-          }
-        }
-      } else {
-        const rawVal: PatternNode[string] = current[part];
-        current = (rawVal && typeof rawVal === 'object' && !Array.isArray(rawVal)) ? (rawVal as PatternNode) : null;
-      }
-    }
-  }
-  return Array.isArray(current) ? null : current;
 }
 
 // Derived from @almadar/core FieldTypeSchema (canonical source)
@@ -196,11 +123,9 @@ export interface OrbInspectorProps {
    */
   userType?: 'builder' | 'designer' | 'architect';
   /**
-   * Project theme tokens (Design System tab only). When provided AND the
-   * selection originates from the synthesized `__design_system__` schema,
-   * the Styles tab renders an editable token-row list; edits emit
-   * `UI:PROP_CHANGE` with `propName: '__token__.<group>.<key>'` and the
-   * page-level dispatcher routes them to `themeManifest.setToken`.
+   * Project theme tokens. The Styles tab reads them for Global edits (and, on
+   * the synthesized `__design_system__` schema, lists them all); those edits
+   * emit `UI:PROP_CHANGE` with `scope: 'global'` + `tokenGroup`/`tokenKey`.
    */
   themeManifest?: ThemeDefinition;
   /**
@@ -289,91 +214,19 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
   // we widen to "any render-ui in the source trait, or any in the orbital
   // if the source trait is also unknown." The patternId path is unique to
   // one tree; the wrong tree returns null and we move on.
-  const patternConfig = useMemo(() => {
-    if (!selectedPattern) return null;
-    const patternId = selectedPattern.patternId ?? 'root';
-
-    const tryEffects = (effects: Effect[]): PatternNode | null => {
-      for (const eff of effects) {
-        if (!Array.isArray(eff) || eff[0] !== 'render-ui' || !eff[2]) continue;
-        const root = eff[2];
-        if (typeof root !== 'object' || root === null || Array.isArray(root)) continue;
-        const found = findPatternInTree(root as PatternNode, patternId);
-        if (!found) continue;
-        // Type-discriminate so two transitions whose render-ui trees share
-        // a path but differ in the node at that path don't silently swap.
-        if (selectedPattern.patternType
-            && typeof found.type === 'string'
-            && found.type !== selectedPattern.patternType) {
-          continue;
-        }
-        // Normalize nested → flat. Merge top-level keys over `props` so
-        // `type` / `_id` / `children` survive the unwrap.
-        const nested = found.props;
-        if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
-          const { props: _stripped, ...rest } = found;
-          void _stripped;
-          return { ...(nested as PatternNode), ...rest };
-        }
-        return found;
-      }
-      return null;
-    };
-
-    // L2 fast path: the click came with a specific transition.
-    if (transition) {
-      const direct = tryEffects(transition.effects ?? []);
-      if (direct) return direct;
-    }
-
-    // L1 fallback: widen to every transition in the orbital's traits.
-    // Prefer the trait the click reported via `data-source-trait` so we
-    // don't accidentally collide with another trait's identical render-ui
-    // path (atoms reused across traits → same `root.children.0.…` path).
-    const orbital = schema.orbitals.find((o) => o.name === orbitalName);
-    if (orbital) {
-      const orderedTraits = [...(orbital.traits ?? [])].sort((a, b) => {
-        const aName = typeof a === 'string' ? a : a.name;
-        const bName = typeof b === 'string' ? b : b.name;
-        const src = selectedPattern.sourceTrait;
-        if (src && aName === src) return -1;
-        if (src && bName === src) return 1;
-        return 0;
-      });
-      for (const traitRef of orderedTraits) {
-        if (typeof traitRef === 'string') continue;
-        // Inline traits carry `stateMachine` directly; preprocessed ref
-        // traits (`{ref, _resolved}`) carry it on `_resolved`. Read both.
-        const inline = 'stateMachine' in traitRef ? traitRef.stateMachine : undefined;
-        const resolved = '_resolved' in traitRef
-          ? (traitRef as { _resolved?: Trait })._resolved?.stateMachine
-          : undefined;
-        const sm = inline ?? resolved;
-        const traitTransitions = sm?.transitions;
-        if (!Array.isArray(traitTransitions)) continue;
-        for (const tx of traitTransitions) {
-          const hit = tryEffects((tx as { effects?: Effect[] }).effects ?? []);
-          if (hit) return hit;
-        }
-      }
-    }
-
-    // Selection has a patternId but nothing matched anywhere — usually a
-    // path/key mismatch between the click target's `data-pattern-path`
-    // and the SExpr tree shape. Surface it so future divergences don't
-    // quietly render every prop as '—'.
-    if (selectedPattern.patternId) {
-      inspectorLog.warn('pattern-config-unresolved', () => ({
-        patternId: selectedPattern.patternId,
-        patternType: selectedPattern.patternType,
-        sourceTrait: selectedPattern.sourceTrait,
-        orbitalName,
-        traitName,
-        transitionEvent,
-      }));
-    }
-    return null;
-  }, [selectedPattern, transition, schema, orbitalName, traitName, transitionEvent]);
+  const patternConfig = useMemo(
+    () => (selectedPattern
+      ? resolvePatternConfig(schema, {
+          orbitalName,
+          traitName,
+          transitionEvent,
+          sourceTrait: selectedPattern.sourceTrait,
+          patternId: selectedPattern.patternId,
+          patternType: selectedPattern.patternType,
+        })
+      : null),
+    [selectedPattern, schema, orbitalName, traitName, transitionEvent],
+  );
 
   // Generate the relevant JSON slice for the code tab
   const orbCode = useMemo(() => {
@@ -402,7 +255,26 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
   const handlePropChange = useCallback((propName: string, value: EventPayloadValue) => {
     if (!editable) return;
     eventBus.emit('UI:PROP_CHANGE', {
+      scope: 'local',
       propName,
+      value,
+      selection: {
+        sourceSchemaName: selectedPattern?.nodeData.sourceSchemaName,
+        patternPath: selectedPattern?.patternId,
+        orbitalName,
+        traitName,
+        transitionEvent,
+      },
+    });
+  }, [editable, eventBus, selectedPattern, orbitalName, traitName, transitionEvent]);
+
+  // A theme-token edit: changes the token everywhere it's used, not this element.
+  const handleTokenChange = useCallback((token: InspectorTokenRef, value: string) => {
+    if (!editable) return;
+    eventBus.emit('UI:PROP_CHANGE', {
+      scope: 'global',
+      tokenGroup: token.group,
+      tokenKey: token.key,
       value,
       selection: {
         sourceSchemaName: selectedPattern?.nodeData.sourceSchemaName,
@@ -566,17 +438,18 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
 
             {/* Styles — variant + size pills are clickable when `editable`
                 and emit `UI:PROP_CHANGE` with the selection context. The
-                page-level dispatcher routes those events to the project
-                schemaEditor or to the theme manifest based on
-                `selection.sourceSchemaName`. */}
+                page-level dispatcher applies `scope: 'local'` edits to the
+                element and `scope: 'global'` edits to the theme token. */}
             <StylesTab
               patternType={patternType}
               patternDef={patternDef}
               patternConfig={patternConfig}
               editable={editable}
               onPropChange={handlePropChange}
+              onTokenChange={handleTokenChange}
               themeManifest={themeManifest}
               isDesignSystem={selectedPattern?.nodeData.sourceSchemaName === '__design_system__'}
+              offsetInParent={selectedPattern?.offsetInParent}
             />
 
             {/* Render-UI Source (architect only — raw SExpression tree) */}
@@ -917,12 +790,14 @@ interface StylesTabProps {
   patternConfig: PatternNode | null;
   editable: boolean;
   onPropChange: (propName: string, value: EventPayloadValue) => void;
+  onTokenChange: (token: InspectorTokenRef, value: string) => void;
   themeManifest?: ThemeDefinition;
   /** Selection originates from the synthesized `__design_system__` schema. */
   isDesignSystem: boolean;
+  offsetInParent?: OffsetInParent;
 }
 
-function StylesTab({ patternType, patternDef, patternConfig, editable, onPropChange, themeManifest, isDesignSystem }: StylesTabProps): React.ReactElement {
+function StylesTab({ patternType, patternDef, patternConfig, editable, onPropChange, onTokenChange, themeManifest, isDesignSystem, offsetInParent }: StylesTabProps): React.ReactElement {
   const { t } = useTranslate();
 
   if (!patternType) {
@@ -1032,11 +907,19 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
         </Box>
       )}
 
-      {/* Project theme tokens (Design System tab only). Edits emit
-          UI:PROP_CHANGE with propName `__token__.<group>.<key>` — the
-          page-level dispatcher routes those to themeManifest.setToken. */}
+      {editable && !isDesignSystem && (
+        <AppearanceSection
+          patternConfig={patternConfig}
+          themeManifest={themeManifest}
+          onPropChange={onPropChange}
+          onTokenChange={onTokenChange}
+          offsetInParent={offsetInParent}
+        />
+      )}
+
+      {/* Project theme tokens (Design System tab only) — global edits. */}
       {isDesignSystem && themeManifest && editable && (
-        <TokenEditorSection themeManifest={themeManifest} onPropChange={onPropChange} />
+        <TokenEditorSection themeManifest={themeManifest} onTokenChange={onTokenChange} />
       )}
     </Box>
   );
@@ -1048,7 +931,7 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
 
 interface TokenEditorSectionProps {
   themeManifest: ThemeDefinition;
-  onPropChange: (propName: string, value: EventPayloadValue) => void;
+  onTokenChange: (token: InspectorTokenRef, value: string) => void;
 }
 
 /** Theme-token categories the inspector exposes for editing. */
@@ -1059,7 +942,7 @@ const TOKEN_GROUPS: readonly { group: 'colors' | 'radii' | 'spacing' | 'shadows'
   { group: 'shadows', labelKey: 'orbInspector.tokenGroup.shadows' },
 ] as const;
 
-function TokenEditorSection({ themeManifest, onPropChange }: TokenEditorSectionProps): React.ReactElement {
+function TokenEditorSection({ themeManifest, onTokenChange }: TokenEditorSectionProps): React.ReactElement {
   const { t } = useTranslate();
   const tokens = themeManifest.tokens ?? {};
   return (
@@ -1080,7 +963,7 @@ function TokenEditorSection({ themeManifest, onPropChange }: TokenEditorSectionP
                 tokenKey={key}
                 value={String(value)}
                 isColor={group === 'colors'}
-                onPropChange={onPropChange}
+                onTokenChange={onTokenChange}
               />
             ))}
           </Box>
@@ -1095,10 +978,10 @@ interface TokenRowProps {
   tokenKey: string;
   value: string;
   isColor: boolean;
-  onPropChange: (propName: string, value: EventPayloadValue) => void;
+  onTokenChange: (token: InspectorTokenRef, value: string) => void;
 }
 
-function TokenRow({ group, tokenKey, value, isColor, onPropChange }: TokenRowProps): React.ReactElement {
+function TokenRow({ group, tokenKey, value, isColor, onTokenChange }: TokenRowProps): React.ReactElement {
   return (
     <Box className="flex items-center gap-2">
       {isColor && (
@@ -1112,9 +995,346 @@ function TokenRow({ group, tokenKey, value, isColor, onPropChange }: TokenRowPro
       </Typography>
       <Input
         value={value}
-        onChange={(e) => onPropChange(`__token__.${group}.${tokenKey}`, e.target.value)}
+        onChange={(e) => onTokenChange({ group, key: tokenKey }, e.target.value)}
         className="flex-1 text-xs font-mono"
       />
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Appearance — Local (this element's classes) vs Global (the theme token)
+// ---------------------------------------------------------------------------
+
+/** A theme token an edit targets: `setToken(group, key, value)` on the host. */
+export interface InspectorTokenRef {
+  group: 'colors' | 'radii' | 'spacing' | 'typography' | 'shadows';
+  key: string;
+}
+
+type EditScope = 'local' | 'global';
+
+const COLOR_ROWS: readonly { utility: DesignColorUtility; labelKey: string }[] = [
+  { utility: 'bg', labelKey: 'orbInspector.fill' },
+  { utility: 'text', labelKey: 'orbInspector.textColor' },
+  { utility: 'border', labelKey: 'orbInspector.borderColor' },
+];
+
+const SIZE_ROWS: readonly { utility: 'w' | 'h'; labelKey: string }[] = [
+  { utility: 'w', labelKey: 'orbInspector.width' },
+  { utility: 'h', labelKey: 'orbInspector.height' },
+];
+
+const LIMIT_ROWS: readonly { axis: 'w' | 'h'; limit: DesignSizeLimit; labelKey: string }[] = [
+  { axis: 'w', limit: 'min', labelKey: 'orbInspector.minWidth' },
+  { axis: 'w', limit: 'max', labelKey: 'orbInspector.maxWidth' },
+  { axis: 'h', limit: 'min', labelKey: 'orbInspector.minHeight' },
+  { axis: 'h', limit: 'max', labelKey: 'orbInspector.maxHeight' },
+];
+
+const CONSTRAINTS: readonly DesignConstraint[] = ['start', 'end', 'both', 'center', 'scale'];
+const CONSTRAINT_LABELS = {
+  x: { start: 'orbInspector.pinLeft', end: 'orbInspector.pinRight', both: 'orbInspector.pinLeftRight', center: 'orbInspector.pinCenter', scale: 'orbInspector.pinScale' },
+  y: { start: 'orbInspector.pinTop', end: 'orbInspector.pinBottom', both: 'orbInspector.pinTopBottom', center: 'orbInspector.pinCenter', scale: 'orbInspector.pinScale' },
+} as const;
+
+/** The element's own classes, or null when `className` is a binding and not editable here. */
+function classesOf(config: PatternNode | null): string[] | null {
+  const value = config?.className;
+  if (value === undefined || value === null) return [];
+  return typeof value === 'string' ? value.split(/\s+/).filter(Boolean) : null;
+}
+
+/** The unprefixed class the element uses for one utility (e.g. its `bg-*`), if any. */
+function classFor(classes: readonly string[], prefix: string): string | undefined {
+  return classes.find((c) => !c.includes(':') && c.startsWith(prefix));
+}
+
+interface AppearanceSectionProps {
+  patternConfig: PatternNode | null;
+  themeManifest?: ThemeDefinition;
+  onPropChange: (propName: string, value: EventPayloadValue) => void;
+  onTokenChange: (token: InspectorTokenRef, value: string) => void;
+  offsetInParent?: OffsetInParent;
+}
+
+function AppearanceSection({ patternConfig, themeManifest, onPropChange, onTokenChange, offsetInParent }: AppearanceSectionProps): React.ReactElement {
+  const { t } = useTranslate();
+  const [scope, setScope] = useState<EditScope>('local');
+  const [custom, setCustom] = useState('');
+  const [customRefused, setCustomRefused] = useState(false);
+  const classes = classesOf(patternConfig);
+
+  if (classes === null) {
+    return (
+      <Box className="flex flex-col gap-2 pt-2 border-t border-border/40" data-testid="inspector-appearance">
+        <Typography variant="small" className="text-xs uppercase tracking-wider text-muted-foreground">{t('orbInspector.appearance')}</Typography>
+        <Typography variant="small" className="text-xs text-muted-foreground">{t('orbInspector.classNameIsBinding')}</Typography>
+      </Box>
+    );
+  }
+
+  const setClass = (next: string) => onPropChange('className', cn(classes.join(' '), next));
+  const tokenValue = (token: DesignClassToken): string => {
+    const group = themeManifest?.tokens?.[token.group];
+    return group ? String(group[token.key] ?? '') : '';
+  };
+
+  const globalEditor = (current: string | undefined) => {
+    const token = current ? tokenOfDesignClass(current) : null;
+    if (!token) {
+      return <Typography variant="small" className="text-xs text-muted-foreground">{t('orbInspector.notThemeBacked')}</Typography>;
+    }
+    return (
+      <Box className="flex flex-col gap-1">
+        <Typography variant="small" className="text-xs text-muted-foreground">
+          {t('orbInspector.globalAffects', { token: `${token.group}.${token.key}` })}
+        </Typography>
+        <Input
+          value={tokenValue(token)}
+          aria-label={`${token.group}.${token.key}`}
+          onChange={(e) => onTokenChange({ group: token.group, key: token.key }, e.target.value)}
+          className="text-xs font-mono"
+        />
+      </Box>
+    );
+  };
+
+  return (
+    <Box className="flex flex-col gap-3 pt-2 border-t border-border/40" data-testid="inspector-appearance">
+      <Box className="flex items-center justify-between gap-2">
+        <Typography variant="small" className="text-xs uppercase tracking-wider text-muted-foreground">{t('orbInspector.appearance')}</Typography>
+        <Box className="flex rounded-md border border-border/60 overflow-hidden" role="group" aria-label={t('orbInspector.editScope')}>
+          {(['local', 'global'] as const).map((s) => (
+            <Button
+              key={s}
+              variant={scope === s ? 'primary' : 'ghost'}
+              size="sm"
+              aria-pressed={scope === s}
+              data-testid={`inspector-scope-${s}`}
+              onClick={() => setScope(s)}
+              className="rounded-none h-6 px-2 text-xs"
+            >
+              {t(s === 'local' ? 'orbInspector.scopeLocal' : 'orbInspector.scopeGlobal')}
+            </Button>
+          ))}
+        </Box>
+      </Box>
+
+      {COLOR_ROWS.map(({ utility, labelKey }) => {
+        const current = classFor(classes, `${utility}-`);
+        return (
+          <Box key={utility} className="flex flex-col gap-1.5" data-testid={`inspector-${utility}`}>
+            <Typography variant="small" className="text-xs font-mono text-muted-foreground">{t(labelKey)}</Typography>
+            {scope === 'global' ? globalEditor(current) : (
+              <Box className="flex flex-wrap gap-1">
+                {DESIGN_COLOR_TOKENS.map((token) => {
+                  const cls = `${utility}-${token}`;
+                  return (
+                    <Button
+                      key={token}
+                      variant="ghost"
+                      size="sm"
+                      title={cls}
+                      aria-label={cls}
+                      aria-pressed={current === cls}
+                      onClick={() => setClass(cls)}
+                      className={`w-5 h-5 p-0 min-w-0 rounded border ${current === cls ? 'ring-2 ring-primary' : 'border-border/60'}`}
+                      style={{ backgroundColor: `var(--color-${token})` }}
+                    />
+                  );
+                })}
+              </Box>
+            )}
+          </Box>
+        );
+      })}
+
+      <Box className="flex flex-col gap-1.5" data-testid="inspector-radius">
+        <Typography variant="small" className="text-xs font-mono text-muted-foreground">{t('orbInspector.radius')}</Typography>
+        {scope === 'global' ? globalEditor(classFor(classes, 'rounded-')) : (
+          <Box className="flex flex-wrap gap-1">
+            {DESIGN_RADIUS_TOKENS.map((token) => {
+              const cls = `rounded-${token}`;
+              const active = classFor(classes, 'rounded-') === cls;
+              return (
+                <Button
+                  key={token}
+                  variant={active ? 'primary' : 'secondary'}
+                  size="sm"
+                  aria-pressed={active}
+                  onClick={() => setClass(cls)}
+                  className="h-6 px-2 text-xs font-mono"
+                >
+                  {token}
+                </Button>
+              );
+            })}
+          </Box>
+        )}
+      </Box>
+
+      {SIZE_ROWS.map(({ utility, labelKey }) => {
+        const sizing = sizingOf(classes, utility);
+        const current = sizing.mode === 'fixed' ? `${utility}-${sizing.step}` : sizing.mode;
+        return (
+          <Box key={utility} className="flex items-center gap-2" data-testid={`inspector-${utility}`}>
+            <Typography variant="small" className="text-xs font-mono text-muted-foreground w-12 shrink-0">{t(labelKey)}</Typography>
+            {scope === 'global' ? (
+              globalEditor(sizing.mode === 'fixed' ? `${utility}-${sizing.step}` : undefined)
+            ) : (
+              <Select
+                value={current}
+                aria-label={t(labelKey)}
+                options={[
+                  { value: 'hug', label: t('orbInspector.sizingHug') },
+                  { value: 'fill', label: t('orbInspector.sizingFill') },
+                  ...DESIGN_SPACING_SCALE.map((step) => ({ value: `${utility}-${step}`, label: String(step) })),
+                ]}
+                onValueChange={(v) => {
+                  if (v === 'hug' || v === 'fill') {
+                    onPropChange('className', withSizing(classes, utility, { mode: v }).join(' '));
+                    return;
+                  }
+                  const step = DESIGN_SPACING_SCALE.find((s) => `${utility}-${s}` === v);
+                  if (step !== undefined) onPropChange('className', withSizing(classes, utility, { mode: 'fixed', step }).join(' '));
+                }}
+                className="flex-1 text-xs h-6"
+              />
+            )}
+          </Box>
+        );
+      })}
+
+      {LIMIT_ROWS.map(({ axis, limit, labelKey }) => {
+        const prefix = `${limit}-${axis}-`;
+        const step = sizeLimitOf(classes, axis, limit);
+        const current = step !== null ? String(step) : classFor(classes, prefix) ? 'custom' : 'none';
+        return (
+          <Box key={prefix} className="flex items-center gap-2" data-testid={`inspector-${limit}-${axis}`}>
+            <Typography variant="small" className="text-xs font-mono text-muted-foreground w-12 shrink-0">{t(labelKey)}</Typography>
+            {scope === 'global' ? globalEditor(classFor(classes, prefix)) : (
+              <Select
+                value={current}
+                aria-label={t(labelKey)}
+                options={[
+                  { value: 'none', label: t('orbInspector.limitNone') },
+                  ...(current === 'custom' ? [{ value: 'custom', label: t('orbInspector.custom') }] : []),
+                  ...DESIGN_SPACING_SCALE.map((s) => ({ value: String(s), label: String(s) })),
+                ]}
+                onValueChange={(v) => {
+                  if (v === 'none') {
+                    onPropChange('className', withSizeLimit(classes, axis, limit, null).join(' '));
+                    return;
+                  }
+                  const next = DESIGN_SPACING_SCALE.find((s) => String(s) === v);
+                  if (next !== undefined) onPropChange('className', withSizeLimit(classes, axis, limit, next).join(' '));
+                }}
+                className="flex-1 text-xs h-6"
+              />
+            )}
+          </Box>
+        );
+      })}
+
+      {/* Absolute position: taken out of auto layout, pinned by Figma-style constraints. */}
+      {(() => {
+        const position = positionOf(classes);
+        const write = (next: typeof position) => onPropChange('className', withPosition(classes, next).join(' '));
+        return (
+          <Box className="flex flex-col gap-1.5" data-testid="inspector-position">
+            <Switch
+              checked={position.absolute}
+              label={t('orbInspector.absolute')}
+              onChange={(on) => write(on
+                ? { absolute: true, x: axisPositionFrom('x', 'start', offsetInParent), y: axisPositionFrom('y', 'start', offsetInParent) }
+                : { ...position, absolute: false })}
+            />
+            {position.absolute && (['x', 'y'] as const).map((axis) => (
+              <Box key={axis} className="flex items-center gap-2" data-testid={`inspector-constraint-${axis}`}>
+                <Typography variant="small" className="text-xs font-mono text-muted-foreground w-12 shrink-0">
+                  {t(axis === 'x' ? 'orbInspector.constraintHorizontal' : 'orbInspector.constraintVertical')}
+                </Typography>
+                <Select
+                  value={position[axis].constraint}
+                  aria-label={t(axis === 'x' ? 'orbInspector.constraintHorizontal' : 'orbInspector.constraintVertical')}
+                  options={CONSTRAINTS.map((c) => ({ value: c, label: t(CONSTRAINT_LABELS[axis][c]) }))}
+                  onValueChange={(v) => {
+                    const constraint = CONSTRAINTS.find((c) => c === v);
+                    if (constraint) write({ ...position, [axis]: axisPositionFrom(axis, constraint, offsetInParent) });
+                  }}
+                  className="flex-1 text-xs h-6"
+                />
+              </Box>
+            ))}
+          </Box>
+        );
+      })()}
+
+      {/* Custom: one arbitrary-value class (w-[243px]); the preview compiles it at runtime. */}
+      <Box className="flex flex-col gap-1" data-testid="inspector-custom">
+        <Typography variant="small" className="text-xs font-mono text-muted-foreground">{t('orbInspector.custom')}</Typography>
+        {scope === 'global' ? (
+          <Typography variant="small" className="text-xs text-muted-foreground">{t('orbInspector.notThemeBacked')}</Typography>
+        ) : (
+          <>
+            <Input
+              value={custom}
+              placeholder="w-[243px]"
+              aria-label={t('orbInspector.custom')}
+              onChange={(e) => {
+                setCustom(e.target.value);
+                setCustomRefused(false);
+              }}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key !== 'Enter') return;
+                const value = custom.trim();
+                if (!isArbitraryClass(value)) {
+                  setCustomRefused(true);
+                  return;
+                }
+                setClass(value);
+                setCustom('');
+              }}
+              className="text-xs font-mono"
+            />
+            {customRefused && (
+              <Typography variant="small" className="text-xs text-error">{t('orbInspector.customRefused')}</Typography>
+            )}
+          </>
+        )}
+      </Box>
+
+      {/* Gap and uniform padding (per-side padding is on the canvas handles). */}
+      {(['gap', 'padding'] as const).map((row) => {
+        const spacing = spacingOf(classes);
+        const uniform = spacing.top === spacing.right && spacing.right === spacing.bottom && spacing.bottom === spacing.left;
+        const current = row === 'gap' ? String(spacing.gap) : uniform ? String(spacing.top) : 'mixed';
+        const tokenClass = classFor(classes, row === 'gap' ? 'gap-' : 'p-');
+        const label = t(row === 'gap' ? 'orbInspector.gap' : 'orbInspector.padding');
+        return (
+          <Box key={row} className="flex items-center gap-2" data-testid={`inspector-${row}`}>
+            <Typography variant="small" className="text-xs font-mono text-muted-foreground w-12 shrink-0">{label}</Typography>
+            {scope === 'global' ? globalEditor(tokenClass) : (
+              <Select
+                value={current}
+                aria-label={label}
+                options={[
+                  ...(current === 'mixed' ? [{ value: 'mixed', label: t('orbInspector.mixed') }] : []),
+                  ...DESIGN_SPACING_SCALE.map((step) => ({ value: String(step), label: String(step) })),
+                ]}
+                onValueChange={(v) => {
+                  const step = DESIGN_SPACING_SCALE.find((s) => String(s) === v);
+                  if (step === undefined) return;
+                  const change = row === 'gap' ? { gap: step } : { top: step, right: step, bottom: step, left: step };
+                  onPropChange('className', withSpacing(classes, change).join(' '));
+                }}
+                className="flex-1 text-xs h-6"
+              />
+            )}
+          </Box>
+        );
+      })}
     </Box>
   );
 }

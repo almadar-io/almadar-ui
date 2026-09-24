@@ -26,7 +26,9 @@ import type {
   JsonValue,
   JsonObject,
   SExpr,
+  SExprObject,
 } from '@almadar/core';
+import { renderUiEntriesOf } from '@almadar/core/patterns';
 
 // Internal serialized effect record — all fields are JsonValue-compatible.
 interface SerializedEffect extends JsonObject {
@@ -214,6 +216,11 @@ function getListens(trait: Trait): string[] {
   const listens: TraitEventListener[] | undefined = trait.listens;
   if (!listens) return [];
   return listens.map(l => l.event ?? '');
+}
+
+/** A transition's effects in the JSON view the inspector panels read. */
+function jsonEffects(t: Transition): JsonValue[] {
+  return (t.effects ?? []) as JsonValue[];
 }
 
 function parseEffectType(effect: JsonValue): SerializedEffect {
@@ -416,6 +423,22 @@ export function parseOrbitalLevel(schema: OrbitalSchema, orbitalName: string): O
 /**
  * Parse a trait's state machine for the detail view.
  */
+/**
+ * Each transition's render-ui entries (nested renders included), indexed like
+ * `parseTraitLevel(...).transitions`. Kept apart from that JSON view because
+ * the entries are the schema's own typed pattern objects.
+ */
+export function traitTransitionRenderUi(
+  schema: OrbitalSchema,
+  orbitalName: string,
+  traitName: string,
+): Array<Array<{ slot: string; pattern: SExprObject }>> {
+  const orbital = schema.orbitals?.find(o => o.name === orbitalName);
+  const trait = orbital ? getTraits(orbital).find(t => t.name === traitName) : undefined;
+  const sm = trait ? getStateMachine(trait) : undefined;
+  return sm ? getTransitions(sm).map(t => renderUiEntriesOf(jsonEffects(t))) : [];
+}
+
 export function parseTraitLevel(schema: OrbitalSchema, orbitalName: string, traitName: string): TraitLevelData | null {
   if (!schema.orbitals) return null;
   const orbital = schema.orbitals.find(o => o.name === orbitalName);
@@ -439,7 +462,7 @@ export function parseTraitLevel(schema: OrbitalSchema, orbitalName: string, trai
     to: t.to ?? '',
     event: t.event ?? '',
     guard: t.guard ?? null,
-    effects: ((t.effects ?? []) as JsonValue[]).map(parseEffectType),
+    effects: jsonEffects(t).map(parseEffectType),
     index: i,
   }));
 

@@ -60,3 +60,11 @@ export {
   type UserContextValue,
   type UserProviderProps,
 } from "../providers/UserContext";
+
+export {
+  ArbitraryClassCompilerProvider,
+  useArbitraryClassStyles,
+  ARBITRARY_CLASS_STYLE_ID,
+  type ArbitraryClassCompiler,
+  type ArbitraryClassCompilerProviderProps,
+} from "../providers/ArbitraryClassCompiler";

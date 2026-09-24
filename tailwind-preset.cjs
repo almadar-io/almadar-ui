@@ -25,10 +25,15 @@ function withOpacity(varName) {
       : `color-mix(in srgb, var(${varName}) calc(${opacityValue} * 100%), transparent)`;
 }
 
+// The class vocabulary visual editors write onto `className` (@almadar/core
+// `design-classes`, in this package). Safelisted whole so any class an editor picks compiles.
+const { allDesignClasses } = require('./dist/design-classes/index.cjs');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: 'class',
   safelist: [
+  ...allDesignClasses(),
   // Standard utilities used via dynamic className from .orb schemas
   'contents',
   'p-4', 'p-6', 'p-8',

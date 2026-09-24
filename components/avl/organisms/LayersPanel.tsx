@@ -73,6 +73,7 @@ import {
   parseApplicationLevel,
   parseOrbitalLevel,
   parseTraitLevel,
+  traitTransitionRenderUi,
 } from '../lib/avl-schema-parser';
 
 /** Narrows an `SExpr` to its object-literal branch — a nested pattern config, never an `@entity.X`/`@trait.X` binding string or other literal. */
@@ -172,6 +173,7 @@ export function schemaToLayerItems(schema: OrbitalSchema): FileTreeItem[] {
 
       const traitData = parseTraitLevel(schema, appOrbital.name, traitInfo.name);
       if (!traitData) continue;
+      const renderUi = traitTransitionRenderUi(schema, appOrbital.name, traitInfo.name);
 
       traitData.transitions.forEach((transition, transitionIndex) => {
         const transitionId = `${traitId}/transition:${transitionIndex}`;
@@ -182,16 +184,14 @@ export function schemaToLayerItems(schema: OrbitalSchema): FileTreeItem[] {
           icon: 'zap',
         });
 
-        const renderUiEffects = transition.effects.filter((effect) => effect.type === 'render-ui');
-
-        renderUiEffects.forEach((effect, slotIndex) => {
-          const slotName = String(effect.args[0] ?? 'main');
+        (renderUi[transitionIndex] ?? []).forEach((entry, slotIndex) => {
+          const slotName = entry.slot;
           const slotId = `${transitionId}/slot:${slotName}`;
           if (!seenSlotIds.has(slotId)) {
             seenSlotIds.add(slotId);
             items.push({ id: slotId, label: slotName, parentId: transitionId, icon: 'layout-panel-top' });
           }
-          pushPatternRows(items, slotId, slotIndex, slotId, 'root', effect.args[1]);
+          pushPatternRows(items, slotId, slotIndex, slotId, 'root', entry.pattern);
         });
       });
     }

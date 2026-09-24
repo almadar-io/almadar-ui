@@ -20,6 +20,7 @@ import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { Icon } from '../atoms/Icon';
 import { Textarea } from '../atoms/Textarea';
+import { Spinner } from '../atoms/Spinner';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import type { DisplayStateProps } from './types';
@@ -37,6 +38,8 @@ export interface ChatBarProps extends DisplayStateProps {
   activeGate?: string;
   /** JEPA validity probability 0-1 */
   jepaValidity?: number;
+  /** Shown beside the gate while `status` is running; defaults to a Spinner (a host passes its brand mark). */
+  runningIndicator?: React.ReactNode;
   /** Input placeholder text */
   placeholder?: string;
   /** Agent context description */
@@ -57,6 +60,7 @@ export function ChatBar({
   status = 'idle',
   activeGate,
   jepaValidity,
+  runningIndicator,
   placeholder,
   context,
   className,
@@ -210,11 +214,23 @@ export function ChatBar({
 
         {/* Right: Active gate + JEPA badge. Only rendered when at least one
             is present so an empty flex slot can't claim layout width and
-            squeeze the input on the left. */}
+            squeeze the input on the left. While running, the gate steps up
+            to body size with a working indicator: a follow-up turn can run
+            for minutes and a muted caption was the only sign of it. */}
         {(activeGate || jepaValidity !== undefined) && (
           <HStack gap="xs" className="items-center flex-shrink-0">
+            {status === 'running' && (
+              <Box data-testid="chat-bar-running" className="flex items-center">
+                {runningIndicator ?? <Spinner size="sm" />}
+              </Box>
+            )}
             {activeGate && (
-              <Typography variant="caption" color="muted" className="whitespace-nowrap">
+              <Typography
+                variant={status === 'running' ? 'body' : 'caption'}
+                weight={status === 'running' ? 'medium' : undefined}
+                color={status === 'running' ? undefined : 'muted'}
+                className="whitespace-nowrap"
+              >
                 {activeGate}
               </Typography>
             )}

@@ -155,7 +155,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     // Normalize entity data to TimelineItem[] if schema data is provided
     const entityData: readonly EntityRow[] = entity ?? [];
     const items: readonly TimelineItem[] = React.useMemo(() => {
-        if (propItems) return propItems;
+        if (propItems && propItems.length > 0) return propItems;
         if (entityData.length === 0) return [];
 
         return entityData.map((record, idx) => {

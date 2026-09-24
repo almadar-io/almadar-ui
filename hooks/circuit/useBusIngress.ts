@@ -4,13 +4,17 @@
  * The ONE bus subscription: a component still emits onto the event bus
  * exactly as before (`TraitScopeProvider`'s qualified `UI:<Orbital>.<Trait>.
  * <EVENT>` key; a composed atom's own `(emit EVENT)` reaching sibling atoms
- * via the bare `UI:<EVENT>` key). This hook's ONLY job is translating that
+ * via the bare `UI:<EVENT>` key). This hook's job is translating that
  * bus key into one settled dispatch (`dispatch`, the composer's
- * `dispatchAndSettle`: kernel dispatch → slot flush) — no echo dropping, no effect-name
- * scans, no listen relay. The kernel's own composition
+ * `dispatchAndSettle`: kernel dispatch → slot flush) — no echo dropping, no
+ * effect-name scans. The kernel's own composition
  * (`evaluateOrbitalEvent`'s `collectListenerTargets` fan-out, run internally
- * by `dispatchWithServerLeg`) owns cross-trait `listens{}` delivery; nothing
- * here re-derives it.
+ * by `dispatchWithServerLeg`) owns cross-trait `listens{}` delivery for
+ * events that ENTER through a dispatch; the `listen-source` subscription
+ * block below additionally routes bus-originated emits that land on a
+ * declared listen SOURCE key straight to the listener (the emitter declares
+ * no transition on the event — the CREATE-button shape), which no dispatch
+ * entry point would otherwise see.
  *
  * R-RUNTIME-020 (no ping-pong): the kernel's emit sink is in-memory and
  * feeds only its own listen fan-out. The composer republishes those emits
@@ -27,8 +31,10 @@
  * @packageDocumentation
  */
 import { useEffect } from 'react';
-import type { BusEventSource, EventPayload, ResolvedTraitBinding } from '@almadar/core';
-import { LIFECYCLE_EVENTS, type TraitIndex } from '@almadar/runtime';
+import type { BusEventSource, EventPayload, ResolvedTraitBinding, SExpr } from '@almadar/core';
+import { applyListenPayloadMapping } from '@almadar/core';
+import { evaluateListenPayloadExpr } from '@almadar/evaluator';
+import { collectListenerTargets, LIFECYCLE_EVENTS, type TraitIndex } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 import type { EventBusContextType } from '../../types/event-bus-types';
 
@@ -40,6 +46,13 @@ export type BusDispatch = (
   payload: EventPayload | undefined,
   tick?: string,
 ) => Promise<void>;
+
+/** One listen route behind a shared qualified source key. */
+interface ListenRoute {
+  listenerTrait: string;
+  triggers: string;
+  payloadMapping: Record<string, SExpr> | undefined;
+}
 
 export function useBusIngress(
   traitBindings: readonly ResolvedTraitBinding[],
@@ -93,8 +106,15 @@ export function useBusIngress(
           subscribedBare.add(bareKey);
           const unsub = eventBus.on(bareKey, (event) => {
             if (deliveredHere(event.source)) return;
+            // A republished echo reaching a trait through an explicit listens
+            // route was already delivered on that route (server fan-out or the
+            // kernel's response fold) — bare-name delivery would run it twice.
+            const routed = event.source?.dispatched === true
+              ? new Set(collectListenerTargets(traitIndex, event.source, eventKey, event.payload).map((t) => t.listenerTrait))
+              : undefined;
             for (const [name, entry] of traitIndex.byName) {
               if (!entry.traitDef.transitions.some((t: { event: string }) => t.event === eventKey)) continue;
+              if (routed?.has(name) === true) continue;
               log.debug('bare:fire', { key: bareKey, trait: name });
               dispatch(name, eventKey, event.payload, event.source?.tick);
             }
@@ -102,6 +122,56 @@ export function useBusIngress(
           unsubscribes.push(unsub);
         }
       }
+    }
+
+    // Listen-source keys: an event whose ONLY circuit meaning is a declared
+    // `listens` source — the emitter trait declares no transition on it, so
+    // neither subscription above matches, and a component-originated emit on
+    // the source key (e.g. std-api-gateway's "Create Route" button:
+    // RouteCatalog renders the button, declares no CREATE transition;
+    // RouteCreate `listens { RouteCatalog CREATE -> CREATE }`) previously
+    // reached nothing and the click was a no-op. The pre-W5b hook covered
+    // this with its `listen:subscribe` block; the adapter refactor dropped
+    // it. One subscription per qualified source key; each fire settles every
+    // listener registered for that key through the SAME kernel dispatch as
+    // any other event (payload mapping applied — the client twin of the
+    // composition's fan-out). Kernel-republished echoes (`dispatched: true`
+    // from one of THIS kernel's traits) are skipped: the kernel's own
+    // in-run `collectListenerTargets` fan-out already delivered those.
+    const listenRoutesByKey = new Map<string, ListenRoute[]>();
+    for (const binding of traitBindings) {
+      const listenerName = binding.trait.name;
+      const ownOrbital = traitIndex.byName.get(listenerName)?.orbitalName;
+      if (ownOrbital === undefined) continue;
+      for (const listen of binding.trait.listens ?? []) {
+        const src = listen.source;
+        if (src === undefined || src.kind === 'any') continue;
+        const sourceOrbital = (src.kind === 'orbital' ? src.orbital : undefined) ?? ownOrbital;
+        const sourceKey = `UI:${sourceOrbital}.${src.trait}.${listen.event}`;
+        const route: ListenRoute = {
+          listenerTrait: listenerName,
+          triggers: listen.triggers,
+          payloadMapping: listen.payloadMapping,
+        };
+        const routes = listenRoutesByKey.get(sourceKey);
+        if (routes) routes.push(route);
+        else listenRoutesByKey.set(sourceKey, [route]);
+      }
+    }
+    for (const [sourceKey, routes] of listenRoutesByKey) {
+      const unsub = eventBus.on(sourceKey, (event) => {
+        if (deliveredHere(event.source)) return;
+        for (const route of routes) {
+          log.debug('listen-source:fire', { key: sourceKey, listener: route.listenerTrait, triggers: route.triggers });
+          dispatch(
+            route.listenerTrait,
+            route.triggers,
+            applyListenPayloadMapping(route.payloadMapping, event.payload, evaluateListenPayloadExpr),
+            event.source?.tick,
+          );
+        }
+      });
+      unsubscribes.push(unsub);
     }
 
     return () => {

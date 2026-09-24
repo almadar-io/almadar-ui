@@ -53,6 +53,9 @@ export interface ServerBridgeContextValue {
    * evaluator) holds circuit state itself.
    */
   carriesCircuitState: boolean;
+  /** `register()` has resolved, so `carriesCircuitState` is the transport's
+   *  real topology rather than the pre-register guess. */
+  topologyKnown: boolean;
   /** The ONE transport this bridge manages the register/unregister
    *  lifecycle for — `useCircuitKernel` dispatches through it directly. */
   transport: EventTransport;
@@ -86,6 +89,7 @@ export function useServerBridge(): ServerBridgeContextValue {
     return {
       connected: false,
       carriesCircuitState: false,
+      topologyKnown: false,
       transport: {
         async register() { return { success: false, carriesCircuitState: false }; },
         async unregister() {},
@@ -136,6 +140,7 @@ export function ServerBridgeProvider({
 
   const [connected, setConnected] = useState(false);
   const [carriesCircuitState, setCarriesCircuitState] = useState(false);
+  const [topologyKnown, setTopologyKnown] = useState(false);
 
   // Resolve the transport: custom takes precedence (only one is set per the
   // mutual-exclusion check above). `@almadar/runtime`'s `createHttpTransport`
@@ -168,17 +173,19 @@ export function ServerBridgeProvider({
       if (cancelled) return;
       setConnected(result.success);
       setCarriesCircuitState(result.carriesCircuitState);
+      setTopologyKnown(true);
     });
 
     return () => {
       cancelled = true;
       setConnected(false);
+      setTopologyKnown(false);
       unregisterSchema();
     };
   }, [schema, registerSchema, unregisterSchema]);
 
   return (
-    <ServerBridgeContext.Provider value={{ connected, carriesCircuitState, transport }}>
+    <ServerBridgeContext.Provider value={{ connected, carriesCircuitState, topologyKnown, transport }}>
       {children}
     </ServerBridgeContext.Provider>
   );

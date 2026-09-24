@@ -6,6 +6,7 @@ import { Loader2, type LucideIcon } from "lucide-react";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { Icon, type IconInput } from "./Icon";
 import { AtlasImage } from "./AtlasImage";
+import { INLINE_TEXT_ATTR } from "../../../lib/inlineText";
 
 export type ButtonVariant =
   | "primary"
@@ -220,7 +221,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {/* Runtime slot projection passes children as an (often empty) array —
             an empty array is truthy, so a bare `children || label` eats the
             label on every projected icon+label button. */}
-        {(Array.isArray(children) ? children.length > 0 : Boolean(children)) ? children : label}
+        {(Array.isArray(children) ? children.length > 0 : Boolean(children))
+          ? children
+          : label
+            ? <span {...{ [INLINE_TEXT_ATTR]: 'label' }}>{label}</span>
+            : label}
         {resolvedRightIcon && !isLoading && (
           <span className="flex-shrink-0">{resolvedRightIcon}</span>
         )}

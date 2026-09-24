@@ -38,6 +38,7 @@ import { createLogger } from '@almadar/logger';
 import { useEventBus } from './useEventBus';
 import { useUser } from '../providers/UserContext';
 import type { EntityBindingSource } from '../providers/EntityBindingContext';
+import { ALL_SLOTS } from './useUISlots';
 import { registerTrait, unregisterTrait, type TraitDebugInfo } from '../lib/traitRegistry';
 import { bindTraitStateGetter, registerTraitSnapshot } from '../lib/verificationRegistry';
 import { createCircuitVerificationObserver } from '../lib/circuitVerificationObserver';
@@ -88,6 +89,8 @@ export interface UseTraitStateMachineOptions {
   navigate?: (path: string, params?: Record<string, string>, crumb?: string) => void;
   navigateBack?: () => void;
   initPayload?: EventPayload;
+  /** The mounted page's identity; with `initPayload` it keys the once-per-mount lifecycle guard (Runtime Spec Clause 4.1). */
+  mountKey?: string;
   /** The resolved schema's full orbital set — `buildTraitIndex`'s one input. */
   orbitals: readonly OrbitalDefinition[];
   /** Caller-owned transport (server bridge). Omitted + `persistence` set =
@@ -95,6 +98,8 @@ export interface UseTraitStateMachineOptions {
    *  nothing ever posts. */
   transport?: EventTransport;
   carriesCircuitState?: boolean;
+  /** Hold every dispatch until the transport's topology is known. */
+  awaitTopology?: boolean;
   persistence?: PersistenceAdapter;
   callService?: (service: string, action: string, params?: ServiceParams) => Promise<EventPayload>;
   traitConfigsByName?: Record<string, TraitConfig>;
@@ -124,6 +129,7 @@ export function useTraitStateMachine(
     ...(options.traitConfigsByName !== undefined ? { traitConfigsByName: options.traitConfigsByName } : {}),
     ...(options.transport !== undefined ? { transport: options.transport } : {}),
     ...(options.carriesCircuitState !== undefined ? { carriesCircuitState: options.carriesCircuitState } : {}),
+    ...(options.awaitTopology !== undefined ? { awaitTopology: options.awaitTopology } : {}),
     ...(options.persistence !== undefined ? { persistence: options.persistence } : {}),
     ...(options.callService !== undefined ? { callService: options.callService } : {}),
     ...(userContext !== undefined ? { user: userContext } : {}),
@@ -188,6 +194,14 @@ export function useTraitStateMachine(
       ids.push(trait.name);
     }
     bindTraitStateGetter((traitName) => store.manager.getState(traitName)?.currentState);
+    // The trait's live frame under its entity's name — what a verifier reads to
+    // see the entity the trait holds (riya: the body's seeded skateCurve).
+    const snapshotData = (traitName: string): Record<string, EntityRow[]> => {
+      const entry = traitIndex.byName.get(traitName);
+      const frame = entry !== undefined ? store.frames.get(entry.frameKey) : undefined;
+      const entityName = entry?.entity.name;
+      return frame !== undefined && entityName !== undefined ? { [entityName]: [{ ...frame }] } : {};
+    };
     const snapshotUnregs = traitBindings.map((binding) => registerTraitSnapshot(binding.trait.name, (): TraitStateSnapshot => {
       const currentState = store.manager.getState(binding.trait.name)?.currentState ?? binding.trait.states[0]?.name ?? 'unknown';
       return {
@@ -195,7 +209,7 @@ export function useTraitStateMachine(
         currentState,
         states: binding.trait.states.map((s) => s.name),
         events: binding.trait.events.map((e) => e.key),
-        data: {},
+        data: snapshotData(binding.trait.name),
         cascadeReceived: [],
       };
     }));
@@ -203,7 +217,7 @@ export function useTraitStateMachine(
       for (const id of ids) unregisterTrait(id);
       for (const unreg of snapshotUnregs) unreg();
     };
-  }, [traitBindings, store]);
+  }, [traitBindings, store, traitIndex]);
 
   const dispatchAndSettle = useCallback(async (traitName: string, eventKey: string, payload: EventPayload | undefined, tick?: string): Promise<void> => {
     const entityId = typeof payload?.entityId === 'string' ? payload.entityId : undefined;
@@ -253,21 +267,58 @@ export function useTraitStateMachine(
   const canHandleEvent = useCallback((traitName: string, eventKey: string): boolean =>
     store.manager.canHandleEvent(traitName, normalizeEventKey(eventKey)), [store]);
 
+  // Page nav: a trait that drops out of `traitBindings` never emits an
+  // empty render of its own, so its last paint would stack with the new
+  // page's writes into the same slot. Clear dropped traits from every slot
+  // before the mount-lifecycle effect below re-initializes.
+  const prevActiveTraitNamesRef = useRef<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    const nextActiveTraitNames = new Set(
+      traitBindings.map((b) => b.trait.name).filter((n): n is string => !!n),
+    );
+    const dropped = diffDroppedTraitNames(prevActiveTraitNamesRef.current, nextActiveTraitNames);
+    if (dropped.length > 0) {
+      for (const traitName of dropped) {
+        for (const slot of ALL_SLOTS) {
+          uiSlots.clearBySource(slot, traitName);
+        }
+      }
+    }
+    prevActiveTraitNamesRef.current = nextActiveTraitNames;
+  }, [traitBindings, uiSlots]);
+
   // Mount-time lifecycle (INIT/LOAD/$MOUNT): each trait's own matching
   // lifecycle event dispatches ONCE, targeted — naturally O(traits), no
   // broadcast-then-filter N² shape (the old hook's own concern) since a
   // targeted `kernel.dispatch` never touches an unrelated trait.
-  const initFiredRef = useRef(false);
+  // Once per mount: a new page, new route params or a new circuit store is a remount; identity churn is not.
+  const mountedRef = useRef<{ key: string; store: typeof store; initialized: Set<string> } | null>(null);
+  const mountKey = `${options.mountKey ?? ''}\u0000${JSON.stringify(Object.entries(options.initPayload ?? {}).sort(([a], [b]) => a.localeCompare(b)))}`;
   useEffect(() => {
-    initFiredRef.current = false;
+    const prev = mountedRef.current;
+    const mount = prev !== null && prev.key === mountKey && prev.store === store
+      ? prev
+      : { key: mountKey, store, initialized: new Set<string>() };
+    const active = new Set(traitBindings.map((b) => b.trait.name));
+    const left = [...mount.initialized].filter((traitName) => !active.has(traitName));
+    for (const traitName of left) mount.initialized.delete(traitName);
+    store.mount.unmounted(left);
+    // Every entering trait awaits its own lifecycle event BEFORE any of them
+    // dispatches: a sibling's INIT cascade must not reach it first.
+    const entering: Array<{ traitName: string; lifecycleEvent: string }> = [];
     for (const binding of traitBindings) {
       const traitName = binding.trait.name;
+      if (mount.initialized.has(traitName)) continue;
+      mount.initialized.add(traitName);
       const lifecycleEvent = LIFECYCLE_EVENTS.find((evt: string) => store.manager.canHandleEvent(traitName, evt));
-      if (lifecycleEvent === undefined) continue;
+      if (lifecycleEvent !== undefined) entering.push({ traitName, lifecycleEvent });
+    }
+    store.mount.mounting(entering.map((e) => e.traitName));
+    for (const { traitName, lifecycleEvent } of entering) {
       void dispatchAndSettle(traitName, lifecycleEvent, { ...(options.initPayload ?? {}) });
     }
-    initFiredRef.current = true;
-  }, [traitBindings, store, dispatchAndSettle]);
+    mountedRef.current = mount;
+  }, [traitBindings, store, dispatchAndSettle, mountKey]);
 
   // Re-render on every committed circuit change (mirrors the old hook's own
   // `setTraitStates(manager.getAllStates())` after each dispatch) — the

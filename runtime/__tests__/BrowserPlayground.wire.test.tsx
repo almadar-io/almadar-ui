@@ -23,7 +23,9 @@ function schema(): OrbitalSchema {
     orbitals: [
       {
         name: 'Greeting',
-        entity: { name: 'Greeting', persistence: 'runtime', fields: [{ name: 'id', type: 'string' }] },
+        // Persisted, so Greeter is server-backed and its INIT crosses the wire
+        // (a `[runtime]` trait with no server effect is client-only, 2026-09-24).
+        entity: { name: 'Greeting', persistence: 'persistent', fields: [{ name: 'id', type: 'string' }] },
         pages: [{ name: 'Home', path: '/', isInitial: true, traits: [{ ref: 'Greeter' }] }],
         traits: [
           {

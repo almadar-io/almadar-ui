@@ -46,13 +46,16 @@ import {
   evaluateOrbitalEvent,
   type CircuitStore,
   type ClientKernel,
+  type ClientKernelOutcome,
   type EvaluationContextExtensions,
   type EventTransport,
   type IndexedTrait,
   type PersistenceAdapter,
   type TraitIndex,
   type TransitionObserver,
+  UNMOUNT_EVENT,
 } from '@almadar/runtime';
+import { createLogger } from '@almadar/logger';
 
 export interface UseCircuitKernelOptions {
   /** The resolved schema's full orbital set (`OrbitalSchema.orbitals`) —
@@ -67,6 +70,11 @@ export interface UseCircuitKernelOptions {
   /** From the transport's `register()` result — `true` = the stateless
    *  topology (a posted leg must carry `traits`/`entityByTrait`). */
   carriesCircuitState?: boolean;
+  /** `true` while the transport's topology is still unknown (its `register()`
+   *  is pending): dispatches are held, then released in order onto the
+   *  kernel built for the confirmed topology — a post made on the guess
+   *  goes out in the wrong shape. */
+  awaitTopology?: boolean;
   /** Offline-preview persistence layer (plan G7). */
   persistence?: PersistenceAdapter;
   /** Consumer `call-service` hook for the offline in-process evaluator. */
@@ -102,6 +110,16 @@ function getTabClientId(): string {
   return tabClientId;
 }
 
+const log = createLogger('almadar:ui:circuit-kernel');
+
+function postUnmounts(transport: EventTransport, traits: ReadonlyArray<readonly [string, string]>): void {
+  for (const [traitName, orbitalName] of traits) {
+    transport
+      .send(orbitalName, { event: UNMOUNT_EVENT, targetTrait: traitName, clientId: getTabClientId() })
+      .catch((err) => log.warn('unmount-post-failed', { trait: traitName, orbital: orbitalName, error: String(err) }));
+  }
+}
+
 /** Restrict a full-schema `TraitIndex` down to the traits this page mounts —
  *  the client's browser store only ever holds the current page's circuit,
  *  never an off-page trait it has nothing rendered for. */
@@ -117,13 +135,39 @@ export function useCircuitKernel(
   traitBindings: readonly ResolvedTraitBinding[],
   options: UseCircuitKernelOptions,
 ): CircuitKernelHandle {
-  const traitIndex = useMemo(() => {
-    const full = buildTraitIndex(options.orbitals, options.traitConfigsByName);
-    const activeNames = new Set(
-      traitBindings.map((b) => b.trait.name).filter((n): n is string => !!n),
-    );
-    return restrictTraitIndex(full, activeNames);
-  }, [traitBindings, options.orbitals, options.traitConfigsByName]);
+  const fullTraitIndex = useMemo(
+    () => buildTraitIndex(options.orbitals, options.traitConfigsByName),
+    [options.orbitals, options.traitConfigsByName],
+  );
+  // Keyed on the active trait SET, not the bindings array identity: a same-traits re-render must not rebuild the store.
+  const activeTraitKey = traitBindings
+    .map((b) => b.trait.name)
+    .filter((n): n is string => !!n)
+    .sort()
+    .join('\u0000');
+  const traitIndex = useMemo(
+    () => restrictTraitIndex(fullTraitIndex, new Set(activeTraitKey === '' ? [] : activeTraitKey.split('\u0000'))),
+    [activeTraitKey, fullTraitIndex],
+  );
+
+  // Runtime Spec Clause 8.3: a trait leaving the page (or the page tearing down) is unmounted on
+  // the server, pausing its mount-scoped ticks. Held with dispatch until the topology registers.
+  const mountedRef = useRef(new Map<string, string>());
+  const transport = options.transport;
+  const topologyPending = options.awaitTopology === true;
+  useEffect(() => {
+    if (transport === undefined || topologyPending) return;
+    const mounted = mountedRef.current;
+    const dropped = [...mounted].filter(([name]) => !traitIndex.byName.has(name));
+    mounted.clear();
+    for (const [name, entry] of traitIndex.byName) mounted.set(name, entry.orbitalName);
+    postUnmounts(transport, dropped);
+  }, [traitIndex, transport, topologyPending]);
+  useEffect(() => {
+    if (transport === undefined) return;
+    const mounted = mountedRef.current;
+    return () => postUnmounts(transport, [...mounted]);
+  }, [transport]);
 
   const store = useMemo(() => {
     const traitDefs = Array.from(traitIndex.byName.values(), (entry: IndexedTrait) => entry.traitDef);
@@ -189,6 +233,7 @@ export function useCircuitKernel(
   const rawKernel = useMemo(() => createClientKernel({
     orbitalName,
     traitIndex,
+    fullTraitIndex,
     store,
     ...(options.persistence !== undefined ? { persistence: options.persistence } : {}),
     ...(options.user !== undefined ? { user: options.user } : {}),
@@ -202,6 +247,7 @@ export function useCircuitKernel(
   }), [
     orbitalName,
     traitIndex,
+    fullTraitIndex,
     store,
     options.persistence,
     options.user,
@@ -218,11 +264,28 @@ export function useCircuitKernel(
   // carry one, so callers (`useBusIngress`, the composer) never have to
   // know about tab identity — same posted-leg field the old
   // `ServerBridge.tsx`'s `buildEventRequest` stamped by hand.
+  const rawKernelRef = useRef(rawKernel);
+  rawKernelRef.current = rawKernel;
+  const awaitTopology = options.awaitTopology === true;
+  const holdRef = useRef(awaitTopology);
+  holdRef.current = awaitTopology;
+  const heldRef = useRef<Array<() => void>>([]);
+  useEffect(() => {
+    if (awaitTopology) return;
+    const held = heldRef.current;
+    heldRef.current = [];
+    for (const release of held) release();
+  }, [awaitTopology, rawKernel]);
+
   const kernel = useMemo<ClientKernel>(() => ({
     store: rawKernel.store,
-    dispatch: (request: import('@almadar/core').OrbitalEventRequest) => rawKernel.dispatch(
-      request.clientId !== undefined ? request : { ...request, clientId: getTabClientId() },
-    ),
+    dispatch: (request: import('@almadar/core').OrbitalEventRequest) => {
+      const stamped = request.clientId !== undefined ? request : { ...request, clientId: getTabClientId() };
+      if (!holdRef.current) return rawKernel.dispatch(stamped);
+      return new Promise<ClientKernelOutcome>((resolve, reject) => {
+        heldRef.current.push(() => { rawKernelRef.current.dispatch(stamped).then(resolve, reject); });
+      });
+    },
   }), [rawKernel]);
 
   // `kernel` is rebuilt whenever `carriesCircuitState` resolves from its

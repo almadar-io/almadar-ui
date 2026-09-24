@@ -34,7 +34,8 @@ import {
 import type { OrbitalSchema, ThemeDefinition, EntityData } from '@almadar/core';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
-import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, type SelectedPattern } from '../molecules/OrbPreviewNode';
+import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, type SelectedPattern } from '../molecules/OrbPreviewNode';
+import { CANVAS_TOOLS, type CanvasTool } from '../lib/canvas-tools';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
 import { EventFlowEdge } from '../molecules/EventFlowEdge';
 import { schemaToOverviewGraph, orbitalToExpandedGraph, orbitalAliasToExpandedGraph, orbitalToTraitGraph } from '../lib/avl-preview-converter';
@@ -87,6 +88,23 @@ const DEFAULT_EDGE_OPTIONS = {
 // Props
 // ---------------------------------------------------------------------------
 
+type CanvasNode = Node<PreviewNodeData> | Node<BehaviorComposeNodeData>;
+
+function isPreviewCard(n: CanvasNode): n is Node<PreviewNodeData> {
+  return n.type === 'preview';
+}
+
+function withCardWidth(n: CanvasNode, width: number): CanvasNode {
+  return isPreviewCard(n) ? { ...n, data: { ...n.data, cardWidth: width } } : n;
+}
+
+/** Where a card sits on the canvas, and its frame width when the designer resized it. */
+export interface CanvasNodePlacement {
+  x: number;
+  y: number;
+  width?: number;
+}
+
 export interface FlowCanvasProps {
   schema: OrbitalSchema | string;
   mockData?: EntityData;
@@ -137,8 +155,10 @@ export interface FlowCanvasProps {
   editable?: boolean;
   /** Called when the user edits the schema via the inspector. */
   onSchemaChange?: (schema: OrbitalSchema) => void;
-  /** Called when the user presses Delete/Backspace with a pattern selected. */
-  onPatternDelete?: (context: { patternId: string; nodeData: PreviewNodeData }) => void;
+  /** Called when the user presses Delete/Backspace with patterns selected (all of a multi-select). */
+  onPatternDelete?: (context: { patternIds: string[]; nodeData: PreviewNodeData }) => void;
+  /** Editing tools the canvas turns on (a persona's shell manifest declares them); all by default. */
+  tools?: readonly CanvasTool[];
   /** Called when the user drags from a source handle to a target handle (event wiring). */
   onEventWire?: (wire: { eventName: string; sourceOrbital: string; targetOrbital: string; sourceTraitName?: string; targetTraitName?: string }) => void;
   /** Behavior layer metadata for node styling (layer color bands). */
@@ -196,14 +216,15 @@ export interface FlowCanvasProps {
    * Persisted node positions keyed by node id. When the node set changes
    * (level/schema switch), any id present here overrides the computed layout
    * position, restoring a user's manual drag arrangement. Node ids are unique
-   * per view level, so a single flat map covers overview + expanded.
+   * per view level, so a single flat map covers overview + expanded. A saved
+   * `width` restores a card frame the designer resized.
    */
-  nodePositions?: Record<string, { x: number; y: number }>;
+  nodePositions?: Record<string, CanvasNodePlacement>;
   /**
-   * Fired on node drag-stop with the full {id → position} map of the current
-   * node set, so the consumer can persist the arrangement across reloads.
+   * Fired on node drag-stop and card resize with the full {id → placement}
+   * map of the current node set, so the consumer can persist the arrangement.
    */
-  onPositionsChange?: (positions: Record<string, { x: number; y: number }>) => void;
+  onPositionsChange?: (positions: Record<string, CanvasNodePlacement>) => void;
   /**
    * Fired whenever the internal `selectedNode` changes — select, clear-on-
    * escape, clear-on-level-change, and pattern-selection sync all route
@@ -251,6 +272,7 @@ function FlowCanvasInner({
   editable,
   onSchemaChange,
   onPatternDelete,
+  tools = CANVAS_TOOLS,
   onEventWire,
   behaviorMeta,
   orbitalStatus,
@@ -370,14 +392,16 @@ function FlowCanvasInner({
       : { nodes: [], edges: [] };
 
     const overview = schemaToOverviewGraph(parsedSchema, mockData, behaviorMeta, layoutHint, orbitalStatus, screenSize);
+    // Designers see one card per distinct screen; everyone else one per transition.
+    const expandedView = userType === 'designer' ? 'screens' : 'transitions';
     const expanded = expandedOrbital
-      ? orbitalToExpandedGraph(parsedSchema, expandedOrbital, mockData, screenSize)
+      ? orbitalToExpandedGraph(parsedSchema, expandedOrbital, mockData, screenSize, expandedView)
       : { nodes: [], edges: [] };
     // STUDIO-1: L3 (`behavior-expanded`) — only one alias bucket's
     // transitions. Computed lazily; empty unless both `expandedOrbital`
     // and `expandedBehaviorAlias` are set.
     const behaviorExpanded = (expandedOrbital && expandedBehaviorAlias)
-      ? orbitalAliasToExpandedGraph(parsedSchema, expandedOrbital, expandedBehaviorAlias, mockData, screenSize)
+      ? orbitalAliasToExpandedGraph(parsedSchema, expandedOrbital, expandedBehaviorAlias, mockData, screenSize, expandedView)
       : { nodes: [], edges: [] };
     // COSMIC-1: trait-expanded — one card per trait of `expandedOrbital`
     // with intra-orbital `emit→listen` edges. Used by the cosmic tab L3.
@@ -406,7 +430,7 @@ function FlowCanvasInner({
     };
   }, [parsedSchema, expandedOrbital, expandedBehaviorAlias, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus, screenSize]);
 
-  type AnyNode = Node<PreviewNodeData> | Node<BehaviorComposeNodeData>;
+  type AnyNode = CanvasNode;
   type AnyEdge = Edge<EventEdgeData> | Edge<BehaviorWireEdgeData>;
 
   const activeNodes: AnyNode[] = (atBehaviorLevel && composeNodes.length > 0)
@@ -447,7 +471,12 @@ function FlowCanvasInner({
     setEdges([]);
     const saved = savedPositionsRef.current;
     const merged = saved
-      ? activeNodes.map((n) => (saved[n.id] ? { ...n, position: saved[n.id] } : n))
+      ? activeNodes.map((n) => {
+          const placement = saved[n.id];
+          if (!placement) return n;
+          const placed = { ...n, position: { x: placement.x, y: placement.y } };
+          return placement.width !== undefined ? withCardWidth(placed, placement.width) : placed;
+        })
       : activeNodes;
     setNodes(merged);
     setEdges(activeEdges);
@@ -591,7 +620,8 @@ function FlowCanvasInner({
       // Don't intercept when user is typing in an input
       if (isEditableTarget(e.target)) return;
       if (selectedPattern && selectedPattern.nodeData) {
-        onPatternDelete?.({ patternId: selectedPattern.patternId ?? '', nodeData: selectedPattern.nodeData });
+        const patternIds = selectedPattern.selection ?? (selectedPattern.patternId ? [selectedPattern.patternId] : []);
+        if (patternIds.length > 0) onPatternDelete?.({ patternIds, nodeData: selectedPattern.nodeData });
         setSelectedPattern(null);
       }
     }
@@ -664,14 +694,29 @@ function FlowCanvasInner({
 
   // Persist drag arrangement: on drop, snapshot every node's position so the
   // consumer (builder workspace) can restore it across reloads.
-  const handleNodeDragStop = useCallback(() => {
-    if (!onPositionsChange) return;
-    const positions: Record<string, { x: number; y: number }> = {};
-    for (const n of nodesRef.current) {
-      positions[n.id] = { x: n.position.x, y: n.position.y };
+  const placementsOf = useCallback((list: readonly CanvasNode[]): Record<string, CanvasNodePlacement> => {
+    const positions: Record<string, CanvasNodePlacement> = {};
+    for (const n of list) {
+      const width = isPreviewCard(n) ? n.data.cardWidth : undefined;
+      positions[n.id] = { x: n.position.x, y: n.position.y, ...(typeof width === 'number' ? { width } : {}) };
     }
-    onPositionsChange(positions);
-  }, [onPositionsChange]);
+    return positions;
+  }, []);
+
+  const handleNodeDragStop = useCallback(() => {
+    onPositionsChange?.(placementsOf(nodesRef.current));
+  }, [onPositionsChange, placementsOf]);
+
+  // A card's frame was resized (OrbPreviewNode's right-edge control).
+  useEffect(() => eventBus.on('UI:CANVAS_CARD_RESIZED', (e) => {
+    const nodeId = e.payload?.nodeId;
+    const width = e.payload?.width;
+    if (typeof nodeId !== 'string' || typeof width !== 'number') return;
+    if (!nodesRef.current.some((n) => n.id === nodeId)) return;
+    const next = nodesRef.current.map((n) => (n.id === nodeId ? withCardWidth(n, width) : n));
+    setNodes(next);
+    onPositionsChange?.(placementsOf(next));
+  }), [eventBus, setNodes, onPositionsChange, placementsOf]);
 
   const screenSizeKeys: ScreenSize[] = ['mobile', 'tablet', 'laptop', 'wide'];
 
@@ -692,6 +737,7 @@ function FlowCanvasInner({
 
   return (
     <ScreenSizeContext.Provider value={screenSize}>
+    <CanvasToolsContext.Provider value={tools}>
     <PatternSelectionContext.Provider value={patternSelectionValue}>
     <TraitCardSelectionContext.Provider value={traitCardSelectionValue}>
       <Box
@@ -823,6 +869,7 @@ function FlowCanvasInner({
       </Box>
     </TraitCardSelectionContext.Provider>
     </PatternSelectionContext.Provider>
+    </CanvasToolsContext.Provider>
     </ScreenSizeContext.Provider>
   );
 }

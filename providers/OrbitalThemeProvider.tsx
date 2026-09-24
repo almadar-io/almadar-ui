@@ -15,9 +15,14 @@
  * Design System edit and an `orbital compile` of the same schema render
  * identically.
  *
+ * A registry theme key (e.g. `"gazette-light"`) scopes that preset to the
+ * subtree through `data-theme` on a wrapper that paints the theme's
+ * background, so an orbital renders in its declared theme even inside a host
+ * document running another one (playground picker, runtime-verify catalog).
+ *
  * No-op when:
  * - `theme` is `undefined` (orbital declares no theme — parent cascades)
- * - `theme` is a string ref that didn't get inlined upstream
+ * - `theme` is the legacy `"Alias.theme"` import form that didn't get inlined upstream
  *
  * @example
  * ```tsx
@@ -28,9 +33,10 @@
  */
 
 import React, { type CSSProperties, type ReactElement, type ReactNode } from 'react';
-import type { ThemeRef } from '@almadar/core';
+import { isThemeRegistryKey, type ThemeRef } from '@almadar/core';
 import { useTheme } from './ThemeContext';
 import { themeTokensToCssVars, resolveThemeForRuntime } from '../lib/themeTokens';
+import { Box } from '../components/core/atoms/Box';
 
 export interface OrbitalThemeProviderProps {
   /** The `OrbitalDefinition.theme` value (inline definition or string ref). */
@@ -43,6 +49,14 @@ export function OrbitalThemeProvider({ theme, children }: OrbitalThemeProviderPr
   // useTheme provides the document-level resolved color mode. Per-orbital
   // overrides ride on top of that mode's variant.
   const { resolvedMode } = useTheme();
+
+  if (isThemeRegistryKey(theme)) {
+    return (
+      <Box data-theme={theme} className="h-full min-h-full bg-background text-foreground">
+        {children}
+      </Box>
+    );
+  }
 
   if (!resolved) {
     return <>{children}</>;

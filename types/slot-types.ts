@@ -46,7 +46,10 @@ export function refId(obj: SlotPropValue | null | undefined): number | null {
  * caller-supplied props that should be merged on top.
  */
 export interface SlotPatternEntry {
-  pattern: PatternConfig;
+  /** `PatternConfig` normally; a bare `@trait.X` string is the
+   *  G-RUNTIME-025 whole-slot payload (`(render-ui main "@trait.X")`),
+   *  which `useSlotFlush`'s unwrap routes as a TraitFrame child reference. */
+  pattern: PatternConfig | string;
   props: ResolvedPatternProps;
 }
 

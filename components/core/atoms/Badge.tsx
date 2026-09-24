@@ -1,5 +1,6 @@
 import React from "react";
 import { X } from "lucide-react";
+import { INLINE_TEXT_ATTR } from "../../../lib/inlineText";
 import { cn } from "../../../lib/cn";
 import { Icon, type IconInput } from "./Icon";
 import { AtlasImage } from "./AtlasImage";
@@ -113,7 +114,11 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
         {...props}
       >
         {resolvedIcon}
-        {children || (amount != null ? `${label ? `${label} ` : ''}${amount}` : label)}
+        {children || (amount != null
+          ? `${label ? `${label} ` : ''}${amount}`
+          : label
+            ? <span {...{ [INLINE_TEXT_ATTR]: 'label' }}>{label}</span>
+            : label)}
         {onRemove ? (
           <button
             type="button"

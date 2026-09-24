@@ -143,6 +143,15 @@ export interface PreviewNodeData {
   /** To state (expanded level). */
   toState?: string;
 
+  /** The card frame's width set by the designer; the screen-size preset otherwise. */
+  cardWidth?: number;
+
+  /** `'screen'`: a designer card standing for every transition that paints this same render. */
+  cardLabel?: 'screen';
+
+  /** Screen cards: every event that shows this render, in declaration order. */
+  enteredBy?: string[];
+
   /**
    * Render-ui patterns extracted from the transition's effects.
    * Each entry is a slot + pattern config pair.

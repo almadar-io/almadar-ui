@@ -138,27 +138,12 @@ export function resolveLambdaBindings(
   return body;
 }
 
-// Lazy import keeps `fn-form-lambda → UISlotRenderer → fn-form-lambda`
-// from forming a module cycle at evaluation time.
-type SlotContentRendererComponent = React.ComponentType<{
-  content: {
-    id: string;
-    pattern: string;
-    props: SlotProps;
-    priority: number;
-  };
-  onDismiss?: () => void;
-}>;
-
-let _slotContentRenderer: SlotContentRendererComponent | null = null;
-function getSlotContentRenderer(): SlotContentRendererComponent {
-  if (_slotContentRenderer) return _slotContentRenderer;
-  const mod = require("../components/core/organisms/UISlotRenderer") as {
-    SlotContentRenderer: SlotContentRendererComponent;
-  };
-  _slotContentRenderer = mod.SlotContentRenderer;
-  return _slotContentRenderer;
-}
+// `fn-form-lambda → UISlotRenderer → fn-form-lambda` is a module cycle; a
+// module-level `React.lazy` defers the import to first render (loader-portable,
+// unlike a CJS `require`, which only resolves inside the compiled bundle).
+const LazySlotContentRenderer = React.lazy(() =>
+  import("../components/core/organisms/UISlotRenderer").then((m) => ({ default: m.SlotContentRenderer })),
+);
 
 /**
  * Top-down twin of the flush-side `deferEntityBindings` for lambda bodies:
@@ -219,7 +204,6 @@ function makeLambdaFn(
     if (typeof record.type !== "string") {
       return null;
     }
-    const SlotContentRenderer = getSlotContentRenderer();
     const rawChildProps: SlotProps = {};
     for (const [k, v] of Object.entries(record)) {
       if (k !== "type") rawChildProps[k] = v;
@@ -238,7 +222,11 @@ function makeLambdaFn(
       props: childProps,
       priority: 0,
     };
-    return React.createElement(SlotContentRenderer, { content: childContent });
+    return React.createElement(
+      React.Suspense,
+      { fallback: null },
+      React.createElement(LazySlotContentRenderer, { content: childContent, onDismiss: () => undefined }),
+    );
   };
 }
 
