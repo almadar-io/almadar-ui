@@ -214,18 +214,25 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
   // we widen to "any render-ui in the source trait, or any in the orbital
   // if the source trait is also unknown." The patternId path is unique to
   // one tree; the wrong tree returns null and we move on.
+  // The selected element's own address (the trait that drew it — an embedded
+  // trait's, not the card's); an element picked without a canvas has none.
+  const elementFocus = selectedPattern?.focus;
+  const elementOrbital = elementFocus?.orbital ?? orbitalName;
+  const elementTrait = elementFocus?.trait ?? traitName;
+  const elementTransition = elementFocus?.transition ?? transitionEvent;
+  const elementSlot = elementFocus?.slot;
   const patternConfig = useMemo(
     () => (selectedPattern
       ? resolvePatternConfig(schema, {
-          orbitalName,
-          traitName,
-          transitionEvent,
+          orbitalName: elementOrbital,
+          traitName: elementTrait,
+          transitionEvent: elementTransition,
           sourceTrait: selectedPattern.sourceTrait,
           patternId: selectedPattern.patternId,
           patternType: selectedPattern.patternType,
         })
       : null),
-    [selectedPattern, schema, orbitalName, traitName, transitionEvent],
+    [selectedPattern, schema, elementOrbital, elementTrait, elementTransition],
   );
 
   // Generate the relevant JSON slice for the code tab
@@ -261,12 +268,13 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
       selection: {
         sourceSchemaName: selectedPattern?.nodeData.sourceSchemaName,
         patternPath: selectedPattern?.patternId,
-        orbitalName,
-        traitName,
-        transitionEvent,
+        orbitalName: elementOrbital,
+        traitName: elementTrait,
+        transitionEvent: elementTransition,
+        ...(elementSlot ? { slot: elementSlot } : {}),
       },
     });
-  }, [editable, eventBus, selectedPattern, orbitalName, traitName, transitionEvent]);
+  }, [editable, eventBus, selectedPattern, elementOrbital, elementTrait, elementTransition, elementSlot]);
 
   // A theme-token edit: changes the token everywhere it's used, not this element.
   const handleTokenChange = useCallback((token: InspectorTokenRef, value: string) => {
@@ -279,12 +287,13 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
       selection: {
         sourceSchemaName: selectedPattern?.nodeData.sourceSchemaName,
         patternPath: selectedPattern?.patternId,
-        orbitalName,
-        traitName,
-        transitionEvent,
+        orbitalName: elementOrbital,
+        traitName: elementTrait,
+        transitionEvent: elementTransition,
+        ...(elementSlot ? { slot: elementSlot } : {}),
       },
     });
-  }, [editable, eventBus, selectedPattern, orbitalName, traitName, transitionEvent]);
+  }, [editable, eventBus, selectedPattern, elementOrbital, elementTrait, elementTransition, elementSlot]);
 
   // W2: Entity field mutations via EventBus
   const handleAddField = useCallback(() => {

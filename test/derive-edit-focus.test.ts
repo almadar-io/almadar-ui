@@ -20,29 +20,35 @@ function baseFocus(overrides: Partial<EditFocus> = {}): EditFocus {
 
 describe('withNodeTransition', () => {
   it('fills in transition when the DOM-derived focus has none', () => {
-    const result = withNodeTransition(baseFocus(), 'INIT');
+    const result = withNodeTransition(baseFocus(), { traitName: 'WidgetInteraction', transitionEvent: 'INIT' });
     expect(result.transition).toBe('INIT');
   });
 
   it('the node transition wins over a stale/mismatched DOM-derived one', () => {
-    const result = withNodeTransition(baseFocus({ transition: 'STALE' }), 'INIT');
+    const result = withNodeTransition(baseFocus({ trait: 'WidgetInteraction', transition: 'STALE' }), { traitName: 'WidgetInteraction', transitionEvent: 'INIT' });
     expect(result.transition).toBe('INIT');
   });
 
   it('falls back to the DOM-derived transition when the node has none', () => {
-    const result = withNodeTransition(baseFocus({ transition: 'FROM_DOM' }), undefined);
+    const result = withNodeTransition(baseFocus({ transition: 'FROM_DOM' }), { traitName: 'WidgetInteraction', transitionEvent: undefined });
     expect(result.transition).toBe('FROM_DOM');
   });
 
   it('leaves transition unset when neither source has one', () => {
-    const result = withNodeTransition(baseFocus(), undefined);
+    const result = withNodeTransition(baseFocus(), { traitName: 'WidgetInteraction', transitionEvent: undefined });
     expect(result.transition).toBeUndefined();
   });
 
   it('does not mutate other focus fields', () => {
     const focus = baseFocus({ trait: 'WidgetInteraction', path: 'root.children.0' });
-    const result = withNodeTransition(focus, 'INIT');
+    const result = withNodeTransition(focus, { traitName: 'WidgetInteraction', transitionEvent: 'INIT' });
     expect(result).toEqual({ ...focus, transition: 'INIT' });
+  });
+
+  it("an element drawn by an embedded trait keeps that trait's own transition", () => {
+    const focus = baseFocus({ trait: 'CreateButton', transition: 'INIT', slot: 'main', path: 'root' });
+    const result = withNodeTransition(focus, { traitName: 'NoteToolbar', transitionEvent: 'NOTES_LOADED' });
+    expect(result).toEqual(focus);
   });
 });
 

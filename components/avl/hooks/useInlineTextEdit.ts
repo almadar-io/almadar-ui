@@ -7,26 +7,30 @@
  * a running live preview. Only literal text is editable: a value bound to
  * data (`@entity.x`, an expression) is left alone, with a notice.
  */
-import { useCallback } from 'react';
+import { useCallback, useContext } from 'react';
 import type { OrbitalSchema } from '@almadar/core';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { INLINE_TEXT_ATTR } from '../../../lib/inlineText';
 import { deriveEditFocusFromElement, withNodeTransition } from '../lib/derive-edit-focus';
 import { resolvePatternConfig } from '../lib/resolve-pattern-config';
+import { ElementEditAccessContext, propAccessAt } from '../lib/element-edit-access';
 
 export interface InlineTextEditOptions {
   /** The schema being rendered — the literal-or-bound check reads the prop from it. */
   schema: OrbitalSchema | null | undefined;
   enabled: boolean;
-  /** The render's transition when the host knows it better than the DOM (a canvas card). */
-  transitionEvent?: string;
+  /** The card's own trait + transition, when the host knows them better than the DOM (a canvas card). */
+  node?: { traitName?: string; transitionEvent?: string };
 }
 
 /** A `onDoubleClickCapture` handler for the element that contains the rendered content. */
-export function useInlineTextEdit({ schema, enabled, transitionEvent }: InlineTextEditOptions): (e: React.MouseEvent) => void {
+export function useInlineTextEdit({ schema, enabled, node }: InlineTextEditOptions): (e: React.MouseEvent) => void {
   const { emit } = useEventBus();
   const { t } = useTranslate();
+  const access = useContext(ElementEditAccessContext);
+  const nodeTrait = node?.traitName;
+  const nodeTransition = node?.transitionEvent;
 
   return useCallback((e: React.MouseEvent) => {
     if (!enabled || !schema || !(e.target instanceof Element)) return;
@@ -35,11 +39,19 @@ export function useInlineTextEdit({ schema, enabled, transitionEvent }: InlineTe
     const patternEl = text?.closest('[data-pattern-path],[data-orb-path]');
     if (!(text instanceof HTMLElement) || !propName || !(patternEl instanceof HTMLElement)) return;
     const derived = deriveEditFocusFromElement(patternEl);
-    const focus = derived ? withNodeTransition(derived, transitionEvent) : null;
+    const focus = derived ? withNodeTransition(derived, { traitName: nodeTrait, transitionEvent: nodeTransition }) : null;
     if (!focus?.trait || !focus.transition || !focus.path) return;
 
     e.preventDefault();
     e.stopPropagation();
+    const allowed = propAccessAt(access, focus, propName);
+    if (!allowed.editable) {
+      const message = allowed.reason === 'fixed'
+        ? t('inlineText.fixedValue', { behavior: allowed.detail })
+        : allowed.reason === 'loading' ? t('inlineText.loading') : t('inlineText.boundValue');
+      emit('UI:NOTIFY', { severity: 'info', message });
+      return;
+    }
     const node = resolvePatternConfig(schema, {
       orbitalName: focus.orbital,
       traitName: focus.trait,
@@ -53,7 +65,7 @@ export function useInlineTextEdit({ schema, enabled, transitionEvent }: InlineTe
     }
 
     const original = text.textContent ?? '';
-    const selection = { patternPath: focus.path, orbitalName: focus.orbital, traitName: focus.trait, transitionEvent: focus.transition };
+    const selection = { patternPath: focus.path, orbitalName: focus.orbital, traitName: focus.trait, transitionEvent: focus.transition, ...(focus.slot ? { slot: focus.slot } : {}) };
     let done = false;
     const finish = (save: boolean) => {
       if (done) return;
@@ -86,5 +98,5 @@ export function useInlineTextEdit({ schema, enabled, transitionEvent }: InlineTe
     const selected = window.getSelection();
     selected?.removeAllRanges();
     selected?.addRange(range);
-  }, [enabled, schema, transitionEvent, emit, t]);
+  }, [enabled, schema, access, nodeTrait, nodeTransition, emit, t]);
 }

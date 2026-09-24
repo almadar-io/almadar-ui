@@ -605,5 +605,8 @@
   "orbInspector.padding": "Odmik",
   "orbInspector.mixed": "Mešano",
   "orbInspector.custom": "Po meri",
-  "orbInspector.customRefused": "Ena vrednost po meri, npr. w-[243px] ali bg-[#e14b2a]."
+  "orbInspector.customRefused": "Ena vrednost po meri, npr. w-[243px] ali bg-[#e14b2a].",
+  "inlineText.fixedValue": "To besedilo določa {{behavior}} — spremenite ga v njegovih nastavitvah.",
+  "inlineText.loading": "Še preverjam, kaj lahko v tem elementu spremenite.",
+  "orbPreview.partOf": "Del {{behavior}}"
 }

@@ -16,7 +16,7 @@ import React, { useMemo, useState, useCallback, useContext, createContext, useRe
 import { Handle, NodeResizeControl, Position, ResizeControlVariant, useReactFlow, type NodeProps } from '@xyflow/react';
 import type { OrbitalSchema, OrbitalDefinition, Trait, Transition, Effect, EntityData, EntityRow, EventPayloadField, TraitEventContract, EventPayload, EventPayloadValue, PageRef } from '@almadar/core';
 import { isInlineTrait, isPageReference } from '@almadar/core';
-import type { EntityRef } from '@almadar/core';
+import type { EditFocus, EntityRef } from '@almadar/core';
 
 import { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../lib/canvas-tools';
 
@@ -48,6 +48,7 @@ import {
 } from '../hooks/useCanvasDnd';
 import { formatPayloadTooltip } from '../lib/wire-validation';
 import { deriveEditFocusFromElement, withNodeTransition } from '../lib/derive-edit-focus';
+import { ElementEditAccessContext, propAccessAt } from '../lib/element-edit-access';
 import { computeInsertionIndex, type DOMRectLike, type InsertionAxis } from '../lib/compute-insertion-index';
 import { resolveDirectChildren } from '../lib/resolve-direct-children';
 import { createLogger } from '@almadar/logger';
@@ -87,6 +88,8 @@ export interface SelectedPattern {
   selection?: string[];
   /** Its distances from its parent's four sides and the parent's size (card px), when it has a parent pattern. */
   offsetInParent?: OffsetInParent;
+  /** The element's own address — the trait that drew it (an embedded trait's, not the card's), transition, slot, path. */
+  focus?: EditFocus;
 }
 
 export const PatternSelectionContext = createContext<{
@@ -666,7 +669,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   // clicked/hovered element's rendered children; see rectRelativeTo).
   const [selectedRect, setSelectedRect] = useState<RectLike | null>(null);
   // The selected element's address in the render-ui tree, for edits made on the canvas.
-  const [selectedAddress, setSelectedAddress] = useState<{ patternId: string; patternType: string } | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<{ patternId: string; patternType: string; focus: EditFocus | null } | null>(null);
   // The selected element's layout (when it is a layout container), for spacing handles.
   const [selectedLayout, setSelectedLayout] = useState<SelectedLayout | null>(null);
   // What each spacing step renders at on the selection (its theme's --space-N tokens).
@@ -746,9 +749,14 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       setSelectedLayout(measureLayout(patternEl, container, zoom));
       setSelectedScale(() => spacingScaleOf(layoutBoxOf(patternEl)));
       const primaryPath = patternEl.getAttribute('data-pattern-path') ?? 'root';
+      // The element's own address: the trait that drew it (an embedded
+      // trait's, not the card's), its transition, slot and path.
+      const derived = deriveEditFocusFromElement(patternEl);
+      const focus = derived ? withNodeTransition(derived, data) : null;
       setSelectedAddress({
         patternId: primaryPath,
         patternType: patternEl.getAttribute('data-pattern') ?? 'unknown',
+        focus,
       });
       const selection = paths ?? [primaryPath];
       setSelectedPaths(selection);
@@ -771,20 +779,20 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         rect: rect ?? undefined,
         offsetInParent: offsetInParentOf(patternEl, rect, container, zoom),
         selection,
+        ...(focus ? { focus } : {}),
       });
 
       // Feed the studio chatbox's contextual-edit flow with the element's
       // address. The orbital is read from the DOM (`data-orb-orbital`, stamped
       // by UISlotRenderer from the schema context) rather than the node's own
       // name, so a click correctly attributes to whichever of N orbitals it hit.
-      const focus = deriveEditFocusFromElement(patternEl);
       if (focus) {
         // Spread into a fresh literal (not the bare function return) —
         // `EditFocus` has no index signature, so TS's excess-property
         // leniency for object literals is what makes this assignable to
         // `EventPayload` without a cast; a typed non-literal value isn't.
         eventBus.emit('UI:ELEMENT_SELECTED', {
-          focus: { ...withNodeTransition(focus, data.transitionEvent) },
+          focus: { ...focus },
         });
       }
     } else {
@@ -922,13 +930,13 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
           return;
         }
         const copy = `${position.parentPath}.children.${position.index + 1}`;
-        setSelectedAddress({ patternId: copy, patternType: selectedAddress.patternType });
+        setSelectedAddress({ patternId: copy, patternType: selectedAddress.patternType, focus: selectedAddress.focus && { ...selectedAddress.focus, path: copy } });
         setSelectedPaths([copy]);
       } else {
         eventBus.emit('UI:PATTERN_WRAP', { paths, loc });
         // The wrapper takes the first wrapped element's place.
         const first = [...paths].sort((a, b) => (childPosition(a)?.index ?? 0) - (childPosition(b)?.index ?? 0))[0];
-        setSelectedAddress({ patternId: first, patternType: 'stack' });
+        setSelectedAddress({ patternId: first, patternType: 'stack', focus: selectedAddress.focus && { ...selectedAddress.focus, path: first, patternType: 'stack' } });
         setSelectedPaths([first]);
         setExtraRects([]);
       }
@@ -948,7 +956,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       toIndex: step > 0 ? target + 1 : target,
     });
     const moved = `${position.parentPath}.children.${target}`;
-    setSelectedAddress({ patternId: moved, patternType: selectedAddress.patternType });
+    setSelectedAddress({ patternId: moved, patternType: selectedAddress.patternType, focus: selectedAddress.focus && { ...selectedAddress.focus, path: moved } });
     setSelectedPaths([moved]);
     setExtraRects([]);
   }, [selectedAddress, selectedPaths, eventBus, patternElementAt, selectPatternElement, data.orbitalName, data.traitName, data.transitionEvent, tools, reactFlow]);
@@ -981,7 +989,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const handleInlineText = useInlineTextEdit({
     schema: data._fullSchema as OrbitalSchema | undefined,
     enabled: !playing && isExpanded && hasCanvasTool(tools, 'inlineText'),
-    transitionEvent: data.transitionEvent,
+    node: data,
   });
 
   const handleCopy = useCallback((e: React.ClipboardEvent) => {
@@ -1093,11 +1101,12 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   // `UI:PROP_CHANGE` (scope local) the inspector emits.
   const selectedClasses = useMemo<string[] | null>(() => {
     const fullSchema = data._fullSchema as OrbitalSchema | undefined;
-    if (!selectedAddress || !fullSchema || !data.traitName || !data.transitionEvent) return null;
+    const focus = selectedAddress?.focus;
+    if (!selectedAddress || !fullSchema || !focus?.trait || !focus.transition) return null;
     const config = resolvePatternConfig(fullSchema, {
-      orbitalName: data.orbitalName,
-      traitName: data.traitName,
-      transitionEvent: data.transitionEvent,
+      orbitalName: focus.orbital,
+      traitName: focus.trait,
+      transitionEvent: focus.transition,
       patternId: selectedAddress.patternId,
       patternType: selectedAddress.patternType,
     });
@@ -1106,20 +1115,29 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     return typeof current === 'string' ? current.split(/\s+/).filter(Boolean) : null;
   }, [data, selectedAddress]);
 
+  // What the host lets the user change on the selected element (its classes
+  // drive the design handles), and the behavior it belongs to when embedded.
+  const editAccess = useContext(ElementEditAccessContext);
+  const selectedFocus = selectedAddress?.focus ?? null;
+  const classesEditable = propAccessAt(editAccess, selectedFocus, 'className').editable;
+  const selectedPartOf = editAccess && selectedFocus ? editAccess(selectedFocus).partOf : undefined;
+
   const handleClassesChange = useCallback((next: string[]) => {
-    if (!selectedAddress || !data.traitName || !data.transitionEvent) return;
+    const focus = selectedAddress?.focus;
+    if (!selectedAddress || !focus?.trait || !focus.transition) return;
     eventBus.emit('UI:PROP_CHANGE', {
       scope: 'local',
       propName: 'className',
       value: next.join(' '),
       selection: {
         patternPath: selectedAddress.patternId,
-        orbitalName: data.orbitalName,
-        traitName: data.traitName,
-        transitionEvent: data.transitionEvent,
+        orbitalName: focus.orbital,
+        traitName: focus.trait,
+        transitionEvent: focus.transition,
+        ...(focus.slot ? { slot: focus.slot } : {}),
       },
     });
-  }, [selectedAddress, data.orbitalName, data.traitName, data.transitionEvent, eventBus]);
+  }, [selectedAddress, eventBus]);
 
   const [dragActive, setDragActive] = useState(false);
 
@@ -1701,11 +1719,20 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             alignment={selectedLayout?.alignment}
             pxOfStep={selectedScale}
             renderedSpacing={selectedLayout?.spacing}
-            classes={!playing && isExpanded && hasCanvasTool(tools, 'designHandles') ? selectedClasses : null}
+            classes={!playing && isExpanded && hasCanvasTool(tools, 'designHandles') && classesEditable ? selectedClasses : null}
             layoutBar={hasCanvasTool(tools, 'autoLayout')}
             zoom={reactFlow.getViewport().zoom}
             onChange={handleClassesChange}
           />
+        )}
+        {selectedRect && selectedPartOf && (
+          <Box
+            data-testid="orb-preview-part-of"
+            className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground shadow-sm"
+            style={{ position: 'absolute', pointerEvents: 'none', top: Math.max(0, selectedRect.top - 22), left: selectedRect.left, zIndex: 24 }}
+          >
+            <Typography variant="caption">{t('orbPreview.partOf', { behavior: selectedPartOf })}</Typography>
+          </Box>
         )}
         {orbitalSchema ? (
           // L1 and L2 both auto-grow with content. L2's `buildTransitionSchema`

@@ -158,3 +158,11 @@ export {
   type ZoomLevel,
 } from '../components/avl/organisms/index';
 export { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../components/avl/lib/canvas-tools';
+export {
+  ElementEditAccessContext,
+  EDITABLE,
+  propAccessAt,
+  type ElementEditAccess,
+  type ElementEditAccessResolver,
+  type ElementPropAccess,
+} from '../components/avl/lib/element-edit-access';

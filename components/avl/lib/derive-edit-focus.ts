@@ -41,18 +41,16 @@ export function deriveEditFocusFromElement(el: HTMLElement): EditFocus | null {
 }
 
 /**
- * Overrides `focus.transition` with the OWNING L2 node's own
- * `transitionEvent`, when known. `deriveEditFocusFromElement`'s
- * `data-orb-transition` read isn't reliably populated on every clicked
- * element at L2 (the rendered content's own `transitionEvent` doesn't
- * always mirror it), silently stranding consumers that require all of
- * orbital/trait/transition (canvas delete, contextual-edit). Each L2
- * `OrbPreviewNode` renders exactly one transition, so its own
- * `PreviewNodeData.transitionEvent` is authoritative over the DOM guess —
- * kept as a caller-side override (not folded into `deriveEditFocusFromElement`
- * itself) since the node, not the clicked element, is what actually knows it.
+ * Fills `focus.transition` from the owning L2 node, whose one rendered
+ * transition is authoritative for ITS trait (`data-orb-transition` isn't
+ * stamped on every element). An element drawn by an embedded trait keeps
+ * that trait's own transition — the node's belongs to a different trait.
  */
-export function withNodeTransition(focus: EditFocus, nodeTransitionEvent: string | undefined): EditFocus {
-  const transition = nodeTransitionEvent ?? focus.transition;
+export function withNodeTransition(
+  focus: EditFocus,
+  node: { traitName?: string; transitionEvent?: string },
+): EditFocus {
+  const ownsElement = focus.trait === undefined || focus.trait === node.traitName;
+  const transition = ownsElement ? node.transitionEvent ?? focus.transition : focus.transition;
   return transition ? { ...focus, transition } : { ...focus };
 }

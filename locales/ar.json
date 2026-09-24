@@ -605,5 +605,8 @@
   "orbInspector.padding": "الحشو",
   "orbInspector.mixed": "مختلط",
   "orbInspector.custom": "مخصص",
-  "orbInspector.customRefused": "قيمة مخصصة واحدة، مثل w-[243px] أو bg-[#e14b2a]."
+  "orbInspector.customRefused": "قيمة مخصصة واحدة، مثل w-[243px] أو bg-[#e14b2a].",
+  "inlineText.fixedValue": "‏{{behavior}} يحدد هذا النص — غيّره من إعداداته.",
+  "inlineText.loading": "جارٍ التحقق مما يمكنك تغييره في هذا العنصر.",
+  "orbPreview.partOf": "جزء من {{behavior}}"
 }

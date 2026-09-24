@@ -34,6 +34,7 @@ import {
 import type { OrbitalSchema, ThemeDefinition, EntityData } from '@almadar/core';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
+import { ElementEditAccessContext, type ElementEditAccessResolver } from '../lib/element-edit-access';
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { CANVAS_TOOLS, type CanvasTool } from '../lib/canvas-tools';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
@@ -159,6 +160,8 @@ export interface FlowCanvasProps {
   onPatternDelete?: (context: { patternIds: string[]; nodeData: PreviewNodeData }) => void;
   /** Editing tools the canvas turns on (a persona's shell manifest declares them); all by default. */
   tools?: readonly CanvasTool[];
+  /** What each element lets the user change (knob, data-bound, fixed by a behavior); every prop is editable without it. */
+  elementAccess?: ElementEditAccessResolver;
   /** Called when the user drags from a source handle to a target handle (event wiring). */
   onEventWire?: (wire: { eventName: string; sourceOrbital: string; targetOrbital: string; sourceTraitName?: string; targetTraitName?: string }) => void;
   /** Behavior layer metadata for node styling (layer color bands). */
@@ -273,6 +276,7 @@ function FlowCanvasInner({
   onSchemaChange,
   onPatternDelete,
   tools = CANVAS_TOOLS,
+  elementAccess,
   onEventWire,
   behaviorMeta,
   orbitalStatus,
@@ -738,6 +742,7 @@ function FlowCanvasInner({
   return (
     <ScreenSizeContext.Provider value={screenSize}>
     <CanvasToolsContext.Provider value={tools}>
+    <ElementEditAccessContext.Provider value={elementAccess ?? null}>
     <PatternSelectionContext.Provider value={patternSelectionValue}>
     <TraitCardSelectionContext.Provider value={traitCardSelectionValue}>
       <Box
@@ -869,6 +874,7 @@ function FlowCanvasInner({
       </Box>
     </TraitCardSelectionContext.Provider>
     </PatternSelectionContext.Provider>
+    </ElementEditAccessContext.Provider>
     </CanvasToolsContext.Provider>
     </ScreenSizeContext.Provider>
   );

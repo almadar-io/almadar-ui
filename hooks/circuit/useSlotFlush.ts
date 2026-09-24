@@ -87,6 +87,7 @@ export function useSlotFlush(
       slots.updateTraitContent(traitName, {
         pattern: patternType as string,
         props,
+        slot,
         priority: 0,
         animation: 'fade',
         transitionEvent: source?.event,
@@ -145,7 +146,7 @@ export function useSlotFlush(
         if (pattern === null) {
           slots.clearBySource(slot as Parameters<typeof slots.clearBySource>[0], sourceTrait);
         } else if (isEmbedded) {
-          slots.updateTraitContent(sourceTrait, { pattern: patternType as string, props, priority: 0, animation: 'fade', transitionEvent: event, fromState });
+          slots.updateTraitContent(sourceTrait, { pattern: patternType as string, props, slot, priority: 0, animation: 'fade', transitionEvent: event, fromState });
         } else {
           slots.render({ target: slot as Parameters<typeof slots.render>[0]['target'], pattern: patternType as string, props, sourceTrait, transitionEvent: event, fromState });
         }

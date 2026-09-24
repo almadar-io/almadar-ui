@@ -605,5 +605,8 @@
   "orbInspector.padding": "Padding",
   "orbInspector.mixed": "Mixed",
   "orbInspector.custom": "Custom",
-  "orbInspector.customRefused": "One custom value, like w-[243px] or bg-[#e14b2a]."
+  "orbInspector.customRefused": "One custom value, like w-[243px] or bg-[#e14b2a].",
+  "inlineText.fixedValue": "{{behavior}} sets this text — change it in its settings.",
+  "inlineText.loading": "Still checking what this element lets you change.",
+  "orbPreview.partOf": "Part of {{behavior}}"
 }

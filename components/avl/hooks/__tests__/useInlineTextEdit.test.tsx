@@ -11,6 +11,7 @@ import { EventBusProvider } from '../../../../providers/EventBusProvider';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useInlineTextEdit } from '../useInlineTextEdit';
 import { Typography } from '../../../core/atoms/Typography';
+import { ElementEditAccessContext, EDITABLE, type ElementEditAccessResolver } from '../../lib/element-edit-access';
 
 function schema(content: string): OrbitalSchema {
   return JSON.parse(JSON.stringify({
@@ -40,7 +41,7 @@ function Spy({ event, onEvent }: { event: string; onEvent: (payload: unknown) =>
 function Harness({ content, enabled = true }: { content: string; enabled?: boolean }) {
   const onDoubleClick = useInlineTextEdit({ schema: schema(content), enabled });
   return (
-    <div onDoubleClickCapture={onDoubleClick} data-orb-orbital="Widgets" data-orb-trait="WidgetInteraction" data-orb-transition="INIT" data-orb-path="root">
+    <div onDoubleClickCapture={onDoubleClick} data-orb-orbital="Widgets" data-orb-trait="WidgetInteraction" data-orb-transition="INIT" data-orb-slot="main" data-orb-path="root">
       <div data-pattern-path="root.children.0" data-pattern="typography">
         <Typography content={content.startsWith('@') ? 'Rendered from data' : content} />
       </div>
@@ -49,14 +50,16 @@ function Harness({ content, enabled = true }: { content: string; enabled?: boole
   );
 }
 
-function mount(content: string, enabled?: boolean) {
+function mount(content: string, enabled?: boolean, access: ElementEditAccessResolver | null = null) {
   const changed = vi.fn();
   const notified = vi.fn();
   render(
     <EventBusProvider debug={false}>
-      <Spy event="UI:PROP_CHANGE" onEvent={changed} />
-      <Spy event="UI:NOTIFY" onEvent={notified} />
-      <Harness content={content} enabled={enabled} />
+      <ElementEditAccessContext.Provider value={access}>
+        <Spy event="UI:PROP_CHANGE" onEvent={changed} />
+        <Spy event="UI:NOTIFY" onEvent={notified} />
+        <Harness content={content} enabled={enabled} />
+      </ElementEditAccessContext.Provider>
     </EventBusProvider>,
   );
   return { changed, notified };
@@ -81,7 +84,7 @@ describe('useInlineTextEdit', () => {
       scope: 'local',
       propName: 'content',
       value: 'Hi there',
-      selection: { patternPath: 'root.children.0', orbitalName: 'Widgets', traitName: 'WidgetInteraction', transitionEvent: 'INIT' },
+      selection: { patternPath: 'root.children.0', orbitalName: 'Widgets', traitName: 'WidgetInteraction', transitionEvent: 'INIT', slot: 'main' },
     });
     expect(text.getAttribute('contenteditable')).toBeNull();
   });
@@ -127,5 +130,23 @@ describe('useInlineTextEdit', () => {
     const text = screen.getByText('Hello');
     fireEvent.doubleClick(text);
     expect(text.getAttribute('contenteditable')).toBeNull();
+  });
+
+  it('text a behavior fixes is not edited; the user is told which behavior sets it', () => {
+    const fixed: ElementEditAccessResolver = () => ({ prop: () => ({ editable: false, reason: 'fixed', detail: 'std-browse' }), partOf: 'std-browse' });
+    const { changed, notified } = mount('Hello', true, fixed);
+    const text = screen.getByText('Hello');
+    fireEvent.doubleClick(text);
+    expect(text.getAttribute('contenteditable')).toBeNull();
+    expect(notified).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('std-browse') }));
+    expect(changed).not.toHaveBeenCalled();
+  });
+
+  it('the host is asked about the prop at the element that was clicked', () => {
+    const asked: Array<[string | undefined, string | undefined, string]> = [];
+    const access: ElementEditAccessResolver = (focus) => ({ prop: (name) => { asked.push([focus.trait, focus.slot, name]); return EDITABLE; } });
+    mount('Hello', true, access);
+    fireEvent.doubleClick(screen.getByText('Hello'));
+    expect(asked).toEqual([['WidgetInteraction', 'main', 'content']]);
   });
 });

@@ -52,6 +52,15 @@ describe('applyClientEffects carries render provenance', () => {
     expect(slots.updateTraitContent).toHaveBeenCalledWith('WidgetInteraction', expect.objectContaining({ transitionEvent: 'INIT', fromState: 'Browsing' }));
   });
 
+  it('an embedded frame names the slot its trait rendered into, on both flush paths', () => {
+    const slots = stubSlots();
+    const { result } = renderHook(() => useSlotFlush(slots, new Set(['WidgetInteraction'])));
+    result.current.applyClientEffects([], [{ ...tagged, effect: ['render-ui', 'sidebar', { type: 'typography', content: 'Hi' }] }]);
+    result.current.flushSlot('WidgetInteraction', 'sidebar', [{ pattern: { type: 'typography', content: 'Hi' }, props: {} }], { event: 'INIT' });
+    expect(slots.updateTraitContent).toHaveBeenNthCalledWith(1, 'WidgetInteraction', expect.objectContaining({ slot: 'sidebar' }));
+    expect(slots.updateTraitContent).toHaveBeenNthCalledWith(2, 'WidgetInteraction', expect.objectContaining({ slot: 'sidebar' }));
+  });
+
   it('an untagged render (an older server) still renders, without provenance', () => {
     const slots = stubSlots();
     const { result } = renderHook(() => useSlotFlush(slots, undefined));
