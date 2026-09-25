@@ -37,6 +37,8 @@ export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   /** Data-theme attribute applied to the root element for CSS theme scoping (e.g. almadar-website-dark). */
   'data-theme'?: string;
+  /** Text direction for this subtree: "ltr", "rtl" (Arabic/Hebrew content) or "auto" */
+  dir?: string;
   /** Padding on all sides */
   padding?: BoxPadding;
   /** Horizontal padding (overrides padding for x-axis) */

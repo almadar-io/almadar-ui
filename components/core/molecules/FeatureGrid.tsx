@@ -9,7 +9,7 @@
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { SimpleGrid } from './SimpleGrid';
-import { FeatureCard, type FeatureCardProps } from '../../marketing/molecules/FeatureCard';
+import { FeatureCard, type FeatureCardProps } from './FeatureCard';
 
 export interface FeatureGridProps {
   /** Array of feature card configurations */

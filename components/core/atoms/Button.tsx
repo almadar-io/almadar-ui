@@ -7,6 +7,8 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { Icon, type IconInput } from "./Icon";
 import { AtlasImage } from "./AtlasImage";
 import { INLINE_TEXT_ATTR } from "../../../lib/inlineText";
+import { followHref } from "../../../lib/followHref";
+import { useNavStack, isInertNavStack } from "../../../providers/NavStackContext";
 
 export type ButtonVariant =
   | "primary"
@@ -15,7 +17,8 @@ export type ButtonVariant =
   | "danger"
   | "success"
   | "warning"
-  | "default";
+  | "default"
+  | "link";
 export type ButtonSize = "sm" | "md" | "lg";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -44,6 +47,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   label?: string;
   /** Disable the button (greys out, blocks click events) */
   disabled?: boolean;
+  /** Makes the button a link: `#anchor` scrolls, an absolute URL loads, a path navigates in-app */
+  href?: string;
   /** Test identifier for automated tests */
   'data-testid'?: string;
 }
@@ -96,6 +101,11 @@ const variantStyles = {
     "border-[length:var(--border-width-thin)] border-border",
     "hover:bg-secondary-hover",
     "active:scale-[var(--active-scale)]",
+  ].join(" "),
+  link: [
+    "bg-transparent text-muted-foreground",
+    "border-none shadow-none",
+    "underline-offset-4 hover:text-foreground hover:underline",
   ].join(" "),
 } as Record<string, string>;
 
@@ -163,6 +173,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       action,
       actionPayload,
       label,
+      href,
       children,
       onClick,
       'data-testid': dataTestId,
@@ -171,6 +182,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const eventBus = useEventBus();
+    const navStack = useNavStack();
 
     // Merge icon/leftIcon and iconRight/rightIcon (icon and iconRight are aliases)
     const leftIconValue = leftIcon || iconProp;
@@ -189,28 +201,23 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       onClick?.(e);
     };
 
-    return (
-      <button
-        ref={ref}
-        type="button"
-        disabled={disabled || isLoading}
-        className={cn(
-          "relative inline-flex items-center justify-center gap-2",
-          "font-medium",
-          "rounded-sm",
-          "cursor-pointer",
-          "chrome-button",
-          "transition-all duration-normal",
-          "focus:outline-none focus-visible:ring-[length:var(--focus-ring-width)] focus-visible:ring-ring focus-visible:ring-offset-[length:var(--focus-ring-offset)]",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          variantStyles[variant],
-          sizeStyles[size],
-          className,
-        )}
-        onClick={handleClick}
-        {...props}
-        data-testid={dataTestId ?? (action ? `action-${action}` : undefined)}
-      >
+    const classes = cn(
+      "relative inline-flex items-center justify-center gap-2",
+      "font-medium",
+      "rounded-sm",
+      "cursor-pointer",
+      variant !== "link" && "chrome-button",
+      "transition-all duration-normal",
+      "focus:outline-none focus-visible:ring-[length:var(--focus-ring-width)] focus-visible:ring-ring focus-visible:ring-offset-[length:var(--focus-ring-offset)]",
+      "disabled:opacity-50 disabled:cursor-not-allowed",
+      variantStyles[variant],
+      variant === "link" ? "h-auto px-0 text-sm" : sizeStyles[size],
+      className,
+    );
+    const testId = dataTestId ?? (action ? `action-${action}` : undefined);
+
+    const content = (
+      <>
         {isLoading ? (
           <Loader2 className="h-icon-default w-icon-default animate-spin" />
         ) : (
@@ -229,6 +236,51 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {resolvedRightIcon && !isLoading && (
           <span className="flex-shrink-0">{resolvedRightIcon}</span>
         )}
+      </>
+    );
+
+    if (href !== undefined && href !== '') {
+      const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (disabled || isLoading) {
+          e.preventDefault();
+          return;
+        }
+        if (action) {
+          eventBus.emit(`UI:${action}`, actionPayload ?? {});
+        }
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        if (!href.startsWith("#") && isInertNavStack(navStack)) return;
+        e.preventDefault();
+        followHref(href, navStack);
+      };
+      return (
+        <a
+          href={href}
+          id={props.id}
+          title={props.title}
+          style={props.style}
+          aria-label={props['aria-label']}
+          aria-disabled={disabled || isLoading || undefined}
+          className={classes}
+          onClick={handleLinkClick}
+          data-testid={testId}
+        >
+          {content}
+        </a>
+      );
+    }
+
+    return (
+      <button
+        ref={ref}
+        type="button"
+        disabled={disabled || isLoading}
+        className={classes}
+        onClick={handleClick}
+        {...props}
+        data-testid={testId}
+      >
+        {content}
       </button>
     );
   },

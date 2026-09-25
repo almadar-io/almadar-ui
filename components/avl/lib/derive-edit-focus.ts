@@ -6,6 +6,12 @@ import type { EditFocus } from '@almadar/core';
  * walking up via `closest` when the clicked node itself doesn't carry it); since
  * `EditFocus.orbital` is required, returns `null` when it can't be resolved.
  */
+/** The trait that drew a rendered element: its own `data-orb-trait` / `data-source-trait`, or its nearest ancestor's. */
+export function traitOfElement(el: Element): string | null {
+  const traitEl = el.closest('[data-orb-trait],[data-source-trait]');
+  return traitEl?.getAttribute('data-orb-trait') ?? traitEl?.getAttribute('data-source-trait') ?? null;
+}
+
 export function deriveEditFocusFromElement(el: HTMLElement): EditFocus | null {
   const orbitalEl = el.getAttribute('data-orb-orbital') !== null
     ? el
@@ -19,8 +25,7 @@ export function deriveEditFocusFromElement(el: HTMLElement): EditFocus | null {
   // preview the render's address (trait, transition, slot …) sits on the slot
   // wrapper, not on each nested element.
   const nearest = (attr: string): string | null => el.closest(`[${attr}]`)?.getAttribute(attr) ?? null;
-  const traitEl = el.closest('[data-orb-trait],[data-source-trait]');
-  const trait = traitEl?.getAttribute('data-orb-trait') ?? traitEl?.getAttribute('data-source-trait') ?? null;
+  const trait = traitOfElement(el);
   const focus: EditFocus = {
     level: 'node',
     orbital,

@@ -7,7 +7,8 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import type { OrbitalSchema } from '@almadar/core';
+import type { EventPayload, OrbitalSchema } from '@almadar/core';
+import { useEventBus } from '../../../../hooks/useEventBus';
 import { FlowCanvas } from '../FlowCanvas';
 import type { PreviewNodeData } from '../../types/avl-preview-types';
 
@@ -72,7 +73,6 @@ describe('FlowCanvas default (externalInspector absent)', () => {
       <FlowCanvas
         schema={schema}
         initialOrbital="TaskBoard"
-        initialLevel="expanded"
         initialSelectedNode={preselectedNode}
       />,
     );
@@ -86,7 +86,6 @@ describe('FlowCanvas default (externalInspector absent)', () => {
       <FlowCanvas
         schema={schema}
         initialOrbital="TaskBoard"
-        initialLevel="expanded"
         initialSelectedNode={preselectedNode}
         onSelectedNodeChange={onSelectedNodeChange}
       />,
@@ -104,7 +103,6 @@ describe('FlowCanvas externalInspector=true', () => {
       <FlowCanvas
         schema={schema}
         initialOrbital="TaskBoard"
-        initialLevel="expanded"
         initialSelectedNode={preselectedNode}
         externalInspector
       />,
@@ -118,7 +116,6 @@ describe('FlowCanvas externalInspector=true', () => {
       <FlowCanvas
         schema={schema}
         initialOrbital="TaskBoard"
-        initialLevel="expanded"
         initialSelectedNode={preselectedNode}
         externalInspector
         onSelectedNodeChange={onSelectedNodeChange}
@@ -129,13 +126,12 @@ describe('FlowCanvas externalInspector=true', () => {
     expect(screen.queryByRole('button', { name: 'Inspector' })).not.toBeInTheDocument();
   });
 
-  it('fires onSelectedNodeChange with the node on click-select at expanded level', async () => {
+  it('fires onSelectedNodeChange with the node on click-select of a card showing a state', async () => {
     const onSelectedNodeChange = vi.fn();
     const { container } = render(
       <FlowCanvas
         schema={schema}
         initialOrbital="TaskBoard"
-        initialLevel="expanded"
         externalInspector
         onSelectedNodeChange={onSelectedNodeChange}
       />,
@@ -148,5 +144,105 @@ describe('FlowCanvas externalInspector=true', () => {
     expect(onSelectedNodeChange).toHaveBeenCalledWith(
       expect.objectContaining({ orbitalName: 'TaskBoard', traitName: 'TaskList', transitionEvent: 'LOAD' }),
     );
+  });
+});
+
+const twoOrbitals: OrbitalSchema = {
+  name: 'TwoApp',
+  orbitals: [
+    schema.orbitals[0],
+    { ...schema.orbitals[0], name: 'Notes', pages: [{ name: 'NotesPage', path: '/notes' }] },
+    { ...schema.orbitals[0], name: 'Files', pages: [{ name: 'FilesPage', path: '/files' }] },
+  ],
+};
+
+let busEmit: (type: string, payload: EventPayload) => void = () => {};
+function BusHandle(): null {
+  busEmit = useEventBus().emit;
+  return null;
+}
+
+const cardIds = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('.react-flow__node')).map((n) => n.getAttribute('data-id'));
+
+describe('FlowCanvas focus (local / world)', () => {
+  it('opens on one card — the first orbital — in local view', () => {
+    const { container } = render(<FlowCanvas schema={twoOrbitals} />);
+    expect(cardIds(container)).toEqual(['TaskBoard']);
+    expect(screen.getByTestId('canvas-scope-local').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('Tab and Shift+Tab move the focus between orbitals, wrapping around', () => {
+    const onFocusChange = vi.fn();
+    const { container } = render(<FlowCanvas schema={twoOrbitals} onFocusChange={onFocusChange} />);
+    const canvas = screen.getByTestId('flow-canvas');
+    fireEvent.keyDown(canvas, { key: 'Tab' });
+    expect(cardIds(container)).toEqual(['Notes']);
+    fireEvent.keyDown(canvas, { key: 'Tab', shiftKey: true });
+    fireEvent.keyDown(canvas, { key: 'Tab', shiftKey: true });
+    expect(cardIds(container)).toEqual(['Files']);
+    expect(onFocusChange).toHaveBeenLastCalledWith({ orbital: 'Files', scope: 'local', state: 'TaskList:LOAD:idle:loaded' });
+  });
+
+  it('Tab inside an input is left alone', () => {
+    const { container } = render(<FlowCanvas schema={twoOrbitals} />);
+    const input = document.createElement('input');
+    screen.getByTestId('flow-canvas').appendChild(input);
+    fireEvent.keyDown(input, { key: 'Tab' });
+    expect(cardIds(container)).toEqual(['TaskBoard']);
+  });
+
+  it('the orbital picker and the arrows focus an orbital', () => {
+    const { container } = render(<FlowCanvas schema={twoOrbitals} />);
+    fireEvent.change(screen.getByTestId('canvas-orbital-picker'), { target: { value: 'Files' } });
+    expect(cardIds(container)).toEqual(['Files']);
+    fireEvent.click(screen.getByTestId('canvas-orbital-next'));
+    expect(cardIds(container)).toEqual(['TaskBoard']);
+  });
+
+  it('a focusedOrbital prop change moves the focus without remounting', () => {
+    const { container, rerender } = render(<FlowCanvas schema={twoOrbitals} />);
+    rerender(<FlowCanvas schema={twoOrbitals} focusedOrbital="Notes" />);
+    expect(cardIds(container)).toEqual(['Notes']);
+  });
+
+  it('world view shows every orbital', () => {
+    const { container } = render(<FlowCanvas schema={twoOrbitals} />);
+    fireEvent.click(screen.getByTestId('canvas-scope-world'));
+    expect(cardIds(container)).toEqual(['TaskBoard', 'Notes', 'Files']);
+  });
+
+  it('a double-click on a card changes nothing', () => {
+    const { container } = render(<FlowCanvas schema={twoOrbitals} />);
+    fireEvent.doubleClick(container.querySelector('.react-flow__node') as Element);
+    expect(cardIds(container)).toEqual(['TaskBoard']);
+    expect(screen.getByTestId('canvas-state-TaskBoard')).toHaveValue('TaskList:LOAD:idle:loaded');
+  });
+
+  it('a card opens on its first state; the dropdown also offers the live orbital, and swaps the card', () => {
+    const onFocusChange = vi.fn();
+    render(<FlowCanvas schema={twoOrbitals} onFocusChange={onFocusChange} />);
+    const picker = screen.getByTestId('canvas-state-TaskBoard') as HTMLSelectElement;
+    expect(picker.value).toBe('TaskList:LOAD:idle:loaded');
+    expect(Array.from(picker.options).map((o) => o.value)).toEqual(['live', 'TaskList:LOAD:idle:loaded']);
+    fireEvent.change(picker, { target: { value: 'live' } });
+    expect(onFocusChange).toHaveBeenLastCalledWith({ orbital: 'TaskBoard', scope: 'local', state: 'live' });
+  });
+
+  it('a resize in local view keeps the other cards\' saved placements', () => {
+    const onPositionsChange = vi.fn();
+    render(
+      <>
+        <BusHandle />
+        <FlowCanvas
+          schema={twoOrbitals}
+          nodePositions={{ Notes: { x: 5, y: 6 } }}
+          onPositionsChange={onPositionsChange}
+        />
+      </>,
+    );
+    // The card-resize bus event is the only placement change reachable without real drag geometry.
+    act(() => { busEmit('UI:CANVAS_CARD_RESIZED', { nodeId: 'TaskBoard', width: 700 }); });
+    expect(onPositionsChange).toHaveBeenCalledWith(expect.objectContaining({ Notes: { x: 5, y: 6 }, TaskBoard: expect.objectContaining({ width: 700 }) }));
   });
 });

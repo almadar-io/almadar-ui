@@ -59,12 +59,11 @@ const markerPresenceCache = new WeakMap<object, boolean>();
 // Marker resolution is pure in (marker expression, entity snapshot, config,
 // state), and the flush sink's structural sharing keeps marker object
 // identity stable across re-flushes — so memoize per marker object keyed on
-// the input identities. Two wins: the slot-level walk and the nested
-// SlotContentRenderer walk resolve the same marker ONCE per entity commit
-// instead of twice, and a cache hit reports `changed: false`, which lets the
-// walk return the ORIGINAL container identity on non-entity renders — the
-// downstream trait-ref scans then hit THEIR identity caches instead of
-// re-walking freshly-resolved arrays every render.
+// the input identities: the slot-level walk and the nested
+// SlotContentRenderer walk resolve the same marker ONCE per entity commit.
+// A resolved marker always differs from the marker itself, so a hit still
+// rebuilds its container; container identity is kept by
+// `containerResolutionCache` below, never by returning the raw input.
 interface MarkerResolution {
   entity: EntityRow;
   config: TraitConfig | undefined;
@@ -72,6 +71,31 @@ interface MarkerResolution {
   resolved: SlotPropValue;
 }
 const markerResolutionCache = new WeakMap<object, MarkerResolution>();
+
+// A marker-bearing container's resolved copy, per the same inputs: repeat
+// renders with an unchanged entity/config/state get the SAME resolved
+// object, so downstream memos and identity caches keep hitting.
+interface ContainerResolution {
+  entity: EntityRow;
+  config: TraitConfig | undefined;
+  state: string;
+  scopeTrait: string | undefined;
+  resolved: SlotPropValue;
+}
+const containerResolutionCache = new WeakMap<object, ContainerResolution>();
+
+function cachedContainer(
+  value: object,
+  scopeTrait: string | undefined,
+  entity: EntityRow,
+  config: TraitConfig | undefined,
+  state: string,
+): SlotPropValue | undefined {
+  const hit = containerResolutionCache.get(value);
+  return hit !== undefined && hit.entity === entity && hit.config === config && hit.state === state && hit.scopeTrait === scopeTrait
+    ? hit.resolved
+    : undefined;
+}
 
 // Certified marker-free containers. The slot-level walk deep-resolves the
 // whole tree, then every nested SlotContentRenderer re-runs
@@ -131,7 +155,7 @@ function walkValue(
   if (isRenderBindingMarker(value)) {
     const cached = markerResolutionCache.get(value);
     if (cached !== undefined && cached.entity === entity && cached.config === config && cached.state === state) {
-      return { resolved: cached.resolved, changed: false };
+      return { resolved: cached.resolved, changed: true };
     }
     const resolved = resolveMarkerExpression(value.expression, entity, config, state);
     markerResolutionCache.set(value, { entity, config, state, resolved });
@@ -148,6 +172,8 @@ function walkValue(
       brandResolved(value);
       return { resolved: value as SlotPropValue, changed: false };
     }
+    const cachedArray = cachedContainer(value, scopeTrait, entity, config, state);
+    if (cachedArray !== undefined) return { resolved: cachedArray, changed: true };
     // A marker in array position may evaluate to an array itself (an
     // `array/map` children expression) — splice it flat so consumers keep
     // receiving plain node lists.
@@ -166,7 +192,9 @@ function walkValue(
       if (itemChanged) changed = true;
     }
     brandResolved(out);
-    return changed ? { resolved: out as SlotPropValue, changed: true } : { resolved: value as SlotPropValue, changed: false };
+    if (!changed) return { resolved: value as SlotPropValue, changed: false };
+    containerResolutionCache.set(value, { entity, config, state, scopeTrait, resolved: out as SlotPropValue });
+    return { resolved: out as SlotPropValue, changed: true };
   }
   if (isPlainObject(value)) {
     if (!subtreeHasMarker(value)) {
@@ -180,6 +208,8 @@ function walkValue(
     if (typeof sourceTrait === 'string' && sourceTrait !== scopeTrait) {
       return { resolved: value as SlotPropValue, changed: false };
     }
+    const cachedObject = cachedContainer(value, scopeTrait, entity, config, state);
+    if (cachedObject !== undefined) return { resolved: cachedObject, changed: true };
     const out: Record<string, SlotPropValue> = {};
     let changed = false;
     for (const [key, item] of Object.entries(value)) {
@@ -188,7 +218,9 @@ function walkValue(
       if (itemChanged) changed = true;
     }
     brandResolved(out as SlotPropValue);
-    return changed ? { resolved: out as SlotPropValue, changed: true } : { resolved: value as SlotPropValue, changed: false };
+    if (!changed) return { resolved: value as SlotPropValue, changed: false };
+    containerResolutionCache.set(value, { entity, config, state, scopeTrait, resolved: out as SlotPropValue });
+    return { resolved: out as SlotPropValue, changed: true };
   }
   return { resolved: value, changed: false };
 }
@@ -217,6 +249,8 @@ export function resolveRenderBindingMarkers(
   // the whole tree; nested SlotContentRenderers re-enter per pattern) — the
   // brand certifies marker-free, so re-walking would only re-scan.
   if (resolvedMarkerFree.has(props)) return props;
+  const cached = cachedContainer(props, scopeTrait, entity, config, state);
+  if (cached !== undefined) return cached as SlotProps;
   const out: Record<string, SlotPropValue> = {};
   let changed = false;
   for (const [key, value] of Object.entries(props)) {
@@ -225,5 +259,7 @@ export function resolveRenderBindingMarkers(
     if (propChanged) changed = true;
   }
   brandResolved(out as SlotProps);
-  return changed ? (out as SlotProps) : props;
+  if (!changed) return props;
+  containerResolutionCache.set(props, { entity, config, state, scopeTrait, resolved: out as SlotPropValue });
+  return out as SlotProps;
 }

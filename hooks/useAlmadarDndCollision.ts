@@ -13,7 +13,7 @@
  * use for grab-and-drag interactions.
  *
  * Collision waterfall (run in order, first non-empty wins):
- *   1. pointerWithin     — catches the empty zones + clean hover-over-zone case
+ *   1. pointerWithin     — catches the empty zones + clean hover-over-zone case (innermost zone first)
  *   2. rectIntersection  — falls back when the pointer is in margin/padding
  *   3. closestCorners    — last resort over the items in whichever zone won
  */
@@ -26,7 +26,10 @@ import {
   pointerWithin,
   rectIntersection,
   closestCorners,
+  type Collision,
   type CollisionDetection,
+  type DroppableContainer,
+  type UniqueIdentifier,
   type SensorDescriptor,
   type SensorOptions,
 } from '@dnd-kit/core';
@@ -58,9 +61,26 @@ export function useAlmadarDndSensors(withSortableKeyboard = true): SensorDescrip
  * Multi-container collision waterfall.
  * pointerWithin → rectIntersection → closestCorners.
  */
+/**
+ * The zones under the pointer, innermost first: a zone whose node sits inside
+ * another colliding zone's node comes before it. `pointerWithin` alone ranks
+ * by distance to rect corners, which favours the smaller rectangle — so a
+ * zoomed canvas card (larger than the canvas wrapper holding it) lost to the
+ * wrapper. Zones not nested in each other keep dnd-kit's order.
+ */
+function innermostFirst(collisions: Collision[], containers: ReadonlyArray<DroppableContainer>): Collision[] {
+  const nodeOf = new Map(containers.map((c) => [c.id, c.node.current]));
+  const depth = (id: UniqueIdentifier): number => {
+    const node = nodeOf.get(id);
+    return node ? collisions.filter((other) => other.id !== id && nodeOf.get(other.id)?.contains(node)).length : 0;
+  };
+  const depths = new Map(collisions.map((c) => [c.id, depth(c.id)]));
+  return [...collisions].sort((a, b) => (depths.get(b.id) ?? 0) - (depths.get(a.id) ?? 0));
+}
+
 export const almadarDndCollisionDetection: CollisionDetection = (args) => {
   const pw = pointerWithin(args);
-  if (pw.length > 0) return pw;
+  if (pw.length > 0) return innermostFirst(pw, args.droppableContainers);
   const ri = rectIntersection(args);
   if (ri.length > 0) return ri;
   return closestCorners(args);

@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "6.36.0",
+  "version": "6.37.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -73,10 +73,10 @@
       "import": "./templates/index.ts",
       "types": "./templates/index.ts"
     },
-    "./marketing": {
-      "types": "./dist/marketing/index.d.ts",
-      "import": "./dist/marketing/index.js",
-      "require": "./dist/marketing/index.cjs"
+    "./ssr": {
+      "types": "./dist/ssr/index.d.ts",
+      "import": "./dist/ssr/index.js",
+      "require": "./dist/ssr/index.cjs"
     },
     "./avl": {
       "types": "./dist/avl/index.d.ts",
@@ -134,12 +134,12 @@
     "verify:safelist": "tsx scripts/audit-tailwind-safelist.ts"
   },
   "dependencies": {
-    "@almadar/core": "^10.103.0",
-    "@almadar/evaluator": "^2.49.0",
-    "@almadar/logger": "^1.12.0",
-    "@almadar/runtime": "^6.89.0",
-    "@almadar/std": "^16.228.0",
-    "@almadar/syntax": "^1.17.0",
+    "@almadar/core": "^10.104.0",
+    "@almadar/evaluator": "^2.50.0",
+    "@almadar/logger": "^1.13.0",
+    "@almadar/runtime": "^6.90.0",
+    "@almadar/std": "^16.229.0",
+    "@almadar/syntax": "^1.18.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -198,7 +198,7 @@
     }
   },
   "devDependencies": {
-    "@almadar/eslint-plugin": "^2.18.0",
+    "@almadar/eslint-plugin": "^2.19.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
     "@react-three/postprocessing": "3.0.4",

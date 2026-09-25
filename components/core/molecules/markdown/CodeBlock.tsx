@@ -882,14 +882,15 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const viewerPlainCodeColor = plainCodeColorOf(viewerStyle);
 
     const diffLines = useMemo(() => {
-      if (propDiff) return propDiff;
+      if (propDiff && propDiff.length > 0) return propDiff;
       if (mode === 'diff' && oldValue !== undefined && newValue !== undefined) {
         return generateDiff(oldValue, newValue);
       }
       return null;
     }, [propDiff, mode, oldValue, newValue]);
 
-    const isViewerMode = !!(title || files || showLineNumbers || diffLines || mode === 'diff' || actions);
+    // An empty collection is unset: generated wrappers forward `files: []` / `diff: []` defaults.
+    const isViewerMode = !!(title || (files && files.length > 0) || showLineNumbers || diffLines || mode === 'diff' || actions);
     const effectiveCopy = showCopy ?? showCopyButton;
 
     // ── Editable mode (GAP-77): Prism overlay under transparent textarea ──

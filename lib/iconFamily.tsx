@@ -32,18 +32,30 @@ export interface RenderedIconProps {
 const DEFAULT_FAMILY: IconFamily = 'lucide';
 const VALID_FAMILIES: ReadonlyArray<IconFamily> = [DEFAULT_FAMILY];
 
-/** Read --icon-family from <html> at runtime. Returns 'lucide' on SSR. */
-export function getCurrentIconFamily(): IconFamily {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return DEFAULT_FAMILY;
-  }
-  const raw = getComputedStyle(document.documentElement)
+/** The theme's declared --icon-family ('' when unset or on SSR). */
+function themeIconFamily(): string {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return '';
+  return getComputedStyle(document.documentElement)
     .getPropertyValue('--icon-family')
     .trim()
     .replace(/^["']|["']$/g, '');
+}
+
+/** Read --icon-family from <html> at runtime. Returns 'lucide' on SSR. */
+export function getCurrentIconFamily(): IconFamily {
+  const raw = themeIconFamily();
   return (VALID_FAMILIES as ReadonlyArray<string>).includes(raw)
     ? (raw as IconFamily)
     : DEFAULT_FAMILY;
+}
+
+/**
+ * The theme's `--icon-stroke-width` belongs to the theme's family; it applies
+ * only when that family is the one rendering (unset = the default family).
+ */
+function themeStrokeApplies(): boolean {
+  const raw = themeIconFamily();
+  return raw === '' || (VALID_FAMILIES as ReadonlyArray<string>).includes(raw);
 }
 
 // ---------------------------------------------------------------------------
@@ -51,6 +63,7 @@ export function getCurrentIconFamily(): IconFamily {
 // ---------------------------------------------------------------------------
 
 let cachedFamily: IconFamily | null = null;
+let cachedStrokeApplies: boolean | null = null;
 const listeners = new Set<() => void>();
 let observer: MutationObserver | null = null;
 
@@ -58,8 +71,10 @@ function ensureObserver(): void {
   if (typeof window === 'undefined' || observer) return;
   observer = new MutationObserver(() => {
     const next = getCurrentIconFamily();
-    if (next !== cachedFamily) {
+    const nextStroke = themeStrokeApplies();
+    if (next !== cachedFamily || nextStroke !== cachedStrokeApplies) {
       cachedFamily = next;
+      cachedStrokeApplies = nextStroke;
       listeners.forEach((fn) => fn());
     }
   });
@@ -68,6 +83,7 @@ function ensureObserver(): void {
     attributeFilter: ['data-theme', 'style'],
   });
   cachedFamily = getCurrentIconFamily();
+  cachedStrokeApplies = themeStrokeApplies();
 }
 
 function subscribeIconFamily(notify: () => void): () => void {
@@ -86,6 +102,17 @@ function getIconFamilySnapshot(): IconFamily {
 
 function getIconFamilyServerSnapshot(): IconFamily {
   return DEFAULT_FAMILY;
+}
+
+function getStrokeAppliesSnapshot(): boolean {
+  if (cachedStrokeApplies !== null) return cachedStrokeApplies;
+  cachedStrokeApplies = themeStrokeApplies();
+  return cachedStrokeApplies;
+}
+
+/** React hook: whether the theme's `--icon-stroke-width` applies to the rendered icons. */
+export function useThemeIconStrokeApplies(): boolean {
+  return useSyncExternalStore(subscribeIconFamily, getStrokeAppliesSnapshot, () => true);
 }
 
 /** React hook: returns the active icon family, re-renders on theme switch. */

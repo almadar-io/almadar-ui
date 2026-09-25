@@ -2,9 +2,9 @@
  * AVL Preview Converter
  *
  * Extracts render-ui pattern configs from OrbitalSchema transitions
- * and builds React Flow graphs for the two FlowCanvas levels:
- *   - Overview: one node per orbital (INIT transition UI)
- *   - Expanded: one node per UI state within an orbital
+ * and builds the FlowCanvas graph: one card per orbital (all of them, or
+ * only the focused one), each showing the live orbital or a state picked
+ * from its dropdown (`stateOptionsOf`).
  *
  * Key feature: detects interactive elements (buttons, links) inside
  * patterns that fire events. These become per-element source handles
@@ -35,6 +35,7 @@ import type {
   ScreenSize,
 } from '../types/avl-preview-types';
 import { SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
+import { collectEmbeddedTraits } from '../../../lib/embedded-traits';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -45,8 +46,6 @@ import { SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
 // grid sprawls past one viewport.
 const OVERVIEW_GAP_X = 160;
 const OVERVIEW_GAP_Y = 240;
-const EXPANDED_GAP_X = 160;
-const EXPANDED_GAP_Y = 240;
 
 // Card chrome (header bar + name strip + footer) on top of the device preset's
 // `minHeight`. Keeps Y spacing honest even when the preset reports a short
@@ -66,14 +65,6 @@ function computeSpacing(screenSize: ScreenSize = 'wide'): { x: number; y: number
   return {
     x: preset.width + OVERVIEW_GAP_X,
     y: preset.minHeight + CARD_CHROME_Y + OVERVIEW_GAP_Y,
-  };
-}
-
-function computeExpandedSpacing(screenSize: ScreenSize = 'wide'): { x: number; y: number } {
-  const preset = SCREEN_SIZE_PRESETS[screenSize];
-  return {
-    x: preset.width + EXPANDED_GAP_X,
-    y: preset.minHeight + CARD_CHROME_Y + EXPANDED_GAP_Y,
   };
 }
 
@@ -255,13 +246,10 @@ function detectStateRole(
   stateName: string,
   states: State[],
   transitions: Transition[],
-): 'initial' | 'terminal' | 'hub' | 'error' | 'default' {
+): 'initial' | 'terminal' | 'hub' | 'default' {
   const stateInfo = states.find(s => s.name === stateName);
   if (stateInfo?.isInitial) return 'initial';
   if (stateInfo?.isTerminal || stateInfo?.isFinal) return 'terminal';
-
-  const lowerName = stateName.toLowerCase();
-  if (lowerName.includes('error') || lowerName.includes('fail')) return 'error';
 
   // Hub: state with most transitions (in + out)
   const counts = new Map<string, number>();
@@ -277,13 +265,6 @@ function detectStateRole(
   if (stateName === maxState && maxCount > 2) return 'hub';
 
   return 'default';
-}
-
-function isBackwardTransition(from: string, to: string, states: State[]): boolean {
-  const fromIdx = states.findIndex(s => s.name === from);
-  const toIdx = states.findIndex(s => s.name === to);
-  if (fromIdx === -1 || toIdx === -1) return false;
-  return toIdx < fromIdx;
 }
 
 // ---------------------------------------------------------------------------
@@ -499,10 +480,10 @@ export function schemaToOverviewGraph(
 }
 
 // ---------------------------------------------------------------------------
-// Level 2: Expanded graph (one node per UI state within an orbital)
+// Card states: the options of a card's state dropdown
 // ---------------------------------------------------------------------------
 
-/** Internal: a transition + its trait context, ready for node assembly. */
+/** Internal: a transition + its trait context, ready for card data. */
 interface UITransitionEntry {
   trait: Trait;
   traitName: string;
@@ -513,12 +494,7 @@ interface UITransitionEntry {
   allTransitions: Transition[];
 }
 
-/**
- * Walk an orbital's traits and collect every transition that has at least
- * one `render-ui` effect. Used by `orbitalToExpandedGraph` (L2 view, all
- * traits) and `orbitalAliasToExpandedGraph` (L3 view, single alias bucket
- * filtered by `sourceBehavior.alias`).
- */
+/** Every transition of the orbital's matching traits that has at least one `render-ui` effect. */
 function collectUITransitions(
   orbital: OrbitalDefinition,
   filter: (trait: Trait) => boolean,
@@ -546,8 +522,29 @@ function collectUITransitions(
   return out;
 }
 
-/** How L2 cards are cut: one per transition (architect) or one per distinct render (designer). */
-export type ExpandedGraphView = 'transitions' | 'screens';
+/** How a card's states are listed: one per render-ui transition, or one per distinct render (designer). */
+export type CanvasStateView = 'transitions' | 'screens';
+
+/** The state-dropdown entry that shows the whole orbital running from its initial state. */
+export const LIVE_STATE = 'live';
+
+export interface CanvasStateOption {
+  id: string;
+  label: string;
+  hint: string;
+  data: PreviewNodeData;
+}
+
+export interface CanvasStateGroup {
+  alias: string;
+  behaviorName: string;
+  options: CanvasStateOption[];
+}
+
+export interface CanvasStateOptions {
+  own: CanvasStateOption[];
+  groups: CanvasStateGroup[];
+}
 
 interface ScreenEntry {
   entry: UITransitionEntry;
@@ -576,87 +573,42 @@ function collapseToScreens(transitions: UITransitionEntry[]): ScreenEntry[] {
   return screens;
 }
 
-/**
- * Shared assembler: given pre-collected UI transitions + a list of grouped
- * imported-behavior cards, build the React Flow nodes + edges. Factored
- * out so L2 (`orbitalToExpandedGraph`) and L3
- * (`orbitalAliasToExpandedGraph`) don't copy-paste the dedup + positioning
- * + edge-building logic.
- *
- * `transitions` populate the per-transition cards.
- * `groupedBehaviors` populate the one-per-alias collapsed cards (L2 only;
- * L3 passes an empty array since it's already scoped to a single alias).
- */
-function buildScreenGraph(
+function stateOptionsFor(
   schema: OrbitalSchema,
   orbitalName: string,
   entityName: string,
   transitions: UITransitionEntry[],
-  groupedBehaviors: Array<{
-    alias: string;
-    behaviorName: string;
-    representative: UITransitionEntry;
-    transitionCount: number;
-  }>,
+  view: CanvasStateView,
   mockData?: EntityData,
-  screenSize?: ScreenSize,
-  view: ExpandedGraphView = 'transitions',
-): { nodes: Node<PreviewNodeData>[]; edges: Edge<EventEdgeData>[] } {
-  const nodes: Node<PreviewNodeData>[] = [];
-  const edges: Edge<EventEdgeData>[] = [];
-  const spacing = computeExpandedSpacing(screenSize);
-
-  // Edge-resolution helper: pick the most-informative transition per
-  // (trait, to-state) so edges have a single canonical anchor per state.
-  // We DON'T dedup the cards themselves — every render-ui-bearing
-  // transition becomes a card so users see the loading/loaded/failed
-  // frames of a single state (e.g. OrderRecordBrowse:browsing has
-  // INIT/LOADED/LOAD_FAILED, all → browsing — three distinct screens).
-  // Pre-fix, dedup-by-to-state collapsed those into a single card
-  // (usually the spinner), silently hiding the dashboard view. Cosmic
-  // L3 shows every transition arc inside the trait state-machine SVG;
-  // canvas L2 now matches by showing every transition as its own card.
-  const stateRepresentativeMap = new Map<string, UITransitionEntry>();
-  for (const entry of transitions) {
-    const key = `${entry.traitName}:${entry.transition.to}`;
-    const existing = stateRepresentativeMap.get(key);
-    if (!existing || entry.patterns.length > existing.patterns.length) {
-      stateRepresentativeMap.set(key, entry);
-    }
+): CanvasStateOption[] {
+  const screens: ScreenEntry[] = view === 'screens'
+    ? collapseToScreens(transitions)
+    : transitions.map((entry) => ({ entry, enteredBy: [entry.transition.event] }));
+  // A list spanning several traits names each entry's trait; within one trait a
+  // state shown by several distinct renders is told apart by its event.
+  const manyTraits = new Set(screens.map((s) => s.entry.traitName)).size > 1;
+  const stateUses = new Map<string, number>();
+  for (const s of screens) {
+    const key = `${s.entry.traitName}|${s.entry.transition.to}`;
+    stateUses.set(key, (stateUses.get(key) ?? 0) + 1);
   }
-
-  const screens = view === 'screens' ? collapseToScreens(transitions) : undefined;
-  const transitionEntries = screens ? screens.map((s) => s.entry) : transitions;
-  const totalCards = transitionEntries.length + groupedBehaviors.length;
-  if (totalCards === 0) return { nodes, edges };
-
-  const cols = Math.min(totalCards, 3);
-  const nodeIdMap = new Map<string, string>();
-
-  // Per-transition cards
-  transitionEntries.forEach((entry, i) => {
+  return screens.map(({ entry, enteredBy }) => {
     const t = entry.transition;
-    const nodeId = `${orbitalName}-${entry.traitName}-${t.event}-${t.from}-${t.to}`;
-    const stateKey = `${entry.traitName}:${t.to}`;
-    // Only the representative card for each (trait, to-state) anchors
-    // incoming edges. The other cards for the same state still render —
-    // they just don't sit on the trait's transition graph as edge
-    // targets, since edges are state-keyed.
-    if (stateRepresentativeMap.get(stateKey) === entry) {
-      nodeIdMap.set(stateKey, nodeId);
-    }
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    nodes.push({
-      id: nodeId,
-      type: 'preview',
-      position: { x: col * spacing.x, y: row * spacing.y },
+    const from = String(t.from);
+    const state = view === 'screens'
+      ? ((stateUses.get(`${entry.traitName}|${t.to}`) ?? 0) > 1 ? `${t.to} · ${t.event}` : t.to)
+      : `${t.event}: ${from} → ${t.to}`;
+    const label = manyTraits ? `${entry.traitName} · ${state}` : state;
+    return {
+      id: `${entry.traitName}:${t.event}:${from}:${t.to}`,
+      label,
+      hint: view === 'screens' ? enteredBy.join(' · ') : entry.traitName,
       data: {
         orbitalName,
         traitName: entry.traitName,
         stateName: t.to,
         transitionEvent: t.event,
-        fromState: t.from,
+        fromState: from,
         toState: t.to,
         patterns: entry.patterns,
         eventSources: entry.eventSources,
@@ -666,195 +618,102 @@ function buildScreenGraph(
         entityName,
         _fullSchema: schema,
         _mockData: mockData,
-        ...(screens ? { cardLabel: 'screen', enteredBy: screens[i].enteredBy } : {}),
+        ...(view === 'screens' ? { cardLabel: 'screen' as const, enteredBy } : {}),
       },
-    });
+    };
   });
-
-  // Grouped imported-behavior cards (one per alias)
-  groupedBehaviors.forEach((group, i) => {
-    const t = group.representative.transition;
-    const nodeId = `${orbitalName}-behavior-${group.alias}`;
-    const idx = transitionEntries.length + i;
-    const col = idx % cols;
-    const row = Math.floor(idx / cols);
-    nodes.push({
-      id: nodeId,
-      type: 'preview',
-      position: { x: col * spacing.x, y: row * spacing.y },
-      data: {
-        orbitalName,
-        traitName: group.representative.traitName,
-        stateName: t.to,
-        transitionEvent: t.event,
-        fromState: t.from,
-        toState: t.to,
-        patterns: group.representative.patterns,
-        eventSources: group.representative.eventSources,
-        stateRole: detectStateRole(
-          t.to,
-          group.representative.states,
-          group.representative.allTransitions,
-        ),
-        effectTypes: t.effects ? extractEffectTypes(t.effects) : [],
-        guard: t.guard,
-        entityName,
-        _fullSchema: schema,
-        _mockData: mockData,
-        behaviorAlias: group.alias,
-        behaviorName: group.behaviorName,
-        transitionCount: group.transitionCount,
-      },
-    });
-  });
-
-  // Edges between organism-owned transition cards (imported aliases get
-  // their own intra-bucket edges at L3, not at L2)
-  for (const entry of transitions) {
-    const t = entry.transition;
-    const sourceKey = `${entry.traitName}:${t.from}`;
-    const targetKey = `${entry.traitName}:${t.to}`;
-    const sourceNodeId = nodeIdMap.get(sourceKey);
-    const targetNodeId = nodeIdMap.get(targetKey);
-    if (!sourceNodeId || !targetNodeId) continue;
-    if (sourceNodeId === targetNodeId) continue;
-    const backward = isBackwardTransition(t.from, t.to, entry.states);
-    const sourceEntry = stateRepresentativeMap.get(sourceKey);
-    const triggerSource = sourceEntry?.eventSources.find(s => s.event === t.event);
-    edges.push({
-      id: `ef-${entry.traitName}-${t.event}-${t.from}-${t.to}`,
-      source: sourceNodeId,
-      target: targetNodeId,
-      sourceHandle: triggerSource ? `event-${t.event}` : undefined,
-      type: 'eventFlow',
-      data: {
-        event: t.event,
-        fromState: t.from,
-        toState: t.to,
-        isBackward: backward,
-        triggerPatternType: triggerSource?.patternType,
-        triggerLabel: triggerSource?.label,
-      },
-    });
-  }
-
-  return { nodes, edges };
 }
 
 /**
- * Build a React Flow graph for the L2 (expanded) level.
- *
- * Organism-authored traits (no `sourceBehavior` metadata) emit one
- * transition card per render-ui-bearing transition (the historical
- * behavior). Imported traits (cloned by the inline phase from `uses[]`)
- * collapse into one grouped card per `sourceBehavior.alias`, so the user
- * sees `Stats`, `Graphs`, `Layout`, etc. as single cards rather than 9
- * anonymous `INIT` peers (STUDIO-1). Drill into a grouped card to reach
- * L3 (`orbitalAliasToExpandedGraph`).
+ * The states a card can show: the orbital's own render-ui transitions, plus
+ * one group per imported behavior (`sourceBehavior.alias`). A trait embedded
+ * in another trait's render (`@trait.X`) draws inside that screen, so it is
+ * not a state of its own.
  */
-export function orbitalToExpandedGraph(
+export function stateOptionsOf(
   schema: OrbitalSchema,
   orbitalName: string,
+  view: CanvasStateView,
   mockData?: EntityData,
-  screenSize?: ScreenSize,
-  view: ExpandedGraphView = 'transitions',
-): {
-  nodes: Node<PreviewNodeData>[];
-  edges: Edge<EventEdgeData>[];
-} {
+): CanvasStateOptions {
   const orbital = getOrbitals(schema).find(o => o.name === orbitalName);
-  if (!orbital) return { nodes: [], edges: [] };
-
-  const entityInfo = getEntityInfo(orbital);
-
-  // Organism-authored = no sourceBehavior metadata
-  const organismTransitions = collectUITransitions(
-    orbital,
-    (trait) => trait.sourceBehavior === undefined,
+  if (!orbital) return { own: [], groups: [] };
+  const entityName = getEntityInfo(orbital).name;
+  const embedded = collectEmbeddedTraits({ ...schema, orbitals: [orbital] });
+  const own = stateOptionsFor(
+    schema, orbitalName, entityName,
+    collectUITransitions(orbital, (trait) => trait.sourceBehavior === undefined && !embedded.has(trait.name)),
+    view, mockData,
   );
-
-  // Bucket imported transitions by alias; pick the first render-ui-bearing
-  // transition per alias as the visual representative.
-  const aliasBuckets = new Map<
-    string,
-    { behaviorName: string; transitions: UITransitionEntry[] }
-  >();
-  const importedTransitions = collectUITransitions(
-    orbital,
-    (trait) => trait.sourceBehavior !== undefined,
-  );
-  for (const entry of importedTransitions) {
-    const sb = entry.trait.sourceBehavior;
-    if (!sb) continue;
-    const bucket = aliasBuckets.get(sb.alias);
-    if (bucket) {
-      bucket.transitions.push(entry);
-    } else {
-      aliasBuckets.set(sb.alias, {
-        behaviorName: sb.behavior,
-        transitions: [entry],
-      });
+  const aliases = new Map<string, string>();
+  for (const trait of getTraits(orbital)) {
+    if (embedded.has(trait.name)) continue;
+    if (trait.sourceBehavior && !aliases.has(trait.sourceBehavior.alias)) {
+      aliases.set(trait.sourceBehavior.alias, trait.sourceBehavior.behavior);
     }
   }
-
-  const groupedBehaviors = Array.from(aliasBuckets.entries()).map(
-    ([alias, bucket]) => ({
-      alias,
-      behaviorName: bucket.behaviorName,
-      representative: bucket.transitions[0],
-      transitionCount: bucket.transitions.length,
-    }),
-  );
-
-  return buildScreenGraph(
-    schema,
-    orbitalName,
-    entityInfo.name,
-    organismTransitions,
-    groupedBehaviors,
-    mockData,
-    screenSize,
-    view,
-  );
+  const groups = [...aliases].flatMap(([alias, behaviorName]) => {
+    const options = stateOptionsFor(
+      schema, orbitalName, entityName,
+      collectUITransitions(orbital, (trait) => trait.sourceBehavior?.alias === alias && !embedded.has(trait.name)),
+      view, mockData,
+    );
+    return options.length > 0 ? [{ alias, behaviorName, options }] : [];
+  });
+  return { own, groups };
 }
 
-/**
- * Build a React Flow graph for the L3 (`behavior-expanded`) level: drill
- * into one imported-behavior alias on an orbital and show ITS render-ui
- * transitions as individual cards. Same converter logic as
- * `orbitalToExpandedGraph` but scoped to traits where
- * `sourceBehavior.alias === alias`. STUDIO-1.
- */
-export function orbitalAliasToExpandedGraph(
+/** The state a card opens on: its INIT render, else its first state, else the live orbital. */
+export function initialStateOf(options: CanvasStateOptions): string {
+  const isInit = (o: CanvasStateOption) => o.data.transitionEvent === 'INIT' || (o.data.enteredBy ?? []).includes('INIT');
+  const groupOptions = options.groups.flatMap((g) => g.options);
+  const pick = options.own.find(isInit) ?? options.own[0] ?? groupOptions.find(isInit) ?? groupOptions[0];
+  return pick?.id ?? LIVE_STATE;
+}
+
+export interface CanvasViewOptions {
+  /** `local`: the focused orbital's card only; `world`: every orbital's card. */
+  scope: 'local' | 'world';
+  focusedOrbital?: string;
+  /** Each card's dropdown choice (a `CanvasStateOption.id`); its `initialStateOf` when absent or gone. */
+  stateByOrbital?: Record<string, string>;
+  view: CanvasStateView;
+  mockData?: EntityData;
+  behaviorMeta?: Record<string, { layer: string }>;
+  layoutHint?: 'pipeline' | 'grid';
+  orbitalStatus?: Record<string, PreviewNodeData['status']>;
+  screenSize?: ScreenSize;
+}
+
+/** The canvas's cards and edges for a scope, each card showing its chosen state. */
+export function canvasViewGraph(
   schema: OrbitalSchema,
-  orbitalName: string,
-  alias: string,
-  mockData?: EntityData,
-  screenSize?: ScreenSize,
-  view: ExpandedGraphView = 'transitions',
-): {
-  nodes: Node<PreviewNodeData>[];
-  edges: Edge<EventEdgeData>[];
-} {
-  const orbital = getOrbitals(schema).find(o => o.name === orbitalName);
-  if (!orbital) return { nodes: [], edges: [] };
-
-  const entityInfo = getEntityInfo(orbital);
-  const transitions = collectUITransitions(
-    orbital,
-    (trait) => trait.sourceBehavior?.alias === alias,
-  );
-
-  return buildScreenGraph(
-    schema,
-    orbitalName,
-    entityInfo.name,
-    transitions,
-    [],
-    mockData,
-    screenSize,
-    view,
-  );
+  opts: CanvasViewOptions,
+): { nodes: Node<PreviewNodeData>[]; edges: Edge<EventEdgeData>[]; focusedOrbital: string | undefined } {
+  const overview = schemaToOverviewGraph(schema, opts.mockData, opts.behaviorMeta, opts.layoutHint, opts.orbitalStatus, opts.screenSize);
+  const ids = overview.nodes.map((n) => n.id);
+  const focusedOrbital = opts.focusedOrbital !== undefined && ids.includes(opts.focusedOrbital)
+    ? opts.focusedOrbital
+    : ids[0];
+  const withState = overview.nodes.map((node): Node<PreviewNodeData> => {
+    const options = stateOptionsOf(schema, node.id, opts.view, opts.mockData);
+    const all = [...options.own, ...options.groups.flatMap((g) => g.options)];
+    const asked = opts.stateByOrbital?.[node.id];
+    const chosen = asked === LIVE_STATE || all.some((o) => o.id === asked) ? asked : initialStateOf(options);
+    const picked = all.find((o) => o.id === chosen);
+    const data = picked ? { ...node.data, ...picked.data } : node.data;
+    return { ...node, data: { ...data, focused: opts.scope === 'world' && node.id === focusedOrbital } };
+  });
+  if (opts.scope === 'local') {
+    return { nodes: withState.filter((n) => n.id === focusedOrbital), edges: [], focusedOrbital };
+  }
+  const byId = new Map(withState.map((n) => [n.id, n]));
+  const edges = overview.edges.map((edge) => {
+    const event = edge.data?.event;
+    const renders = event !== undefined && byId.get(edge.source)?.data.eventSources.some((s) => s.event === event);
+    return renders ? edge : { ...edge, sourceHandle: undefined };
+  });
+  return { nodes: withState, edges, focusedOrbital };
 }
 
 // ---------------------------------------------------------------------------

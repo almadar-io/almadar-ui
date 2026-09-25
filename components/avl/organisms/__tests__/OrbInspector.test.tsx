@@ -18,6 +18,7 @@ import type { OrbitalSchema } from '@almadar/core';
 import { OrbInspector } from '../OrbInspector';
 import { PatternSelectionContext, type SelectedPattern } from '../../molecules/OrbPreviewNode';
 import type { PreviewNodeData } from '../../types/avl-preview-types';
+import type { ElementEditAccessResolver } from '../../lib/element-edit-access';
 
 /** Scrollable content pane only — the header repeats the pattern type /
  *  transition event as its title, which collides with content-area text
@@ -122,6 +123,7 @@ describe('OrbInspector Design tab', () => {
     const pane = within(contentPane(container));
     // Pattern Props section (moved from the old inline "Inspector" body)
     expect(pane.getByText('Props')).toBeInTheDocument();
+    fireEvent.click(pane.getByTestId('orb-inspector-more-props'));
     expect(pane.getByText('variant')).toBeInTheDocument();
     // Styles content (unchanged StylesTab component) — the header also shows
     // "badge" as the selection title, so this is scoped to the content pane.
@@ -485,5 +487,181 @@ describe('OrbInspector Appearance — absolute position + constraints', () => {
     const { onEvent } = renderAppearance('p-4');
     fireEvent.click(absoluteSwitch());
     expect(onEvent).toHaveBeenLastCalledWith(expect.objectContaining({ value: 'p-4 absolute left-0 top-0' }));
+  });
+});
+
+describe('OrbInspector — what the element lets you change', () => {
+  const focus = { level: 'node' as const, orbital: 'TaskBoard', trait: 'TaskList', transition: 'LOAD', slot: 'main', path: 'root', label: 'badge' };
+  const selected: SelectedPattern = { patternType: 'badge', patternId: 'root', nodeData: expandedNode, focus };
+
+  function Spy({ onChange, onNotify }: { onChange: (p: EventPayload | undefined) => void; onNotify: (p: EventPayload | undefined) => void }): null {
+    const { on } = useEventBus();
+    React.useEffect(() => {
+      const a = on('UI:PROP_CHANGE', (e) => onChange(e.payload));
+      const b = on('UI:NOTIFY', (e) => onNotify(e.payload));
+      return () => { a(); b(); };
+    }, [on, onChange, onNotify]);
+    return null;
+  }
+
+  function mount(access: ElementEditAccessResolver) {
+    const changed = vi.fn();
+    const notified = vi.fn();
+    const utils = render(
+      <EventBusProvider debug={false}>
+        <Spy onChange={changed} onNotify={notified} />
+        <OrbInspector node={expandedNode} schema={schema} userType="designer" editable defaultTab="design" selectedPattern={selected} elementAccess={access} onClose={() => {}} />
+      </EventBusProvider>,
+    );
+    return { ...utils, changed, notified };
+  }
+
+  it('a prop the host allows is an editor, sent with the element address', () => {
+    const { container, changed } = mount(() => ({ prop: () => ({ editable: true }) }));
+    const pane = within(contentPane(container));
+    fireEvent.click(pane.getByTestId('orb-inspector-more-props'));
+    const row = pane.getByText('label').parentElement as HTMLElement;
+    const input = within(row).getByRole('textbox');
+    fireEvent.blur(input, { target: { value: 'Urgent' } });
+    expect(changed).toHaveBeenCalledWith(expect.objectContaining({
+      propName: 'label',
+      value: 'Urgent',
+      selection: expect.objectContaining({ traitName: 'TaskList', transitionEvent: 'LOAD', slot: 'main', patternPath: 'root' }),
+    }));
+  });
+
+  it('a data-bound prop shows its binding and has no editor; a behavior-fixed one names the behavior', () => {
+    const { container } = mount(() => ({
+      prop: (name) => (name === 'label'
+        ? { editable: false, reason: 'bound', detail: '@entity.title' }
+        : { editable: false, reason: 'fixed', detail: 'std-browse' }),
+      partOf: 'std-browse',
+    }));
+    const pane = within(contentPane(container));
+    fireEvent.click(pane.getByTestId('orb-inspector-more-props'));
+    const label = pane.getByText('label').parentElement as HTMLElement;
+    expect(within(label).queryByRole('textbox')).toBeNull();
+    expect(within(label).getByText(/@entity\.title/)).toBeInTheDocument();
+    const variant = pane.getByText('variant').parentElement as HTMLElement;
+    expect(within(variant).queryByRole('textbox')).toBeNull();
+    expect(within(variant).getByText(/std-browse/)).toBeInTheDocument();
+    expect(pane.getByTestId('orb-inspector-part-of')).toHaveTextContent('std-browse');
+  });
+
+  it('an edit to a prop the host refuses is not sent; the user is told why', () => {
+    const { changed, notified, container } = mount(() => ({ prop: (name) => (name === 'variant' ? { editable: false, reason: 'fixed', detail: 'std-browse' } : { editable: true }) }));
+    const pane = within(contentPane(container));
+    fireEvent.click(pane.getAllByRole('button').find((b) => /primary|secondary|default/i.test(b.textContent ?? '')) as HTMLElement);
+    expect(changed).not.toHaveBeenCalledWith(expect.objectContaining({ propName: 'variant' }));
+    expect(notified).toHaveBeenCalled();
+  });
+});
+
+describe('OrbInspector — every prop is reachable', () => {
+  const buttonSchema: OrbitalSchema = JSON.parse(JSON.stringify(schema));
+  buttonSchema.orbitals[0].traits = [{
+    name: 'TaskList',
+    scope: 'instance',
+    stateMachine: {
+      states: [{ name: 'idle', isInitial: true }],
+      events: [{ key: 'LOAD', name: 'Load' }],
+      transitions: [{ from: 'idle', to: 'idle', event: 'LOAD', effects: [['render-ui', 'main', { type: 'button', label: 'Go', disabled: true }]] }],
+    },
+  }];
+  const node: PreviewNodeData = { ...expandedNode, patterns: [{ slot: 'main', pattern: { type: 'button' } }] };
+  const selected: SelectedPattern = { patternType: 'button', patternId: 'root', nodeData: node };
+
+  it('props the element sets come first (even past the old 12-prop cut); the rest wait under "More"', () => {
+    const { container } = renderWithSelection(
+      <OrbInspector node={node} schema={buttonSchema} userType="designer" editable defaultTab="design" onClose={() => {}} />,
+      selected,
+    );
+    const pane = within(contentPane(container));
+    expect(pane.getByText('disabled')).toBeInTheDocument();
+    expect(pane.getByText('label')).toBeInTheDocument();
+    expect(pane.queryByText('data-testid')).not.toBeInTheDocument();
+    fireEvent.click(pane.getByRole('button', { name: /More/ }));
+    expect(pane.getByText('data-testid')).toBeInTheDocument();
+    expect(pane.getByText('variant')).toBeInTheDocument();
+  });
+});
+
+describe('OrbInspector Settings — the behavior an element belongs to', () => {
+  const focus = { level: 'node' as const, orbital: 'TaskBoard', trait: 'TaskList', transition: 'LOAD', slot: 'main', path: 'root', label: 'badge' };
+  const selected: SelectedPattern = { patternType: 'badge', patternId: 'root', nodeData: expandedNode, focus };
+  const question = (id: string, inputType: 'text' | 'boolean', label: string) => ({
+    id, orbitalName: 'TaskBoard', question: label, inputType, weight: 1,
+    mutationTemplate: { kind: 'set-trait-override-config' as const, orbitalName: 'TaskBoard', traitName: 'TaskList', configKey: id },
+  });
+  const access: ElementEditAccessResolver = () => ({
+    prop: () => ({ editable: true }),
+    partOf: 'std-browse',
+    settings: {
+      trait: 'TaskList',
+      knobs: [
+        { key: 'title', question: question('title', 'text', 'List title'), value: 'Tasks' },
+        { key: 'showSearch', question: question('showSearch', 'boolean', 'Show search'), value: false },
+      ],
+    },
+  });
+
+  function mount() {
+    const changed = vi.fn();
+    function Spy(): null {
+      const { on } = useEventBus();
+      React.useEffect(() => on('UI:TRAIT_CONFIG_CHANGE', (e) => changed(e.payload)), [on]);
+      return null;
+    }
+    const utils = render(
+      <EventBusProvider debug={false}>
+        <Spy />
+        <OrbInspector node={expandedNode} schema={schema} userType="designer" editable defaultTab="design" selectedPattern={selected} elementAccess={access} onClose={() => {}} />
+      </EventBusProvider>,
+    );
+    return { ...utils, changed };
+  }
+
+  it("lists the behavior's knobs with their labels and current values", () => {
+    const { container } = mount();
+    const settings = within(within(contentPane(container)).getByTestId('orb-inspector-settings'));
+    expect(settings.getByText('List title')).toBeInTheDocument();
+    expect(settings.getByDisplayValue('Tasks')).toBeInTheDocument();
+    expect(settings.getByText('Show search')).toBeInTheDocument();
+  });
+
+  it('a text knob commits once, on blur, addressed to the call site', () => {
+    const { container, changed } = mount();
+    const settings = within(within(contentPane(container)).getByTestId('orb-inspector-settings'));
+    const input = settings.getByDisplayValue('Tasks');
+    fireEvent.change(input, { target: { value: 'My tasks' } });
+    expect(changed).not.toHaveBeenCalled();
+    fireEvent.blur(input);
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(changed).toHaveBeenCalledWith({ orbitalName: 'TaskBoard', traitName: 'TaskList', key: 'title', valueJson: '"My tasks"' });
+  });
+
+  it("a prop that is one of the call site's knobs is edited in Settings, not listed again in Props", () => {
+    const bound: OrbitalSchema = JSON.parse(JSON.stringify(schema));
+    const trait = bound.orbitals[0].traits[0];
+    if (typeof trait === 'string' || !('stateMachine' in trait) || !trait.stateMachine) throw new Error('fixture');
+    // Resolved: the knob's value is already in the render — the host says it's the `title` knob.
+    trait.stateMachine.transitions[0].effects = [['render-ui', 'main', { type: 'badge', label: 'Tasks', variant: 'primary' }]];
+    const knobbed: ElementEditAccessResolver = (f) => ({ ...access(f), prop: (name) => (name === 'label' ? { editable: true, knob: 'title' } : { editable: true }) });
+    const { container } = render(
+      <EventBusProvider debug={false}>
+        <OrbInspector node={expandedNode} schema={bound} userType="designer" editable defaultTab="design" selectedPattern={selected} elementAccess={knobbed} onClose={() => {}} />
+      </EventBusProvider>,
+    );
+    const pane = within(contentPane(container));
+    expect(pane.queryByText('label')).not.toBeInTheDocument();
+    expect(pane.getByText('variant')).toBeInTheDocument();
+    expect(within(pane.getByTestId('orb-inspector-settings')).getByDisplayValue('Tasks')).toBeInTheDocument();
+  });
+
+  it('a switch commits as soon as it flips', () => {
+    const { container, changed } = mount();
+    const settings = within(within(contentPane(container)).getByTestId('orb-inspector-settings'));
+    fireEvent.click(settings.getByRole('switch'));
+    expect(changed).toHaveBeenCalledWith({ orbitalName: 'TaskBoard', traitName: 'TaskList', key: 'showSearch', valueJson: 'true' });
   });
 });

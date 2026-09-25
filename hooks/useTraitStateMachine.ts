@@ -41,7 +41,7 @@ import type { EntityBindingSource } from '../providers/EntityBindingContext';
 import { ALL_SLOTS } from './useUISlots';
 import { registerTrait, unregisterTrait, type TraitDebugInfo } from '../lib/traitRegistry';
 import { bindTraitStateGetter, registerTraitSnapshot } from '../lib/verificationRegistry';
-import { createCircuitVerificationObserver } from '../lib/circuitVerificationObserver';
+import { createCircuitVerificationObserver, recordDispatchVerdict } from '../lib/circuitVerificationObserver';
 import type { TraitStateSnapshot } from '@almadar/core';
 import type { useUISlots } from '../providers/UISlotContext';
 import { useCircuitKernel } from './circuit/useCircuitKernel';
@@ -221,13 +221,21 @@ export function useTraitStateMachine(
 
   const dispatchAndSettle = useCallback(async (traitName: string, eventKey: string, payload: EventPayload | undefined, tick?: string): Promise<void> => {
     const entityId = typeof payload?.entityId === 'string' ? payload.entityId : undefined;
-    const outcome = await kernel.dispatch({
-      event: eventKey,
-      ...(payload !== undefined ? { payload } : {}),
-      ...(entityId !== undefined ? { entityId } : {}),
-      ...(tick !== undefined ? { tick } : {}),
-      targetTrait: traitName,
-    });
+    const orbitalName = traitIndex.byName.get(traitName)?.orbitalName ?? traitName;
+    let outcome: Awaited<ReturnType<typeof kernel.dispatch>>;
+    try {
+      outcome = await kernel.dispatch({
+        event: eventKey,
+        ...(payload !== undefined ? { payload } : {}),
+        ...(entityId !== undefined ? { entityId } : {}),
+        ...(tick !== undefined ? { tick } : {}),
+        targetTrait: traitName,
+      });
+    } catch (err: unknown) {
+      recordDispatchVerdict(orbitalName, eventKey, { error: err instanceof Error ? err : String(err) });
+      throw err;
+    }
+    recordDispatchVerdict(orbitalName, eventKey, { response: outcome.response });
     slotFlush.applyClientEffects(
       outcome.response.clientEffects ?? [],
       outcome.response.clientEffectsByTrait,

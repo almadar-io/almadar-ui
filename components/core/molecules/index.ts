@@ -194,30 +194,14 @@ export { SortableList, type SortableListProps } from './SortableList';
 export { Carousel, type CarouselProps } from './Carousel';
 export { PullToRefresh, type PullToRefreshProps } from './PullToRefresh';
 
-// Landing page / marketing molecules
-export { InstallBox, type InstallBoxProps } from '../../marketing/molecules/InstallBox';
-export { FeatureCard, type FeatureCardProps } from '../../marketing/molecules/FeatureCard';
+export { FeatureCard, type FeatureCardProps } from './FeatureCard';
 export { FeatureGrid, type FeatureGridProps } from './FeatureGrid';
-export { CTABanner, type CTABannerProps, type CTABannerBackground } from '../../marketing/molecules/CTABanner';
-export { HeroSection, type HeroSectionProps } from '../../marketing/molecules/HeroSection';
-export { PricingCard, type PricingCardProps } from '../../marketing/molecules/PricingCard';
-export { PricingGrid, type PricingGridProps } from '../../marketing/molecules/PricingGrid';
-export { StatsGrid, type StatsGridProps } from '../../marketing/molecules/StatsGrid';
-export { ServiceCatalog, type ServiceCatalogProps, type ServiceCatalogItem } from '../../marketing/molecules/ServiceCatalog';
-export { CaseStudyCard, type CaseStudyCardProps } from '../../marketing/molecules/CaseStudyCard';
-export { ArticleSection, type ArticleSectionProps } from '../../marketing/molecules/ArticleSection';
-
+export { AnimatedCounter, type AnimatedCounterProps } from './AnimatedCounter';
 export { SocialProof, type SocialProofProps, type SocialProofItem } from './SocialProof';
-export { StepFlow, type StepFlowProps, type StepItemProps } from '../../marketing/molecules/StepFlow';
-export { SplitSection, type SplitSectionProps } from '../../marketing/molecules/SplitSection';
-export { TagCloud, type TagCloudProps, type TagCloudItem } from '../../marketing/molecules/TagCloud';
 export { TagInput, type TagInputProps } from './TagInput';
-export { CommunityLinks, type CommunityLinksProps } from '../../marketing/molecules/CommunityLinks';
-export { TeamCard, type TeamCardProps } from '../../marketing/molecules/TeamCard';
-export { ShowcaseCard, type ShowcaseCardProps } from '../../marketing/molecules/ShowcaseCard';
 
 // Decorative pattern molecules
-export { GeometricPattern, type GeometricPatternProps } from '../../marketing/molecules/GeometricPattern';
+export { GeometricPattern, type GeometricPatternProps } from './GeometricPattern';
 export { EdgeDecoration, type EdgeDecorationProps, type EdgeVariant, type EdgeSide } from './EdgeDecoration';
 
 // Phase 10 molecules — generic primitives (community/forum, survey, content authoring, layout)
@@ -244,10 +228,7 @@ export { DocSearch, type DocSearchProps, type DocSearchResult } from './DocSearc
 export { DocSidebar, type DocSidebarProps, type DocSidebarItem } from './DocSidebar';
 export { DocTOC, type DocTOCProps, type DocTOCItem } from './DocTOC';
 
-// Marketing-page molecules — used by std-marketing-campaign render-ui.
 export { GradientDivider, type GradientDividerProps } from './GradientDivider';
-export { MarketingFooter, type MarketingFooterProps, type FooterLinkColumn, type FooterLinkItem } from '../../marketing/molecules/MarketingFooter';
-export { PullQuote, type PullQuoteProps } from '../../marketing/molecules/PullQuote';
 
 // AVL (Almadar Visual Language) molecules surfaced for std behaviors
 // (behavior-view, module-card).

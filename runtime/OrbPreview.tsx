@@ -103,7 +103,7 @@ function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate,
   localFallbackTimeoutMs?: number;
   /**
    * Offline-preview persistence layer. Forwarded to `useTraitStateMachine`
-   * so server-side effects (fetch/persist/set/ref/deref/swap!/atomic) run
+   * so server-side effects (fetch/persist/set/ref/deref/swap/atomic) run
    * against an in-memory store instead of being no-oped. Set by OrbPreview
    * when `autoMock` is active and no `serverUrl`/`transport` is supplied.
    */
@@ -696,7 +696,7 @@ export function OrbPreview({
   // is set, build an `InMemoryPersistence` seeded from the generated mock
   // rows and hand it to the state machine. The runtime's
   // `createServerEffectHandlers` layers on top of the client handlers, so
-  // `fetch` / `persist` / `set` / `ref` / `deref` / `swap!` / `atomic` /
+  // `fetch` / `persist` / `set` / `ref` / `deref` / `swap` / `atomic` /
   // `callService` run the same semantics `OrbitalServerRuntime` would on
   // the server — just against in-memory storage. This is what makes
   // 3-state `loading → browsing` schemas like `std-list` advance past the

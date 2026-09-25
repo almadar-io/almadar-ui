@@ -12,7 +12,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { EditFocus } from '@almadar/core';
-import { deriveEditFocusFromElement, withNodeTransition } from '../components/avl/lib/derive-edit-focus';
+import { deriveEditFocusFromElement, traitOfElement, withNodeTransition } from '../components/avl/lib/derive-edit-focus';
 
 function baseFocus(overrides: Partial<EditFocus> = {}): EditFocus {
   return { level: 'node', orbital: 'Widgets', label: 'typography', ...overrides };
@@ -64,5 +64,29 @@ describe('deriveEditFocusFromElement — address attributes on an ancestor (live
     expect(deriveEditFocusFromElement(el)).toMatchObject({
       orbital: 'Widgets', trait: 'WidgetInteraction', transition: 'INIT', slot: 'main', path: 'root.children.1', patternType: 'typography',
     });
+  });
+});
+
+describe('traitOfElement', () => {
+  it("a nested element's trait is its nearest ancestor's (a live render stamps the trait on the slot wrapper)", () => {
+    const wrapper = document.createElement('div');
+    wrapper.setAttribute('data-orb-trait', 'Clicker');
+    const child = document.createElement('div');
+    child.setAttribute('data-pattern-path', 'root.children.0');
+    wrapper.appendChild(child);
+    expect(traitOfElement(child)).toBe('Clicker');
+  });
+
+  it("an element's own stamp wins over its ancestor's (an embedded trait's frame)", () => {
+    const outer = document.createElement('div');
+    outer.setAttribute('data-orb-trait', 'Toolbar');
+    const inner = document.createElement('div');
+    inner.setAttribute('data-orb-trait', 'SaveButton');
+    outer.appendChild(inner);
+    expect(traitOfElement(inner)).toBe('SaveButton');
+  });
+
+  it('no stamp anywhere: no trait', () => {
+    expect(traitOfElement(document.createElement('div'))).toBeNull();
   });
 });

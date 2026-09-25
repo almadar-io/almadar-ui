@@ -16,6 +16,7 @@ export {
 } from "./Card";
 export { Badge, type BadgeProps, type BadgeVariant } from "./Badge";
 export { AtlasImage, AtlasPanel, useAtlasSliceDataUrl, type AtlasImageProps, type AtlasImageAsset, type AtlasPanelProps } from "./AtlasImage";
+export { Image, type ImageProps, type ImageFit, type ImageAspect, type ImageRounded } from "./Image";
 export { GameIcon, type GameIconProps } from "./GameIcon";
 export {
   FilterPill,
@@ -111,27 +112,19 @@ export { TrendIndicator, type TrendIndicatorProps, type TrendDirection, type Tre
 export { RangeSlider, type RangeSliderProps, type RangeSliderSize } from "./RangeSlider";
 
 // UX Phase 5 atoms
-export { AnimatedCounter, type AnimatedCounterProps } from "../../marketing/atoms/AnimatedCounter";
 export { InfiniteScrollSentinel, type InfiniteScrollSentinelProps } from "./InfiniteScrollSentinel";
 export { ConfettiEffect, type ConfettiEffectProps } from "./ConfettiEffect";
 export { TypewriterText, type TypewriterTextProps } from "./TypewriterText";
 
 // Landing page atoms
 export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
-export { MarketingStatCard, type MarketingStatCardProps, type StatCardSize } from "../../marketing/atoms/MarketingStatCard";
-export {
-  ContentSection,
-  type ContentSectionProps,
-  type ContentSectionBackground,
-  type ContentSectionPadding,
-} from "../../marketing/atoms/ContentSection";
 
 // Pattern components
-export { PatternTile, getTileDimensions, type PatternTileProps, type PatternVariant } from "../../marketing/atoms/PatternTile";
+export { PatternTile, getTileDimensions, type PatternTileProps, type PatternVariant } from "./PatternTile";
 
 // Scroll/trigger animation atoms
-export { AnimatedReveal, type AnimatedRevealProps, type RevealTrigger, type RevealAnimation } from "../../marketing/atoms/AnimatedReveal";
-export { AnimatedGraphic, type AnimatedGraphicProps, type GraphicAnimation } from "../../marketing/atoms/AnimatedGraphic";
+export { AnimatedReveal, type AnimatedRevealProps, type RevealTrigger, type RevealAnimation } from "./AnimatedReveal";
+export { AnimatedGraphic, type AnimatedGraphicProps, type GraphicAnimation } from "./AnimatedGraphic";
 
 // Trait frame — per-slot composition primitive for `@trait.X` bindings
 export { TraitFrame, type TraitFrameProps } from "./TraitFrame";

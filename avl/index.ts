@@ -83,7 +83,7 @@ export { computeTraitLayout, edgePath, type LayoutNode, type LayoutEdge, type El
 
 // V3 Revised: UI Projection components
 export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry } from '../components/avl/types/avl-preview-types';
-export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../components/avl/lib/avl-preview-converter';
+export { schemaToOverviewGraph, stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, type CanvasStateView, type CanvasStateOption, type CanvasStateGroup, type CanvasStateOptions, type CanvasViewOptions } from '../components/avl/lib/avl-preview-converter';
 export { OrbPreviewNode, type SelectedPattern } from '../components/avl/molecules/OrbPreviewNode';
 export { EventFlowEdge } from '../components/avl/molecules/EventFlowEdge';
 
@@ -97,6 +97,7 @@ export { useInlineTextEdit, type InlineTextEditOptions } from '../components/avl
 // React Flow nodes — the HTML5 DnD path was swallowed by RF's pan/zoom).
 export {
   CanvasDndProvider,
+  dropBusEvent,
   useCanvasDraggable,
   useCanvasDroppable,
   type CanvasDragKind,
@@ -104,6 +105,7 @@ export {
   type CanvasContainerNode,
   type CanvasDropTarget,
   type CanvasDropEvent,
+  type CanvasResolvedDrop,
   type CanvasDndProviderProps,
   type UseCanvasDraggableArgs,
   type UseCanvasDraggableResult,
@@ -132,6 +134,8 @@ export {
 export {
   FlowCanvas,
   type FlowCanvasProps,
+  type CanvasScope,
+  type CanvasFocusChange,
   ZoomBreadcrumb,
   type ZoomBreadcrumbProps,
   ZoomLegend,
@@ -158,11 +162,14 @@ export {
   type ZoomLevel,
 } from '../components/avl/organisms/index';
 export { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../components/avl/lib/canvas-tools';
+export { KnobField, type KnobFieldProps } from '../components/avl/molecules/KnobField';
 export {
   ElementEditAccessContext,
   EDITABLE,
   propAccessAt,
   type ElementEditAccess,
   type ElementEditAccessResolver,
+  type ElementKnob,
   type ElementPropAccess,
+  type ElementSettings,
 } from '../components/avl/lib/element-edit-access';

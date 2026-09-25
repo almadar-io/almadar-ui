@@ -191,10 +191,10 @@ export default defineConfig([
     banner: { js: '"use client";' },
     esbuildPlugins: [dedupeContextPlugin, dedupeThemePlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
   },
-  // Marketing build: SSR-safe subset for Docusaurus/webpack sites
+  // SSR build: SSR-safe subset for Docusaurus/webpack sites
   // No game engines, no Three.js, no browser globals at module scope
   {
-    entry: { 'marketing/index': 'marketing/index.ts' },
+    entry: { 'ssr/index': 'ssr/index.ts' },
     format: ['esm', 'cjs'],
     dts: emitDts,
     outDir: 'dist',

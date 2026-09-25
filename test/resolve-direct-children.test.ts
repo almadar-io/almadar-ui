@@ -11,7 +11,7 @@
  * instead of DOM adjacency, immune to how many layout layers sit in between.
  */
 import { describe, it, expect } from 'vitest';
-import { resolveDirectChildren } from '../components/avl/lib/resolve-direct-children';
+import { directPatternChildren, resolveDirectChildren } from '../components/avl/lib/resolve-direct-children';
 
 describe('resolveDirectChildren', () => {
   it('returns direct children in path order', () => {
@@ -82,5 +82,30 @@ describe('resolveDirectChildren', () => {
       { path: 'root.children.0', ref: 'A' },
     ];
     expect(resolveDirectChildren('root', candidates)).toEqual(['A']);
+  });
+});
+
+describe('directPatternChildren (the pattern tree, embedded frames included)', () => {
+  /** Builds `<div data-pattern-path=path data-orb-trait=trait>` with an extra layout div in between, like UISlotRenderer. */
+  function node(path: string, trait: string, ...children: HTMLElement[]): HTMLElement {
+    const el = document.createElement('div');
+    el.setAttribute('data-pattern-path', path);
+    el.setAttribute('data-orb-trait', trait);
+    const layout = document.createElement('div');
+    children.forEach((c) => layout.appendChild(c));
+    el.appendChild(layout);
+    return el;
+  }
+
+  it("a container's children are the nearest pattern elements under it — its own nodes and embedded behaviors' frames, in render order", () => {
+    const own = node('root.children.0', 'Card', node('root.children.0.children.0', 'Card'));
+    const save = node('root', 'SaveButton');
+    const help = node('root', 'HelpButton');
+    const container = node('root', 'Card', own, save, help);
+    expect(directPatternChildren(container)).toEqual([own, save, help]);
+  });
+
+  it('an empty container has none', () => {
+    expect(directPatternChildren(node('root', 'Card'))).toEqual([]);
   });
 });

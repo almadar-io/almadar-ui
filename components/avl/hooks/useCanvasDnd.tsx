@@ -86,6 +86,14 @@ export interface CanvasContainerNode {
 }
 
 /** Drop-target metadata stored on each droppable's `data` field. */
+/** Where a drop lands: the card path + index, and the container element's own address when the card knows it. */
+export interface CanvasResolvedDrop {
+  parentPath: string;
+  index: number;
+  /** The container's own address (the trait that drew it — paths restart in each embedded behavior). */
+  container?: { orbital: string; trait: string; transition: string; slot: string; path: string };
+}
+
 export interface CanvasDropTarget {
   /**
    * `l1` = outer orbital frame (overview level).
@@ -101,7 +109,7 @@ export interface CanvasDropTarget {
    * DOM under their `contentRef` and find the nearest `data-accepts-children`
    * container plus the cursor-relative insertion index.
    */
-  resolvePath?: (cursor: { x: number; y: number }) => { parentPath: string; index: number } | null;
+  resolvePath?: (cursor: { x: number; y: number }) => CanvasResolvedDrop | null;
 }
 
 export interface CanvasDropEvent {
@@ -113,7 +121,7 @@ export interface CanvasDropEvent {
    * Resolved insertion path/index from `target.resolvePath(cursor)`. Null
    * when the target has no resolver or the cursor was unavailable.
    */
-  resolved: { parentPath: string; index: number } | null;
+  resolved: CanvasResolvedDrop | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -221,41 +229,39 @@ export interface CanvasDndProviderProps {
   renderOverlay?: (payload: CanvasDragPayload | null) => React.ReactNode;
 }
 
-function defaultEmit(eventBus: ReturnType<typeof useEventBus>, drop: CanvasDropEvent): void {
+/**
+ * The bus event a canvas drop becomes — one shaping for every emitter (the
+ * provider's default emit, and a host bridge emitting on its own bus):
+ * a palette pattern → `UI:PATTERN_DROP`, a behavior → `UI:BEHAVIOR_DROP`
+ * (both with the resolved position and the container's own address), an
+ * already-placed pattern → `UI:PATTERN_MOVE`. Null for anything else.
+ */
+export function dropBusEvent(drop: CanvasDropEvent): { event: 'UI:PATTERN_DROP' | 'UI:BEHAVIOR_DROP' | 'UI:PATTERN_MOVE'; payload: EventPayload } | null {
   const { payload, target, resolved } = drop;
+  const at: EventPayload = resolved
+    ? { parentPath: resolved.parentPath, index: resolved.index, ...(resolved.container ? { container: { ...resolved.container } } : {}) }
+    : {};
   if (payload.kind === 'pattern') {
     const patternType = payload.data['type'];
     if (typeof patternType !== 'string') {
-      log.warn('default-emit:pattern:missing-type');
-      return;
+      log.warn('drop:pattern:missing-type');
+      return null;
     }
-    const out: EventPayload = { patternType, containerNode: target.containerNode };
-    if (resolved) {
-      out.parentPath = resolved.parentPath;
-      out.index = resolved.index;
-    }
-    eventBus.emit('UI:PATTERN_DROP', out);
-    log.info('default-emit:pattern', { patternType, level: target.level });
-    return;
+    return { event: 'UI:PATTERN_DROP', payload: { patternType, containerNode: target.containerNode, ...at } };
   }
   if (payload.kind === 'behavior') {
     const behaviorName = payload.data['name'];
     if (typeof behaviorName !== 'string') {
-      log.warn('default-emit:behavior:missing-name');
-      return;
+      log.warn('drop:behavior:missing-name');
+      return null;
     }
-    eventBus.emit('UI:BEHAVIOR_DROP', {
-      behaviorName,
-      containerNode: target.containerNode,
-    });
-    log.info('default-emit:behavior', { behaviorName, level: target.level });
-    return;
+    return { event: 'UI:BEHAVIOR_DROP', payload: { behaviorName, containerNode: target.containerNode, ...at } };
   }
   if (payload.kind === 'pattern-instance') {
     const fromPath = payload.data['fromPath'];
     if (typeof fromPath !== 'string') {
-      log.warn('default-emit:pattern-instance:missing-fromPath');
-      return;
+      log.warn('drop:pattern-instance:missing-fromPath');
+      return null;
     }
     // Move, not insert — `loc` is the drag SOURCE's own containerNode
     // (carried in the payload from drag start), `toParentPath`/`toIndex`
@@ -265,11 +271,17 @@ function defaultEmit(eventBus: ReturnType<typeof useEventBus>, drop: CanvasDropE
       out.toParentPath = resolved.parentPath;
       out.toIndex = resolved.index;
     }
-    eventBus.emit('UI:PATTERN_MOVE', out);
-    log.info('default-emit:pattern-instance', { fromPath, level: target.level });
-    return;
+    return { event: 'UI:PATTERN_MOVE', payload: out };
   }
-  log.debug('default-emit:unhandled-kind', { kind: payload.kind });
+  log.debug('drop:unhandled-kind', { kind: payload.kind });
+  return null;
+}
+
+function defaultEmit(eventBus: ReturnType<typeof useEventBus>, drop: CanvasDropEvent): void {
+  const out = dropBusEvent(drop);
+  if (!out) return;
+  eventBus.emit(out.event, out.payload);
+  log.info('default-emit', { event: out.event, level: drop.target.level });
 }
 
 /**

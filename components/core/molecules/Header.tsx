@@ -20,6 +20,8 @@ import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useNavStack } from "../../../providers/NavStackContext";
+import { followHref } from "../../../lib/followHref";
 import type { UiError } from '../atoms/types';
 
 export type HeaderLook =
@@ -185,6 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
   className,
 }) => {
   const { t } = useTranslate();
+  const navStack = useNavStack();
   const resolvedSearchPlaceholder = searchPlaceholder ?? t('common.search');
 
   // Get user initials
@@ -260,7 +263,7 @@ export const Header: React.FC<HeaderProps> = ({
               <Button
                 key={index}
                 variant="ghost"
-                onClick={item.onClick}
+                onClick={item.onClick ?? (item.href !== undefined ? () => followHref(item.href as string, navStack) : undefined)}
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
                   item.active

@@ -3,7 +3,7 @@ export type { TemplateProps } from './types';
 
 // Layout Templates
 export { DashboardLayout, type DashboardLayoutProps, type NavItem } from './DashboardLayout';
-export { AuthLayout, type AuthLayoutProps } from '../../marketing/templates/AuthLayout';
+export { AuthLayout, type AuthLayoutProps } from './AuthLayout';
 
 // Feature Templates
 export {
@@ -24,32 +24,6 @@ export {
 } from '../../game/templates/GameShell';
 
 // Game-genre view templates removed — boards are now .lolo game-shell compositions, not React components.
-
-// Marketing Page Templates
-export {
-  LandingPageTemplate,
-  type LandingPageTemplateProps,
-  type LandingPageEntity,
-} from '../../marketing/templates/LandingPageTemplate';
-
-export {
-  PricingPageTemplate,
-  type PricingPageTemplateProps,
-  type PricingPageEntity,
-} from '../../marketing/templates/PricingPageTemplate';
-
-export {
-  FeatureDetailPageTemplate,
-  type FeatureDetailPageTemplateProps,
-  type FeatureDetailPageEntity,
-  type FeatureDetailSection,
-} from '../../marketing/templates/FeatureDetailPageTemplate';
-
-export {
-  AboutPageTemplate,
-  type AboutPageTemplateProps,
-  type AboutPageEntity,
-} from '../../marketing/templates/AboutPageTemplate';
 
 // The 3D draw-host is three.js-backed and intentionally NOT exported here — it
 // ships code-split behind the optional `@almadar/ui/components/molecules/game/three`

@@ -224,42 +224,6 @@ export function TextPattern({
 TextPattern.displayName = 'TextPattern';
 
 
-export interface ImagePatternProps extends ClosedCircuitProps {
-  src: string;
-  alt: string;
-  width?: number | string;
-  height?: number | string;
-  objectFit?: 'cover' | 'contain' | 'fill';
-  fallback?: string;
-  className?: string;
-}
-
-/**
- * Image pattern.
- */
-export function ImagePattern({
-  src,
-  alt,
-  width,
-  height,
-  objectFit = 'cover',
-  className,
-}: ImagePatternProps): React.ReactElement {
-  return (
-     
-    <img
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      className={className}
-      style={{ objectFit }}
-    />
-  );
-}
-
-ImagePattern.displayName = 'ImagePattern';
-
 // ============================================================================
 // Form Input Components
 // ============================================================================
@@ -397,7 +361,6 @@ export const COMPONENT_PATTERNS = {
   'link': LinkPattern,
   // Display
   'text': TextPattern,
-  'image': ImagePattern,
   // Form inputs
   'label': LabelPattern,
   // Feedback

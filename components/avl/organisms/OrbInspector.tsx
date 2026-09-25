@@ -17,12 +17,13 @@
  */
 
 import React, { useContext, useMemo, useCallback, useState } from 'react';
-import type { Effect, Entity, EntityCall, EntityField, EventPayload, EventPayloadValue, Expression, FieldType, OrbitalDefinition, OrbitalSchema, PatternNode, ThemeDefinition, Trait, Transition } from '@almadar/core';
-import { FieldTypeSchema } from '@almadar/core';
+import type { DomainQuestionAnswer, DomainQuestionInputType, Effect, Entity, EntityCall, EntityField, EventPayload, EventPayloadValue, Expression, FieldType, OrbitalDefinition, OrbitalSchema, PatternNode, ThemeDefinition, Trait, Transition } from '@almadar/core';
+import { FieldTypeSchema, answerToMutations } from '@almadar/core';
 import type { PatternPropDef } from '@almadar/core/patterns';
 import { Box } from '../../core/atoms/Box';
 import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
+import { Badge } from '../../core/atoms/Badge';
 import { Input } from '../../core/atoms/Input';
 import { Select } from '../../core/atoms/Select';
 import { Icon } from '../../core/atoms/Icon';
@@ -40,6 +41,8 @@ import {
 import type { PreviewNodeData } from '../types/avl-preview-types';
 import { PatternSelectionContext, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { axisPositionFrom, type OffsetInParent } from '../lib/selection-geometry';
+import { ElementEditAccessContext, type ElementEditAccessResolver, type ElementKnob, type ElementPropAccess } from '../lib/element-edit-access';
+import { KnobField } from '../molecules/KnobField';
 import { getPatternDefinition, isEntityAwarePattern, renderUiEntriesOf } from '@almadar/core/patterns';
 
 import { Switch } from '../../core/atoms/Switch';
@@ -149,6 +152,15 @@ export interface OrbInspectorProps {
    * `PatternSelectionContext`, unchanged.
    */
   selectedPattern?: SelectedPattern | null;
+  /** What the selected element lets the user change; `ElementEditAccessContext` (inside a canvas) when omitted. */
+  elementAccess?: ElementEditAccessResolver;
+}
+
+/** Why a prop isn't editable here, for the row and the notice. */
+function propAccessText(access: Exclude<ElementPropAccess, { editable: true }>, t: (key: string, params?: Record<string, string>) => string): string {
+  if (access.reason === 'bound') return t('avl.propBound', { binding: access.detail });
+  if (access.reason === 'fixed') return t('avl.propFixed', { behavior: access.detail });
+  return t('avl.propChecking');
 }
 
 // ---------------------------------------------------------------------------
@@ -157,7 +169,7 @@ export interface OrbInspectorProps {
 
 type InspectorTab = 'inspector' | 'design' | 'prototype' | 'code';
 
-export function OrbInspector({ node, schema, editable = false, userType = 'builder', themeManifest, defaultTab, onTabChange, onSchemaChange, onClose, selectedPattern: selectedPatternProp }: OrbInspectorProps): React.ReactElement {
+export function OrbInspector({ node, schema, editable = false, userType = 'builder', themeManifest, defaultTab, onTabChange, onSchemaChange, onClose, selectedPattern: selectedPatternProp, elementAccess: elementAccessProp }: OrbInspectorProps): React.ReactElement {
   const { selected: contextSelectedPattern } = useContext(PatternSelectionContext);
   // A caller-supplied `selectedPattern` (external-inspector usage) always
   // wins over context — `undefined` (the prop omitted entirely) falls back
@@ -166,6 +178,14 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
   // context happens to hold.
   const selectedPattern = selectedPatternProp !== undefined ? selectedPatternProp : contextSelectedPattern;
   const [activeTab, setActiveTab] = useState<InspectorTab>(defaultTab ?? 'inspector');
+  // Props the element doesn't set wait under "More" — per selection.
+  const [showMoreProps, setShowMoreProps] = useState(false);
+  const selectedPatternKey = `${selectedPattern?.focus?.trait ?? ''}:${selectedPattern?.patternId ?? ''}`;
+  const [shownFor, setShownFor] = useState(selectedPatternKey);
+  if (shownFor !== selectedPatternKey) {
+    setShownFor(selectedPatternKey);
+    setShowMoreProps(false);
+  }
   const handleTabChange = useCallback((tab: InspectorTab) => {
     setActiveTab(tab);
     onTabChange?.(tab);
@@ -221,6 +241,13 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
   const elementTrait = elementFocus?.trait ?? traitName;
   const elementTransition = elementFocus?.transition ?? transitionEvent;
   const elementSlot = elementFocus?.slot;
+  const contextAccess = useContext(ElementEditAccessContext);
+  const accessResolver = elementAccessProp ?? contextAccess;
+  const elementAccess = accessResolver && elementFocus ? accessResolver(elementFocus) : null;
+  const propAccess = useCallback(
+    (propName: string): ElementPropAccess => elementAccess?.prop(propName) ?? { editable: true },
+    [elementAccess],
+  );
   const patternConfig = useMemo(
     () => (selectedPattern
       ? resolvePatternConfig(schema, {
@@ -261,6 +288,11 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
   // (themeManifest.setToken) without consulting any global ref.
   const handlePropChange = useCallback((propName: string, value: EventPayloadValue) => {
     if (!editable) return;
+    const access = propAccess(propName);
+    if (!access.editable) {
+      eventBus.emit('UI:NOTIFY', { severity: 'info', message: propAccessText(access, t) });
+      return;
+    }
     eventBus.emit('UI:PROP_CHANGE', {
       scope: 'local',
       propName,
@@ -274,7 +306,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
         ...(elementSlot ? { slot: elementSlot } : {}),
       },
     });
-  }, [editable, eventBus, selectedPattern, elementOrbital, elementTrait, elementTransition, elementSlot]);
+  }, [editable, propAccess, eventBus, t, selectedPattern, elementOrbital, elementTrait, elementTransition, elementSlot]);
 
   // A theme-token edit: changes the token everywhere it's used, not this element.
   const handleTokenChange = useCallback((token: InspectorTokenRef, value: string) => {
@@ -325,6 +357,59 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
   }, [eventBus]);
 
   void onSchemaChange; // Editing goes through EventBus, not direct callback
+
+  // Every prop is reachable: the ones the element sets first, the rest under "More".
+  // A prop that is one of the call site's knobs is edited in Settings, not listed twice.
+  const knobKeys = new Set(elementAccess?.settings?.knobs.map((k) => k.key) ?? []);
+  const setInSettings = (propName: string): boolean => {
+    const access = propAccess(propName);
+    return access.editable && access.knob !== undefined && knobKeys.has(access.knob);
+  };
+  const propEntries: Array<[string, PatternPropDef]> = patternDef?.propsSchema
+    ? Object.entries(patternDef.propsSchema).filter(([propName]) => !setInSettings(propName))
+    : [];
+  const setProps = propEntries.filter(([propName]) => patternConfig?.[propName] !== undefined);
+  const moreProps = propEntries.filter(([propName]) => patternConfig?.[propName] === undefined);
+  const renderPropRow = ([propName, propSchema]: [string, PatternPropDef]): React.ReactElement => {
+    const ps: PatternPropDef = propSchema;
+    const explicitValue = patternConfig ? patternConfig[propName] : undefined;
+    const defaultValue = ps.default;
+    const isImplicit = explicitValue === undefined && defaultValue !== undefined;
+    const currentValue = explicitValue !== undefined ? explicitValue : defaultValue;
+    const displayValue = currentValue !== undefined
+      ? (typeof currentValue === 'object' ? JSON.stringify(currentValue) : String(currentValue))
+      : '';
+    inspectorLog.debug('prop-row', () => ({
+      patternType: patternDef?.type ?? '',
+      patternId: selectedPattern?.patternId ?? '',
+      propName,
+      explicitValue: explicitValue === undefined ? '<unset>' : JSON.stringify(explicitValue),
+      defaultValue: defaultValue === undefined ? '<unset>' : JSON.stringify(defaultValue),
+      isImplicit: String(isImplicit),
+    }));
+    const access = propAccess(propName);
+    return (
+      <Box key={propName} className="flex items-center gap-2">
+        <Typography variant="small" className="text-muted-foreground text-xs w-20 shrink-0 font-mono">{propName}</Typography>
+        {editable && !access.editable ? (
+          <Typography variant="small" className="text-xs text-muted-foreground italic truncate">
+            {propAccessText(access, t)}
+          </Typography>
+        ) : editable ? (
+          <Input
+            defaultValue={displayValue}
+            placeholder={(ps.types as string[])?.join(' | ') ?? 'string'}
+            className="flex-1 text-xs h-6"
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => handlePropChange(propName, e.target.value)}
+          />
+        ) : (
+          <Typography variant="small" className="text-xs text-muted-foreground">
+            {displayValue || '—'}{ps.required ? ' *' : ''}
+          </Typography>
+        )}
+      </Box>
+    );
+  };
 
   const headerTitle = selectedPattern
     ? selectedPattern.patternType
@@ -405,42 +490,49 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             {selectedPattern && patternDef?.propsSchema && (
               <Box className="px-4 py-3 border-b border-border/40">
                 <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.props')}</Typography>
+                {elementAccess?.partOf && (
+                  <Badge variant="neutral" size="sm" className="mb-2" data-testid="orb-inspector-part-of">
+                    {t('orbPreview.partOf', { behavior: elementAccess.partOf })}
+                  </Badge>
+                )}
                 <Box className="flex flex-col gap-1.5">
-                  {Object.entries(patternDef.propsSchema).slice(0, 12).map(([propName, propSchema]) => {
-                    const ps: PatternPropDef = propSchema;
-                    const explicitValue = patternConfig ? patternConfig[propName] : undefined;
-                    const defaultValue = ps.default;
-                    const isImplicit = explicitValue === undefined && defaultValue !== undefined;
-                    const currentValue = explicitValue !== undefined ? explicitValue : defaultValue;
-                    const displayValue = currentValue !== undefined
-                      ? (typeof currentValue === 'object' ? JSON.stringify(currentValue) : String(currentValue))
-                      : '';
-                    inspectorLog.debug('prop-row', () => ({
-                      patternType: patternDef.type,
-                      patternId: selectedPattern?.patternId ?? '',
-                      propName,
-                      explicitValue: explicitValue === undefined ? '<unset>' : JSON.stringify(explicitValue),
-                      defaultValue: defaultValue === undefined ? '<unset>' : JSON.stringify(defaultValue),
-                      isImplicit: String(isImplicit),
-                    }));
-                    return (
-                      <Box key={propName} className="flex items-center gap-2">
-                        <Typography variant="small" className="text-muted-foreground text-xs w-20 shrink-0 font-mono">{propName}</Typography>
-                        {editable ? (
-                          <Input
-                            defaultValue={displayValue}
-                            placeholder={(ps.types as string[])?.join(' | ') ?? 'string'}
-                            className="flex-1 text-xs h-6"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => handlePropChange(propName, e.target.value)}
-                          />
-                        ) : (
-                          <Typography variant="small" className="text-xs text-muted-foreground">
-                            {displayValue || '—'}{ps.required ? ' *' : ''}
-                          </Typography>
-                        )}
-                      </Box>
-                    );
-                  })}
+                  {setProps.map(renderPropRow)}
+                  {moreProps.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="self-start text-xs h-6 px-1"
+                      onClick={() => setShowMoreProps((open) => !open)}
+                      data-testid="orb-inspector-more-props"
+                    >
+                      {t('avl.moreProps', { count: String(moreProps.length) })}
+                    </Button>
+                  )}
+                  {showMoreProps && moreProps.map(renderPropRow)}
+                </Box>
+              </Box>
+            )}
+
+            {elementAccess?.settings && elementAccess.settings.knobs.length > 0 && (
+              <Box className="px-4 py-3 border-b border-border/40" data-testid="orb-inspector-settings">
+                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
+                  {elementAccess.partOf ? t('avl.settingsOf', { behavior: elementAccess.partOf }) : t('avl.settings')}
+                </Typography>
+                <Box className="flex flex-col gap-3">
+                  {elementAccess.settings.knobs.map((knob) => (
+                    <SettingsKnobRow
+                      key={`${elementAccess.settings?.trait}.${knob.key}`}
+                      knob={knob}
+                      editable={editable}
+                      onCommit={(value) => {
+                        // The knob's own question says which call site it sets (core's reducer, as the questionnaire).
+                        for (const m of answerToMutations(knob.question.mutationTemplate, value, knob.question)) {
+                          if (m.kind !== 'set-trait-override-config') continue;
+                          eventBus.emit('UI:TRAIT_CONFIG_CHANGE', { orbitalName: m.orbitalName, traitName: m.traitName, key: m.key, valueJson: JSON.stringify(m.value) });
+                        }
+                      }}
+                    />
+                  ))}
                 </Box>
               </Box>
             )}
@@ -792,6 +884,46 @@ const PHASE_2_TOKEN_FALLBACK: Record<string, string[]> = {
   modal: ['--color-card', '--shadow-lg', '--radius-lg'],
   toast: ['--color-card', '--shadow-lg', '--radius-md'],
 };
+
+/** Knobs a click changes commit at once; typed ones commit when the field loses focus. */
+const COMMIT_ON_CHANGE: ReadonlySet<DomainQuestionInputType> = new Set(['boolean', 'enum', 'persistence', 'multiselect']);
+
+function SettingsKnobRow({ knob, editable, onCommit }: {
+  knob: ElementKnob;
+  editable: boolean;
+  onCommit: (value: DomainQuestionAnswer) => void;
+}): React.ReactElement {
+  const [draft, setDraft] = useState<DomainQuestionAnswer | undefined>(knob.value);
+  const [dirty, setDirty] = useState(false);
+  const handleChange = useCallback((next: DomainQuestionAnswer) => {
+    setDraft(next);
+    if (COMMIT_ON_CHANGE.has(knob.question.inputType)) {
+      onCommit(next);
+      return;
+    }
+    setDirty(true);
+  }, [knob.question.inputType, onCommit]);
+  const handleBlur = useCallback(() => {
+    if (!dirty || draft === undefined) return;
+    setDirty(false);
+    onCommit(draft);
+  }, [dirty, draft, onCommit]);
+  return (
+    <Box className="flex flex-col gap-1" onBlur={handleBlur}>
+      <Typography variant="small" className="text-xs">{knob.question.question}</Typography>
+      {knob.question.helpText ? (
+        <Typography variant="caption" className="text-muted-foreground text-[10px]">{knob.question.helpText}</Typography>
+      ) : null}
+      {editable ? (
+        <KnobField question={knob.question} value={draft} onChange={handleChange} />
+      ) : (
+        <Typography variant="small" className="text-xs text-muted-foreground">
+          {draft === undefined || draft === null ? '—' : typeof draft === 'object' ? JSON.stringify(draft) : String(draft)}
+        </Typography>
+      )}
+    </Box>
+  );
+}
 
 interface StylesTabProps {
   patternType: string | undefined;

@@ -11,7 +11,7 @@
  * `ScenePos` type identity is what pattern-sync stamps as the `drawable`
  * capability, every drawable descriptor's `position` MUST be a core `ScenePos`.
  */
-import type { ScenePos } from '@almadar/core';
+import type { Asset, ScenePos } from '@almadar/core';
 import type { Painter2D, PainterPoint } from '../painter2d';
 
 /**
@@ -56,6 +56,20 @@ export interface Projector {
 export function isValidScenePos(pos: ScenePos | undefined): pos is ScenePos {
     return Number.isFinite(pos?.x) && Number.isFinite(pos?.y);
 }
+
+/** How a sprite drawable's placement + asset read before any fetch: an
+ *  invalid position draws nothing; an asset with no url can never load, so
+ *  both backends draw the fallback (never an invisible hole). */
+export type SpriteAssetState = 'invalid-position' | 'asset-unset' | 'ready';
+
+export function spriteAssetState(node: { position?: ScenePos; asset?: Partial<Asset> }): SpriteAssetState {
+    if (!isValidScenePos(node.position)) return 'invalid-position';
+    return typeof node.asset?.url === 'string' && node.asset.url.length > 0 ? 'ready' : 'asset-unset';
+}
+
+/** Fill / stroke of the unresolvable-asset fallback, shared by the 2D and 3D backends. */
+export const SPRITE_FALLBACK_FILL = '#9b8f7f';
+export const SPRITE_FALLBACK_STROKE = '#5e564b';
 
 /** Per-frame context handed to every paint fn. */
 export interface DrawContext {

@@ -96,8 +96,13 @@ export function subRectFor(atlas: ParsedAtlas, sprite: string): SubRect | null {
 }
 
 /** True when the asset points into a sheet (needs slicing) rather than being a whole PNG. */
+/** The asset's atlas manifest URL; an empty string means no atlas. */
+export function atlasUrlOf(asset: SpriteRef | undefined | null): string | undefined {
+    return typeof asset?.atlas === 'string' && asset.atlas.length > 0 ? asset.atlas : undefined;
+}
+
 export function isAtlasAsset(asset: SpriteRef | undefined | null): boolean {
-    return !!asset && typeof asset.atlas === 'string' && typeof asset.sprite === 'string';
+    return atlasUrlOf(asset) !== undefined && typeof asset?.sprite === 'string' && asset.sprite.length > 0;
 }
 
 export interface AssetSource {

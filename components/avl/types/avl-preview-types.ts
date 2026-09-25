@@ -16,21 +16,11 @@ import type { AnyPatternConfig } from '@almadar/core/patterns';
 // ---------------------------------------------------------------------------
 
 /**
- * The navigation levels of the FlowCanvas.
- *
- * - `overview` (L1) — one card per orbital, showing the orbital's composed
- *   render-ui at INIT.
- * - `expanded` (L2) — one card per organism-authored transition + one
- *   grouped card per imported-behavior alias.
- * - `behavior-expanded` (L3) — drilled into a single imported behavior at
- *   L2: one card per transition of THAT behavior. Used to inspect what an
- *   import contributes without leaving the canvas.
- * - `trait-expanded` — one card per trait of a single orbital, connected
- *   by intra-orbital `emits → listens` edges. Used by the cosmic tab to
- *   render the trait-level circuit when the user drills into an orbital
- *   from the L1 grid. Not used by the canvas tab today.
+ * What a FlowCanvas lays out: `overview` — orbital cards (the focused one, or
+ * all of them); `trait-expanded` — one card per trait of a single orbital,
+ * wired by intra-orbital `emits → listens` edges (the cosmic tab's circuit).
  */
-export type ViewLevel = 'overview' | 'expanded' | 'behavior-expanded' | 'trait-expanded';
+export type ViewLevel = 'overview' | 'trait-expanded';
 
 // ---------------------------------------------------------------------------
 // Screen size presets for preview nodes
@@ -128,19 +118,19 @@ export interface PreviewNodeData {
   /** Orbital this node belongs to. */
   orbitalName: string;
 
-  /** Trait name (only at expanded level). */
+  /** Trait name (a card showing a picked state). */
   traitName?: string;
 
-  /** State name after this transition fires (expanded level). */
+  /** State name after this transition fires (a card showing a picked state). */
   stateName?: string;
 
-  /** Event that triggers this transition (expanded level). */
+  /** Event that triggers this transition (a card showing a picked state). */
   transitionEvent?: string;
 
-  /** From state (expanded level). */
+  /** From state (a card showing a picked state). */
   fromState?: string;
 
-  /** To state (expanded level). */
+  /** To state (a card showing a picked state). */
   toState?: string;
 
   /** The card frame's width set by the designer; the screen-size preset otherwise. */
@@ -207,34 +197,12 @@ export interface PreviewNodeData {
    */
   sourceSchemaName?: string;
 
-  /**
-   * Set when this L2 card represents a grouped imported-behavior bucket
-   * (one card per `uses[]` alias instead of one per transition). The alias
-   * comes from `Trait.sourceBehavior.alias` populated by the inline phase.
-   * Double-clicking such a card drills into L3 (`behavior-expanded`) to
-   * see that alias's transitions.
-   *
-   * Absent on organism-authored transition cards and L1 overview cards.
-   */
-  behaviorAlias?: string;
+  /** World view: this card is the focused orbital. */
+  focused?: boolean;
 
   /**
-   * Human-readable behavior name for a grouped imported-behavior card
-   * (e.g. `'std/behaviors/std-stat-card'`). Comes from
-   * `Trait.sourceBehavior.behavior`. Renderer surfaces it as a label.
-   */
-  behaviorName?: string;
-
-  /**
-   * How many transitions are collapsed into this grouped imported-behavior
-   * card. Renderer can surface it as a "+N screens" badge.
-   */
-  transitionCount?: number;
-
-  /**
-   * Discriminator for the node variant. Absent on overview/expanded/
-   * behavior-expanded cards (those use field-presence-based discrimination
-   * via `behaviorAlias`/`transitionEvent`). Set to `'trait-card'` for nodes
+   * Discriminator for the node variant. Absent on orbital cards (a card
+   * showing a picked state carries `transitionEvent`). Set to `'trait-card'` for nodes
    * produced by `orbitalToTraitGraph` so renderers can branch cleanly.
    */
   kind?: 'trait-card';

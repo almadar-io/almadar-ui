@@ -66,6 +66,11 @@ const INERT_API: NavStackApi = {
 
 const NavStackContext = createContext<NavStackApi>(INERT_API);
 
+/** True when no NavStackProvider is mounted above (plain React / SSR hosts). */
+export function isInertNavStack(api: NavStackApi): boolean {
+  return api === INERT_API;
+}
+
 export function useNavStack(): NavStackApi {
   return useContext(NavStackContext);
 }

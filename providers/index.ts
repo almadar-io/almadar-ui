@@ -122,7 +122,7 @@ export type { EntityBindingSource } from './EntityBindingContext';
 // their entity map as a hook argument directly.
 
 // Verification provider
-export { VerificationProvider } from './VerificationProvider';
+export { VerificationProvider, mapServerEffectResults } from './VerificationProvider';
 export type { VerificationProviderProps } from './VerificationProvider';
 
 // Offline mode provider
@@ -151,6 +151,7 @@ export {
   NavStackProvider,
   NavStackRouterBridge,
   useNavStack,
+  isInertNavStack,
 } from './NavStackContext';
 export type {
   NavStackApi,

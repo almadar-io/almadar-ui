@@ -15,7 +15,7 @@ import type { DrawSpriteProps } from '../../../components/game/atoms/DrawSprite'
 import { applyShapeAnimation, isAnimatedShape, type DrawShapeProps } from '../../../components/game/atoms/DrawShape';
 import type { DrawTextProps } from '../../../components/game/atoms/DrawText';
 import type { Projector3D } from '../projector3d';
-import { isValidScenePos } from '../contract';
+import { isValidScenePos, SPRITE_FALLBACK_FILL, spriteAssetState } from '../contract';
 import { getAtlas, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
 import { ModelLoader } from './ModelLoader';
 import { createLogger } from '@almadar/logger';
@@ -210,9 +210,19 @@ function SpriteBillboard({ node, world, cellSize = 1, groupOpacity = 1 }: { node
  *  `groupOpacity` (enclosing `draw-group`) multiplies billboard opacity; GLB materials are the model's own. */
 export function Sprite3D({ node, projector, groupOpacity = 1 }: { node: DrawSpriteProps; projector: Projector3D; groupOpacity?: number }): React.JSX.Element | null {
     const asset = node.asset;
-    // Mirrors the 2D `paintSprite` contract: a drawable with no resolvable asset
-    // or position renders nothing — it never throws (one bad item must not blank the scene).
-    if (!asset?.url || !isValidScenePos(node.position)) return null;
+    // Mirrors the 2D `paintSprite` contract: an invalid position renders nothing,
+    // an asset with no url renders the fallback — never an invisible hole, never a throw.
+    const state = spriteAssetState(node);
+    if (state === 'invalid-position') return null;
+    if (state === 'asset-unset') {
+        const side = (node.width ?? 0.6) * projector.cellSize;
+        return (
+            <mesh position={projector.toWorld(node.position)}>
+                <boxGeometry args={[side, (node.height ?? 0.6) * projector.cellSize, side]} />
+                <meshStandardMaterial color={SPRITE_FALLBACK_FILL} />
+            </mesh>
+        );
+    }
     if (asset.dimension === '3d') {
         // GLB scale = the sprite's authored world size: uniform from `width` alone;
         // [width, height, width] when `height` is authored too, so a side-view tile

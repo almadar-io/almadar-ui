@@ -56,6 +56,7 @@ import {
   UNMOUNT_EVENT,
 } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
+import { recordingTransport } from '../../lib/verificationRegistry';
 
 export interface UseCircuitKernelOptions {
   /** The resolved schema's full orbital set (`OrbitalSchema.orbitals`) —
@@ -227,7 +228,11 @@ export function useCircuitKernel(
     options.logContext,
   ]);
 
-  const effectiveTransport = options.transport ?? offlineTransport;
+  const baseTransport = options.transport ?? offlineTransport;
+  const effectiveTransport = useMemo(
+    () => (baseTransport === undefined ? undefined : recordingTransport(baseTransport)),
+    [baseTransport],
+  );
   const orbitalName = options.orbitals[0]?.name ?? '';
 
   const rawKernel = useMemo(() => createClientKernel({

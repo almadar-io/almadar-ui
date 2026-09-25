@@ -30,3 +30,16 @@ export function resolveDirectChildren<T>(
     .sort((a, b) => a.index - b.index)
     .map(({ ref }) => ref);
 }
+
+/**
+ * A container element's direct children in the pattern tree: the nearest
+ * `[data-pattern-path]` elements under it, in render order. Unlike paths
+ * (which restart at every embedded behavior's own root), this includes the
+ * frames of behaviors embedded in the container's children, and it sees
+ * through the layout layers between a wrapper and its patterns.
+ */
+export function directPatternChildren(container: Element): HTMLElement[] {
+  return Array.from(container.querySelectorAll('[data-pattern-path]')).filter(
+    (child): child is HTMLElement => child instanceof HTMLElement && child.parentElement?.closest('[data-pattern-path]') === container,
+  );
+}

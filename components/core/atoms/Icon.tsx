@@ -17,7 +17,7 @@ import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { cn } from '../../../lib/cn';
-import { resolveIconForFamily, useIconFamily } from '../../../lib/iconFamily';
+import { resolveIconForFamily, useIconFamily, useThemeIconStrokeApplies } from '../../../lib/iconFamily';
 import type { ColorToken } from './types';
 
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -172,13 +172,14 @@ export const Icon: React.FC<IconProps> = ({
   // default is 0, and a literal 0 would zero the stroke and hide the icon.
   const effectiveStrokeWidth = strokeWidth != null && strokeWidth > 0 ? strokeWidth : undefined;
   const family = useIconFamily();
+  const themeStroke = useThemeIconStrokeApplies();
   const RenderedComponent = React.useMemo(() => {
     if (directIcon) return null;
     return effectiveName ? resolveIconForFamily(effectiveName, family) : null;
   }, [directIcon, effectiveName, family]);
 
   const inlineStyle: React.CSSProperties = {
-    ...(effectiveStrokeWidth === undefined
+    ...(effectiveStrokeWidth === undefined && themeStroke
       ? { strokeWidth: 'var(--icon-stroke-width, 2)' }
       : {}),
     ...style,

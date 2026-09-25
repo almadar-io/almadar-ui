@@ -5,16 +5,32 @@
  * editable — an inline render-ui is the canvas's to edit.
  */
 import { createContext } from 'react';
-import type { EditFocus } from '@almadar/core';
+import type { DomainQuestion, DomainQuestionAnswer, EditFocus } from '@almadar/core';
 
 export type ElementPropAccess =
-  | { editable: true }
+  /** `knob`: the prop is that knob of the element's call site (edited in Settings). */
+  | { editable: true; knob?: string }
   | { editable: false; reason: 'bound' | 'fixed' | 'loading'; detail: string };
+
+/** One knob of the behavior an element belongs to, as its editor asks it. */
+export interface ElementKnob {
+  key: string;
+  question: DomainQuestion;
+  value: DomainQuestionAnswer | undefined;
+}
+
+/** The knobs the element's call site (`trait`) sets on its behavior. */
+export interface ElementSettings {
+  trait: string;
+  knobs: ReadonlyArray<ElementKnob>;
+}
 
 export interface ElementEditAccess {
   prop: (name: string) => ElementPropAccess;
   /** The behavior an embedded element belongs to — shown as "Part of <behavior>". */
   partOf?: string;
+  /** Its behavior's knobs, for the inspector's Settings. */
+  settings?: ElementSettings;
 }
 
 export type ElementEditAccessResolver = (focus: EditFocus) => ElementEditAccess;

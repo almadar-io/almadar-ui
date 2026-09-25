@@ -210,7 +210,7 @@ export interface Canvas2DProps {
      *  host projects this to screen space and centers the viewport on it for the
      *  first render; ignored once the user pans or a follow target takes over. */
     cameraPos?: ScenePos;
-    /** Solid backdrop colour (drawn when no `backgroundImage`). */
+    /** Solid backdrop colour — the base layer under any `backgroundImage`. */
     bgColor?: string;
     /** Declarative JSX drawable children (`<DrawShape .../>` composed in paint order).
      *  When `drawables` is empty, each child registers its descriptor via the
@@ -485,7 +485,7 @@ export function Canvas2D({
     }, [projection, nativeTileW, baseOffsetX]);
 
     // -- Background image preload --
-    const bgUrls = useMemo(() => (backgroundImage ? [backgroundImage.url] : []), [backgroundImage]);
+    const bgUrls = useMemo(() => (backgroundImage?.url ? [backgroundImage.url] : []), [backgroundImage]);
     const { getImage, pendingCount: _imagePendingCount } = useImageCache(bgUrls);
 
     // -- Verification bridge --
@@ -568,8 +568,11 @@ export function Canvas2D({
 
         ctx.clearRect(0, 0, viewportSize.width, viewportSize.height);
 
-        // Background.
-        if (backgroundImage) {
+        // Background: the colour is the base layer; an image (once it resolves)
+        // paints over it, so an unset or loading image never leaves a hole.
+        ctx.fillStyle = bgColor ?? BACKGROUND_FALLBACK_COLOR;
+        ctx.fillRect(0, 0, viewportSize.width, viewportSize.height);
+        if (backgroundImage?.url) {
             const bgImg = getImage(backgroundImage.url);
             const bgSrc = bgImg ? resolveAssetSource(bgImg, backgroundImage, bumpAtlas) : null;
             if (bgSrc?.rect) {
@@ -589,9 +592,6 @@ export function Canvas2D({
                     }
                 }
             }
-        } else {
-            ctx.fillStyle = bgColor ?? BACKGROUND_FALLBACK_COLOR;
-            ctx.fillRect(0, 0, viewportSize.width, viewportSize.height);
         }
 
         if (!drawables || drawables.length === 0) {

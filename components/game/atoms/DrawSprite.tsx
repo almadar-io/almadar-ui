@@ -18,11 +18,11 @@ import type React from 'react';
 import type { Asset, ScenePos } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import type { Painter2D } from '../../../lib/painter2d';
-import { getAtlas, atlasFailed, isAtlasAsset, isSpriteSheetAtlas, subRectFor } from '../../../lib/atlasSlice';
+import { getAtlas, atlasFailed, atlasUrlOf, isAtlasAsset, isSpriteSheetAtlas, subRectFor } from '../../../lib/atlasSlice';
 import { frameRect, getCurrentFrameFromDef } from '../../../lib/spriteAnimation';
 import { getImageStatus } from '../../../lib/imageCache';
 import type { DrawableAnchor, DrawableBase, DrawContext, PaintFn } from '../../../lib/drawable/contract';
-import { isValidScenePos, spriteRect } from '../../../lib/drawable/contract';
+import { SPRITE_FALLBACK_FILL, SPRITE_FALLBACK_STROKE, spriteAssetState, spriteRect } from '../../../lib/drawable/contract';
 import type { Rect } from '../../core/atoms/types';
 import type { DrawShapeShadow } from './DrawShape';
 
@@ -33,25 +33,28 @@ const loggedMissing = new Set<string>();
  *  boards when the descriptor carries no explicit width/height. */
 const FALLBACK_WORLD_PX = 32;
 
-function warnMissingOnce(reason: 'texture-failed' | 'atlas-failed' | 'sprite-missing', node: DrawSpriteProps): void {
-    const key = `${reason}:${node.asset.url}:${String(node.asset.atlas)}:${String(node.asset.sprite)}`;
+type MissingReason = 'asset-unset' | 'texture-failed' | 'atlas-failed' | 'sprite-missing';
+
+function warnMissingOnce(reason: MissingReason, node: DrawSpriteProps): void {
+    const asset: Partial<Asset> = node.asset ?? {};
+    const key = `${reason}:${String(asset.url)}:${String(asset.atlas)}:${String(asset.sprite)}`;
     if (loggedMissing.has(key)) return;
     loggedMissing.add(key);
-    spriteLog.warn('draw-sprite asset unresolvable — painting fallback square', { reason, url: node.asset.url, atlas: node.asset.atlas, sprite: node.asset.sprite });
+    spriteLog.warn('draw-sprite asset unresolvable — painting fallback square', { reason, url: asset.url, atlas: asset.atlas, sprite: asset.sprite });
 }
 
 /** A missing/broken asset must never render as an invisible hole: paint a
  *  cell-sized flat square (honoring explicit width/height) so the board stays
  *  readable and the bad ref is visible on the canvas, not just in a log. */
-function paintFallbackSquare(painter: Painter2D, node: DrawSpriteProps, dctx: DrawContext, reason: 'texture-failed' | 'atlas-failed' | 'sprite-missing'): void {
+function paintFallbackSquare(painter: Painter2D, node: DrawSpriteProps, dctx: DrawContext, reason: MissingReason): void {
     warnMissingOnce(reason, node);
     const tw = dctx.projector.tileWidth;
     const natural = dctx.projector.worldPixelDirect ? FALLBACK_WORLD_PX : tw;
     const rect = spriteRect(dctx.projector, node, { w: natural, h: natural });
     painter.save();
     if (node.opacity !== undefined && node.opacity !== 1) painter.setAlpha(node.opacity);
-    painter.fillRect(rect.x, rect.y, rect.w, rect.h, '#9b8f7f');
-    painter.strokeRect(rect.x, rect.y, rect.w, rect.h, '#5e564b', Math.max(1, tw / 32));
+    painter.fillRect(rect.x, rect.y, rect.w, rect.h, SPRITE_FALLBACK_FILL);
+    painter.strokeRect(rect.x, rect.y, rect.w, rect.h, SPRITE_FALLBACK_STROKE, Math.max(1, tw / 32));
     painter.restore();
 }
 
@@ -86,11 +89,16 @@ export interface DrawSpriteProps extends DrawableBase {
 }
 
 /** Paint a {@link DrawSpriteProps}. Paints a fallback square when a resource is
- *  definitively broken (texture/atlas fetch failed, sprite name unresolvable);
- *  renders nothing while a resource is still in-flight — never throws. */
+ *  definitively broken (no asset url, texture/atlas fetch failed, sprite name
+ *  unresolvable); renders nothing while a resource is still in-flight or the
+ *  position is invalid — never throws. */
 export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
-    // A drawable with no resolvable asset or position renders nothing — never throws.
-    if (!node.asset?.url || !isValidScenePos(node.position)) return;
+    const state = spriteAssetState(node);
+    if (state === 'invalid-position') return;
+    if (state === 'asset-unset') {
+        paintFallbackSquare(painter, node, dctx, 'asset-unset');
+        return;
+    }
     const tex = painter.resolveTexture(node.asset.url);
     if (!tex) {
         if (getImageStatus(node.asset.url) === 'failed') paintFallbackSquare(painter, node, dctx, 'texture-failed');
@@ -104,10 +112,11 @@ export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
     // Sheet playback: `animation` + a SpriteSheetAtlas manifest → the current
     // row frame at the host clock. Non-sheet atlases fall through to the
     // named-sprite path (the `animation` prop there is 3D-clip semantics).
-    if (!src && node.animation !== undefined && typeof node.asset.atlas === 'string') {
-        const atlas = getAtlas(node.asset.atlas, dctx.invalidate);
+    const sheetAtlasUrl = atlasUrlOf(node.asset);
+    if (!src && node.animation !== undefined && sheetAtlasUrl !== undefined) {
+        const atlas = getAtlas(sheetAtlasUrl, dctx.invalidate);
         if (!atlas) {
-            if (atlasFailed(node.asset.atlas)) paintFallbackSquare(painter, node, dctx, 'atlas-failed');
+            if (atlasFailed(sheetAtlasUrl)) paintFallbackSquare(painter, node, dctx, 'atlas-failed');
             return; // atlas JSON in-flight
         }
         if (isSpriteSheetAtlas(atlas)) {

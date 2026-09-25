@@ -7,7 +7,7 @@
  */
 
 // Primary V3 organisms
-export { FlowCanvas, type FlowCanvasProps } from './FlowCanvas';
+export { FlowCanvas, type FlowCanvasProps, type CanvasScope, type CanvasFocusChange } from './FlowCanvas';
 export { OrbInspector, type OrbInspectorProps } from './OrbInspector';
 export {
   LayersPanel,

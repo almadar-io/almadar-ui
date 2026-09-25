@@ -1,11 +1,11 @@
 /**
- * The canvas (L2 cards) and the Layers panel read a transition's render-ui
+ * The canvas (a card's state options) and the Layers panel read a transition's render-ui
  * through ONE core walker (`renderUiEntriesOf`), so they agree — including on
  * renders nested in control forms, which the canvas used to miss.
  */
 import { describe, it, expect } from 'vitest';
 import type { OrbitalSchema } from '@almadar/core';
-import { orbitalToExpandedGraph } from '../avl-preview-converter';
+import { stateOptionsOf } from '../avl-preview-converter';
 import { schemaToLayerItems } from '../../organisms/LayersPanel';
 
 const schema = {
@@ -37,14 +37,14 @@ const schema = {
 } as OrbitalSchema;
 
 describe('canvas and layers agree on render-ui', () => {
-  const cardEvents = orbitalToExpandedGraph(schema, 'Tasks').nodes.map((n) => n.data.transitionEvent);
+  const cardEvents = stateOptionsOf(schema, 'Tasks', 'transitions').own.map((o) => o.data.transitionEvent);
   const layerIds = schemaToLayerItems(schema).map((i) => i.id);
 
-  it('a render nested in `when` gets a canvas card', () => {
+  it('a render nested in `when` is a canvas state', () => {
     expect(cardEvents).toContain('OPEN');
   });
 
-  it('a clear-only transition gets no canvas card', () => {
+  it('a clear-only transition is not a canvas state', () => {
     expect(cardEvents).not.toContain('CLOSE');
   });
 

@@ -6,12 +6,9 @@
  * The canvas IS the app. Nodes show rendered UI thumbnails from
  * render-ui effects. Edges show events connecting screens.
  *
- * Two navigation levels:
- *   Level 1 (Overview): One node per orbital showing INIT UI
- *   Level 2 (Expanded): One node per UI state within an orbital
- *
- * Double-click to expand an orbital. Click a node for code callback.
- * Escape to go back. AVL overlays on hover (future).
+ * Local view (default): one orbital card, Tab / Shift+Tab to move between
+ * orbitals. World view: every orbital card. Each card picks the state it
+ * shows from a dropdown in its header.
  */
 
 import React, { useMemo, useState, useCallback, useEffect, Profiler } from 'react';
@@ -31,15 +28,19 @@ import {
   type EdgeTypes,
   type Connection,
 } from '@xyflow/react';
-import type { OrbitalSchema, ThemeDefinition, EntityData } from '@almadar/core';
+import type { EditFocus, OrbitalSchema, ThemeDefinition, EntityData } from '@almadar/core';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
+import { Button } from '../../core/atoms/Button';
+import { Icon } from '../../core/atoms/Icon';
+import { Select } from '../../core/atoms/Select';
+import { ButtonGroup } from '../../core/molecules/ButtonGroup';
 import { ElementEditAccessContext, type ElementEditAccessResolver } from '../lib/element-edit-access';
-import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, type SelectedPattern } from '../molecules/OrbPreviewNode';
+import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, type CanvasStatePicker, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { CANVAS_TOOLS, type CanvasTool } from '../lib/canvas-tools';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
 import { EventFlowEdge } from '../molecules/EventFlowEdge';
-import { schemaToOverviewGraph, orbitalToExpandedGraph, orbitalAliasToExpandedGraph, orbitalToTraitGraph } from '../lib/avl-preview-converter';
+import { canvasViewGraph, stateOptionsOf, initialStateOf, orbitalToTraitGraph, LIVE_STATE, type CanvasStateOptions } from '../lib/avl-preview-converter';
 import type { ViewLevel, PreviewNodeData, EventEdgeData, ScreenSize } from '../types/avl-preview-types';
 import { SCREEN_SIZE_PRESETS, detectScreenSize } from '../types/avl-preview-types';
 import { OrbInspector } from './OrbInspector';
@@ -99,6 +100,16 @@ function withCardWidth(n: CanvasNode, width: number): CanvasNode {
   return isPreviewCard(n) ? { ...n, data: { ...n.data, cardWidth: width } } : n;
 }
 
+/** `local`: only the focused orbital's card; `world`: every orbital's card. */
+export type CanvasScope = 'local' | 'world';
+
+export interface CanvasFocusChange {
+  orbital: string;
+  scope: CanvasScope;
+  /** The focused card's chosen state (`LIVE_STATE` for the live orbital). */
+  state: string;
+}
+
 /** Where a card sits on the canvas, and its frame width when the designer resized it. */
 export interface CanvasNodePlacement {
   x: number;
@@ -122,34 +133,14 @@ export interface FlowCanvasProps {
     trait?: string;
     transition?: string;
   }) => void;
-  onLevelChange?: (level: ViewLevel, orbital?: string) => void;
-  /**
-   * GAP-52: fired when the user double-clicks an orbital. Consumers (e.g. the
-   * builder workspace) use this as the trigger to enter cosmic mode
-   * (`AvlOrbitalsCosmicZoom`) for the focused orbital.
-   *
-   * The level at which this fires is controlled by `cosmicEntryLevel` (default
-   * `'expanded'`). At `'expanded'` the existing overview→expanded drill is
-   * preserved — the callback fires only on the second double-click. At
-   * `'overview'` the callback fires on the FIRST double-click and the existing
-   * drill is suppressed for that interaction. `'both'` fires at either level.
-   *
-   * The callback runs unconditionally — persona / permission gating is the
-   * consumer's responsibility.
-   */
-  onOrbitalDoubleClick?: (orbital: string) => void;
-  /**
-   * GAP-53: which level the `onOrbitalDoubleClick` callback fires at.
-   * - `'expanded'` (default, non-breaking) — fires only at L2 expanded; the
-   *   first overview double-click still drills overview→expanded.
-   * - `'overview'` — fires at L1 overview on the FIRST double-click. The
-   *   overview→expanded drill is suppressed when the callback is provided.
-   * - `'both'` — fires at either level.
-   */
-  cosmicEntryLevel?: 'expanded' | 'overview' | 'both';
+  /** Fired when the focused orbital, the scope, or the focused card's state changes. */
+  onFocusChange?: (focus: CanvasFocusChange) => void;
+  /** The orbital cards open on (local view) — or, with `initialLevel="trait-expanded"`, the orbital whose traits are shown. */
   initialOrbital?: string;
-  /** Start at Level 2 (expanded) when initialOrbital is set. Default: 'overview'. */
+  /** `trait-expanded`: one card per trait of `initialOrbital` (cosmic). Default: orbital cards. */
   initialLevel?: ViewLevel;
+  /** Focus this orbital (e.g. picked in a Layers panel); changing it moves the focus without remounting. */
+  focusedOrbital?: string;
   /** Pre-select a node on mount (opens OrbInspector). */
   initialSelectedNode?: PreviewNodeData;
   /** Enable editing in the inspector. When true, fields become inputs. */
@@ -157,7 +148,7 @@ export interface FlowCanvasProps {
   /** Called when the user edits the schema via the inspector. */
   onSchemaChange?: (schema: OrbitalSchema) => void;
   /** Called when the user presses Delete/Backspace with patterns selected (all of a multi-select). */
-  onPatternDelete?: (context: { patternIds: string[]; nodeData: PreviewNodeData }) => void;
+  onPatternDelete?: (context: { patternIds: string[]; nodeData: PreviewNodeData; elements?: EditFocus[] }) => void;
   /** Editing tools the canvas turns on (a persona's shell manifest declares them); all by default. */
   tools?: readonly CanvasTool[];
   /** What each element lets the user change (knob, data-bound, fixed by a behavior); every prop is editable without it. */
@@ -266,11 +257,10 @@ function FlowCanvasInner({
   width = '100%',
   height = 500,
   onNodeClick,
-  onLevelChange,
-  onOrbitalDoubleClick,
-  cosmicEntryLevel = 'expanded',
+  onFocusChange,
   initialOrbital,
   initialLevel,
+  focusedOrbital: focusedOrbitalProp,
   initialSelectedNode,
   editable,
   onSchemaChange,
@@ -280,7 +270,6 @@ function FlowCanvasInner({
   onEventWire,
   behaviorMeta,
   orbitalStatus,
-  onOrbitalHover,
   layoutHint,
   onNodeSelect,
   composeLevel,
@@ -325,17 +314,18 @@ function FlowCanvasInner({
     return schemaProp;
   }, [schemaProp]);
 
-  // Navigation state
-  const [level, setLevel] = useState<ViewLevel>(
-    initialLevel ?? (initialOrbital ? 'expanded' : 'overview'),
-  );
-  const [expandedOrbital, setExpandedOrbital] = useState<string | undefined>(
-    initialOrbital,
-  );
-  // STUDIO-1: alias currently drilled into at L3 (`behavior-expanded`).
-  // Cleared when leaving L3. Always paired with a non-undefined
-  // `expandedOrbital` since L3 lives inside one orbital's L2.
-  const [expandedBehaviorAlias, setExpandedBehaviorAlias] = useState<string | undefined>(undefined);
+  const traitLevel = initialLevel === 'trait-expanded';
+  const [scope, setScope] = useState<CanvasScope>('local');
+  const [focusRequest, setFocusRequest] = useState<string | undefined>(focusedOrbitalProp ?? initialOrbital);
+  const [stateByOrbital, setStateByOrbital] = useState<Record<string, string>>({});
+  // A focus change in world view centres on the focused card instead of re-fitting every card.
+  const fitFocusedRef = React.useRef(false);
+  useEffect(() => {
+    if (focusedOrbitalProp === undefined) return;
+    fitFocusedRef.current = true;
+    setFocusRequest(focusedOrbitalProp);
+  }, [focusedOrbitalProp]);
+
   // Screen size driving OrbPreviewNode width. Default is auto-detected from
   // the user's viewport on mount (SSR-safe fallback to 'laptop'), and tracks
   // window resize until the user manually picks a preset — after which their
@@ -359,8 +349,7 @@ function FlowCanvasInner({
   }, []);
   const [selectedNode, setSelectedNodeInternal] = useState<PreviewNodeData | null>(initialSelectedNode ?? null);
   // Single choke point for every selection change so `onSelectedNodeChange`
-  // never misses a call site (select, clear-on-escape, clear-on-level-change,
-  // pattern-selection sync).
+  // never misses a call site (select, clear-on-escape, pattern-selection sync).
   const setSelectedNode = useCallback((node: PreviewNodeData | null) => {
     setSelectedNodeInternal(node);
     onSelectedNodeChange?.(node);
@@ -387,68 +376,58 @@ function FlowCanvasInner({
   // Track whether we're at the behavior compose level (for drill-down/escape)
   const [atBehaviorLevel, setAtBehaviorLevel] = useState(composeLevel === 'behavior');
 
-  // Compute graph for current level
-  const { composeNodes, composeEdges, overviewNodes, overviewEdges, expandedNodes, expandedEdges, behaviorExpandedNodes, behaviorExpandedEdges, traitExpandedNodes, traitExpandedEdges } = useMemo(() => {
+  // Designers see one state per distinct screen; everyone else one per transition.
+  const stateView = userType === 'designer' ? 'screens' : 'transitions';
+
+  const { composeNodes, composeEdges, canvas, traitExpandedNodes, traitExpandedEdges } = useMemo(() => {
     const t = perfStart('compose-graph');
-    // Behavior-level compose graph
     const compose = (composeLevel === 'behavior' && behaviorEntries?.length)
       ? behaviorsToComposeGraph(behaviorEntries, behaviorWires ?? [], layoutHint)
       : { nodes: [], edges: [] };
-
-    const overview = schemaToOverviewGraph(parsedSchema, mockData, behaviorMeta, layoutHint, orbitalStatus, screenSize);
-    // Designers see one card per distinct screen; everyone else one per transition.
-    const expandedView = userType === 'designer' ? 'screens' : 'transitions';
-    const expanded = expandedOrbital
-      ? orbitalToExpandedGraph(parsedSchema, expandedOrbital, mockData, screenSize, expandedView)
-      : { nodes: [], edges: [] };
-    // STUDIO-1: L3 (`behavior-expanded`) — only one alias bucket's
-    // transitions. Computed lazily; empty unless both `expandedOrbital`
-    // and `expandedBehaviorAlias` are set.
-    const behaviorExpanded = (expandedOrbital && expandedBehaviorAlias)
-      ? orbitalAliasToExpandedGraph(parsedSchema, expandedOrbital, expandedBehaviorAlias, mockData, screenSize, expandedView)
-      : { nodes: [], edges: [] };
-    // COSMIC-1: trait-expanded — one card per trait of `expandedOrbital`
-    // with intra-orbital `emit→listen` edges. Used by the cosmic tab L3.
-    const traitExpanded = expandedOrbital
-      ? orbitalToTraitGraph(parsedSchema, expandedOrbital, mockData)
+    const view = canvasViewGraph(parsedSchema, {
+      scope,
+      focusedOrbital: focusRequest,
+      stateByOrbital,
+      view: stateView,
+      mockData,
+      behaviorMeta,
+      layoutHint,
+      orbitalStatus,
+      screenSize,
+    });
+    // COSMIC-1: one card per trait of `initialOrbital` with intra-orbital `emit→listen` edges.
+    const traitExpanded = traitLevel && initialOrbital
+      ? orbitalToTraitGraph(parsedSchema, initialOrbital, mockData)
       : { nodes: [], edges: [] };
     perfEnd('compose-graph', t, {
       composeNodes: compose.nodes.length,
-      overviewNodes: overview.nodes.length,
-      expandedNodes: expanded.nodes.length,
-      behaviorExpandedNodes: behaviorExpanded.nodes.length,
+      canvasNodes: view.nodes.length,
       traitExpandedNodes: traitExpanded.nodes.length,
       orbitalCount: parsedSchema.orbitals?.length ?? 0,
     });
     return {
       composeNodes: compose.nodes,
       composeEdges: compose.edges,
-      overviewNodes: overview.nodes,
-      overviewEdges: overview.edges,
-      expandedNodes: expanded.nodes,
-      expandedEdges: expanded.edges,
-      behaviorExpandedNodes: behaviorExpanded.nodes,
-      behaviorExpandedEdges: behaviorExpanded.edges,
+      canvas: view,
       traitExpandedNodes: traitExpanded.nodes,
       traitExpandedEdges: traitExpanded.edges,
     };
-  }, [parsedSchema, expandedOrbital, expandedBehaviorAlias, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus, screenSize]);
+  }, [parsedSchema, scope, focusRequest, stateByOrbital, stateView, traitLevel, initialOrbital, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus, screenSize]);
+
+  const focusedOrbital = canvas.focusedOrbital;
+  const orbitalNames = useMemo(() => (parsedSchema.orbitals ?? []).map((o) => o.name), [parsedSchema]);
 
   type AnyNode = CanvasNode;
   type AnyEdge = Edge<EventEdgeData> | Edge<BehaviorWireEdgeData>;
 
   const activeNodes: AnyNode[] = (atBehaviorLevel && composeNodes.length > 0)
     ? composeNodes
-    : level === 'overview' ? overviewNodes
-    : level === 'behavior-expanded' ? behaviorExpandedNodes
-    : level === 'trait-expanded' ? traitExpandedNodes
-    : expandedNodes;
+    : traitLevel ? traitExpandedNodes
+    : canvas.nodes;
   const activeEdges: AnyEdge[] = (atBehaviorLevel && composeEdges.length > 0)
     ? composeEdges
-    : level === 'overview' ? overviewEdges
-    : level === 'behavior-expanded' ? behaviorExpandedEdges
-    : level === 'trait-expanded' ? traitExpandedEdges
-    : expandedEdges;
+    : traitLevel ? traitExpandedEdges
+    : canvas.edges;
 
   const [nodes, setNodes, onNodesChange] = useNodesState(activeNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(activeEdges);
@@ -456,8 +435,8 @@ function FlowCanvasInner({
   const reactFlow = useReactFlow();
 
   // Persisted-position overlay. Held in a ref and read only when the node SET
-  // changes (level/schema switch), so a consumer updating its store mid-drag
-  // never clobbers the live xyflow positions.
+  // changes, so a consumer updating its store mid-drag never clobbers the
+  // live xyflow positions.
   const savedPositionsRef = React.useRef(nodePositions);
   savedPositionsRef.current = nodePositions;
   // Latest nodes via ref so onNodeDragStop reads post-drag positions without
@@ -465,12 +444,11 @@ function FlowCanvasInner({
   const nodesRef = React.useRef(nodes);
   nodesRef.current = nodes;
 
-  // Sync nodes/edges when level or schema changes. setNodes/setEdges write
+  // Sync nodes/edges when the view or schema changes. setNodes/setEdges write
   // to separate zustand stores; between them xyflow can briefly see new
-  // nodes paired with old edges (or vice versa) when switching levels.
-  // Clear edges FIRST so no edge ever references a node id that's about to
-  // disappear, then set the new nodes (overlaid with any saved positions),
-  // then the new edges.
+  // nodes paired with old edges (or vice versa). Clear edges FIRST so no
+  // edge ever references a node id that's about to disappear, then set the
+  // new nodes (overlaid with any saved positions), then the new edges.
   useEffect(() => {
     setEdges([]);
     const saved = savedPositionsRef.current;
@@ -484,183 +462,142 @@ function FlowCanvasInner({
       : activeNodes;
     setNodes(merged);
     setEdges(activeEdges);
+    const centreOn = fitFocusedRef.current && scope === 'world' ? focusedOrbital : undefined;
+    fitFocusedRef.current = false;
     requestAnimationFrame(() => {
-      reactFlow.fitView({ duration: 300, padding: 0.25 });
+      reactFlow.fitView({ duration: 300, padding: 0.25, ...(centreOn ? { nodes: [{ id: centreOn }] } : {}) });
     });
-  }, [activeNodes, activeEdges, setNodes, setEdges, reactFlow]);
+  }, [activeNodes, activeEdges, setNodes, setEdges, reactFlow, scope, focusedOrbital]);
+
 
   // Defense in depth: never render an edge whose source/target isn't in the
-  // current node set. Stops orphaned overview edges from leaking into the
-  // expanded view (their orbital-name source/target ids don't exist among
-  // the screen-name expanded nodes) and flying off-screen.
+  // current node set.
   const visibleEdges = useMemo(() => {
     const nodeIds = new Set(nodes.map(n => n.id));
     return edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
   }, [nodes, edges]);
 
-  // Double-click at overview → expand orbital
-  const handleNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
-    // Drill from behavior level → orbital overview
-    if (atBehaviorLevel && composeLevel === 'behavior') {
-      const d = node.data as BehaviorComposeNodeData;
-      // Filter schema to only this behavior's orbitals and switch to overview level
-      if (d.orbitalNames?.length) {
-        setExpandedOrbital(d.orbitalNames[0]);
-      }
-      setAtBehaviorLevel(false);
-      setLevel('overview');
-      onLevelChange?.('overview', d.behaviorName);
-      return;
-    }
-    // GAP-53: at overview, fire cosmic callback first if cosmicEntryLevel
-    // permits — and SUPPRESS the overview→expanded drill so users get one-click
-    // entry from L1. When cosmicEntryLevel is the default 'expanded', this
-    // branch is skipped and the existing drill runs.
-    if (level === 'overview') {
-      const d = node.data as PreviewNodeData;
-      const orbitalName = d.orbitalName ?? node.id;
-      if (
-        onOrbitalDoubleClick &&
-        (cosmicEntryLevel === 'overview' || cosmicEntryLevel === 'both')
-      ) {
-        onOrbitalDoubleClick(orbitalName);
-        return;
-      }
-      // Drill from orbital overview → expanded transitions (existing behavior)
-      setExpandedOrbital(orbitalName);
-      setLevel('expanded');
-      onLevelChange?.('expanded', orbitalName);
-      return;
-    }
-    // STUDIO-1: Drill from L2 expanded → L3 behavior-expanded when the
-    // double-clicked node is a grouped imported-behavior card (carries
-    // `behaviorAlias`). Runs BEFORE the cosmic drill so a click on a
-    // grouped card opens the alias's transitions instead of cosmic mode.
-    if (level === 'expanded') {
-      const d = node.data as PreviewNodeData;
-      if (d.behaviorAlias && d.orbitalName) {
-        setExpandedBehaviorAlias(d.behaviorAlias);
-        setLevel('behavior-expanded');
-        onLevelChange?.('behavior-expanded', d.orbitalName);
-        return;
-      }
-    }
-    // GAP-52: Drill from expanded → cosmic. FlowCanvas itself stays at
-    // 'expanded' (no internal level change); the consumer decides what to
-    // render in cosmic mode (typically AvlOrbitalsCosmicZoom).
-    if (level === 'expanded') {
-      const d = node.data as PreviewNodeData;
-      const orbitalName = d.orbitalName ?? node.id;
-      if (
-        orbitalName &&
-        onOrbitalDoubleClick &&
-        (cosmicEntryLevel === 'expanded' || cosmicEntryLevel === 'both')
-      ) {
-        onOrbitalDoubleClick(orbitalName);
-      }
-    }
-  }, [level, onLevelChange, onOrbitalDoubleClick, cosmicEntryLevel, atBehaviorLevel, composeLevel]);
+  const focusOrbital = useCallback((orbital: string) => {
+    fitFocusedRef.current = true;
+    setFocusRequest(orbital);
+  }, []);
 
-  // Click at expanded → show transition panel + fire callback.
-  // Click at overview → select/highlight the orbital only. Drill to L2 is
-  // the double-click gesture (see handleNodeDoubleClick). Pre-fix, a
-  // single click at L1 drilled straight into expanded mode; users couldn't
-  // select an orbital on the canvas without losing the overview, and any
-  // stray click toggled the level. Mirror standard desktop semantics:
-  // single-click selects, double-click opens.
+  const stepFocus = useCallback((step: 1 | -1) => {
+    if (orbitalNames.length === 0) return;
+    const at = focusedOrbital ? orbitalNames.indexOf(focusedOrbital) : -1;
+    focusOrbital(orbitalNames[(at + step + orbitalNames.length) % orbitalNames.length]);
+  }, [orbitalNames, focusedOrbital, focusOrbital]);
+
+  const stateOptionsCache = useMemo(() => new Map<string, CanvasStateOptions>(), [parsedSchema, stateView, mockData]);
+  const optionsOf = useCallback((orbital: string): CanvasStateOptions => {
+    const cached = stateOptionsCache.get(orbital);
+    if (cached) return cached;
+    const options = stateOptionsOf(parsedSchema, orbital, stateView, mockData);
+    stateOptionsCache.set(orbital, options);
+    return options;
+  }, [stateOptionsCache, parsedSchema, stateView, mockData]);
+  // The picked state while it still exists, else the card's INIT state (as `canvasViewGraph` resolves it).
+  const chosenStateOf = useCallback((orbital: string): string => {
+    const asked = stateByOrbital[orbital];
+    const options = optionsOf(orbital);
+    const exists = asked === LIVE_STATE || [...options.own, ...options.groups.flatMap((g) => g.options)].some((o) => o.id === asked);
+    return exists && asked !== undefined ? asked : initialStateOf(options);
+  }, [stateByOrbital, optionsOf]);
+
+  useEffect(() => {
+    if (!focusedOrbital || traitLevel) return;
+    onFocusChange?.({ orbital: focusedOrbital, scope, state: chosenStateOf(focusedOrbital) });
+  }, [focusedOrbital, scope, chosenStateOf, traitLevel, onFocusChange]);
+
+  const statePicker = useMemo<CanvasStatePicker>(() => ({
+    optionsOf,
+    chosen: chosenStateOf,
+    choose: (orbital, stateId) => {
+      setSelectedPattern(null);
+      setSelectedNode(null);
+      setStateByOrbital((prev) => ({ ...prev, [orbital]: stateId }));
+    },
+  }), [optionsOf, chosenStateOf, setSelectedPattern, setSelectedNode]);
+
+  // Double-click drills only at the behavior compose level (behavior → its orbitals).
+  const handleNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
+    if (!(atBehaviorLevel && composeLevel === 'behavior')) return;
+    const d = node.data as BehaviorComposeNodeData;
+    if (d.orbitalNames?.length) focusOrbital(d.orbitalNames[0]);
+    setAtBehaviorLevel(false);
+  }, [atBehaviorLevel, composeLevel, focusOrbital]);
+
+  // A card showing a picked state selects it (the inspector follows); a card
+  // showing the live orbital only reports the orbital. In world view a click
+  // also focuses that orbital.
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    // COSMIC-1: at `trait-expanded` the meaningful interaction is the
+    // transition-arc click inside the trait card (TraitCardSelectionContext).
+    if (traitLevel) return;
     const nodeData = node.data as PreviewNodeData;
-    if (level === 'expanded') {
+    const orbitalName = nodeData.orbitalName ?? node.id;
+    if (scope === 'world' && orbitalName !== focusedOrbital) setFocusRequest(orbitalName);
+    if (nodeData.traitName) {
       setSelectedNode(nodeData);
       onNodeClick?.({
         level: 'code',
-        orbital: nodeData.orbitalName ?? expandedOrbital ?? '',
+        orbital: orbitalName,
         trait: nodeData.traitName,
         transition: nodeData.transitionEvent,
       });
       return;
     }
-    // COSMIC-1: at `trait-expanded`, the meaningful interaction is the
-    // transition-arc click inside the trait card's embedded
-    // `AvlTraitScene` (routed through `TraitCardSelectionContext`).
-    // ReactFlow's whole-node click bubbles up alongside the SVG click —
-    // if we fell through to the overview→expanded drill below, that
-    // would switch FlowCanvas to `'expanded'` and clobber the cosmic
-    // trait circuit with the L2 transition-cards view. Stay put.
-    if (level === 'trait-expanded') {
-      return;
-    }
-    const orbitalName = nodeData.orbitalName ?? node.id;
     onNodeClick?.({ level: 'overview', orbital: orbitalName });
     onNodeSelect?.(orbitalName);
-  }, [level, expandedOrbital, onNodeClick, onNodeSelect, setSelectedNode]);
+  }, [traitLevel, scope, focusedOrbital, onNodeClick, onNodeSelect, setSelectedNode]);
 
   // Close transition panel
   const handleClosePanel = useCallback(() => {
     setSelectedNode(null);
   }, [setSelectedNode]);
 
-  // Escape key → close panel first, then go back
-  // Delete/Backspace → delete selected pattern
+  // Escape closes the panel (or returns to the behavior compose level);
+  // Delete/Backspace deletes the selected pattern.
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       if (selectedNode) {
         setSelectedNode(null);
-      } else if (level === 'behavior-expanded') {
-        // STUDIO-1: L3 → L2 (keep the orbital expansion, drop the alias)
-        setLevel('expanded');
-        setExpandedBehaviorAlias(undefined);
-        onLevelChange?.('expanded', expandedOrbital);
-      } else if (level === 'expanded') {
-        setLevel('overview');
-        setExpandedOrbital(undefined);
-        onLevelChange?.('overview');
-      } else if (level === 'overview' && composeLevel === 'behavior' && !atBehaviorLevel) {
-        // Go back to behavior compose level
+      } else if (composeLevel === 'behavior' && !atBehaviorLevel) {
         setAtBehaviorLevel(true);
-        setExpandedOrbital(undefined);
       }
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       // Don't intercept when user is typing in an input
       if (isEditableTarget(e.target)) return;
       if (selectedPattern && selectedPattern.nodeData) {
         const patternIds = selectedPattern.selection ?? (selectedPattern.patternId ? [selectedPattern.patternId] : []);
-        if (patternIds.length > 0) onPatternDelete?.({ patternIds, nodeData: selectedPattern.nodeData });
+        if (patternIds.length > 0) {
+          onPatternDelete?.({ patternIds, nodeData: selectedPattern.nodeData, ...(selectedPattern.elements ? { elements: selectedPattern.elements } : {}) });
+        }
         setSelectedPattern(null);
       }
     }
-  }, [level, onLevelChange, selectedNode, selectedPattern, onPatternDelete, atBehaviorLevel, composeLevel, expandedOrbital, setSelectedNode]);
+  }, [selectedNode, selectedPattern, onPatternDelete, atBehaviorLevel, composeLevel, setSelectedNode, setSelectedPattern]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  // Go back handler for breadcrumb
-  const handleGoBack = useCallback(() => {
-    if (selectedNode) {
-      setSelectedNode(null);
-    } else if (level === 'behavior-expanded') {
-      // STUDIO-1: L3 → L2
-      setLevel('expanded');
-      setExpandedBehaviorAlias(undefined);
-      setSelectedNode(null);
-      onLevelChange?.('expanded', expandedOrbital);
-    } else if (level === 'expanded') {
-      setLevel('overview');
-      setExpandedOrbital(undefined);
-      setSelectedNode(null);
-      onLevelChange?.('overview');
-    } else if (level === 'overview' && composeLevel === 'behavior' && !atBehaviorLevel) {
-      setAtBehaviorLevel(true);
-      setExpandedOrbital(undefined);
-      setSelectedNode(null);
+  // Tab / Shift+Tab move between orbitals while the canvas has focus; Escape
+  // with nothing selected hands focus back to the page.
+  const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
+    if (traitLevel || atBehaviorLevel || isEditableTarget(e.target)) return;
+    if (e.key === 'Tab' && !e.altKey && !e.ctrlKey && !e.metaKey && orbitalNames.length > 1) {
+      e.preventDefault();
+      stepFocus(e.shiftKey ? -1 : 1);
+    } else if (e.key === 'Escape' && !selectedNode && !selectedPattern) {
+      e.currentTarget.blur();
     }
-  }, [level, onLevelChange, selectedNode, composeLevel, atBehaviorLevel, expandedOrbital, setSelectedNode]);
+  }, [traitLevel, atBehaviorLevel, orbitalNames.length, stepFocus, selectedNode, selectedPattern]);
 
-  // Event wire drag: onConnect fires when user drags handle to handle
   const eventBus = useEventBus();
 
+  // Event wire drag: onConnect fires when user drags handle to handle
   const handleConnect = useCallback((connection: Connection) => {
     if (!connection.sourceHandle?.startsWith('event-') || !onEventWire) return;
     const eventName = connection.sourceHandle.replace('event-', '');
@@ -696,10 +633,10 @@ function FlowCanvasInner({
     });
   }, [nodes, onEventWire, eventBus]);
 
-  // Persist drag arrangement: on drop, snapshot every node's position so the
-  // consumer (builder workspace) can restore it across reloads.
+  // Persist the arrangement: the current cards' placements merged over the
+  // saved ones, so a local view (one card) never erases the others.
   const placementsOf = useCallback((list: readonly CanvasNode[]): Record<string, CanvasNodePlacement> => {
-    const positions: Record<string, CanvasNodePlacement> = {};
+    const positions: Record<string, CanvasNodePlacement> = { ...savedPositionsRef.current };
     for (const n of list) {
       const width = isPreviewCard(n) ? n.data.cardWidth : undefined;
       positions[n.id] = { x: n.position.x, y: n.position.y, ...(typeof width === 'number' ? { width } : {}) };
@@ -739,9 +676,12 @@ function FlowCanvasInner({
     },
   }), [onNodeClick]);
 
+  const showOrbitalNav = !traitLevel && !atBehaviorLevel && orbitalNames.length > 0;
+
   return (
     <ScreenSizeContext.Provider value={screenSize}>
     <CanvasToolsContext.Provider value={tools}>
+    <CanvasStatePickerContext.Provider value={traitLevel ? null : statePicker}>
     <ElementEditAccessContext.Provider value={elementAccess ?? null}>
     <PatternSelectionContext.Provider value={patternSelectionValue}>
     <TraitCardSelectionContext.Provider value={traitCardSelectionValue}>
@@ -749,7 +689,12 @@ function FlowCanvasInner({
         className={`flex h-full ${className ?? ''}`}
         style={{ width, height }}
       >
-      <Box className="relative flex-1 min-w-0 h-full">
+      <Box
+        className="relative flex-1 min-w-0 h-full outline-none"
+        tabIndex={0}
+        onKeyDown={handleCanvasKeyDown}
+        data-testid="flow-canvas"
+      >
         <ReactFlow
           nodes={nodes}
           edges={visibleEdges}
@@ -759,6 +704,7 @@ function FlowCanvasInner({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeDoubleClick={handleNodeDoubleClick}
+          zoomOnDoubleClick={false}
           onNodeClick={handleNodeClick}
           onConnect={handleConnect}
           onNodeDragStop={handleNodeDragStop}
@@ -787,61 +733,96 @@ function FlowCanvasInner({
           />
         </ReactFlow>
 
-        {/* Top bar: breadcrumb + screen size toggles */}
+        {/* Top bar: orbital focus + scope, screen size */}
         <Box
-          className="absolute top-3 left-3 right-3 flex items-center justify-between"
+          className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2"
           style={{ zIndex: 10 }}
         >
-          {/* Breadcrumb */}
-          <Box className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/80 border border-border/40 backdrop-blur-sm">
-            {level === 'expanded' && (
-              <button
-                onClick={handleGoBack}
-                className="text-muted-foreground hover:text-foreground text-sm cursor-pointer bg-transparent border-none p-0"
-                aria-label={t('canvas.goBackToOverview')}
+          {showOrbitalNav ? (
+            <Box className="flex items-center gap-2 px-2 py-1 rounded-md bg-card/80 border border-border/40 backdrop-blur-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-7 h-7 p-0 justify-center"
+                aria-label={t('canvas.previousOrbital')}
+                title={t('canvas.previousOrbital')}
+                data-testid="canvas-orbital-prev"
+                disabled={orbitalNames.length < 2}
+                onClick={() => stepFocus(-1)}
               >
-                &larr;
-              </button>
-            )}
-            <Typography variant="small" className="font-medium">
-              {level === 'overview'
-                ? t('canvas.overview')
-                : expandedOrbital ?? t('canvas.expanded')}
-            </Typography>
-            <Typography variant="small" className="text-muted-foreground">
-              {level === 'overview'
-                ? t('canvas.modulesCount', { count: nodes.length })
-                : t('canvas.screensCount', { count: nodes.length })}
-            </Typography>
-          </Box>
+                <Icon name="chevron-left" size="sm" />
+              </Button>
+              <Select
+                options={orbitalNames.map((name) => ({ value: name, label: name }))}
+                value={focusedOrbital ?? ''}
+                onValueChange={(value) => { if (typeof value === 'string') focusOrbital(value); }}
+                aria-label={t('canvas.focusedOrbital')}
+                data-testid="canvas-orbital-picker"
+                className="h-7 py-0 text-sm"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-7 h-7 p-0 justify-center"
+                aria-label={t('canvas.nextOrbital')}
+                title={t('canvas.nextOrbital')}
+                data-testid="canvas-orbital-next"
+                disabled={orbitalNames.length < 2}
+                onClick={() => stepFocus(1)}
+              >
+                <Icon name="chevron-right" size="sm" />
+              </Button>
+              <ButtonGroup variant="segmented">
+                {(['local', 'world'] as const).map((s) => (
+                  <Button
+                    key={s}
+                    variant={scope === s ? 'primary' : 'ghost'}
+                    size="sm"
+                    aria-pressed={scope === s}
+                    data-testid={`canvas-scope-${s}`}
+                    title={t(s === 'local' ? 'canvas.scopeLocalHint' : 'canvas.scopeWorldHint')}
+                    onClick={() => setScope(s)}
+                  >
+                    {t(s === 'local' ? 'canvas.scopeLocal' : 'canvas.scopeWorld')}
+                  </Button>
+                ))}
+              </ButtonGroup>
+            </Box>
+          ) : (
+            <Box className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/80 border border-border/40 backdrop-blur-sm">
+              <Typography variant="small" className="font-medium">
+                {traitLevel ? (initialOrbital ?? t('canvas.overview')) : t('canvas.overview')}
+              </Typography>
+              <Typography variant="small" className="text-muted-foreground">
+                {t('canvas.modulesCount', { count: nodes.length })}
+              </Typography>
+            </Box>
+          )}
 
           {/* Screen size toolbar */}
-          <Box className="flex items-center gap-1 px-2 py-1 rounded-md bg-card/80 border border-border/40 backdrop-blur-sm">
+          <ButtonGroup variant="segmented" className="bg-card/80 backdrop-blur-sm rounded-md">
             {screenSizeKeys.map((size) => {
               const p = SCREEN_SIZE_PRESETS[size];
-              const active = screenSize === size;
               return (
-                <button
+                <Button
                   key={size}
+                  variant={screenSize === size ? 'primary' : 'ghost'}
+                  size="sm"
                   onClick={() => {
                     pickScreenSize(size);
                     requestAnimationFrame(() => {
                       reactFlow.fitView({ duration: 300, padding: 0.25 });
                     });
                   }}
-                  className={`px-2 py-1 text-xs font-medium rounded cursor-pointer border-none transition-colors ${
-                    active
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
                   title={`${p.label} (${p.width}px)`}
                   aria-label={t('canvas.switchToView', { label: p.label })}
+                  aria-pressed={screenSize === size}
                 >
                   {p.label}
-                </button>
+                </Button>
               );
             })}
-          </Box>
+          </ButtonGroup>
         </Box>
 
       </Box>
@@ -875,6 +856,7 @@ function FlowCanvasInner({
     </TraitCardSelectionContext.Provider>
     </PatternSelectionContext.Provider>
     </ElementEditAccessContext.Provider>
+    </CanvasStatePickerContext.Provider>
     </CanvasToolsContext.Provider>
     </ScreenSizeContext.Provider>
   );

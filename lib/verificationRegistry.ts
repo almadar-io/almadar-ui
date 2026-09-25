@@ -20,7 +20,10 @@ import type {
   EffectTrace,
   EventLogEntry,
   EventPayload,
+  OrbitalEventRequest,
+  OrbitalEventResponse,
   OrbitalVerificationAPI,
+  ServerEffectResult,
   ServerResponseTrace,
   TraitStateSnapshot,
   TransitionTrace,
@@ -28,6 +31,7 @@ import type {
   VerificationSnapshot,
   VerificationSummary,
 } from '@almadar/core';
+import type { EventTransport } from '@almadar/runtime';
 
 const log = createLogger('almadar:bridge');
 
@@ -292,6 +296,57 @@ export function recordServerResponse(
   }
 
   notifyListeners();
+}
+
+/** A server response's `effectResults` as timeline traces, carrying each persist's real outcome (entity, action, resulting id, denied). */
+export function serverEffectTraces(results: readonly ServerEffectResult[] | undefined): EffectTrace[] {
+  if (!results) return [];
+  return results.map((r): EffectTrace => {
+    const resultId =
+      typeof r.data === 'object' && r.data !== null && !Array.isArray(r.data) && 'id' in r.data && typeof r.data.id === 'string'
+        ? r.data.id
+        : undefined;
+    const outcome: EffectTrace['outcome'] = r.denied ? 'denied' : r.success ? 'success' : 'failed';
+    return {
+      type: r.effect,
+      ...(r.entityType !== undefined ? { entityName: r.entityType } : {}),
+      ...(r.action === 'create' || r.action === 'update' || r.action === 'delete' || r.action === 'batch' ? { action: r.action } : {}),
+      ...(resultId !== undefined ? { resultId } : {}),
+      outcome,
+      args: [],
+      status: outcome === 'success' ? 'executed' : 'failed',
+      ...(r.error !== undefined ? { error: r.error } : {}),
+    };
+  });
+}
+
+/** Record one answered server leg on the timeline as a `server:<orbital>` trace. */
+export function recordOrbitalResponse(orbitalName: string, request: OrbitalEventRequest, response: OrbitalEventResponse): void {
+  recordServerResponse(orbitalName, request.event, {
+    success: response.success,
+    transitioned: response.transitioned,
+    emitted: response.emittedEvents.map((e) => ({ event: e.event, ...(e.payload !== undefined ? { payload: e.payload } : {}) })),
+    emittedEvents: response.emittedEvents.map((e) => e.event),
+    clientEffects: response.clientEffects?.length ?? 0,
+    dataEntities: Object.fromEntries(Object.entries(response.data ?? {}).map(([name, rows]) => [name, rows.length])),
+    ...(response.error !== undefined ? { error: response.error } : {}),
+    effectResults: serverEffectTraces(response.effectResults),
+  });
+}
+
+/** `transport` with every answered post recorded on the verification timeline; the one place the circuit client's server responses are captured. */
+export function recordingTransport(transport: EventTransport): EventTransport {
+  const subscribe = transport.subscribe?.bind(transport);
+  return {
+    register: (schema) => transport.register(schema),
+    unregister: () => transport.unregister(),
+    send: async (orbitalName, request) => {
+      const response = await transport.send(orbitalName, request);
+      recordOrbitalResponse(orbitalName, request, response);
+      return response;
+    },
+    ...(subscribe !== undefined ? { subscribe } : {}),
+  };
 }
 
 // ============================================================================

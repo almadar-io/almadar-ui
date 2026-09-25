@@ -51,7 +51,6 @@ export {
 // Content rendering
 
 // Book viewer
-export * from "./book/index";
 
 // Layout organisms
 export * from "./layout/index";
@@ -91,40 +90,6 @@ export {
   RuntimeDebugger,
   type RuntimeDebuggerProps,
 } from "./debug/index";
-
-// Marketing organisms
-export {
-  HeroOrganism,
-  type HeroOrganismProps,
-} from "../../marketing/organisms/HeroOrganism";
-export {
-  FeatureGridOrganism,
-  type FeatureGridOrganismProps,
-} from "../../marketing/organisms/FeatureGridOrganism";
-export {
-  PricingOrganism,
-  type PricingOrganismProps,
-} from "../../marketing/organisms/PricingOrganism";
-export {
-  StatsOrganism,
-  type StatsOrganismProps,
-} from "../../marketing/organisms/StatsOrganism";
-export {
-  StepFlowOrganism,
-  type StepFlowOrganismProps,
-} from "../../marketing/organisms/StepFlowOrganism";
-export {
-  ShowcaseOrganism,
-  type ShowcaseOrganismProps,
-} from "../../marketing/organisms/ShowcaseOrganism";
-export {
-  TeamOrganism,
-  type TeamOrganismProps,
-} from "../../marketing/organisms/TeamOrganism";
-export {
-  CaseStudyOrganism,
-  type CaseStudyOrganismProps,
-} from "../../marketing/organisms/CaseStudyOrganism";
 
 // Generative-UI primitives (math/code/lesson)
 export {

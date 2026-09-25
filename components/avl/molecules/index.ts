@@ -32,7 +32,7 @@ export { AvlBindingEdge } from './AvlBindingEdge';
 
 // V3 Revised: UI Projection components
 export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry, type ScreenSize, SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
-export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../lib/avl-preview-converter';
+export { schemaToOverviewGraph, stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, type CanvasStateView, type CanvasStateOption, type CanvasStateGroup, type CanvasStateOptions, type CanvasViewOptions } from '../lib/avl-preview-converter';
 export { OrbPreviewNode, ScreenSizeContext } from './OrbPreviewNode';
 export { EventFlowEdge } from './EventFlowEdge';
 

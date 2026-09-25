@@ -14,8 +14,8 @@
  * @packageDocumentation
  */
 import type { TransitionObserver } from '@almadar/runtime';
-import type { EffectTrace, SExpr } from '@almadar/core';
-import { recordTransition } from './verificationRegistry';
+import type { EffectTrace, OrbitalEventResponse, SExpr } from '@almadar/core';
+import { recordServerResponse, recordTransition } from './verificationRegistry';
 
 /** The shape `StateMachineManager` passes to `TransitionObserver.onTransition`
  *  (`@almadar/runtime`'s `types.ts`), spelled out explicitly here so this
@@ -69,4 +69,39 @@ export function createCircuitVerificationObserver(): TransitionObserver {
       });
     },
   };
+}
+
+/** What one client-kernel dispatch came back with: its response, or the
+ *  error it threw before producing one. */
+export type DispatchVerdict = { response: OrbitalEventResponse } | { error: Error | string };
+
+/**
+ * Record the runtime's own verdict for one dispatch on the verification
+ * timeline (the `server:<Orbital>` entry the verifier matches by event), so a
+ * rejected or throwing dispatch is visible to the walk — a self-loop that
+ * throws still leaves its trait in `to`.
+ */
+export function recordDispatchVerdict(orbitalName: string, event: string, verdict: DispatchVerdict): void {
+  if ('error' in verdict) {
+    recordServerResponse(orbitalName, event, {
+      success: false,
+      clientEffects: 0,
+      dataEntities: {},
+      emittedEvents: [],
+      error: verdict.error instanceof Error ? `${verdict.error.name}: ${verdict.error.message}` : verdict.error,
+    });
+    return;
+  }
+  const { response } = verdict;
+  const dataEntities: Record<string, number> = {};
+  for (const [entity, rows] of Object.entries(response.data ?? {})) dataEntities[entity] = rows.length;
+  recordServerResponse(orbitalName, event, {
+    success: response.success,
+    transitioned: response.transitioned,
+    clientEffects: response.clientEffects?.length ?? 0,
+    dataEntities,
+    emittedEvents: response.emittedEvents.map((e) => e.event),
+    emitted: response.emittedEvents.map((e) => (e.payload !== undefined ? { event: e.event, payload: e.payload } : { event: e.event })),
+    ...(response.error !== undefined ? { error: response.error } : {}),
+  });
 }

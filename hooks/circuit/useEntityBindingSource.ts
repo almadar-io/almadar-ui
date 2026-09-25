@@ -29,14 +29,35 @@ export function useEntityBindingSource(store: CircuitStore, traitIndex: TraitInd
   // result actually changed reference.
   useSyncExternalStore(store.subscribe, store.getVersion);
 
-  return useMemo<EntityBindingSource>(() => ({
-    getEntitySnapshot: (traitName) => {
-      const entry = traitIndex.byName.get(traitName);
-      const frameKey = entry?.frameKey ?? traitName;
-      return store.frames.get(frameKey) ?? EMPTY_ENTITY;
-    },
-    getConfig: (traitName) => traitIndex.byName.get(traitName)?.config,
-    getState: (traitName) => store.manager.getState(traitName)?.currentState ?? '',
-    subscribe: (_traitName, callback) => store.subscribe(callback),
-  }), [store, traitIndex]);
+  return useMemo<EntityBindingSource>(() => {
+    // Effect runners write the live frame in place, so the frame's own
+    // identity never changes; the snapshot is a shallow copy re-minted only
+    // when some field differs — a new value exactly when the entity changed.
+    const snapshots = new Map<string, EntityRow>();
+    return {
+      getEntitySnapshot: (traitName) => {
+        const entry = traitIndex.byName.get(traitName);
+        const frameKey = entry?.frameKey ?? traitName;
+        const frame = store.frames.get(frameKey);
+        if (frame === undefined) return EMPTY_ENTITY;
+        const previous = snapshots.get(frameKey);
+        if (previous !== undefined && sameFields(previous, frame)) return previous;
+        const next = { ...frame };
+        snapshots.set(frameKey, next);
+        return next;
+      },
+      getConfig: (traitName) => traitIndex.byName.get(traitName)?.config,
+      getState: (traitName) => store.manager.getState(traitName)?.currentState ?? '',
+      subscribe: (_traitName, callback) => store.subscribe(callback),
+    };
+  }, [store, traitIndex]);
+}
+
+function sameFields(a: EntityRow, b: EntityRow): boolean {
+  const keys = Object.keys(b);
+  if (Object.keys(a).length !== keys.length) return false;
+  for (const key of keys) {
+    if (!Object.is(a[key], b[key])) return false;
+  }
+  return true;
 }

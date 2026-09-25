@@ -2,123 +2,148 @@
 /**
  * AnimatedCounter Molecule Component
  *
- * Counts from 0 to a target value on scroll-into-view using IntersectionObserver.
- * Replaces static stat numbers with animated versions for visual impact.
+ * Counts up to a target value once it scrolls into view, then eases between
+ * later value changes. Optional label below the number.
  */
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 
 export interface AnimatedCounterProps {
-  /** Target value to count to. Strings allow display formats (e.g. "500+", "99.9%", "3x"); numbers are coerced. */
+  /** Target value. Strings may carry display affixes (e.g. "500+", "99.9%", "$1.2M"). */
   value: string | number;
   /** Label displayed below the number */
-  label: string;
+  label?: string;
   /** Animation duration in ms */
   duration?: number;
+  /** Text displayed before the number */
+  prefix?: string;
+  /** Text displayed after the number */
+  suffix?: string;
+  /** "number" (locale grouping), "currency" ($x.xx), "percent" (rounded %). Unset keeps the value's own decimals. */
+  format?: string;
   /** Additional class names */
   className?: string;
 }
 
-/**
- * Extracts the numeric portion and suffix from a value string.
- * e.g. "500+" -> { num: 500, prefix: "", suffix: "+" }
- * e.g. "99.9%" -> { num: 99.9, prefix: "", suffix: "%" }
- * e.g. "3x" -> { num: 3, prefix: "", suffix: "x" }
- * e.g. "$1.2M" -> { num: 1.2, prefix: "$", suffix: "M" }
- */
-function parseValue(value: string | number): { num: number; prefix: string; suffix: string; decimals: number } {
-  if (value === '' || value == null) return { num: 0, prefix: '', suffix: '', decimals: 0 };
-  const match = String(value).match(/^([^0-9]*)([0-9]+(?:\.[0-9]+)?)(.*)$/);
-  if (!match) {
-    return { num: 0, prefix: '', suffix: String(value), decimals: 0 };
+interface ParsedValue {
+  num: number | null;
+  prefix: string;
+  suffix: string;
+  decimals: number;
+}
+
+function parseValue(value: string | number): ParsedValue {
+  if (typeof value === 'number') {
+    const decimals = Number.isInteger(value) ? 0 : String(value).split('.')[1]?.length ?? 0;
+    return { num: value, prefix: '', suffix: '', decimals };
   }
+  const match = String(value ?? '').match(/^([^0-9-]*)(-?[0-9]+(?:\.[0-9]+)?)(.*)$/);
+  if (!match) return { num: null, prefix: '', suffix: String(value ?? ''), decimals: 0 };
   const numStr = match[2];
-  const decimalIdx = numStr.indexOf('.');
-  const decimals = decimalIdx >= 0 ? numStr.length - decimalIdx - 1 : 0;
+  const dot = numStr.indexOf('.');
   return {
     prefix: match[1],
     num: parseFloat(numStr),
     suffix: match[3],
-    decimals,
+    decimals: dot >= 0 ? numStr.length - dot - 1 : 0,
   };
+}
+
+function formatNumber(value: number, format: string | undefined, decimals: number): string {
+  switch (format) {
+    case 'currency':
+      return `$${value.toFixed(2)}`;
+    case 'percent':
+      return `${Math.round(value)}%`;
+    case 'number':
+      return Math.round(value).toLocaleString();
+    default:
+      return value.toFixed(decimals);
+  }
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
 export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   value,
   label,
   duration = 1500,
+  prefix,
+  suffix,
+  format,
   className,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const [displayValue, setDisplayValue] = useState('0');
-  const [hasAnimated, setHasAnimated] = useState(false);
-
-  const animate = useCallback(() => {
-    const { num, prefix, suffix, decimals } = parseValue(value);
-    if (num === 0) {
-      setDisplayValue(String(value));
-      return;
-    }
-
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setDisplayValue(String(value));
-      return;
-    }
-
-    const startTime = performance.now();
-
-    const tick = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // ease-out cubic
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const current = eased * num;
-      setDisplayValue(`${prefix}${current.toFixed(decimals)}${suffix}`);
-
-      if (progress < 1) {
-        requestAnimationFrame(tick);
-      } else {
-        setDisplayValue(String(value));
-      }
-    };
-
-    requestAnimationFrame(tick);
-  }, [value, duration]);
+  const parsed = parseValue(value);
+  const target = parsed.num ?? 0;
+  const [visible, setVisible] = useState(() => typeof IntersectionObserver === 'undefined');
+  const [display, setDisplay] = useState(() => (typeof IntersectionObserver === 'undefined' ? target : 0));
+  const shownRef = useRef(display);
+  const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (hasAnimated) return;
+    if (visible) return;
     const el = ref.current;
-    if (!el) return;
-
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setHasAnimated(true);
-          animate();
+        if (entries[0]?.isIntersecting) {
+          setVisible(true);
           observer.disconnect();
         }
       },
       { threshold: 0.3 },
     );
-
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasAnimated, animate]);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const from = shownRef.current;
+    if (from === target || prefersReducedMotion() || typeof requestAnimationFrame === 'undefined') {
+      shownRef.current = target;
+      setDisplay(target);
+      return;
+    }
+    const start = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = from + (target - from) * eased;
+      shownRef.current = current;
+      setDisplay(current);
+      if (progress < 1) frameRef.current = requestAnimationFrame(tick);
+    };
+    frameRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    };
+  }, [visible, target, duration]);
+
+  const text =
+    parsed.num === null
+      ? parsed.suffix
+      : `${prefix ?? ''}${parsed.prefix}${formatNumber(display, format, parsed.decimals)}${parsed.suffix}${suffix ?? ''}`;
 
   return (
-    <Box ref={ref} className={cn('flex flex-col items-center gap-1 p-4', className)}>
-      <Typography
-        variant="h2"
-        className="text-primary font-bold tabular-nums"
-      >
-        {hasAnimated ? displayValue : '0'}
+    <Box ref={ref} className={cn('flex flex-col items-center gap-1', className)}>
+      <Typography variant="h2" className="text-primary font-bold tabular-nums">
+        {text}
       </Typography>
-      <Typography variant="body2" color="muted" className="text-center">
-        {label}
-      </Typography>
+      {label ? (
+        <Typography variant="body2" color="muted" className="text-center">
+          {label}
+        </Typography>
+      ) : null}
     </Box>
   );
 };

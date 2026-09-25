@@ -16,7 +16,8 @@ import React, { useMemo, useState, useCallback, useContext, createContext, useRe
 import { Handle, NodeResizeControl, Position, ResizeControlVariant, useReactFlow, type NodeProps } from '@xyflow/react';
 import type { OrbitalSchema, OrbitalDefinition, Trait, Transition, Effect, EntityData, EntityRow, EventPayloadField, TraitEventContract, EventPayload, EventPayloadValue, PageRef } from '@almadar/core';
 import { isInlineTrait, isPageReference } from '@almadar/core';
-import type { EditFocus, EntityRef } from '@almadar/core';
+import type { EditFocus, EntityRef, TraitRef } from '@almadar/core';
+import { collectEmbeddedTraits } from '../../../lib/embedded-traits';
 
 import { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../lib/canvas-tools';
 
@@ -29,6 +30,8 @@ import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { Button } from '../../core/atoms/Button';
 import { Icon } from '../../core/atoms/Icon';
+import { Select } from '../../core/atoms/Select';
+import { LIVE_STATE, type CanvasStateOptions } from '../lib/avl-preview-converter';
 import { resolvePatternConfig, patternNodeAt, parseClipboardPatterns, PATTERN_CLIPBOARD_TYPE } from '../lib/resolve-pattern-config';
 import { isEditableTarget } from '../../../lib/keyMapEvent';
 import { useInlineTextEdit } from '../hooks/useInlineTextEdit';
@@ -47,10 +50,10 @@ import {
   type CanvasContainerNode,
 } from '../hooks/useCanvasDnd';
 import { formatPayloadTooltip } from '../lib/wire-validation';
-import { deriveEditFocusFromElement, withNodeTransition } from '../lib/derive-edit-focus';
+import { deriveEditFocusFromElement, traitOfElement, withNodeTransition } from '../lib/derive-edit-focus';
 import { ElementEditAccessContext, propAccessAt } from '../lib/element-edit-access';
 import { computeInsertionIndex, type DOMRectLike, type InsertionAxis } from '../lib/compute-insertion-index';
-import { resolveDirectChildren } from '../lib/resolve-direct-children';
+import { directPatternChildren, resolveDirectChildren } from '../lib/resolve-direct-children';
 import { createLogger } from '@almadar/logger';
 import { type SpacingStepPx, positionOf, withPosition } from '../../../lib/design-classes';
 
@@ -90,6 +93,8 @@ export interface SelectedPattern {
   offsetInParent?: OffsetInParent;
   /** The element's own address — the trait that drew it (an embedded trait's, not the card's), transition, slot, path. */
   focus?: EditFocus;
+  /** Every selected element's own address (multi-select), the primary last — `selection` repeats paths across embedded traits. */
+  elements?: EditFocus[];
 }
 
 export const PatternSelectionContext = createContext<{
@@ -99,6 +104,15 @@ export const PatternSelectionContext = createContext<{
 
 /** The canvas editing tools the host turned on (a persona's shell manifest declares them); all by default. */
 export const CanvasToolsContext = createContext<readonly CanvasTool[]>(CANVAS_TOOLS);
+
+/** The state dropdown each orbital card shows in its header (FlowCanvas provides it). */
+export interface CanvasStatePicker {
+  optionsOf: (orbital: string) => CanvasStateOptions;
+  chosen: (orbital: string) => string;
+  choose: (orbital: string, stateId: string) => void;
+}
+
+export const CanvasStatePickerContext = createContext<CanvasStatePicker | null>(null);
 
 /**
  * `useCanvasDraggable`'s `'pattern-instance'` payload data (see
@@ -315,6 +329,53 @@ function findEmitContract(trait: Trait, event: string): TraitEventContract | und
   return trait.emits?.find((e) => e.event === event);
 }
 
+/** Paths restart at each embedded trait's root: an element is its path within the trait that drew it. */
+function elementIn(container: Element | null | undefined, path: string, trait: string | undefined): HTMLElement | null {
+  const candidates = Array.from(container?.querySelectorAll(`[data-pattern-path="${CSS.escape(path)}"]`) ?? []);
+  const el = candidates.find((c) => trait === undefined || traitOfElement(c) === trait);
+  return el instanceof HTMLElement ? el : null;
+}
+
+function sameElement(a: EditFocus, b: EditFocus): boolean {
+  return a.trait === b.trait && a.path === b.path;
+}
+
+type DropContainer = { orbital: string; trait: string; transition: string; slot: string; path: string };
+
+/** The address a structure edit carries, when the element has a complete one. */
+function elementAddressOf(focus: EditFocus): DropContainer | null {
+  const { orbital, trait, transition, slot, path } = focus;
+  return trait && transition !== undefined && slot && path ? { orbital, trait, transition, slot, path } : null;
+}
+
+/**
+ * The topmost rendered element under a point inside `content`: the canvas's
+ * own chrome drawn over the render (selection frame, handles, badges) is
+ * looked through, so a drop onto a selected element resolves into the render
+ * beneath it, not the card's dead space.
+ */
+function renderedElementAt(content: HTMLElement | null, point: { x: number; y: number }): HTMLElement | null {
+  const stack = document.elementsFromPoint(point.x, point.y);
+  const rendered = stack.find((el): el is HTMLElement => el instanceof HTMLElement && content?.contains(el) === true && el.closest('[data-pattern-path]') !== null);
+  if (rendered) return rendered;
+  const top = stack[0];
+  return top instanceof HTMLElement ? top : null;
+}
+
+/** `traitName` and every trait it embeds, transitively (the runtime's own `@trait.X` scan). */
+function embeddedClosure(traits: ReadonlyArray<TraitRef>, traitName: string): Set<string> {
+  const byName = new Map(traits.flatMap((t): Array<[string, TraitRef]> => (typeof t !== 'string' && 'name' in t && t.name ? [[t.name, t]] : [])));
+  const kept = new Set([traitName]);
+  let frontier = [traitName];
+  while (frontier.length > 0) {
+    const scan = frontier.flatMap((n) => { const t = byName.get(n); return t ? [t] : []; });
+    const refs = collectEmbeddedTraits({ name: 'closure', orbitals: [{ name: 'closure', entity: { name: 'closure', fields: [] }, traits: scan, pages: [] }] });
+    frontier = [...refs].filter((n) => byName.has(n) && !kept.has(n));
+    frontier.forEach((n) => kept.add(n));
+  }
+  return kept;
+}
+
 function buildTransitionSchema(
   fullSchema: OrbitalSchema,
   orbitalName: string,
@@ -421,8 +482,12 @@ function buildTransitionSchema(
     if ('ref' in t) return t.ref === traitName;
     return false;
   });
+  // Keep the traits the card embeds (`@trait.X`, transitively): a real
+  // screen is mostly embedded behaviors, whose frames render from their own
+  // traits. Everything else on the orbital is dropped.
+  const kept = targetTrait ? embeddedClosure(traits, traitName) : new Set<string>();
   if (targetTrait) {
-    clonedOrbital.traits = [targetTrait];
+    clonedOrbital.traits = traits.filter((t) => typeof t !== 'string' && 'name' in t && t.name !== undefined && kept.has(t.name));
   }
 
   // Filter pages to reference ONLY the target trait. Without this the
@@ -454,11 +519,8 @@ function buildTransitionSchema(
         const inline = page;
         if (!Array.isArray(inline.traits)) return inline;
         const filteredTraits = inline.traits
-          .filter((t) => t.ref === traitName)
-          .map((t) => ({
-            ...t,
-            linkedEntity: t.linkedEntity ?? linkedEntityForTrait,
-          }));
+          .filter((t) => kept.has(t.ref))
+          .map((t) => (t.ref === traitName ? { ...t, linkedEntity: t.linkedEntity ?? linkedEntityForTrait } : t));
         return { ...inline, traits: filteredTraits };
       })
       .filter((page: PageRef): boolean => {
@@ -554,6 +616,8 @@ function childPosition(path: string): { parentPath: string; index: number } | nu
 interface InsertionTarget {
   parentPath: string;
   index: number;
+  /** The container element's own address (the trait that drew it — an embedded behavior's, not the card's). */
+  container: DropContainer | null;
   containerBox: DOMRectLike;
   childRects: DOMRectLike[];
   axis: InsertionAxis;
@@ -653,6 +717,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const tools = useContext(CanvasToolsContext);
   // Multi-select: every selected path (primary last), the others' outlines, and a marquee in progress.
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
+  const [selectedFocuses, setSelectedFocuses] = useState<EditFocus[]>([]);
   const [extraRects, setExtraRects] = useState<RectLike[]>([]);
   const [marquee, setMarquee] = useState<OverlayRect | null>(null);
   const [guides, setGuides] = useState<GuideLine[]>([]);
@@ -683,31 +748,20 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const layerColor = data.layer ? LAYER_COLORS[data.layer] : undefined;
 
   const isExpanded = Boolean(data.traitName);
-  // STUDIO-1: a grouped imported-behavior card at L2 carries an alias.
-  // Display the alias as the primary label so the user can tell e.g.
-  // `Stats` apart from `Graphs` instead of seeing seven peers all labelled
-  // `INIT`. Double-clicking such a card drills into L3 to see that
-  // behavior's transitions individually.
-  const isImportedGroup = Boolean(data.behaviorAlias);
   const status = data.status ?? 'idle';
   const isRunning = status === 'running';
   const isSuccess = status === 'success';
   const isError = status === 'error';
-  const isScreen = data.cardLabel === 'screen';
-  const label = isImportedGroup
-    ? (data.behaviorAlias ?? '')
-    : isScreen
-      ? `${data.toState ?? ''}`
-      : isExpanded
-        ? `${data.transitionEvent ?? ''}`
-        : data.orbitalName;
-  const sublabel = isImportedGroup
-    ? `${data.behaviorName ?? ''}${typeof data.transitionCount === 'number' && data.transitionCount > 1 ? ` \u00b7 ${t('orbPreview.screensCount', { count: data.transitionCount })}` : ''}`
-    : isScreen
-      ? (data.enteredBy ?? []).join(' \u00b7 ')
-      : isExpanded
-        ? `${data.fromState ?? ''} \u2192 ${data.toState ?? ''}`
-        : data.entityName ?? '';
+  const statePicker = useContext(CanvasStatePickerContext);
+  const stateOptions = useMemo(() => {
+    if (!statePicker || data.kind === 'trait-card') return null;
+    const { own, groups } = statePicker.optionsOf(data.orbitalName);
+    return {
+      options: [{ value: LIVE_STATE, label: t('canvas.liveState') }, ...own.map((o) => ({ value: o.id, label: o.label }))],
+      groups: groups.map((g) => ({ label: `${g.alias} · ${g.behaviorName}`, options: g.options.map((o) => ({ value: o.id, label: o.label })) })),
+    };
+  }, [statePicker, data.orbitalName, data.kind, t]);
+  const sublabel = data.entityName ?? '';
 
   const orbitalSchema = useMemo(() => {
     const fullSchema = data._fullSchema as OrbitalSchema | undefined;
@@ -731,7 +785,13 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   // Click delegation: find the closest [data-pattern] ancestor of the click target
   // Select one rendered pattern element (or clear the selection with null) —
   // shared by clicks and keyboard navigation.
-  const selectPatternElement = useCallback((patternEl: HTMLElement | null, paths?: string[]) => {
+  const focusOfElement = useCallback((el: HTMLElement): EditFocus | null => {
+    const derived = deriveEditFocusFromElement(el);
+    return derived ? withNodeTransition(derived, data) : null;
+  }, [data]);
+
+  // `selection`: every selected element, the primary last (multi-select).
+  const selectPatternElement = useCallback((patternEl: HTMLElement | null, selection?: HTMLElement[]) => {
     const container = contentRef.current;
 
     // Clear previous selection highlights
@@ -751,18 +811,19 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       const primaryPath = patternEl.getAttribute('data-pattern-path') ?? 'root';
       // The element's own address: the trait that drew it (an embedded
       // trait's, not the card's), its transition, slot and path.
-      const derived = deriveEditFocusFromElement(patternEl);
-      const focus = derived ? withNodeTransition(derived, data) : null;
+      const focus = focusOfElement(patternEl);
       setSelectedAddress({
         patternId: primaryPath,
         patternType: patternEl.getAttribute('data-pattern') ?? 'unknown',
         focus,
       });
-      const selection = paths ?? [primaryPath];
-      setSelectedPaths(selection);
-      setExtraRects(selection.filter((p) => p !== primaryPath).flatMap((p) => {
-        const el = container.querySelector(`[data-pattern-path="${CSS.escape(p)}"]`);
-        const r = el ? rectRelativeTo(el, container, zoom) : null;
+      const selectedEls = selection ?? [patternEl];
+      const paths = selectedEls.map((el) => el.getAttribute('data-pattern-path') ?? 'root');
+      const elements = selectedEls.flatMap((el) => { const f = focusOfElement(el); return f ? [f] : []; });
+      setSelectedPaths(paths);
+      setSelectedFocuses(elements);
+      setExtraRects(selectedEls.filter((el) => el !== patternEl).flatMap((el) => {
+        const r = rectRelativeTo(el, container, zoom);
         return r ? [r] : [];
       }));
 
@@ -778,7 +839,8 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         nodeData: data,
         rect: rect ?? undefined,
         offsetInParent: offsetInParentOf(patternEl, rect, container, zoom),
-        selection,
+        selection: paths,
+        elements,
         ...(focus ? { focus } : {}),
       });
 
@@ -801,29 +863,30 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       setSelectedScale(undefined);
       setSelectedAddress(null);
       setSelectedPaths([]);
+      setSelectedFocuses([]);
       setExtraRects([]);
       select(null);
       eventBus.emit('UI:ELEMENT_SELECTED', { focus: null });
     }
-  }, [data, select, eventBus, reactFlow]);
+  }, [focusOfElement, select, eventBus, reactFlow]);
 
   // Shift-click (with the multi-select tool) adds an element to the selection,
   // or takes a selected one out; the last one picked is the primary.
   const pickElement = useCallback((el: HTMLElement | null, additive: boolean) => {
-    const path = el?.getAttribute('data-pattern-path');
-    if (!el || !path || !additive || !hasCanvasTool(tools, 'multiSelect') || selectedPaths.length === 0) {
+    const picked = el ? focusOfElement(el) : null;
+    if (!el || !picked || !additive || !hasCanvasTool(tools, 'multiSelect') || selectedFocuses.length === 0) {
       selectPatternElement(el);
       return;
     }
-    if (selectedPaths.includes(path)) {
-      const rest = selectedPaths.filter((p) => p !== path);
-      const primaryPath = rest[rest.length - 1];
-      const primaryEl = primaryPath ? contentRef.current?.querySelector(`[data-pattern-path="${CSS.escape(primaryPath)}"]`) : null;
-      selectPatternElement(primaryEl instanceof HTMLElement ? primaryEl : null, rest);
+    const container = contentRef.current;
+    const current = selectedFocuses.flatMap((f) => { const e = f.path ? elementIn(container, f.path, f.trait) : null; return e ? [e] : []; });
+    if (selectedFocuses.some((f) => sameElement(f, picked))) {
+      const rest = current.filter((e) => { const f = focusOfElement(e); return !f || !sameElement(f, picked); });
+      selectPatternElement(rest[rest.length - 1] ?? null, rest.length > 0 ? rest : undefined);
       return;
     }
-    selectPatternElement(el, [...selectedPaths, path]);
-  }, [tools, selectedPaths, selectPatternElement]);
+    selectPatternElement(el, [...current, el]);
+  }, [tools, selectedFocuses, selectPatternElement, focusOfElement]);
 
   const handleContentClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent React Flow from interpreting as node click
@@ -831,10 +894,12 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     pickElement(target.closest('[data-pattern]') as HTMLElement | null, e.shiftKey);
   }, [pickElement]);
 
-  const patternElementAt = useCallback((path: string): HTMLElement | null => {
-    const el = contentRef.current?.querySelector(`[data-pattern-path="${CSS.escape(path)}"]`);
-    return el instanceof HTMLElement ? el : null;
-  }, []);
+  // Paths navigate within the trait that drew the selected element.
+  const selectedTrait = selectedAddress?.focus?.trait;
+  const patternElementAt = useCallback(
+    (path: string): HTMLElement | null => elementIn(contentRef.current, path, selectedTrait),
+    [selectedTrait],
+  );
 
   // Paused: take the click in the capture phase so it selects and never
   // reaches the rendered control (whose handler would dispatch an event).
@@ -888,9 +953,10 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         return;
       }
       const container = contentRef.current;
-      const paths = selectedPaths.length > 0 ? selectedPaths : path ? [path] : [];
-      const boxes = paths.flatMap((p) => {
-        const el = container?.querySelector(`[data-pattern-path="${CSS.escape(p)}"]`);
+      const targets = selectedFocuses.length > 0 ? selectedFocuses : selectedAddress?.focus ? [selectedAddress.focus] : [];
+      const paths = targets.flatMap((f) => (f.path ? [f.path] : []));
+      const boxes = targets.flatMap((f) => {
+        const el = f.path ? elementIn(container, f.path, f.trait) : null;
         const box = el ? absUnion(el) : null;
         return box ? [box] : [];
       });
@@ -916,28 +982,44 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       if (child) selectPatternElement(child);
       return;
     }
+    // The selected elements' own addresses. Any drawn by an embedded behavior
+    // makes the edit a structure edit at those addresses — a path on the card
+    // can't name an embedded behavior's place in its container.
+    const focuses = selectedFocuses.length > 0 ? selectedFocuses : selectedAddress?.focus ? [selectedAddress.focus] : [];
+    const addresses = focuses.map(elementAddressOf);
+    const elements = focuses.length > 0 && addresses.every((a): a is NonNullable<typeof a> => a !== null) ? addresses : null;
+    const embedded = elements !== null && elements.some((a) => a.trait !== data.traitName);
     const duplicate = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd';
     const wrap = e.shiftKey && !e.metaKey && !e.ctrlKey && e.key.toLowerCase() === 'a';
     if (duplicate || wrap) {
       handled();
+      if (embedded && elements) {
+        eventBus.emit('UI:STRUCTURE_EDIT', { op: duplicate ? 'duplicate' : 'wrap', elements });
+        return;
+      }
       if (!path || !position || !selectedAddress || !data.traitName || !data.transitionEvent) return;
       const loc = { orbitalName: data.orbitalName, traitName: data.traitName, transitionEvent: data.transitionEvent };
       const paths = selectedPaths.length > 0 ? selectedPaths : [path];
+      const withElements = elements ? { elements } : {};
       if (duplicate) {
-        eventBus.emit('UI:PATTERN_DUPLICATE', { paths, loc });
+        eventBus.emit('UI:PATTERN_DUPLICATE', { paths, loc, ...withElements });
         if (paths.length > 1) {
           selectPatternElement(null);
           return;
         }
         const copy = `${position.parentPath}.children.${position.index + 1}`;
-        setSelectedAddress({ patternId: copy, patternType: selectedAddress.patternType, focus: selectedAddress.focus && { ...selectedAddress.focus, path: copy } });
+        const copyFocus = selectedAddress.focus && { ...selectedAddress.focus, path: copy };
+        setSelectedAddress({ patternId: copy, patternType: selectedAddress.patternType, focus: copyFocus });
         setSelectedPaths([copy]);
+        setSelectedFocuses(copyFocus ? [copyFocus] : []);
       } else {
-        eventBus.emit('UI:PATTERN_WRAP', { paths, loc });
+        eventBus.emit('UI:PATTERN_WRAP', { paths, loc, ...withElements });
         // The wrapper takes the first wrapped element's place.
         const first = [...paths].sort((a, b) => (childPosition(a)?.index ?? 0) - (childPosition(b)?.index ?? 0))[0];
-        setSelectedAddress({ patternId: first, patternType: 'stack', focus: selectedAddress.focus && { ...selectedAddress.focus, path: first, patternType: 'stack' } });
+        const wrapperFocus = selectedAddress.focus && { ...selectedAddress.focus, path: first, patternType: 'stack' };
+        setSelectedAddress({ patternId: first, patternType: 'stack', focus: wrapperFocus });
         setSelectedPaths([first]);
+        setSelectedFocuses(wrapperFocus ? [wrapperFocus] : []);
         setExtraRects([]);
       }
       return;
@@ -945,7 +1027,13 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     const step = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : 0;
     // Every other key is swallowed so it can't activate the paused preview.
     handled();
-    if (step === 0 || !path || !position || !selectedAddress || !data.traitName || !data.transitionEvent) return;
+    if (step === 0) return;
+    if (embedded && elements) {
+      // Its place in the container is the host's to find; the bounds too.
+      if (elements.length === 1) eventBus.emit('UI:STRUCTURE_EDIT', { op: 'move', elements, by: step });
+      return;
+    }
+    if (!path || !position || !selectedAddress || !data.traitName || !data.transitionEvent) return;
     const target = position.index + step;
     if (target < 0 || !patternElementAt(`${position.parentPath}.children.${target}`)) return;
     eventBus.emit('UI:PATTERN_MOVE', {
@@ -954,12 +1042,15 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       toParentPath: position.parentPath,
       // PATTERN_MOVE inserts before `toIndex` in the pre-move list.
       toIndex: step > 0 ? target + 1 : target,
+      ...(elements ? { elements } : {}),
     });
     const moved = `${position.parentPath}.children.${target}`;
-    setSelectedAddress({ patternId: moved, patternType: selectedAddress.patternType, focus: selectedAddress.focus && { ...selectedAddress.focus, path: moved } });
+    const movedFocus = selectedAddress.focus && { ...selectedAddress.focus, path: moved };
+    setSelectedAddress({ patternId: moved, patternType: selectedAddress.patternType, focus: movedFocus });
     setSelectedPaths([moved]);
+    setSelectedFocuses(movedFocus ? [movedFocus] : []);
     setExtraRects([]);
-  }, [selectedAddress, selectedPaths, eventBus, patternElementAt, selectPatternElement, data.orbitalName, data.traitName, data.transitionEvent, tools, reactFlow]);
+  }, [selectedAddress, selectedPaths, selectedFocuses, eventBus, patternElementAt, selectPatternElement, data.orbitalName, data.traitName, data.transitionEvent, tools, reactFlow]);
 
   // ⌘C / ⌘X / ⌘V on a paused card: the browser's own clipboard events (no
   // permission prompt, works across cards and tabs). Nodes are copied as
@@ -1001,9 +1092,10 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     if (!hasCanvasTool(tools, 'clipboard') || isEditableTarget(e.target)) return;
     const paths = copySelection(e);
     if (paths.length === 0) return;
-    eventBus.emit('UI:DELETE_PATTERN', { patternIds: paths });
+    const elements = selectedFocuses.flatMap((f) => { const a = f.path && paths.includes(f.path) ? elementAddressOf(f) : null; return a ? [a] : []; });
+    eventBus.emit('UI:DELETE_PATTERN', { patternIds: paths, ...(elements.length === paths.length ? { elements } : {}) });
     selectPatternElement(null);
-  }, [tools, copySelection, eventBus, selectPatternElement]);
+  }, [tools, copySelection, selectedFocuses, eventBus, selectPatternElement]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     if (!hasCanvasTool(tools, 'clipboard') || isEditableTarget(e.target)) return;
@@ -1085,7 +1177,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     if (!address) return;
     const frame = requestAnimationFrame(() => {
       const container = contentRef.current;
-      const el = container?.querySelector(`[data-pattern-path="${CSS.escape(address.patternId)}"]`);
+      const el = elementIn(container, address.patternId, address.focus?.trait);
       if (container && el) {
         const zoom = reactFlow.getViewport().zoom;
         setSelectedRect(rectRelativeTo(el, container, zoom));
@@ -1172,7 +1264,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   // resolvePath callback — same logic the legacy `onDrop` ran inline.
   const resolveInsertion = useCallback(
     (cursor: { x: number; y: number }): InsertionTarget | null => {
-      const hit = document.elementFromPoint(cursor.x, cursor.y) as HTMLElement | null;
+      const hit = renderedElementAt(contentRef.current, cursor);
       if (!hit) return null;
       let el: HTMLElement | null = hit;
       while (el && el.dataset.acceptsChildren !== 'true') {
@@ -1193,17 +1285,9 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         const rootEl = el.querySelector('[data-pattern-path="root"]');
         if (rootEl instanceof HTMLElement) el = rootEl;
       }
-      // Direct children by PATH, not DOM adjacency (see resolveDirectChildren
-      // doc) — `el` is itself `display:contents`, so its real layout child
-      // sits between it and the pattern wrappers and `:scope >` matches
-      // nothing.
-      const directChildren = resolveDirectChildren(
-        containerPath,
-        Array.from(el.querySelectorAll('[data-pattern-path]')).map((child) => ({
-          path: (child as HTMLElement).dataset.patternPath ?? '',
-          ref: child,
-        })),
-      );
+      // Direct children in the pattern tree — its own nodes and the frames of
+      // behaviors embedded in its children (whose paths restart at `root`).
+      const directChildren = directPatternChildren(el);
       // Each child is a UISlotRenderer `slot-content contents` wrapper — its
       // own getBoundingClientRect() is 0x0 (display:contents) — union its
       // rendered descendants' boxes instead (see absUnion above), falling
@@ -1231,14 +1315,16 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             const raw = el.getBoundingClientRect();
             return { top: raw.top, left: raw.left, right: raw.right, bottom: raw.bottom, width: raw.width, height: raw.height };
           })();
-      return { parentPath: containerPath, index: insertIndex, containerBox, childRects, axis };
+      const focus = focusOfElement(el);
+      const container = focus ? elementAddressOf(focus) : null;
+      return { parentPath: containerPath, index: insertIndex, container, containerBox, childRects, axis };
     },
-    [],
+    [focusOfElement],
   );
   const resolveL2Path = useCallback(
-    (cursor: { x: number; y: number }): { parentPath: string; index: number } | null => {
+    (cursor: { x: number; y: number }): { parentPath: string; index: number; container?: DropContainer } | null => {
       const hit = resolveInsertion(cursor);
-      return hit ? { parentPath: hit.parentPath, index: hit.index } : null;
+      return hit ? { parentPath: hit.parentPath, index: hit.index, ...(hit.container ? { container: hit.container } : {}) } : null;
     },
     [resolveInsertion],
   );
@@ -1285,9 +1371,10 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     [data.orbitalName, data.traitName, data.transitionEvent, resolveL2Path],
   );
   const { setNodeRef: l2SetNodeRef, isOver: l2IsOver } = useCanvasDroppable({
-    id: `orb-l2-${data.orbitalName}-${data.traitName ?? ''}-${data.transitionEvent ?? ''}`,
+    // Keyed by the card, not its trait/transition: several screen cards can share those.
+    id: `orb-l2-${props.id}`,
     target: l2Target,
-    accepts: ['pattern', 'pattern-instance'],
+    accepts: ['pattern', 'pattern-instance', 'behavior'],
     disabled: !isExpanded,
   });
 
@@ -1308,7 +1395,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     setNodeRef: reorderSetNodeRef,
     listeners: reorderListeners,
   } = useCanvasDraggable({
-    id: `orb-l2-reorder-${data.orbitalName}-${data.traitName ?? ''}-${data.transitionEvent ?? ''}`,
+    id: `orb-l2-reorder-${props.id}`,
     payload: { kind: 'pattern-instance', data: reorderDataRef.current },
     disabled: !isExpanded,
   });
@@ -1350,9 +1437,9 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         .filter((i) => rects[i] !== null)
         .map((i) => children[i]);
       suppressClickRef.current = true;
-      const paths = hits.map((el) => el.getAttribute('data-pattern-path') ?? '').filter(Boolean);
-      const primary = hits[hits.length - 1];
-      selectPatternElement(primary instanceof HTMLElement ? primary : null, paths.length > 0 ? paths : undefined);
+      const selected = hits.filter((el): el is HTMLElement => el instanceof HTMLElement && el.hasAttribute('data-pattern-path'));
+      const primary = selected[selected.length - 1];
+      selectPatternElement(primary ?? null, selected.length > 0 ? selected : undefined);
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -1451,14 +1538,14 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       : isSuccess
         ? 'var(--color-success)'
         : null;
-  const borderWidth = isRunning || isError || isSuccess ? '2px' : '1.5px';
-  const borderColor = statusBorder ?? (hovered ? 'var(--color-primary)' : colors.border);
+  const borderWidth = isRunning || isError || isSuccess || data.focused ? '2px' : '1.5px';
+  const borderColor = statusBorder ?? (hovered || data.focused ? 'var(--color-primary)' : colors.border);
 
   // L1 outer drop zone — fires when a palette-pattern is dropped on the
   // orbital's frame outside the inner render-ui preview. Emits the default
   // UI:PATTERN_DROP with a partial containerNode (orbital only) so the
   // page-level handler can resolve to the orbital's first render-ui
-  // transition and drill into L2.
+  // transition.
   const l1Target = useMemo<CanvasDropTarget>(
     () => ({ level: 'l1', containerNode: { orbitalName: data.orbitalName } }),
     [data.orbitalName],
@@ -1596,7 +1683,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         />
         <Box className="flex flex-col min-w-0 flex-1">
           <Typography variant="small" className="font-semibold truncate leading-tight">
-            {label}
+            {data.orbitalName}
           </Typography>
           {sublabel && (
             <Typography variant="small" className="text-muted-foreground truncate text-xs leading-tight">
@@ -1604,6 +1691,19 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             </Typography>
           )}
         </Box>
+        {stateOptions && statePicker && (
+          <Box className="nodrag shrink-0 max-w-[55%]" onClick={(e) => e.stopPropagation()}>
+            <Select
+              options={stateOptions.options}
+              groups={stateOptions.groups}
+              value={statePicker.chosen(data.orbitalName)}
+              onValueChange={(value) => { if (typeof value === 'string') statePicker.choose(data.orbitalName, value); }}
+              aria-label={t('canvas.stateOf', { orbital: data.orbitalName })}
+              data-testid={`canvas-state-${data.orbitalName}`}
+              className="h-7 py-0 text-xs"
+            />
+          </Box>
+        )}
         <Button
           variant="ghost"
           size="sm"

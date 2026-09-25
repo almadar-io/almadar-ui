@@ -47,6 +47,34 @@ describe('resolveRenderBindingMarkers', () => {
     expect(out.content).toBe('Round 3 of 9');
   });
 
+  it('resolves a new container that reuses already-resolved markers (same entity)', () => {
+    // A re-flush rebuilds the containers but the reconciler keeps the SAME
+    // marker objects; the entity did not change, so every marker is a cache
+    // hit. The walk used to report that as "unchanged" and hand back the NEW
+    // container with its raw markers (`t.slice is not a function` in
+    // DialogueBubble on ui-visual-novel-board's typewriter tick).
+    const entity = { text: 'hello', n: 2 };
+    const text = marker('@entity.text');
+    const n = marker('@entity.n');
+    const first = resolveRenderBindingMarkers({ children: [{ type: 'dialogue-bubble', text, revealedChars: n, position: 'bottom' }] }, 'VN', entity, undefined, 'playing');
+    const second = resolveRenderBindingMarkers({ children: [{ type: 'dialogue-bubble', text, revealedChars: n, position: 'top' }] }, 'VN', entity, undefined, 'playing');
+    for (const out of [first, second]) {
+      if (typeof out === 'string') throw new Error(`expected object props, got ${typeof out}`);
+      const child = (out.children as ReadonlyArray<Record<string, SlotPropValue>>)[0];
+      expect(child.text).toBe('hello');
+      expect(child.revealedChars).toBe(2);
+    }
+  });
+
+  it('keeps the resolved container identity across renders with unchanged inputs', () => {
+    const entity = { text: 'hello' };
+    const props: SlotProps = { children: [{ type: 'dialogue-bubble', text: marker('@entity.text') }] };
+    const a = resolveRenderBindingMarkers(props, 'VN', entity, undefined, 'playing');
+    const b = resolveRenderBindingMarkers(props, 'VN', entity, undefined, 'playing');
+    expect(b).toBe(a);
+    expect(a).not.toBe(props);
+  });
+
   it('returns the original props reference when no markers are present', () => {
     const props: SlotProps = { content: 'static', items: [1, 2, 3] };
     expect(resolveRenderBindingMarkers(props, 'Hero', { hp: 7 }, undefined, '')).toBe(props);
@@ -96,7 +124,7 @@ describe('resolveRenderBindingMarkers', () => {
     expect(children[2].content).toBe('b');
   });
 
-  it('memoizes per (marker, entity, config, state): repeat inputs preserve the original container identity', () => {
+  it('memoizes per (marker, entity, config, state): repeat inputs return the same resolved container', () => {
     const m = marker('@entity.hp');
     const props: SlotProps = { value: m, other: 'static' };
     const entity = { hp: 7 };
@@ -104,10 +132,10 @@ describe('resolveRenderBindingMarkers', () => {
     if (typeof first === 'string') throw new Error(`expected object props, got ${typeof first}`);
     expect(first.value).toBe(7);
     expect(first).not.toBe(props);
-    // Cache hit reports unchanged, so the walk returns the ORIGINAL props
-    // reference — non-entity re-renders keep a stable identity downstream.
+    // Repeat inputs return the SAME resolved object — a stable identity for
+    // downstream memos, never the raw props with their markers.
     const second = resolveRenderBindingMarkers(props, 'Hero', entity, undefined, 'playing');
-    expect(second).toBe(props);
+    expect(second).toBe(first);
   });
 
   it('a new entity snapshot re-resolves (cache keyed on snapshot identity)', () => {

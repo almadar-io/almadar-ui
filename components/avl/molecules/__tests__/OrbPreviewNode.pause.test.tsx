@@ -7,8 +7,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ReactFlowProvider, type NodeProps } from '@xyflow/react';
-import type { OrbitalSchema } from '@almadar/core';
-import { OrbPreviewNode, PatternSelectionContext, CanvasToolsContext, type SelectedPattern } from '../OrbPreviewNode';
+import type { OrbitalSchema, Trait } from '@almadar/core';
+import { OrbPreviewNode, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, type CanvasStatePicker, type SelectedPattern } from '../OrbPreviewNode';
+import { stateOptionsOf, LIVE_STATE } from '../../lib/avl-preview-converter';
 import { CANVAS_TOOLS, type CanvasTool } from '../../lib/canvas-tools';
 import { CanvasDndProvider } from '../../hooks/useCanvasDnd';
 import { EventBusProvider } from '../../../../providers/EventBusProvider';
@@ -145,20 +146,43 @@ describe('OrbPreviewNode — pause / play', () => {
   });
 });
 
-describe('OrbPreviewNode — card labels', () => {
-  it('a designer screen card is labelled by its state, with the events that show it', () => {
-    renderCard({
-      traitName: 'Clicker', transitionEvent: 'GO', fromState: 'idle', toState: 'done',
-      cardLabel: 'screen', enteredBy: ['GO', 'REDO'],
-    });
-    expect(screen.getByText('done')).toBeTruthy();
-    expect(screen.getByText('GO · REDO')).toBeTruthy();
+describe('OrbPreviewNode — header state picker', () => {
+  function renderWithPicker(chosen: string) {
+    const choose = vi.fn();
+    const picker: CanvasStatePicker = {
+      optionsOf: (orbital) => stateOptionsOf(schema(), orbital, 'screens'),
+      chosen: () => chosen,
+      choose,
+    };
+    render(
+      <ReactFlowProvider>
+        <CanvasDndProvider>
+          <CanvasStatePickerContext.Provider value={picker}>
+            <OrbPreviewNode {...nodeProps({ orbitalName: 'Counter', patterns: [], eventSources: [], _fullSchema: schema() })} />
+          </CanvasStatePickerContext.Provider>
+        </CanvasDndProvider>
+      </ReactFlowProvider>,
+    );
+    return { choose, select: screen.getByTestId('canvas-state-Counter') as HTMLSelectElement };
+  }
+
+  it('a card is labelled by its orbital and lists the live orbital plus its render-ui states', () => {
+    const { select } = renderWithPicker(LIVE_STATE);
+    expect(screen.getByText('Counter')).toBeTruthy();
+    expect(Array.from(select.options).map((o) => o.value)).toEqual([LIVE_STATE, ...stateOptionsOf(schema(), 'Counter', 'screens').own.map((o) => o.id)]);
+    expect(select.value).toBe(LIVE_STATE);
   });
 
-  it('a transition card keeps the event label and from → to', () => {
-    renderCard({ traitName: 'Clicker', transitionEvent: 'GO', fromState: 'idle', toState: 'done' });
-    expect(screen.getByText('GO')).toBeTruthy();
-    expect(screen.getByText('idle → done')).toBeTruthy();
+  it('picking a state asks the canvas to show it', () => {
+    const { select, choose } = renderWithPicker(LIVE_STATE);
+    const first = stateOptionsOf(schema(), 'Counter', 'screens').own[0];
+    fireEvent.change(select, { target: { value: first.id } });
+    expect(choose).toHaveBeenCalledWith('Counter', first.id);
+  });
+
+  it('without a canvas picker there is no dropdown', () => {
+    renderCard();
+    expect(screen.queryByTestId('canvas-state-Counter')).toBeNull();
   });
 });
 
@@ -335,8 +359,8 @@ describe('OrbPreviewNode — insertion line while dragging', () => {
       </EventBusProvider>,
     );
     const go = await screen.findByText('Go');
-    const originalElementFromPoint = document.elementFromPoint;
-    document.elementFromPoint = () => go;
+    const originalElementsFromPoint = document.elementsFromPoint;
+    document.elementsFromPoint = () => [go];
     try {
       act(() => emit('UI:DRAG_START', { kind: 'pattern' }));
       fireEvent.pointerMove(go, { clientX: 50, clientY: 20, pointerId: 1 });
@@ -344,7 +368,7 @@ describe('OrbPreviewNode — insertion line while dragging', () => {
       act(() => emit('UI:DRAG_END', {}));
       expect(screen.queryByTestId('orb-preview-insertion-line')).toBeNull();
     } finally {
-      document.elementFromPoint = originalElementFromPoint;
+      document.elementsFromPoint = originalElementsFromPoint;
     }
   });
 });
@@ -454,11 +478,11 @@ describe('OrbPreviewNode — keyboard (Figma selection + reorder)', () => {
     fireEvent.click(one);
     fireEvent.click(screen.getByText('Two'), { shiftKey: true });
     fireEvent.keyDown(one, { key: 'd', metaKey: true });
-    expect(duplicated).toHaveBeenLastCalledWith({ paths: ['root.children.0', 'root.children.1'], loc: LOC });
+    expect(duplicated).toHaveBeenLastCalledWith(expect.objectContaining({ paths: ['root.children.0', 'root.children.1'], loc: LOC }));
     fireEvent.click(one);
     fireEvent.click(screen.getByText('Two'), { shiftKey: true });
     fireEvent.keyDown(one, { key: 'A', shiftKey: true });
-    expect(wrapped).toHaveBeenLastCalledWith({ paths: ['root.children.0', 'root.children.1'], loc: LOC });
+    expect(wrapped).toHaveBeenLastCalledWith(expect.objectContaining({ paths: ['root.children.0', 'root.children.1'], loc: LOC }));
   });
 
   it('without the design-handles tool the selection is outlined but has no handles', async () => {
@@ -529,7 +553,13 @@ describe('OrbPreviewNode — keyboard (Figma selection + reorder)', () => {
     const board = clipboard();
     fireEvent.cut(one, { clipboardData: board.clipboardData });
     expect(JSON.parse(board.store[MIME])).toHaveLength(2);
-    expect(deleted).toHaveBeenCalledWith({ patternIds: ['root.children.0', 'root.children.1'] });
+    expect(deleted).toHaveBeenCalledWith({
+      patternIds: ['root.children.0', 'root.children.1'],
+      elements: [
+        { orbital: 'Counter', trait: 'Clicker', transition: 'INIT', slot: 'main', path: 'root.children.0' },
+        { orbital: 'Counter', trait: 'Clicker', transition: 'INIT', slot: 'main', path: 'root.children.1' },
+      ],
+    });
   });
 
   // The browser only fires copy/cut/paste if the shortcut's keydown isn't cancelled.
@@ -588,7 +618,7 @@ describe('OrbPreviewNode — keyboard (Figma selection + reorder)', () => {
     fireEvent.keyDown(two, { key: 'd', metaKey: true });
     fireEvent.keyDown(two, { key: 'd', ctrlKey: true });
     expect(duplicated).toHaveBeenCalledTimes(2);
-    expect(duplicated).toHaveBeenCalledWith({ paths: ['root.children.1'], loc: LOC });
+    expect(duplicated).toHaveBeenCalledWith(expect.objectContaining({ paths: ['root.children.1'], loc: LOC }));
   });
 
   it('⇧A wraps the selection in an auto-layout stack', async () => {
@@ -596,7 +626,7 @@ describe('OrbPreviewNode — keyboard (Figma selection + reorder)', () => {
     const one = await screen.findByText('One');
     fireEvent.click(one);
     fireEvent.keyDown(one, { key: 'A', shiftKey: true });
-    expect(wrapped).toHaveBeenCalledWith({ paths: ['root.children.0'], loc: LOC });
+    expect(wrapped).toHaveBeenCalledWith(expect.objectContaining({ paths: ['root.children.0'], loc: LOC }));
   });
 
   it('plain d and plain a do nothing; nothing selected does nothing', async () => {
@@ -671,5 +701,115 @@ describe('OrbPreviewNode — keyboard (Figma selection + reorder)', () => {
     fireEvent.keyDown(one, { key: 'Escape' });
     fireEvent.keyDown(one, { key: 'Escape' });
     expect(screen.queryByTestId('orb-preview-selection')).toBeNull();
+  });
+});
+
+/** A card whose stack embeds two behaviors' frames (`@trait.X` in its children) — how real apps are built. */
+function embeddedSchema(): OrbitalSchema {
+  const base = schema();
+  const orbital = base.orbitals[0];
+  const button = (name: string, label: string): Trait => ({
+    name, scope: 'instance' as const, linkedEntity: 'Item',
+    stateMachine: { states: [{ name: 'idle', isInitial: true }], events: [], transitions: [{ from: 'idle', to: 'idle', event: 'INIT', effects: [['render-ui', 'main', { type: 'button', label, action: 'GO' }]] }] },
+  });
+  const card = orbital.traits[0];
+  if (typeof card === 'string' || !('stateMachine' in card) || !card.stateMachine) throw new Error('fixture');
+  card.stateMachine.transitions[0].effects = [['render-ui', 'main', { type: 'stack', children: [{ type: 'typography', content: 'Own text' }, '@trait.SaveButton', '@trait.HelpButton'] }]];
+  orbital.traits.push(button('SaveButton', 'Save'), button('HelpButton', 'Help'));
+  orbital.pages = [{ name: 'Main', path: '/main', traits: [{ ref: 'Clicker' }, { ref: 'SaveButton' }, { ref: 'HelpButton' }] }];
+  return base;
+}
+
+describe('OrbPreviewNode — elements drawn by embedded behaviors', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      { top: 10, left: 10, right: 90, bottom: 40, width: 80, height: 30, x: 10, y: 10, toJSON: () => ({}) },
+    );
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  function mountEmbedded() {
+    const structure = vi.fn();
+    const duplicated = vi.fn();
+    const moved = vi.fn();
+    const selected = vi.fn<(p: SelectedPattern | null) => void>();
+    const data: PreviewNodeData = {
+      orbitalName: 'Counter', traitName: 'Clicker', transitionEvent: 'INIT', fromState: 'idle', toState: 'idle',
+      patterns: [], eventSources: [], _fullSchema: embeddedSchema(),
+    };
+    render(
+      <EventBusProvider debug={false}>
+        <BusSpy event="UI:STRUCTURE_EDIT" onEvent={structure} />
+        <BusSpy event="UI:PATTERN_DUPLICATE" onEvent={duplicated} />
+        <BusSpy event="UI:PATTERN_MOVE" onEvent={moved} />
+        <ReactFlowProvider>
+          <CanvasDndProvider>
+            <PatternSelectionContext.Provider value={{ selected: null, select: selected }}>
+              <OrbPreviewNode {...nodeProps(data)} />
+            </PatternSelectionContext.Provider>
+          </CanvasDndProvider>
+        </ReactFlowProvider>
+      </EventBusProvider>,
+    );
+    return { structure, duplicated, moved, selected };
+  }
+
+  const help = { orbital: 'Counter', trait: 'HelpButton', transition: 'INIT', slot: 'main', path: 'root' };
+  const save = { ...help, trait: 'SaveButton' };
+
+  it("a click selects the element at its own address (the embedded behavior's trait, not the card's)", async () => {
+    const { selected } = mountEmbedded();
+    fireEvent.click(await screen.findByText('Help'));
+    expect(selected).toHaveBeenLastCalledWith(expect.objectContaining({ focus: expect.objectContaining({ trait: 'HelpButton', path: 'root', slot: 'main' }) }));
+  });
+
+  it('two embedded behaviors (both at their own root) are two selected elements', async () => {
+    const { selected } = mountEmbedded();
+    fireEvent.click(await screen.findByText('Save'));
+    fireEvent.click(screen.getByText('Help'), { shiftKey: true });
+    const last = selected.mock.calls[selected.mock.calls.length - 1][0];
+    expect(last?.elements?.map((e) => e.trait)).toEqual(['SaveButton', 'HelpButton']);
+    fireEvent.click(screen.getByText('Save'), { shiftKey: true });
+    const after = selected.mock.calls[selected.mock.calls.length - 1][0];
+    expect(after?.elements?.map((e) => e.trait)).toEqual(['HelpButton']);
+  });
+
+  it('⌘D on an embedded behavior is a structure edit at its address, not a path edit on the card', async () => {
+    const { structure, duplicated } = mountEmbedded();
+    const button = await screen.findByText('Help');
+    fireEvent.click(button);
+    fireEvent.keyDown(button, { key: 'd', metaKey: true });
+    expect(structure).toHaveBeenCalledWith({ op: 'duplicate', elements: [help] });
+    expect(duplicated).not.toHaveBeenCalled();
+  });
+
+  it('the arrow keys move an embedded behavior among its container by one place', async () => {
+    const { structure, moved } = mountEmbedded();
+    const button = await screen.findByText('Help');
+    fireEvent.click(button);
+    fireEvent.keyDown(button, { key: 'ArrowUp' });
+    expect(structure).toHaveBeenCalledWith({ op: 'move', elements: [help], by: -1 });
+    expect(moved).not.toHaveBeenCalled();
+  });
+
+  it('⇧A on two embedded siblings wraps them, as one structure edit', async () => {
+    const { structure } = mountEmbedded();
+    fireEvent.click(await screen.findByText('Save'));
+    const button = screen.getByText('Help');
+    fireEvent.click(button, { shiftKey: true });
+    fireEvent.keyDown(button, { key: 'A', shiftKey: true });
+    expect(structure).toHaveBeenCalledWith({ op: 'wrap', elements: [save, help] });
+  });
+
+  it("the card's own node keeps the path edit, and says which element it is", async () => {
+    const { duplicated, structure } = mountEmbedded();
+    const own = await screen.findByText('Own text');
+    fireEvent.click(own);
+    fireEvent.keyDown(own, { key: 'd', metaKey: true });
+    expect(duplicated).toHaveBeenCalledWith(expect.objectContaining({
+      paths: ['root.children.0'],
+      elements: [{ orbital: 'Counter', trait: 'Clicker', transition: 'INIT', slot: 'main', path: 'root.children.0' }],
+    }));
+    expect(structure).not.toHaveBeenCalled();
   });
 });
