@@ -401,6 +401,12 @@ module.exports = {
   'border-border/60',
   'hover:bg-accent/40',
   'w-[243px]',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-09-25)
+  'aspect-[21/9]',
+  'aspect-[3/2]',
+  'aspect-[4/3]',
+  'max-w-[55%]',
 ],
   theme: {
     fontFamily: {
