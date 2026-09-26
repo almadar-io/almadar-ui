@@ -43,7 +43,7 @@ import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasTools
 import { CANVAS_TOOLS, type CanvasTool } from '../lib/canvas-tools';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
 import { EventFlowEdge } from '../molecules/EventFlowEdge';
-import { canvasViewGraph, stateOptionsOf, initialStateOf, orbitalToTraitGraph, LIVE_STATE, type CanvasStateOptions } from '../lib/avl-preview-converter';
+import { canvasViewGraph, stateOptionsOf, initialStateOf, orbitalToTraitGraph, LIVE_STATE, canvasViewChanged, type CanvasStateOptions, type CanvasViewport } from '../lib/avl-preview-converter';
 import type { ViewLevel, PreviewNodeData, EventEdgeData, ScreenSize } from '../types/avl-preview-types';
 import { SCREEN_SIZE_PRESETS, detectScreenSize } from '../types/avl-preview-types';
 import { OrbInspector } from './OrbInspector';
@@ -312,6 +312,7 @@ function FlowCanvasInner({
   // A focus change in world view centres on the focused card instead of re-fitting every card.
   const fitFocusedRef = React.useRef(false);
   const pendingFitRef = React.useRef<{ centreOn: string | undefined } | null>(null);
+  const fittedViewRef = React.useRef<CanvasViewport | null>(null);
   useEffect(() => {
     if (focusedOrbitalProp === undefined) return;
     fitFocusedRef.current = true;
@@ -438,11 +439,16 @@ function FlowCanvasInner({
       : activeNodes;
     setNodes(merged);
     setEdges(activeEdges);
-    // Fit once the new cards are measured — fitting before that leaves the
-    // viewport where it was (the card off-centre).
-    pendingFitRef.current = { centreOn: fitFocusedRef.current && scope === 'world' ? focusedOrbital : undefined };
+    // Fit once the new cards are measured (fitting before that leaves the card
+    // off-centre) — but only when the view changed. A workspace update keeps
+    // the user's zoom and pan.
+    const viewport: CanvasViewport = { scope, focusedOrbital, screenSize };
+    if (canvasViewChanged(fittedViewRef.current, viewport)) {
+      pendingFitRef.current = { centreOn: fitFocusedRef.current && scope === 'world' ? focusedOrbital : undefined };
+      fittedViewRef.current = viewport;
+    }
     fitFocusedRef.current = false;
-  }, [activeNodes, activeEdges, setNodes, setEdges, scope, focusedOrbital]);
+  }, [activeNodes, activeEdges, setNodes, setEdges, scope, focusedOrbital, screenSize]);
 
   const nodesInitialized = useNodesInitialized();
   useEffect(() => {
@@ -667,14 +673,8 @@ function FlowCanvasInner({
     <PatternSelectionContext.Provider value={patternSelectionValue}>
     <TraitCardSelectionContext.Provider value={traitCardSelectionValue}>
       <Box
-        className={`flex h-full ${className ?? ''}`}
+        className={`flex flex-col h-full ${className ?? ''}`}
         style={{ width, height }}
-      >
-      <Box
-        className="relative flex-1 min-w-0 h-full outline-none flex flex-col"
-        tabIndex={0}
-        onKeyDown={handleCanvasKeyDown}
-        data-testid="flow-canvas"
       >
         {/* Top bar: orbital focus + scope, screen size — above the canvas, never over its cards */}
         <Box
@@ -771,6 +771,15 @@ function FlowCanvasInner({
             </ButtonGroup>
           </Box>
         </Box>
+      {/* The canvas and the inline inspector share this row; the toolbar above
+          keeps its width when the inspector opens, so the cards never shift. */}
+      <Box className="flex flex-1 min-h-0">
+      <Box
+        className="relative flex-1 min-w-0 h-full outline-none flex flex-col"
+        tabIndex={0}
+        onKeyDown={handleCanvasKeyDown}
+        data-testid="flow-canvas"
+      >
         <Box className="relative flex-1 min-h-0">
         <ReactFlow
           nodes={nodes}
@@ -840,6 +849,7 @@ function FlowCanvasInner({
           </Box>
         </>
       )}
+      </Box>
       </Box>
     </TraitCardSelectionContext.Provider>
     </PatternSelectionContext.Provider>

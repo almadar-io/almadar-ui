@@ -49,7 +49,7 @@ const gapStyles: Record<SimpleGridGap, string> = {
 const colStyles = {
   1: 'grid-cols-1',
   2: 'grid-cols-1 sm:grid-cols-2 @max-sm:!grid-cols-1',
-  3: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 @max-md:!grid-cols-2 @max-sm:!grid-cols-1',
+  3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 @max-lg:!grid-cols-2 @max-sm:!grid-cols-1',
   4: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 @max-lg:!grid-cols-3 @max-md:!grid-cols-2 @max-sm:!grid-cols-1',
   5: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 @max-xl:!grid-cols-4 @max-lg:!grid-cols-3 @max-md:!grid-cols-2 @max-sm:!grid-cols-1',
   6: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 @max-xl:!grid-cols-4 @max-lg:!grid-cols-3 @max-md:!grid-cols-2 @max-sm:!grid-cols-1',

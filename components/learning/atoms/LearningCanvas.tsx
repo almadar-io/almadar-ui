@@ -609,8 +609,9 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return -1;
     const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    // The canvas may be displayed smaller than its logical size on narrow screens.
+    const x = (clientX - rect.left) * (rect.width > 0 ? width / rect.width : 1);
+    const y = (clientY - rect.top) * (rect.height > 0 ? height / rect.height : 1);
     // Search in reverse so top-most shape wins.
     for (let i = shapes.length - 1; i >= 0; i--) {
       const b = shapeBounds(shapes[i]);
@@ -619,7 +620,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
       }
     }
     return -1;
-  }, [shapes]);
+  }, [shapes, width, height]);
 
   const derivedShapes = useMemo(() => {
     if (!traces?.length && !readouts?.length) return shapes;
@@ -638,8 +639,6 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
     canvas.width = Math.max(1, Math.floor(width * dpr));
     canvas.height = Math.max(1, Math.floor(height * dpr));
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.clearRect(0, 0, width, height);
@@ -737,7 +736,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     <canvas
       ref={canvasRef}
       className={cn('block touch-none rounded border border-border', className)}
-      style={{ width, height }}
+      style={{ width, maxWidth: '100%', height: 'auto', aspectRatio: `${width} / ${height}` }}
       onClick={handleClick}
       onPointerMove={handlePointerMove}
     />

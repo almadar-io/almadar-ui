@@ -48,4 +48,18 @@ describe('Header navigation items with an href', () => {
     expect(onClick).toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
   });
+
+  it('an item with children opens a dropdown and its child navigates', () => {
+    const navigate = mount([{ label: 'Products', href: '/products', children: [{ label: 'Studio', href: '/studio' }] }]);
+    const trigger = screen.getByRole('button', { name: /products/i });
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole('menuitem', { name: /studio/i }));
+    expect(navigate).toHaveBeenCalledWith('/studio');
+  });
+
+  it('control: an item without children has no dropdown', () => {
+    mount([{ label: 'Pricing', href: '/pricing' }]);
+    expect(screen.getByRole('button', { name: /pricing/i }).getAttribute('aria-expanded')).toBeNull();
+  });
 });

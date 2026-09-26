@@ -1737,12 +1737,13 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       {/* OrbPreview - always interactive, click to select patterns. The
           ref is set by `setContentRef`, which fans the node to
           contentRef (read by handleContentClick), @dnd-kit's L2 droppable,
-          AND the L2 reorder draggable. `nodrag` already keeps React Flow's
-          own node-drag out of this whole region, so the reorder pointerdown
-          listener can't fight it. */}
+          AND the L2 reorder draggable. `nodrag` keeps React Flow's own
+          node-drag out of this whole region and `nopan` keeps its pane pan
+          out (a card that isn't draggable pans the pane otherwise), so the
+          reorder / marquee / drop gestures always reach the preview. */}
       <Box
         ref={setContentRef}
-        className={`orb-preview-live nodrag relative outline-none${dragActive || reorderDragActive || l2IsOver ? ' drag-active' : ''}`}
+        className={`orb-preview-live nodrag nopan relative outline-none${dragActive || reorderDragActive || l2IsOver ? ' drag-active' : ''}`}
         data-playing={playing}
         onClick={playing ? handleContentClick : undefined}
         onClickCapture={playing ? undefined : handlePausedClickCapture}

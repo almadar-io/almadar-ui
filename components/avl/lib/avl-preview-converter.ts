@@ -663,12 +663,33 @@ export function stateOptionsOf(
   return { own, groups };
 }
 
-/** The state a card opens on: its INIT render, else its first state, else the live orbital. */
+/**
+ * The state a card opens on: an INIT render (own, then an imported behavior's)
+ * — the screen the app actually opens on — else its first state, else the
+ * live orbital.
+ */
 export function initialStateOf(options: CanvasStateOptions): string {
   const isInit = (o: CanvasStateOption) => o.data.transitionEvent === 'INIT' || (o.data.enteredBy ?? []).includes('INIT');
   const groupOptions = options.groups.flatMap((g) => g.options);
-  const pick = options.own.find(isInit) ?? options.own[0] ?? groupOptions.find(isInit) ?? groupOptions[0];
+  const pick = options.own.find(isInit) ?? groupOptions.find(isInit) ?? options.own[0] ?? groupOptions[0];
   return pick?.id ?? LIVE_STATE;
+}
+
+/** What the viewport frames: fitting follows this, never the schema's content. */
+export interface CanvasViewport {
+  scope: 'local' | 'world';
+  focusedOrbital: string | undefined;
+  screenSize: ScreenSize;
+}
+
+/** True when the framed view changed (or there was none yet) — a schema update alone is not a change. */
+export function canvasViewChanged(previous: CanvasViewport | null, next: CanvasViewport): boolean {
+  return (
+    previous === null ||
+    previous.scope !== next.scope ||
+    previous.focusedOrbital !== next.focusedOrbital ||
+    previous.screenSize !== next.screenSize
+  );
 }
 
 export interface CanvasViewOptions {

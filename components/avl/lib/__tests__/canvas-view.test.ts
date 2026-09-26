@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { OrbitalSchema } from '@almadar/core';
-import { stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE } from '../avl-preview-converter';
+import { stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, canvasViewChanged } from '../avl-preview-converter';
 
 const list = { type: 'data-list', entity: 'Task' };
 const schema = {
@@ -147,11 +147,25 @@ describe('initialStateOf', () => {
     expect(initialStateOf(stateOptionsOf(schema, 'Tasks', 'transitions'))).toBe('Browse:INIT:browsing:browsing');
   });
 
-  it('without an own INIT render, the first own state, then an imported behavior\'s INIT', () => {
+  // An orbital whose own states are only overlays (loading / open / error)
+  // opens on its imported app layout's INIT screen — never an overlay's
+  // intermediate state (std-notes opened on "loading").
+  it('without an own INIT render, an imported behavior\'s INIT beats a non-INIT own state', () => {
     const own = stateOptionsOf(schema, 'Tasks', 'transitions');
     const noInit = { ...own, own: own.own.filter((o) => o.data.transitionEvent !== 'INIT') };
-    expect(initialStateOf(noInit)).toBe(noInit.own[0].id);
-    expect(initialStateOf({ own: [], groups: own.groups })).toBe(own.groups[0].options[0].id);
+    const groupInit = own.groups.flatMap((g) => g.options).find((o) => o.data.transitionEvent === 'INIT');
+    expect(groupInit).toBeDefined();
+    expect(noInit.own.length).toBeGreaterThan(0);
+    expect(initialStateOf(noInit)).toBe(groupInit?.id);
+  });
+
+  it('control: with no INIT anywhere, the first own state, then the first imported state', () => {
+    const own = stateOptionsOf(schema, 'Tasks', 'transitions');
+    const notInit = (o: { data: { transitionEvent?: string } }) => o.data.transitionEvent !== 'INIT';
+    const groups = own.groups.map((g) => ({ ...g, options: g.options.filter(notInit) })).filter((g) => g.options.length > 0);
+    const ownOnly = own.own.filter(notInit);
+    expect(initialStateOf({ own: ownOnly, groups })).toBe(ownOnly[0].id);
+    expect(initialStateOf({ own: [], groups })).toBe(groups[0].options[0].id);
   });
 
   it('with no render-ui states at all, the live orbital', () => {
@@ -226,5 +240,30 @@ describe('canvasViewGraph', () => {
   it('an empty schema has no cards and no focus', () => {
     const g = canvasViewGraph({ name: 'empty', version: '1.0.0', orbitals: [] } as OrbitalSchema, { ...base, scope: 'local' });
     expect(g).toEqual({ nodes: [], edges: [], focusedOrbital: undefined, worldPositions: {} });
+  });
+});
+
+// The viewport is re-fitted only when the VIEW changes — first load, Focus/All,
+// another orbital, another screen size — never when the workspace updates the
+// schema under an unchanged view (that used to zoom out and lose the user's place).
+describe('canvasViewChanged', () => {
+  const view = { scope: 'local' as const, focusedOrbital: 'Contacts', screenSize: 'laptop' as const };
+
+  it('the first view is a change (fit on load)', () => {
+    expect(canvasViewChanged(null, view)).toBe(true);
+  });
+
+  it('control: the same view after a schema update is not a change', () => {
+    expect(canvasViewChanged(view, { ...view })).toBe(false);
+  });
+
+  it('switching Focus/All, the focused orbital, or the screen size is a change', () => {
+    expect(canvasViewChanged(view, { ...view, scope: 'world' })).toBe(true);
+    expect(canvasViewChanged(view, { ...view, focusedOrbital: 'Deals' })).toBe(true);
+    expect(canvasViewChanged(view, { ...view, screenSize: 'mobile' })).toBe(true);
+  });
+
+  it('the focused orbital disappearing (focus falls back) is a change', () => {
+    expect(canvasViewChanged(view, { ...view, focusedOrbital: undefined })).toBe(true);
   });
 });

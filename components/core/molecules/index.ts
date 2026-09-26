@@ -22,6 +22,7 @@ export { FloatingActionButton, type FloatingActionButtonProps, type FloatingActi
 export { Grid, type GridProps } from './Grid';
 export { InputGroup, type InputGroupProps } from './InputGroup';
 export { Menu, type MenuProps, type MenuItem } from './Menu';
+export { TopNavItem, type TopNavItemProps, type TopNavItemData } from './TopNavItem';
 export { Modal, type ModalProps, type ModalSize } from './Modal';
 export { PageTransition, type PageTransitionProps } from './PageTransition';
 export { FxOverlay, type FxOverlayProps, type FxOverlayItem, type FxOverlayKind } from './FxOverlay';

@@ -19,6 +19,8 @@ import { cn } from "../../../lib/cn";
 import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useNavStack } from "../../../providers/NavStackContext";
+import { followHref } from "../../../lib/followHref";
 import type { EventKey } from "@almadar/core";
 
 export interface MenuItem {
@@ -38,6 +40,8 @@ export interface MenuItem {
   onClick?: () => void;
   /** Event name for pattern compatibility */
   event?: EventKey;
+  /** Link this item follows on pick: an in-app path (nav stack), `#anchor` or absolute URL. */
+  href?: string;
   /** File URL this item downloads on pick (gesture-driven, `DocumentViewer` precedent). The item's `event` still emits on the bus. */
   url?: string;
   /** Variant for styling (pattern compatibility) */
@@ -144,6 +148,7 @@ function SubMenu({
   eventBus: ReturnType<typeof useEventBus>;
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const navStack = useNavStack();
 
   useEffect(() => {
     if (itemRef) {
@@ -185,6 +190,7 @@ function SubMenu({
               if (item.disabled) return;
               if (item.event) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
               if (item.url) downloadItemUrl(item.url, item.label);
+              if (item.href !== undefined) followHref(item.href, navStack);
               item.onClick?.();
             }}
             aria-disabled={item.disabled || undefined}
@@ -324,6 +330,7 @@ export const Menu: React.FC<MenuProps> = ({
   footer,
 }) => {
   const eventBus = useEventBus();
+  const navStack = useNavStack();
   const { direction } = useTranslate();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
@@ -355,6 +362,7 @@ export const Menu: React.FC<MenuProps> = ({
     } else {
       if (item.event) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
       if (item.url) downloadItemUrl(item.url, item.label);
+      if (item.href !== undefined) followHref(item.href, navStack);
       item.onClick?.();
       setIsOpen(false);
     }

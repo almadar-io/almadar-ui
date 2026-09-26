@@ -97,6 +97,28 @@ describe('FlowCanvas default (externalInspector absent)', () => {
   });
 });
 
+// Opening the inline inspector must not move the canvas: it takes width from
+// the canvas row only, never from the toolbar (which would re-wrap and push
+// every card down between the two clicks of a double-click).
+describe('FlowCanvas inline inspector leaves the toolbar alone', () => {
+  it('the toolbar spans above the canvas-and-inspector row', () => {
+    render(<FlowCanvas schema={schema} initialOrbital="TaskBoard" initialSelectedNode={preselectedNode} />);
+    const toolbar = screen.getByTestId('flow-canvas-toolbar');
+    const inspectorButton = screen.getByRole('button', { name: 'Inspector' });
+    const pane = screen.getByTestId('flow-canvas');
+    expect(pane.contains(toolbar)).toBe(false);
+    const row = toolbar.nextElementSibling;
+    expect(row?.contains(pane)).toBe(true);
+    expect(row?.contains(inspectorButton)).toBe(true);
+  });
+
+  it('control: without a selection the toolbar still sits directly above the canvas', () => {
+    render(<FlowCanvas schema={schema} initialOrbital="TaskBoard" />);
+    const toolbar = screen.getByTestId('flow-canvas-toolbar');
+    expect(toolbar.nextElementSibling?.contains(screen.getByTestId('flow-canvas'))).toBe(true);
+  });
+});
+
 describe('FlowCanvas externalInspector=true', () => {
   it('suppresses the inline OrbInspector even with a node pre-selected', () => {
     render(

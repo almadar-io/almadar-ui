@@ -813,3 +813,24 @@ describe('OrbPreviewNode — elements drawn by embedded behaviors', () => {
     expect(structure).not.toHaveBeenCalled();
   });
 });
+
+// In the canvas's local view cards aren't draggable, and React Flow then pans
+// the pane on any drag that starts on a card — unless the content opts out.
+// The live area must own its pointer gestures (reorder, marquee, absolute
+// drag, drop-at-index) in both views; the header stays a drag/pan handle.
+describe('OrbPreviewNode — the live area owns its gestures', () => {
+  it('the live preview area opts out of both node dragging and canvas panning', async () => {
+    renderCard();
+    await screen.findByText('Go');
+    const live = document.querySelector('.orb-preview-live');
+    expect(live?.classList.contains('nodrag')).toBe(true);
+    expect(live?.classList.contains('nopan')).toBe(true);
+  });
+
+  it('control: the card header is not opted out (it still drags / pans)', async () => {
+    renderCard();
+    await screen.findByText('Go');
+    const toggle = screen.getByTestId('orb-preview-play-toggle');
+    expect(toggle.closest('.nopan')).toBeNull();
+  });
+});

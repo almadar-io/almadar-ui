@@ -7,6 +7,7 @@ import { Button, Input, Badge, ThemeToggle, Avatar } from "../atoms/index";
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
+import { TopNavItem } from "../molecules/TopNavItem";
 import { Icon as AlmadarIcon } from "../atoms/Icon";
 import { useAuthContext } from "../../../hooks/useAuthContext";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -444,10 +445,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     </Typography>
                   </Link>
                   {navItems.map((item) => (
-                    <NavLinkTopnav
+                    <TopNavItem
                       key={item.href}
                       item={item}
                       activeHref={activeHref}
+                      tone="solid"
                     />
                   ))}
                 </HStack>
@@ -894,118 +896,6 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
 NavLink.displayName = "NavLink";
 
 // Topnav nav link — compact horizontal style
-const NavLinkTopnav: React.FC<{ item: NavItem; activeHref?: string }> = ({
-  item,
-  activeHref,
-}) => {
-  const hasChildren = !!item.children?.length;
-  const childActive = hasChildren && item.children!.some((child) => child.href === activeHref);
-  const isActive = item.href === activeHref || childActive;
-  const [open, setOpen] = useState(false);
-
-  if (hasChildren) {
-    return (
-      <Box className="relative">
-        <Button
-          variant="ghost"
-          aria-expanded={open}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-            isActive
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )}
-          onClick={() => setOpen(!open)}
-        >
-          {item.icon && (
-            typeof item.icon === 'string'
-              ? <AlmadarIcon name={item.icon} className="h-4 w-4" />
-              : <item.icon className="h-4 w-4" />
-          )}
-          <Typography variant="small" color="inherit" className="flex-1" as="span">
-            {item.label}
-          </Typography>
-          {item.badge && (
-            <Badge variant={isActive ? "primary" : "default"} size="sm">
-              {item.badge}
-            </Badge>
-          )}
-          <AlmadarIcon
-            name="chevron-down"
-            className={cn("h-3.5 w-3.5 shrink-0 transition-transform", open && "rotate-180")}
-          />
-        </Button>
-
-        {open && (
-          <>
-            <Box className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-            <Box className="absolute left-0 top-full mt-1 w-48 bg-card dark:bg-card rounded-lg shadow-lg border border-border dark:border-border py-1 z-30">
-              {item.children!.map((child) => {
-                const childIsActive = child.href === activeHref;
-                return (
-                  <Link
-                    key={child.href}
-                    to={child.href}
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 text-sm transition-colors",
-                      childIsActive
-                        ? "bg-muted text-foreground font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )}
-                  >
-                    {child.icon && (
-                      typeof child.icon === 'string'
-                        ? <AlmadarIcon name={child.icon} className="h-4 w-4" />
-                        : <child.icon className="h-4 w-4" />
-                    )}
-                    <Typography variant="small" className="flex-1" as="span">
-                      {child.label}
-                    </Typography>
-                    {child.badge && (
-                      <Badge variant={childIsActive ? "primary" : "default"} size="sm">
-                        {child.badge}
-                      </Badge>
-                    )}
-                  </Link>
-                );
-              })}
-            </Box>
-          </>
-        )}
-      </Box>
-    );
-  }
-
-  return (
-    <Link
-      to={item.href}
-      className={cn(
-        "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-        isActive
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-      )}
-    >
-      {item.icon && (
-        typeof item.icon === 'string'
-          ? <AlmadarIcon name={item.icon} className="h-4 w-4" />
-          : <item.icon className="h-4 w-4" />
-      )}
-      <Typography variant="small" color="inherit" className="flex-1" as="span">
-        {item.label}
-      </Typography>
-      {item.badge && (
-        <Badge variant={isActive ? "primary" : "default"} size="sm">
-          {item.badge}
-        </Badge>
-      )}
-    </Link>
-  );
-};
-
-NavLinkTopnav.displayName = "NavLinkTopnav";
-
 // Bottom nav link — icon-only with label below (mobile tab bar style).
 // `children` is intentionally not rendered here: a fixed-height tab bar has
 // no room for a flyout, and mobile tab bars are a flat-only pattern.

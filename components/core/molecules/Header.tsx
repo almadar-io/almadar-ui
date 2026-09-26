@@ -20,8 +20,7 @@ import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
-import { useNavStack } from "../../../providers/NavStackContext";
-import { followHref } from "../../../lib/followHref";
+import { TopNavItem } from "./TopNavItem";
 import type { UiError } from '../atoms/types';
 
 export type HeaderLook =
@@ -47,6 +46,8 @@ export interface HeaderNavigationItem {
   icon?: IconInput;
   badge?: string | number;
   active?: boolean;
+  /** Child items, shown as a dropdown on desktop. */
+  children?: HeaderNavigationItem[];
 }
 
 export interface HeaderUserAvatar {
@@ -187,7 +188,6 @@ export const Header: React.FC<HeaderProps> = ({
   className,
 }) => {
   const { t } = useTranslate();
-  const navStack = useNavStack();
   const resolvedSearchPlaceholder = searchPlaceholder ?? t('common.search');
 
   // Get user initials
@@ -260,31 +260,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="hidden md:flex items-center gap-1 flex-1 justify-center"
           >
             {navigationItems.map((item, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                onClick={item.onClick ?? (item.href !== undefined ? () => followHref(item.href as string, navStack) : undefined)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-                  item.active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                {item.icon && (
-                  typeof item.icon === 'string'
-                    ? <Icon name={item.icon} size="sm" />
-                    : <Icon icon={item.icon} size="sm" />
-                )}
-                <Typography variant="label" className="font-medium">
-                  {item.label}
-                </Typography>
-                {item.badge !== undefined && (
-                  <Badge variant="danger" size="sm">
-                    {item.badge}
-                  </Badge>
-                )}
-              </Button>
+              <TopNavItem key={item.href ?? `${item.label}-${index}`} item={item} tone="soft" />
             ))}
           </Box>
         )}

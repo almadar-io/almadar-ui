@@ -951,7 +951,7 @@ export function Canvas2D({
         <DrawableRegistryContext.Provider value={registerChildDrawable}>
         <Box
             ref={containerRef}
-            className={cn('relative overflow-hidden w-full h-full', className)}
+            className={cn('relative overflow-hidden w-full h-full min-w-0 max-w-full', className)}
         >
             <canvas
                 ref={canvasRef}
@@ -962,7 +962,7 @@ export function Canvas2D({
                 onPointerCancel={gestureHandlers.onPointerCancel}
                 onPointerLeave={handleCanvasPointerLeave}
                 onContextMenu={(e) => e.preventDefault()}
-                className="cursor-pointer touch-none"
+                className="block max-w-full cursor-pointer touch-none"
                 tabIndex={isFree || keyMap || keyUpMap ? 0 : undefined}
                 style={{
                     width: viewportSize.width,

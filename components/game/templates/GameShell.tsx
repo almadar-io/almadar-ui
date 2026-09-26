@@ -63,7 +63,8 @@ export const GameShell: React.FC<GameShellProps> = ({
             className={cn("game-shell", className)}
             style={{
                 position: "relative",
-                width: "100vw",
+                width: "100%",
+                maxWidth: "100vw",
                 height: "100vh",
                 overflow: "hidden",
                 background: "var(--color-background, #0a0a0f)",
