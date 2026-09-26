@@ -15,6 +15,7 @@
  */
 
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
+import { useHref, useInRouterContext } from 'react-router-dom';
 import { useArbitraryClassStyles } from '../providers/ArbitraryClassCompiler';
 import { Box } from '../components/core/atoms/Box';
 import { Typography } from '../components/core/atoms/Typography';
@@ -66,6 +67,24 @@ function NavStackRefBridge({ apiRef }: { apiRef: React.MutableRefObject<NavStack
     };
   }, [api, apiRef]);
   return null;
+}
+
+/** Reports the host router's href for its root: `/`, `#/` (hash), `/base` (basename). */
+function HostHrefBaseProbe({ onBase }: { onBase: (base: string) => void }): null {
+  const base = useHref('/');
+  useEffect(() => onBase(base), [base, onBase]);
+  return null;
+}
+
+/**
+ * The app path an in-app link points at, decoded with the host router's own
+ * href encoding; null when the href is not one the host router produced.
+ */
+function appPathFromHref(href: string, hostHrefBase: string): string | null {
+  const root = hostHrefBase.endsWith('/') ? hostHrefBase.slice(0, -1) : hostHrefBase;
+  if (href === root) return '/';
+  if (!href.startsWith(`${root}/`)) return null;
+  return href.slice(root.length);
 }
 
 /**
@@ -607,6 +626,12 @@ export interface OrbPreviewProps {
    * leave off for flow layouts, which should keep their internal scroll.
    */
   fit?: boolean;
+  /**
+   * Called with the page path on every in-preview page switch (link click,
+   * navigate effect, `UI:NAVIGATE`), for a host that tracks the page in its
+   * own router. When set, it replaces the built-in `?page=` URL sync.
+   */
+  onPageChange?: (path: string) => void;
 }
 
 /**
@@ -634,6 +659,7 @@ export function OrbPreview({
   initialPagePath,
   isolated = false,
   fit = false,
+  onPageChange,
   user = null,
   localFallbackTimeoutMs,
 }: OrbPreviewProps): React.ReactElement {
@@ -648,6 +674,8 @@ export function OrbPreview({
   // surface now, and this state is durable, not a one-shot toast).
   const [localFallback, setLocalFallback] = useState(false);
   const eventBus = useEventBus();
+  const inHostRouter = useInRouterContext();
+  const [hostHrefBase, setHostHrefBase] = useState('/');
   const handleLocalFallback = useCallback(() => {
     if (localFallback) return;
     setLocalFallback(true);
@@ -823,7 +851,9 @@ export function OrbPreview({
       setCurrentPage(match.page.name);
       // A sandboxed preview navigates in memory only — the host page's URL
       // and history belong to the host.
-      if (!isolated && typeof window !== 'undefined') {
+      if (onPageChange) {
+        onPageChange(path);
+      } else if (!isolated && typeof window !== 'undefined') {
         const url = new URL(window.location.href);
         url.searchParams.set('page', path);
         window.history.pushState({}, '', url.toString());
@@ -835,7 +865,7 @@ export function OrbPreview({
         window.dispatchEvent(new PopStateEvent('popstate'));
       }
     }
-  }, [pages, isolated]);
+  }, [pages, isolated, onPageChange]);
 
   // Effect-facing navigate: stages the nav-stack crumb (when the navigate
   // effect carried one) before the page switch; the provider's sync consumes
@@ -900,7 +930,8 @@ export function OrbPreview({
         anchorText: anchor.textContent?.trim().slice(0, 40),
       });
       const external = href.startsWith('http') || href.startsWith('mailto:');
-      if (isolated && (external || href.startsWith('#'))) {
+      const appPath = external ? null : appPathFromHref(href, hostHrefBase);
+      if (isolated && appPath === null) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
@@ -908,19 +939,19 @@ export function OrbPreview({
         navLog.debug('click:sandboxed', { href, external });
         return;
       }
-      if (!href || external || href.startsWith('#')) {
-        navLog.debug('click:skipped', { href, reason: 'external/empty/hash' });
+      if (appPath === null) {
+        navLog.debug('click:skipped', { href, reason: 'not an in-app href', hostHrefBase });
         return;
       }
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-      handleNavigate(href);
+      handleNavigate(appPath);
     };
     el.addEventListener('click', handler, true);
     navLog.info('interceptor:installed', { pageCount: pages.length, paths: pages.map((p) => p.page.path) });
     return () => el.removeEventListener('click', handler, true);
-  }, [pages, handleNavigate, isolated]);
+  }, [pages, handleNavigate, isolated, hostHrefBase]);
 
   return (
     <Box
@@ -939,6 +970,7 @@ export function OrbPreview({
           </Typography>
         </Box>
       )}
+      {inHostRouter ? <HostHrefBaseProbe onBase={setHostHrefBase} /> : null}
       <CurrentPagePathProvider value={currentPagePath}>
         <NavStackProvider
           pages={navPages}

@@ -5,7 +5,7 @@
  * fire `onSelectedNodeChange` through every `setSelectedNode` call site.
  */
 import React from 'react';
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import type { EventPayload, OrbitalSchema } from '@almadar/core';
 import { useEventBus } from '../../../../hooks/useEventBus';
@@ -244,5 +244,68 @@ describe('FlowCanvas focus (local / world)', () => {
     // The card-resize bus event is the only placement change reachable without real drag geometry.
     act(() => { busEmit('UI:CANVAS_CARD_RESIZED', { nodeId: 'TaskBoard', width: 700 }); });
     expect(onPositionsChange).toHaveBeenCalledWith(expect.objectContaining({ Notes: { x: 5, y: 6 }, TaskBoard: expect.objectContaining({ width: 700 }) }));
+  });
+});
+
+describe('FlowCanvas has one mode', () => {
+  it('a composition of behaviors is shown as their orbital cards, never as behavior glyphs', () => {
+    const glyphs = [{ behaviorName: 'std-notes', level: 'atom', entityName: 'Note', stateCount: 1, fieldCount: 1, connectableEvents: [], orbitalNames: ['TaskBoard'] }];
+    const { container } = render(
+      // @ts-expect-error — the behavior compose level is gone; a composition is ordinary orbitals.
+      <FlowCanvas schema={twoOrbitals} composeLevel="behavior" behaviorEntries={glyphs} />,
+    );
+    expect(container.querySelector('.react-flow__node-behaviorCompose')).toBeNull();
+    expect(cardIds(container)).toEqual(['TaskBoard']);
+  });
+});
+
+describe('FlowCanvas toolbar on small screens', () => {
+  it('wraps instead of overflowing, and sits above the canvas rather than over its cards', () => {
+    render(<FlowCanvas schema={twoOrbitals} />);
+    const toolbar = screen.getByTestId('flow-canvas-toolbar');
+    expect(toolbar.className).toContain('flex-wrap');
+    expect(toolbar.className).not.toMatch(/(^|\s)absolute(\s|$)/);
+    const pane = screen.getByTestId('flow-canvas').querySelector('.react-flow');
+    expect(pane).not.toBeNull();
+    expect(toolbar.compareDocumentPosition(pane as Element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+
+  it('folds the screen-size presets into one dropdown below sm, the buttons above', () => {
+    render(<FlowCanvas schema={twoOrbitals} />);
+    const picker = screen.getByTestId('canvas-screen-size-picker') as HTMLSelectElement;
+    expect(picker.closest('.sm\\:hidden')).not.toBeNull();
+    expect(screen.getByTestId("canvas-screen-size-buttons").className).toMatch(/hidden sm:flex/);
+    fireEvent.change(picker, { target: { value: 'mobile' } });
+    expect(picker.value).toBe('mobile');
+    expect(screen.getByRole('button', { name: /mobile/i }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('gives the focus controls a 40px tap target at phone width', () => {
+    render(<FlowCanvas schema={twoOrbitals} />);
+    for (const id of ['canvas-orbital-prev', 'canvas-orbital-next', 'canvas-scope-local', 'canvas-scope-world']) {
+      expect(screen.getByTestId(id).className).toMatch(/(^|\s)h-10(\s|$)/);
+    }
+  });
+});
+
+describe('FlowCanvas in the compact (mobile) variant', () => {
+  const stubWidth = (compact: boolean) => vi.stubGlobal('matchMedia', (q: string) => ({ matches: compact && q === '(max-width: 1023.98px)', media: q, addEventListener: () => undefined, removeEventListener: () => undefined }));
+  // Put back only matchMedia — unstubbing everything would drop the file's ResizeObserver stub.
+  afterEach(() => { vi.stubGlobal('matchMedia', undefined); });
+
+  it('has no zoom buttons (pinch zooms), and keeps the orbital picker on one row', () => {
+    stubWidth(true);
+    const { container } = render(<FlowCanvas schema={twoOrbitals} />);
+    expect(container.querySelector('.react-flow__controls')).toBeNull();
+    const picker = screen.getByTestId('canvas-orbital-picker');
+    expect(screen.getByTestId('canvas-orbital-nav').className).toMatch(/flex-nowrap/);
+    expect(screen.getByTestId('canvas-orbital-nav').contains(picker)).toBe(true);
+  });
+
+  it('desktop keeps the zoom buttons', () => {
+    stubWidth(false);
+    const { container } = render(<FlowCanvas schema={twoOrbitals} />);
+    expect(container.querySelector('.react-flow__controls')).not.toBeNull();
   });
 });

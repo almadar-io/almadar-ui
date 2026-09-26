@@ -162,9 +162,13 @@ describe('initialStateOf', () => {
 describe('canvasViewGraph', () => {
   const base = { view: 'screens' as const };
 
-  it('local shows only the focused orbital', () => {
+  it('local shows only the focused orbital, at the origin (its world position is irrelevant)', () => {
     const g = canvasViewGraph(schema, { ...base, scope: 'local', focusedOrbital: 'Notes' });
     expect(g.nodes.map((n) => n.id)).toEqual(['Notes']);
+    expect(g.nodes[0].position).toEqual({ x: 0, y: 0 });
+    const world = canvasViewGraph(schema, { ...base, scope: 'world', focusedOrbital: 'Notes' });
+    expect(world.nodes.find((n) => n.id === 'Notes')?.position).not.toEqual({ x: 0, y: 0 });
+    expect(g.worldPositions.Notes).toEqual(world.nodes.find((n) => n.id === 'Notes')?.position);
     expect(g.edges).toEqual([]);
     expect(g.focusedOrbital).toBe('Notes');
   });
@@ -221,6 +225,6 @@ describe('canvasViewGraph', () => {
 
   it('an empty schema has no cards and no focus', () => {
     const g = canvasViewGraph({ name: 'empty', version: '1.0.0', orbitals: [] } as OrbitalSchema, { ...base, scope: 'local' });
-    expect(g).toEqual({ nodes: [], edges: [], focusedOrbital: undefined });
+    expect(g).toEqual({ nodes: [], edges: [], focusedOrbital: undefined, worldPositions: {} });
   });
 });

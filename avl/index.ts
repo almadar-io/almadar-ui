@@ -114,9 +114,6 @@ export {
 } from '../components/avl/hooks/useCanvasDnd';
 
 // V3 Revised: Behavior Compose
-export { type ComposeViewLevel, type BehaviorComposeNodeData, type BehaviorWireEdgeData, type BehaviorCanvasEntry, type ConnectableEvent } from '../components/avl/types/avl-behavior-compose-types';
-export { BehaviorComposeNode } from '../components/avl/molecules/BehaviorComposeNode';
-export { behaviorsToComposeGraph, registryEntryToCanvasEntry, type BehaviorRegistryRecord } from '../components/avl/lib/avl-behavior-compose-converter';
 
 // OrbInspector
 export { OrbInspector, type OrbInspectorProps } from '../components/avl/organisms/OrbInspector';

@@ -46,6 +46,7 @@ export { SimpleGrid, type SimpleGridProps } from './SimpleGrid';
 export { Tabs, type TabsProps, type TabItem } from './Tabs';
 export { Toast, type ToastProps, type ToastVariant } from './Toast';
 export { Tooltip, type TooltipProps } from './Tooltip';
+export { IconButton, type IconButtonProps } from './IconButton';
 export { Drawer, type DrawerProps, type DrawerPosition, type DrawerSize } from './Drawer';
 export { WizardProgress, type WizardProgressProps, type WizardProgressStep } from './WizardProgress';
 export { WizardNavigation, type WizardNavigationProps } from './WizardNavigation';

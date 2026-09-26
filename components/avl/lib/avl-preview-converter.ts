@@ -689,9 +689,16 @@ export interface CanvasViewOptions {
 export function canvasViewGraph(
   schema: OrbitalSchema,
   opts: CanvasViewOptions,
-): { nodes: Node<PreviewNodeData>[]; edges: Edge<EventEdgeData>[]; focusedOrbital: string | undefined } {
+): {
+  nodes: Node<PreviewNodeData>[];
+  edges: Edge<EventEdgeData>[];
+  focusedOrbital: string | undefined;
+  /** Every card's world-view layout position (the local view draws its one card at the origin). */
+  worldPositions: Record<string, { x: number; y: number }>;
+} {
   const overview = schemaToOverviewGraph(schema, opts.mockData, opts.behaviorMeta, opts.layoutHint, opts.orbitalStatus, opts.screenSize);
   const ids = overview.nodes.map((n) => n.id);
+  const worldPositions = Object.fromEntries(overview.nodes.map((n) => [n.id, n.position]));
   const focusedOrbital = opts.focusedOrbital !== undefined && ids.includes(opts.focusedOrbital)
     ? opts.focusedOrbital
     : ids[0];
@@ -705,7 +712,8 @@ export function canvasViewGraph(
     return { ...node, data: { ...data, focused: opts.scope === 'world' && node.id === focusedOrbital } };
   });
   if (opts.scope === 'local') {
-    return { nodes: withState.filter((n) => n.id === focusedOrbital), edges: [], focusedOrbital };
+    const focused = withState.filter((n) => n.id === focusedOrbital).map((n) => ({ ...n, position: { x: 0, y: 0 } }));
+    return { nodes: focused, edges: [], focusedOrbital, worldPositions };
   }
   const byId = new Map(withState.map((n) => [n.id, n]));
   const edges = overview.edges.map((edge) => {
@@ -713,7 +721,7 @@ export function canvasViewGraph(
     const renders = event !== undefined && byId.get(edge.source)?.data.eventSources.some((s) => s.event === event);
     return renders ? edge : { ...edge, sourceHandle: undefined };
   });
-  return { nodes: withState, edges, focusedOrbital };
+  return { nodes: withState, edges, focusedOrbital, worldPositions };
 }
 
 // ---------------------------------------------------------------------------

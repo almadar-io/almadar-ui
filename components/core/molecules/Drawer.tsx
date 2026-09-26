@@ -180,7 +180,7 @@ export const Drawer: React.FC<DrawerProps> = ({
       <Overlay
         isVisible={isOpen}
         onClick={handleOverlayClick}
-        className="z-40"
+        className="z-[60]"
       />
 
       {/* Drawer */}
@@ -190,7 +190,8 @@ export const Drawer: React.FC<DrawerProps> = ({
         border
         shadow="xl"
         className={cn(
-          "fixed top-0 bottom-0 z-50",
+          // Above the page's floating chrome (tool strips, chat pills: z-50), like SidePanel.
+          "fixed top-0 bottom-0 z-[60]",
           "flex flex-col max-h-screen",
           positionClasses,
           widthClass,

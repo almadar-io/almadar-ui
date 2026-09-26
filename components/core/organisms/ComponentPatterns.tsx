@@ -21,6 +21,7 @@ import { Label } from '../atoms/Label';
 import { Typography } from '../atoms/Typography';
 import { Alert, type AlertVariant } from '../molecules/Alert';
 import { FloatingActionButton } from '../molecules/FloatingActionButton';
+import { IconButton } from '../molecules/IconButton';
 
 /**
  * Base closed circuit props required by all organism components.
@@ -109,15 +110,11 @@ export function IconButtonPattern({
   ...rest
 }: IconButtonPatternProps): React.ReactElement {
   const resolvedAction = action ?? onClick ?? event;
-  return (
-    <Button
-      {...rest}
-      variant={variant}
-      action={resolvedAction}
-      icon={icon}
-      aria-label={ariaLabel}
-    />
-  );
+  // A named icon button is the one icon-only control (label + tooltip); an unnamed one has nothing to show.
+  if (ariaLabel) {
+    return <IconButton {...rest} variant={variant} action={resolvedAction} icon={icon} label={ariaLabel} />;
+  }
+  return <Button {...rest} variant={variant} action={resolvedAction} icon={icon} />;
 }
 
 IconButtonPattern.displayName = 'IconButtonPattern';

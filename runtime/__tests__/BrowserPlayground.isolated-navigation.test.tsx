@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { HashRouter, MemoryRouter } from 'react-router-dom';
 import type { OrbitalSchema } from '@almadar/core';
 import { BrowserPlayground } from '../BrowserPlayground';
 import { OrbPreview } from '../OrbPreview';
@@ -160,4 +161,85 @@ describe('isolated preview navigation', () => {
     await waitFor(() => expect(pushState).toHaveBeenCalled());
     expect(String(pushState.mock.calls[0][2])).toContain('page=%2Fdetail');
   });
+
+  // The host router encodes an in-app link's href (a hash router writes
+  // `#/detail`, a basename writes `/studio/detail`); the sandbox decodes it
+  // with that same router, so the studio's own routing never breaks the app's.
+  it('inside a hash-routed host, a link the host router encoded switches the page', async () => {
+    const { container } = render(<HashRouter><OrbPreview isolated schema={schema(2)} /></HashRouter>);
+    await screen.findByText('Open detail');
+    host = watchHost();
+    expect(clickInjectedLink(container, '#/detail').defaultPrevented).toBe(true);
+    await waitFor(() => expect(screen.getByText('Detail page')).toBeTruthy());
+    host.assertUntouched();
+  });
+
+  it('inside a hash-routed host, an in-page #anchor is still contained and goes nowhere', async () => {
+    const { container } = render(<HashRouter><OrbPreview isolated schema={schema(2)} /></HashRouter>);
+    await screen.findByText('Open detail');
+    host = watchHost();
+    expect(clickInjectedLink(container, '#detail').defaultPrevented).toBe(true);
+    expect(screen.getByText('Open detail')).toBeTruthy();
+    host.assertUntouched();
+  });
+
+  it('inside a host with a basename, a link under that basename switches the page', async () => {
+    const { container } = render(
+      <MemoryRouter basename="/studio" initialEntries={['/studio/editor']}>
+        <OrbPreview isolated schema={schema(2)} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Open detail');
+    expect(clickInjectedLink(container, '/studio/detail').defaultPrevented).toBe(true);
+    await waitFor(() => expect(screen.getByText('Detail page')).toBeTruthy());
+  });
+
+  it('inside a host with a basename, a path outside it goes nowhere', async () => {
+    const { container } = render(
+      <MemoryRouter basename="/studio" initialEntries={['/studio/editor']}>
+        <OrbPreview isolated schema={schema(2)} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Open detail');
+    expect(clickInjectedLink(container, '/detail').defaultPrevented).toBe(true);
+    expect(screen.getByText('Open detail')).toBeTruthy();
+  });
+
+  // A host that tracks the page itself (the studio's preview tab keeps it in
+  // its own router's `?page=`) is told about every page switch.
+  it('onPageChange reports a link click to the host, host history untouched', async () => {
+    const onPageChange = vi.fn();
+    const { container } = render(<BrowserPlayground schema={schema(2)} onPageChange={onPageChange} />);
+    await screen.findByText('Open detail');
+    host = watchHost();
+    clickInjectedLink(container, '/detail');
+    await waitFor(() => expect(screen.getByText('Detail page')).toBeTruthy());
+    expect(onPageChange).toHaveBeenCalledWith('/detail');
+    host.assertUntouched();
+  });
+
+  it('onPageChange reports a navigate effect too', async () => {
+    const onPageChange = vi.fn();
+    render(<BrowserPlayground schema={schema(2)} onPageChange={onPageChange} />);
+    fireEvent.click(await screen.findByText('Open detail'));
+    await waitFor(() => expect(onPageChange).toHaveBeenCalledWith('/detail'));
+  });
+
+  it('onPageChange is not called for a link to an unknown page', async () => {
+    const onPageChange = vi.fn();
+    const { container } = render(<BrowserPlayground schema={schema(2)} onPageChange={onPageChange} />);
+    await screen.findByText('Open detail');
+    clickInjectedLink(container, '/not-a-page');
+    expect(onPageChange).not.toHaveBeenCalled();
+  });
+
+  it('a non-isolated preview with onPageChange hands the page to the host instead of pushing ?page=', async () => {
+    const onPageChange = vi.fn();
+    const pushState = vi.spyOn(window.history, 'pushState');
+    render(<OrbPreview schema={schema(2)} onPageChange={onPageChange} />);
+    fireEvent.click(await screen.findByText('Open detail'));
+    await waitFor(() => expect(onPageChange).toHaveBeenCalledWith('/detail'));
+    expect(pushState).not.toHaveBeenCalled();
+  });
 });
+

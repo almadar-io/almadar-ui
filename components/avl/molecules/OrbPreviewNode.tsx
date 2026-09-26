@@ -31,6 +31,7 @@ import { Typography } from '../../core/atoms/Typography';
 import { Button } from '../../core/atoms/Button';
 import { Icon } from '../../core/atoms/Icon';
 import { Select } from '../../core/atoms/Select';
+import { IconButton } from '../../core/molecules/IconButton';
 import { LIVE_STATE, type CanvasStateOptions } from '../lib/avl-preview-converter';
 import { resolvePatternConfig, patternNodeAt, parseClipboardPatterns, PATTERN_CLIPBOARD_TYPE } from '../lib/resolve-pattern-config';
 import { isEditableTarget } from '../../../lib/keyMapEvent';
@@ -1704,18 +1705,15 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             />
           </Box>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="nodrag shrink-0 w-6 h-6 p-0 justify-center"
+        <IconButton
+          icon={playing ? 'pause' : 'play'}
+          label={t(playing ? 'orbPreview.pause' : 'orbPreview.play')}
+          tooltipPosition="top"
+          className="nodrag shrink-0 w-6 h-6"
           aria-pressed={playing}
-          aria-label={t(playing ? 'orbPreview.pause' : 'orbPreview.play')}
-          title={t(playing ? 'orbPreview.pause' : 'orbPreview.play')}
           data-testid="orb-preview-play-toggle"
           onClick={togglePlaying}
-        >
-          <Icon name={playing ? 'pause' : 'play'} size="xs" />
-        </Button>
+        />
         {eventSources.length > 0 && (
           <Box className="flex gap-0.5 shrink-0">
             {eventSources.slice(0, 3).map((src) => (

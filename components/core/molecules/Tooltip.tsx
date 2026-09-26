@@ -34,6 +34,14 @@ export interface TooltipProps {
 
 const TRIGGER_GAP = 8;
 
+interface TriggerProps {
+  onMouseEnter?: (e: React.MouseEvent) => void;
+  onMouseLeave?: (e: React.MouseEvent) => void;
+  onFocus?: (e: React.FocusEvent) => void;
+  onBlur?: (e: React.FocusEvent) => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
+}
+
 // Arrow colors use CSS variables
 const arrowClasses: Record<TooltipPosition, string> = {
   top: 'top-full left-1/2 -translate-x-1/2 border-t-primary border-l-transparent border-r-transparent border-b-transparent',
@@ -144,19 +152,25 @@ export const Tooltip: React.FC<TooltipProps> = ({
   // Wrap non-element children in a span
   const triggerElement = React.isValidElement(children) ? children : <span>{children}</span>;
 
-  const childPointerDown = (triggerElement as React.ReactElement<{ onPointerDown?: (e: React.PointerEvent) => void }>).props.onPointerDown;
-
-  const trigger = React.cloneElement(triggerElement as React.ReactElement<any>, {
-    ref: triggerRef,
-    onMouseEnter: handleMouseEnter,
-    onMouseLeave: handleMouseLeave,
-    onFocus: handleMouseEnter,
-    onBlur: handleMouseLeave,
+  // The trigger keeps its own ref and handlers; the tooltip's run alongside.
+  const child = triggerElement as React.ReactElement<TriggerProps>;
+  const childRef = (child.props as { ref?: React.Ref<HTMLElement> }).ref ?? (child as { ref?: React.Ref<HTMLElement> }).ref;
+  const setTriggerRef = (el: HTMLElement | null) => {
+    triggerRef.current = el;
+    if (typeof childRef === 'function') childRef(el);
+    else if (childRef) (childRef as React.MutableRefObject<HTMLElement | null>).current = el;
+  };
+  const trigger = React.cloneElement(child, {
+    ref: setTriggerRef,
+    onMouseEnter: (e: React.MouseEvent) => { child.props.onMouseEnter?.(e); handleMouseEnter(); },
+    onMouseLeave: (e: React.MouseEvent) => { child.props.onMouseLeave?.(e); handleMouseLeave(); },
+    onFocus: (e: React.FocusEvent) => { child.props.onFocus?.(e); handleMouseEnter(); },
+    onBlur: (e: React.FocusEvent) => { child.props.onBlur?.(e); handleMouseLeave(); },
     onPointerDown: (e: React.PointerEvent) => {
       triggerProps.onPointerDown(e);
-      childPointerDown?.(e);
+      child.props.onPointerDown?.(e);
     },
-  });
+  } as TriggerProps & { ref: (el: HTMLElement | null) => void });
 
   const tooltipContent = isVisible && triggerRect ? (
     <div

@@ -633,5 +633,15 @@
   "canvas.scopeLocal": "Focus",
   "canvas.scopeWorld": "All",
   "canvas.scopeLocalHint": "Show only the focused orbital",
-  "canvas.scopeWorldHint": "Show every orbital"
+  "canvas.scopeWorldHint": "Show every orbital",
+  "canvas.screenSize": "Screen size",
+  "dockLayout.collapse.sidebar": "Collapse side panel",
+  "dockLayout.expand.sidebar": "Expand side panel",
+  "dockLayout.collapse.secondary-sidebar": "Collapse right panel",
+  "dockLayout.expand.secondary-sidebar": "Expand right panel",
+  "dockLayout.collapse.bottom-panel": "Collapse bottom panel",
+  "dockLayout.expand.bottom-panel": "Expand bottom panel",
+  "dockLayout.openMenu": "Menu",
+  "dockLayout.menu": "Menu",
+  "dockLayout.backToMenu": "Back to the menu"
 }

@@ -22,6 +22,7 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
+  useNodesInitialized,
   type Node,
   type Edge,
   type NodeTypes,
@@ -35,6 +36,8 @@ import { Button } from '../../core/atoms/Button';
 import { Icon } from '../../core/atoms/Icon';
 import { Select } from '../../core/atoms/Select';
 import { ButtonGroup } from '../../core/molecules/ButtonGroup';
+import { IconButton } from '../../core/molecules/IconButton';
+import { useCompactLayout } from '../../core/organisms/layout/DockLayout';
 import { ElementEditAccessContext, type ElementEditAccessResolver } from '../lib/element-edit-access';
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, type CanvasStatePicker, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { CANVAS_TOOLS, type CanvasTool } from '../lib/canvas-tools';
@@ -48,9 +51,6 @@ import { validateWire } from '../lib/wire-validation';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { isEditableTarget } from '../../../lib/keyMapEvent';
 import { useTranslate } from '../../../hooks/useTranslate';
-import { BehaviorComposeNode } from '../molecules/BehaviorComposeNode';
-import { behaviorsToComposeGraph } from '../lib/avl-behavior-compose-converter';
-import type { ComposeViewLevel, BehaviorCanvasEntry, BehaviorWireEdgeData, BehaviorComposeNodeData } from '../types/avl-behavior-compose-types';
 import { createLogger } from '@almadar/logger';
 import { perfStart, perfEnd, profilerOnRender } from '../../../lib/perf';
 
@@ -62,11 +62,10 @@ const flowCanvasLog = createLogger('almadar:ui:flow-canvas');
 
 const NODE_TYPES: NodeTypes = {
   preview: OrbPreviewNode,
-  behaviorCompose: BehaviorComposeNode,
   traitCard: TraitCardNode,
 } as NodeTypes;
 
-// AVL canvas wire check: if OrbPreviewNode / BehaviorComposeNode resolve to
+// AVL canvas wire check: if OrbPreviewNode resolves to
 // `undefined` at module init (broken upstream import, circular dependency,
 // stale bundle), ReactFlow falls back to the default node renderer and the
 // canvas shows empty white strips instead of orbital previews. Log the
@@ -75,7 +74,6 @@ flowCanvasLog.debug('node-type-registry', () => ({
   registered: Object.keys(NODE_TYPES),
   preview: typeof OrbPreviewNode,
   previewIsValid: typeof OrbPreviewNode === 'function' || (typeof OrbPreviewNode === 'object' && OrbPreviewNode !== null),
-  behaviorCompose: typeof BehaviorComposeNode,
 }));
 
 const EDGE_TYPES: EdgeTypes = {
@@ -90,7 +88,7 @@ const DEFAULT_EDGE_OPTIONS = {
 // Props
 // ---------------------------------------------------------------------------
 
-type CanvasNode = Node<PreviewNodeData> | Node<BehaviorComposeNodeData>;
+type CanvasNode = Node<PreviewNodeData>;
 
 function isPreviewCard(n: CanvasNode): n is Node<PreviewNodeData> {
   return n.type === 'preview';
@@ -175,12 +173,6 @@ export interface FlowCanvasProps {
   layoutHint?: 'pipeline' | 'grid';
   /** Called when the user clicks a node in overview level (for composition hints). */
   onNodeSelect?: (orbitalName: string) => void;
-  /** When 'behavior', shows behavior-level glyph nodes instead of orbital previews. */
-  composeLevel?: ComposeViewLevel;
-  /** Behavior entries for compose mode (only when composeLevel='behavior'). */
-  behaviorEntries?: BehaviorCanvasEntry[];
-  /** Event wires between behaviors (only when composeLevel='behavior'). */
-  behaviorWires?: BehaviorWireEdgeData[];
   /** @deprecated Use onNodeClick instead. Kept for AvlCosmicZoom compat. */
   onZoomChange?: (level: string, context: Record<string, string | undefined>) => void;
   /** @deprecated Not used in V3. */
@@ -272,9 +264,6 @@ function FlowCanvasInner({
   orbitalStatus,
   layoutHint,
   onNodeSelect,
-  composeLevel,
-  behaviorEntries,
-  behaviorWires,
   userType = 'builder',
   themeManifest,
   nodePositions,
@@ -296,7 +285,6 @@ function FlowCanvasInner({
   // useMemo at render time captures the fully-resolved import.
   const NODE_TYPES = useMemo<NodeTypes>(() => ({
     preview: OrbPreviewNode,
-    behaviorCompose: BehaviorComposeNode,
     traitCard: TraitCardNode,
   } as NodeTypes), []);
   const EDGE_TYPES_LOCAL = useMemo<EdgeTypes>(() => ({
@@ -315,11 +303,15 @@ function FlowCanvasInner({
   }, [schemaProp]);
 
   const traitLevel = initialLevel === 'trait-expanded';
+  const compact = useCompactLayout();
   const [scope, setScope] = useState<CanvasScope>('local');
+  const scopeRef = React.useRef(scope);
+  scopeRef.current = scope;
   const [focusRequest, setFocusRequest] = useState<string | undefined>(focusedOrbitalProp ?? initialOrbital);
   const [stateByOrbital, setStateByOrbital] = useState<Record<string, string>>({});
   // A focus change in world view centres on the focused card instead of re-fitting every card.
   const fitFocusedRef = React.useRef(false);
+  const pendingFitRef = React.useRef<{ centreOn: string | undefined } | null>(null);
   useEffect(() => {
     if (focusedOrbitalProp === undefined) return;
     fitFocusedRef.current = true;
@@ -373,17 +365,11 @@ function FlowCanvasInner({
     },
   }), [selectedPattern, setSelectedNode, setSelectedPattern]);
 
-  // Track whether we're at the behavior compose level (for drill-down/escape)
-  const [atBehaviorLevel, setAtBehaviorLevel] = useState(composeLevel === 'behavior');
-
   // Designers see one state per distinct screen; everyone else one per transition.
   const stateView = userType === 'designer' ? 'screens' : 'transitions';
 
-  const { composeNodes, composeEdges, canvas, traitExpandedNodes, traitExpandedEdges } = useMemo(() => {
-    const t = perfStart('compose-graph');
-    const compose = (composeLevel === 'behavior' && behaviorEntries?.length)
-      ? behaviorsToComposeGraph(behaviorEntries, behaviorWires ?? [], layoutHint)
-      : { nodes: [], edges: [] };
+  const { canvas, traitExpandedNodes, traitExpandedEdges } = useMemo(() => {
+    const t = perfStart('canvas-graph');
     const view = canvasViewGraph(parsedSchema, {
       scope,
       focusedOrbital: focusRequest,
@@ -399,35 +385,23 @@ function FlowCanvasInner({
     const traitExpanded = traitLevel && initialOrbital
       ? orbitalToTraitGraph(parsedSchema, initialOrbital, mockData)
       : { nodes: [], edges: [] };
-    perfEnd('compose-graph', t, {
-      composeNodes: compose.nodes.length,
+    perfEnd('canvas-graph', t, {
       canvasNodes: view.nodes.length,
       traitExpandedNodes: traitExpanded.nodes.length,
       orbitalCount: parsedSchema.orbitals?.length ?? 0,
     });
     return {
-      composeNodes: compose.nodes,
-      composeEdges: compose.edges,
       canvas: view,
       traitExpandedNodes: traitExpanded.nodes,
       traitExpandedEdges: traitExpanded.edges,
     };
-  }, [parsedSchema, scope, focusRequest, stateByOrbital, stateView, traitLevel, initialOrbital, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus, screenSize]);
+  }, [parsedSchema, scope, focusRequest, stateByOrbital, stateView, traitLevel, initialOrbital, behaviorMeta, layoutHint, mockData, orbitalStatus, screenSize]);
 
   const focusedOrbital = canvas.focusedOrbital;
   const orbitalNames = useMemo(() => (parsedSchema.orbitals ?? []).map((o) => o.name), [parsedSchema]);
 
-  type AnyNode = CanvasNode;
-  type AnyEdge = Edge<EventEdgeData> | Edge<BehaviorWireEdgeData>;
-
-  const activeNodes: AnyNode[] = (atBehaviorLevel && composeNodes.length > 0)
-    ? composeNodes
-    : traitLevel ? traitExpandedNodes
-    : canvas.nodes;
-  const activeEdges: AnyEdge[] = (atBehaviorLevel && composeEdges.length > 0)
-    ? composeEdges
-    : traitLevel ? traitExpandedEdges
-    : canvas.edges;
+  const activeNodes: CanvasNode[] = traitLevel ? traitExpandedNodes : canvas.nodes;
+  const activeEdges: Edge<EventEdgeData>[] = traitLevel ? traitExpandedEdges : canvas.edges;
 
   const [nodes, setNodes, onNodesChange] = useNodesState(activeNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(activeEdges);
@@ -452,22 +426,31 @@ function FlowCanvasInner({
   useEffect(() => {
     setEdges([]);
     const saved = savedPositionsRef.current;
+    // A saved position places a card in the world view; the local view's one
+    // card sits at the origin. A resized width applies in both.
     const merged = saved
       ? activeNodes.map((n) => {
           const placement = saved[n.id];
           if (!placement) return n;
-          const placed = { ...n, position: { x: placement.x, y: placement.y } };
+          const placed = scope === 'world' ? { ...n, position: { x: placement.x, y: placement.y } } : n;
           return placement.width !== undefined ? withCardWidth(placed, placement.width) : placed;
         })
       : activeNodes;
     setNodes(merged);
     setEdges(activeEdges);
-    const centreOn = fitFocusedRef.current && scope === 'world' ? focusedOrbital : undefined;
+    // Fit once the new cards are measured — fitting before that leaves the
+    // viewport where it was (the card off-centre).
+    pendingFitRef.current = { centreOn: fitFocusedRef.current && scope === 'world' ? focusedOrbital : undefined };
     fitFocusedRef.current = false;
-    requestAnimationFrame(() => {
-      reactFlow.fitView({ duration: 300, padding: 0.25, ...(centreOn ? { nodes: [{ id: centreOn }] } : {}) });
-    });
-  }, [activeNodes, activeEdges, setNodes, setEdges, reactFlow, scope, focusedOrbital]);
+  }, [activeNodes, activeEdges, setNodes, setEdges, scope, focusedOrbital]);
+
+  const nodesInitialized = useNodesInitialized();
+  useEffect(() => {
+    const pending = pendingFitRef.current;
+    if (!nodesInitialized || !pending) return;
+    pendingFitRef.current = null;
+    void reactFlow.fitView({ duration: 300, padding: 0.25, ...(pending.centreOn ? { nodes: [{ id: pending.centreOn }] } : {}) });
+  }, [nodesInitialized, nodes, reactFlow]);
 
 
   // Defense in depth: never render an edge whose source/target isn't in the
@@ -519,14 +502,6 @@ function FlowCanvasInner({
     },
   }), [optionsOf, chosenStateOf, setSelectedPattern, setSelectedNode]);
 
-  // Double-click drills only at the behavior compose level (behavior → its orbitals).
-  const handleNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
-    if (!(atBehaviorLevel && composeLevel === 'behavior')) return;
-    const d = node.data as BehaviorComposeNodeData;
-    if (d.orbitalNames?.length) focusOrbital(d.orbitalNames[0]);
-    setAtBehaviorLevel(false);
-  }, [atBehaviorLevel, composeLevel, focusOrbital]);
-
   // A card showing a picked state selects it (the inspector follows); a card
   // showing the live orbital only reports the orbital. In world view a click
   // also focuses that orbital.
@@ -556,15 +531,10 @@ function FlowCanvasInner({
     setSelectedNode(null);
   }, [setSelectedNode]);
 
-  // Escape closes the panel (or returns to the behavior compose level);
-  // Delete/Backspace deletes the selected pattern.
+  // Escape closes the panel; Delete/Backspace deletes the selected pattern.
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
-      if (selectedNode) {
-        setSelectedNode(null);
-      } else if (composeLevel === 'behavior' && !atBehaviorLevel) {
-        setAtBehaviorLevel(true);
-      }
+      if (selectedNode) setSelectedNode(null);
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       // Don't intercept when user is typing in an input
       if (isEditableTarget(e.target)) return;
@@ -576,7 +546,7 @@ function FlowCanvasInner({
         setSelectedPattern(null);
       }
     }
-  }, [selectedNode, selectedPattern, onPatternDelete, atBehaviorLevel, composeLevel, setSelectedNode, setSelectedPattern]);
+  }, [selectedNode, selectedPattern, onPatternDelete, setSelectedNode, setSelectedPattern]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -586,14 +556,14 @@ function FlowCanvasInner({
   // Tab / Shift+Tab move between orbitals while the canvas has focus; Escape
   // with nothing selected hands focus back to the page.
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
-    if (traitLevel || atBehaviorLevel || isEditableTarget(e.target)) return;
+    if (traitLevel || isEditableTarget(e.target)) return;
     if (e.key === 'Tab' && !e.altKey && !e.ctrlKey && !e.metaKey && orbitalNames.length > 1) {
       e.preventDefault();
       stepFocus(e.shiftKey ? -1 : 1);
     } else if (e.key === 'Escape' && !selectedNode && !selectedPattern) {
       e.currentTarget.blur();
     }
-  }, [traitLevel, atBehaviorLevel, orbitalNames.length, stepFocus, selectedNode, selectedPattern]);
+  }, [traitLevel, orbitalNames.length, stepFocus, selectedNode, selectedPattern]);
 
   const eventBus = useEventBus();
 
@@ -634,12 +604,16 @@ function FlowCanvasInner({
   }, [nodes, onEventWire, eventBus]);
 
   // Persist the arrangement: the current cards' placements merged over the
-  // saved ones, so a local view (one card) never erases the others.
+  // saved ones, so a local view (one card) never erases the others. A card in
+  // the local view keeps its world position (its drawn origin isn't one).
+  const worldPositionsRef = React.useRef(canvas.worldPositions);
+  worldPositionsRef.current = canvas.worldPositions;
   const placementsOf = useCallback((list: readonly CanvasNode[]): Record<string, CanvasNodePlacement> => {
     const positions: Record<string, CanvasNodePlacement> = { ...savedPositionsRef.current };
     for (const n of list) {
       const width = isPreviewCard(n) ? n.data.cardWidth : undefined;
-      positions[n.id] = { x: n.position.x, y: n.position.y, ...(typeof width === 'number' ? { width } : {}) };
+      const at = scopeRef.current === 'world' ? n.position : (savedPositionsRef.current?.[n.id] ?? worldPositionsRef.current[n.id] ?? n.position);
+      positions[n.id] = { x: at.x, y: at.y, ...(typeof width === 'number' ? { width } : {}) };
     }
     return positions;
   }, []);
@@ -660,6 +634,13 @@ function FlowCanvasInner({
   }), [eventBus, setNodes, onPositionsChange, placementsOf]);
 
   const screenSizeKeys: ScreenSize[] = ['mobile', 'tablet', 'laptop', 'wide'];
+  const isScreenSize = (value: string): value is ScreenSize => screenSizeKeys.some((k) => k === value);
+  const applyScreenSize = (size: ScreenSize) => {
+    pickScreenSize(size);
+    requestAnimationFrame(() => {
+      reactFlow.fitView({ duration: 300, padding: 0.25 });
+    });
+  };
 
   // COSMIC-1: TraitCardNode (used at `trait-expanded`) bubbles row clicks
   // through this context. Translate them into the existing `onNodeClick`
@@ -676,7 +657,7 @@ function FlowCanvasInner({
     },
   }), [onNodeClick]);
 
-  const showOrbitalNav = !traitLevel && !atBehaviorLevel && orbitalNames.length > 0;
+  const showOrbitalNav = !traitLevel && orbitalNames.length > 0;
 
   return (
     <ScreenSizeContext.Provider value={screenSize}>
@@ -690,94 +671,53 @@ function FlowCanvasInner({
         style={{ width, height }}
       >
       <Box
-        className="relative flex-1 min-w-0 h-full outline-none"
+        className="relative flex-1 min-w-0 h-full outline-none flex flex-col"
         tabIndex={0}
         onKeyDown={handleCanvasKeyDown}
         data-testid="flow-canvas"
       >
-        <ReactFlow
-          nodes={nodes}
-          edges={visibleEdges}
-          nodeTypes={NODE_TYPES}
-          edgeTypes={EDGE_TYPES_LOCAL}
-          defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeDoubleClick={handleNodeDoubleClick}
-          zoomOnDoubleClick={false}
-          onNodeClick={handleNodeClick}
-          onConnect={handleConnect}
-          onNodeDragStop={handleNodeDragStop}
-          minZoom={0.1}
-          maxZoom={2.0}
-          fitView
-          fitViewOptions={{ padding: 0.25 }}
-          nodesDraggable
-          elementsSelectable
-          proOptions={{ hideAttribution: true }}
-          style={{ background: 'var(--color-background)' }}
-        >
-          <Controls
-            showInteractive={false}
-            style={{
-              background: 'var(--color-card)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-            }}
-          />
-          <Background
-            variant={BackgroundVariant.Dots}
-            gap={20}
-            size={1}
-            color="var(--color-border)"
-          />
-        </ReactFlow>
-
-        {/* Top bar: orbital focus + scope, screen size */}
+        {/* Top bar: orbital focus + scope, screen size — above the canvas, never over its cards */}
         <Box
-          className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2"
-          style={{ zIndex: 10 }}
+          className="flex-shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border/40 bg-background"
+          data-testid="flow-canvas-toolbar"
         >
           {showOrbitalNav ? (
-            <Box className="flex items-center gap-2 px-2 py-1 rounded-md bg-card/80 border border-border/40 backdrop-blur-sm">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-7 h-7 p-0 justify-center"
-                aria-label={t('canvas.previousOrbital')}
-                title={t('canvas.previousOrbital')}
+            <>
+              <Box data-testid="canvas-orbital-nav" className="flex flex-nowrap items-center gap-1 min-w-0">
+              <IconButton
+                icon="chevron-left"
+                label={t('canvas.previousOrbital')}
+                tooltipPosition="bottom"
+                className="w-10 h-10 sm:w-7 sm:h-7"
                 data-testid="canvas-orbital-prev"
                 disabled={orbitalNames.length < 2}
                 onClick={() => stepFocus(-1)}
-              >
-                <Icon name="chevron-left" size="sm" />
-              </Button>
+              />
               <Select
                 options={orbitalNames.map((name) => ({ value: name, label: name }))}
                 value={focusedOrbital ?? ''}
                 onValueChange={(value) => { if (typeof value === 'string') focusOrbital(value); }}
                 aria-label={t('canvas.focusedOrbital')}
                 data-testid="canvas-orbital-picker"
-                className="h-7 py-0 text-sm"
+                className="h-10 sm:h-7 py-0 text-sm min-w-0 max-w-[12rem]"
               />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-7 h-7 p-0 justify-center"
-                aria-label={t('canvas.nextOrbital')}
-                title={t('canvas.nextOrbital')}
+              <IconButton
+                icon="chevron-right"
+                label={t('canvas.nextOrbital')}
+                tooltipPosition="bottom"
+                className="w-10 h-10 sm:w-7 sm:h-7"
                 data-testid="canvas-orbital-next"
                 disabled={orbitalNames.length < 2}
                 onClick={() => stepFocus(1)}
-              >
-                <Icon name="chevron-right" size="sm" />
-              </Button>
+              />
+              </Box>
               <ButtonGroup variant="segmented">
                 {(['local', 'world'] as const).map((s) => (
                   <Button
                     key={s}
                     variant={scope === s ? 'primary' : 'ghost'}
                     size="sm"
+                    className="h-10 sm:h-button-sm"
                     aria-pressed={scope === s}
                     data-testid={`canvas-scope-${s}`}
                     title={t(s === 'local' ? 'canvas.scopeLocalHint' : 'canvas.scopeWorldHint')}
@@ -787,7 +727,7 @@ function FlowCanvasInner({
                   </Button>
                 ))}
               </ButtonGroup>
-            </Box>
+            </>
           ) : (
             <Box className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/80 border border-border/40 backdrop-blur-sm">
               <Typography variant="small" className="font-medium">
@@ -799,30 +739,78 @@ function FlowCanvasInner({
             </Box>
           )}
 
-          {/* Screen size toolbar */}
-          <ButtonGroup variant="segmented" className="bg-card/80 backdrop-blur-sm rounded-md">
-            {screenSizeKeys.map((size) => {
-              const p = SCREEN_SIZE_PRESETS[size];
-              return (
-                <Button
-                  key={size}
-                  variant={screenSize === size ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    pickScreenSize(size);
-                    requestAnimationFrame(() => {
-                      reactFlow.fitView({ duration: 300, padding: 0.25 });
-                    });
-                  }}
-                  title={`${p.label} (${p.width}px)`}
-                  aria-label={t('canvas.switchToView', { label: p.label })}
-                  aria-pressed={screenSize === size}
-                >
-                  {p.label}
-                </Button>
-              );
-            })}
-          </ButtonGroup>
+          {/* Screen size: one dropdown on phones, the preset buttons above sm */}
+          <Box className="sm:hidden ml-auto">
+            <Select
+              options={screenSizeKeys.map((size) => ({ value: size, label: `${SCREEN_SIZE_PRESETS[size].label} (${SCREEN_SIZE_PRESETS[size].width}px)` }))}
+              value={screenSize}
+              onValueChange={(value) => { if (typeof value === 'string' && isScreenSize(value)) applyScreenSize(value); }}
+              aria-label={t('canvas.screenSize')}
+              data-testid="canvas-screen-size-picker"
+              className="h-10 py-0 text-sm bg-card/80"
+            />
+          </Box>
+          <Box className="hidden sm:flex ml-auto" data-testid="canvas-screen-size-buttons">
+            <ButtonGroup variant="segmented" className="bg-card/80 backdrop-blur-sm rounded-md">
+              {screenSizeKeys.map((size) => {
+                const p = SCREEN_SIZE_PRESETS[size];
+                return (
+                  <Button
+                    key={size}
+                    variant={screenSize === size ? 'primary' : 'ghost'}
+                    size="sm"
+                    onClick={() => applyScreenSize(size)}
+                    title={`${p.label} (${p.width}px)`}
+                    aria-label={t('canvas.switchToView', { label: p.label })}
+                    aria-pressed={screenSize === size}
+                  >
+                    {p.label}
+                  </Button>
+                );
+              })}
+            </ButtonGroup>
+          </Box>
+        </Box>
+        <Box className="relative flex-1 min-h-0">
+        <ReactFlow
+          nodes={nodes}
+          edges={visibleEdges}
+          nodeTypes={NODE_TYPES}
+          edgeTypes={EDGE_TYPES_LOCAL}
+          defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          zoomOnDoubleClick={false}
+          onNodeClick={handleNodeClick}
+          onConnect={handleConnect}
+          onNodeDragStop={handleNodeDragStop}
+          minZoom={0.1}
+          maxZoom={2.0}
+          fitView
+          fitViewOptions={{ padding: 0.25 }}
+          nodesDraggable={scope === 'world'}
+          elementsSelectable
+          proOptions={{ hideAttribution: true }}
+          style={{ background: 'var(--color-background)' }}
+        >
+          {/* Compact (phones, tablets): pinch zooms, and the buttons would sit under the tool strip. */}
+          {!compact && (
+            <Controls
+              showInteractive={false}
+              style={{
+                background: 'var(--color-card)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+              }}
+            />
+          )}
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={20}
+            size={1}
+            color="var(--color-border)"
+          />
+        </ReactFlow>
         </Box>
 
       </Box>

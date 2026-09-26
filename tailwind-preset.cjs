@@ -407,6 +407,9 @@ module.exports = {
   'aspect-[3/2]',
   'aspect-[4/3]',
   'max-w-[55%]',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-09-26)
+  'max-w-[12rem]',
 ],
   theme: {
     fontFamily: {

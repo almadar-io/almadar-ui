@@ -633,5 +633,15 @@
   "canvas.scopeLocal": "تركيز",
   "canvas.scopeWorld": "الكل",
   "canvas.scopeLocalHint": "عرض المدار المحدد فقط",
-  "canvas.scopeWorldHint": "عرض كل المدارات"
+  "canvas.scopeWorldHint": "عرض كل المدارات",
+  "canvas.screenSize": "حجم الشاشة",
+  "dockLayout.collapse.sidebar": "طي اللوحة الجانبية",
+  "dockLayout.expand.sidebar": "توسيع اللوحة الجانبية",
+  "dockLayout.collapse.secondary-sidebar": "طي اللوحة اليمنى",
+  "dockLayout.expand.secondary-sidebar": "توسيع اللوحة اليمنى",
+  "dockLayout.collapse.bottom-panel": "طي اللوحة السفلية",
+  "dockLayout.expand.bottom-panel": "توسيع اللوحة السفلية",
+  "dockLayout.openMenu": "القائمة",
+  "dockLayout.menu": "القائمة",
+  "dockLayout.backToMenu": "العودة إلى القائمة"
 }

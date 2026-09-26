@@ -633,5 +633,15 @@
   "canvas.scopeLocal": "Fokus",
   "canvas.scopeWorld": "Vse",
   "canvas.scopeLocalHint": "Prikaži samo izbrani orbital",
-  "canvas.scopeWorldHint": "Prikaži vse orbitale"
+  "canvas.scopeWorldHint": "Prikaži vse orbitale",
+  "canvas.screenSize": "Velikost zaslona",
+  "dockLayout.collapse.sidebar": "Strni stransko ploščo",
+  "dockLayout.expand.sidebar": "Razširi stransko ploščo",
+  "dockLayout.collapse.secondary-sidebar": "Strni desno ploščo",
+  "dockLayout.expand.secondary-sidebar": "Razširi desno ploščo",
+  "dockLayout.collapse.bottom-panel": "Strni spodnjo ploščo",
+  "dockLayout.expand.bottom-panel": "Razširi spodnjo ploščo",
+  "dockLayout.openMenu": "Meni",
+  "dockLayout.menu": "Meni",
+  "dockLayout.backToMenu": "Nazaj na meni"
 }
