@@ -22,8 +22,8 @@ importers:
         specifier: ^1.14.0
         version: 1.14.0
       '@almadar/runtime':
-        specifier: ^6.94.0
-        version: 6.94.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.3)(express@5.2.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(ws@8.21.0)
+        specifier: ^6.95.0
+        version: 6.95.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.3)(express@5.2.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(ws@8.21.0)
       '@almadar/std':
         specifier: ^16.233.0
         version: 16.233.0
@@ -266,8 +266,9 @@ packages:
   '@almadar/logger@1.14.0':
     resolution: {integrity: sha512-3BgMBlUGDv7Aq3wlJUCDjGYTOBtJfDwe/nswZ0/GkN40prtGVCBx7Jy9ivgE6zrQxWkUQMQZJHn1RQHobhGOBQ==}
 
-  '@almadar/runtime@6.94.0':
-    resolution: {integrity: sha512-dV18PhiZE1Ta5aV3SkvJ61RN4TtkxkJHkGrbKJqZ8U/I1lO46ws9oIJvCIKz7RlB4B1TubbrRjCHTwEc2kRdyw==}
+  '@almadar/runtime@6.95.0':
+    resolution: {integrity: sha512-2woO7LX00rnWejraP3AZkj+MoGVLCztXGisHrZxL2mrrzIjvjmZjM3cagGLjJYMp8irt2m6PndNMO9tuLMfO5A==}
+    engines: {node: '>=22.19.0'}
     peerDependencies:
       express: ^5.0.0
     peerDependenciesMeta:
@@ -5509,7 +5510,7 @@ snapshots:
     dependencies:
       '@almadar/core': 10.108.0
 
-  '@almadar/runtime@6.94.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.3)(express@5.2.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(ws@8.21.0)':
+  '@almadar/runtime@6.95.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.3)(express@5.2.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(ws@8.21.0)':
     dependencies:
       '@almadar/core': 10.108.0
       '@almadar/evaluator': 2.51.0
@@ -5541,7 +5542,7 @@ snapshots:
     dependencies:
       '@almadar/core': 10.108.0
       '@almadar/logger': 1.14.0
-      '@almadar/runtime': 6.94.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.3)(express@5.2.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(ws@8.21.0)
+      '@almadar/runtime': 6.95.0(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.3)(express@5.2.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(ws@8.21.0)
       '@faker-js/faker': 9.9.0
       cors: 2.8.6
       dotenv: 16.6.1
