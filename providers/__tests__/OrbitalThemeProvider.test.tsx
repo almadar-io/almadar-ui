@@ -52,4 +52,16 @@ describe('OrbitalThemeProvider', () => {
     expect(wrapper).not.toBeNull();
     expect(wrapper?.style.getPropertyValue('--color-primary')).toBe('#123456');
   });
+
+  it('paints an inline theme background so its own colors show inside a dark host (G-UI-022)', () => {
+    const inline: ThemeDefinition = {
+      name: 'harbor',
+      tokens: { colors: { background: '#ffffff', foreground: '#111111' } },
+    };
+    const { getByTestId } = renderIn(inline);
+    const wrapper = getByTestId('leaf').closest('[data-orbital-theme="harbor"]') as HTMLElement | null;
+    expect(wrapper?.style.getPropertyValue('--color-background')).toBe('#ffffff');
+    expect(wrapper?.className).toContain('bg-background');
+    expect(wrapper?.className).toContain('text-foreground');
+  });
 });

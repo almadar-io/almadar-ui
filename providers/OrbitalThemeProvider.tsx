@@ -3,7 +3,7 @@
 /**
  * OrbitalThemeProvider — runtime application of `OrbitalDefinition.theme`.
  *
- * Wraps an orbital's rendered subtree in a wrapping `<div>` that sets the
+ * Wraps an orbital's rendered subtree in a surface `Box` that sets the
  * CSS variables derived from `theme.tokens` (and `variants.dark` when the
  * resolved color mode is dark). Inline custom-property declarations on the
  * wrapper override any `[data-theme]` selector rule for the same variable
@@ -44,6 +44,10 @@ export interface OrbitalThemeProviderProps {
   children: ReactNode;
 }
 
+// Both theme forms paint the orbital's own surface, so a themed orbital never
+// shows the host document's background (playground, runtime-verify catalog).
+const SURFACE = 'h-full min-h-full bg-background text-foreground';
+
 export function OrbitalThemeProvider({ theme, children }: OrbitalThemeProviderProps): ReactElement {
   const resolved = resolveThemeForRuntime(theme);
   // useTheme provides the document-level resolved color mode. Per-orbital
@@ -52,7 +56,7 @@ export function OrbitalThemeProvider({ theme, children }: OrbitalThemeProviderPr
 
   if (isThemeRegistryKey(theme)) {
     return (
-      <Box data-theme={theme} className="h-full min-h-full bg-background text-foreground">
+      <Box data-theme={theme} className={SURFACE}>
         {children}
       </Box>
     );
@@ -64,20 +68,13 @@ export function OrbitalThemeProvider({ theme, children }: OrbitalThemeProviderPr
 
   const vars = themeTokensToCssVars(resolved.tokens, resolvedMode, resolved.variants?.dark);
 
-  // `display: contents` keeps the wrapper out of the layout flow — flex/grid
-  // children of the parent still treat the orbital's content as direct
-  // children. CSS custom properties cascade through `display: contents` to
-  // descendants normally.
   // The CSSProperties cast is required because TS doesn't include `--var`
   // keys in the React CSS type. Plain `as` (not `as unknown as`) — matches
   // the project's no-unknown-cast rule.
   return (
-    <div
-      data-orbital-theme={resolved.name}
-      style={{ display: 'contents', ...vars } as CSSProperties}
-    >
+    <Box data-orbital-theme={resolved.name} className={SURFACE} style={vars as CSSProperties}>
       {children}
-    </div>
+    </Box>
   );
 }
 
