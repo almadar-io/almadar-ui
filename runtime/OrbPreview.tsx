@@ -42,6 +42,7 @@ import { NavStackProvider, useNavStack, type NavStackApi, type NavPageDecl } fro
 import { prepareSchemaForPreview } from '../lib/prepareSchemaForPreview';
 import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
+import { fitContentTransform, slotContentRect, type FitTransform } from './fitContent';
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital cascade tracing on
 // the UI side. Pairs with the server-side `almadar:runtime:cross-orbital`
@@ -192,32 +193,72 @@ function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate,
  * scrollbars. CSS transforms participate in hit-testing, so game canvas
  * pointer input keeps working at any scale. Used by `fit` previews (the
  * hero demo) whose content has a fixed intrinsic size (game canvases).
+ * `content` mode fits the rendered component itself — the slot content, laid
+ * out at `CONTENT_STAGE_WIDTH` — and centers it (a palette tile, a drag image).
  */
-function FitToBox({ children }: { children: React.ReactNode }) {
+const CONTENT_STAGE_WIDTH = 480;
+
+function FitToBox({ children, mode = 'box' }: { children: React.ReactNode; mode?: 'box' | 'content' }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  const [fitted, setFitted] = useState<FitTransform>({ scale: 1, x: 0, y: 0 });
+  const scaleRef = useRef(1);
   useEffect(() => {
     const outer = outerRef.current;
     const inner = innerRef.current;
     if (!outer || !inner) return;
     const update = () => {
-      const sw = inner.scrollWidth;
-      const sh = inner.scrollHeight;
       const cw = outer.clientWidth;
       const ch = outer.clientHeight;
+      if (mode === 'content') {
+        const rect = slotContentRect(inner, scaleRef.current);
+        if (!rect) return;
+        const next = fitContentTransform({ width: cw, height: ch }, rect);
+        scaleRef.current = next.scale;
+        setFitted(next);
+        return;
+      }
+      const sw = inner.scrollWidth;
+      const sh = inner.scrollHeight;
       if (!sw || !sh || !cw || !ch) return;
-      setScale(Math.min(1, cw / sw, ch / sh));
+      setFitted({ scale: Math.min(1, cw / sw, ch / sh), x: 0, y: 0 });
     };
     update();
-    const ro = new ResizeObserver(update);
-    ro.observe(outer);
-    ro.observe(inner);
-    return () => ro.disconnect();
-  }, []);
+    const cleanups: Array<() => void> = [];
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(update);
+      ro.observe(outer);
+      ro.observe(inner);
+      cleanups.push(() => ro.disconnect());
+    }
+    // A component that lays out after mount (data arriving, a grid filling in)
+    // changes what's rendered without resizing the fixed-width stage.
+    if (mode === 'content' && typeof MutationObserver !== 'undefined') {
+      let frame = 0;
+      const schedule = () => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(update);
+      };
+      const mo = new MutationObserver(schedule);
+      mo.observe(inner, { childList: true, subtree: true, attributes: true, characterData: true });
+      schedule();
+      cleanups.push(() => {
+        mo.disconnect();
+        cancelAnimationFrame(frame);
+      });
+    }
+    return () => cleanups.forEach((c) => c());
+  }, [mode]);
   return (
-    <div ref={outerRef} className="relative h-full w-full overflow-hidden">
-      <div ref={innerRef} style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: 'fit-content' }}>
+    <div ref={outerRef} className="relative h-full w-full overflow-hidden" data-fit-mode={mode}>
+      <div
+        ref={innerRef}
+        style={{
+          transform: `translate(${fitted.x}px, ${fitted.y}px) scale(${fitted.scale})`,
+          transformOrigin: 'top left',
+          width: mode === 'content' ? CONTENT_STAGE_WIDTH : 'fit-content',
+        }}
+      >
         {children}
       </div>
     </div>
@@ -624,8 +665,10 @@ export interface OrbPreviewProps {
    * Scale the rendered content down (never up) so it fits the container
    * without scrollbars. For fixed-intrinsic-size content (game canvases);
    * leave off for flow layouts, which should keep their internal scroll.
+   * `'content'`: fit the rendered component itself (not the page around it)
+   * and center it — a thumbnail of one behavior.
    */
-  fit?: boolean;
+  fit?: boolean | 'content';
   /**
    * Called with the page path on every in-preview page switch (link click,
    * navigate effect, `UI:NAVIGATE`), for a host that tracks the page in its
@@ -982,7 +1025,7 @@ export function OrbPreview({
         <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated} user={user}>
           <UISlotProvider>
             {fit ? (
-              <FitToBox>
+              <FitToBox mode={fit === 'content' ? 'content' : 'box'}>
                 <SchemaRunner
                   schema={parseResult.schema}
                   serverUrl={serverUrl}

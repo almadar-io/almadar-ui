@@ -28,8 +28,10 @@ export interface FileTreeNode {
   path: string;
   /** 'file' or 'dir' */
   type: 'file' | 'dir';
-  /** Children (only for directories) */
+  /** A directory's entries — or, on a file, the files derived from it (a `.lolo` source's `.orb`), nested under it. */
   children?: FileTreeNode[];
+  /** A short muted note after the name (e.g. "generated"). */
+  note?: string;
   /** File size in bytes (optional, for display) */
   size?: number;
   /** Detected language for syntax highlighting */
@@ -131,8 +133,9 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   onFileSelect,
   defaultExpanded = false,
 }) => {
-  const [expanded, setExpanded] = useState(defaultExpanded || depth < 1);
   const isDir = node.type === 'dir';
+  const hasDerived = !isDir && (node.children?.length ?? 0) > 0;
+  const [expanded, setExpanded] = useState(isDir && (defaultExpanded || depth < 1));
   const isSelected = node.path === selectedPath;
 
   const handleClick = useCallback(() => {
@@ -163,6 +166,19 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             size="xs"
             className="text-[var(--color-muted-foreground)] flex-shrink-0"
           />
+        ) : hasDerived ? (
+          <Box
+            role="button"
+            aria-expanded={expanded}
+            data-testid={`file-tree-toggle-${node.path}`}
+            className="flex-shrink-0 flex items-center"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              setExpanded((prev) => !prev);
+            }}
+          >
+            <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size="xs" className="text-[var(--color-muted-foreground)]" />
+          </Box>
         ) : (
           <Box style={{ width: 12, flexShrink: 0 }} />
         )}
@@ -179,6 +195,11 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
         >
           {node.name}
         </Typography>
+        {node.note !== undefined && (
+          <Typography variant="caption" className={`text-[9px] flex-shrink-0 ${isSelected ? '!text-inherit opacity-80' : 'text-[var(--color-muted-foreground)]'}`}>
+            {node.note}
+          </Typography>
+        )}
         {!isDir && node.size !== undefined && (
           <Typography
             variant="caption"
@@ -188,7 +209,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           </Typography>
         )}
       </Box>
-      {isDir && expanded && node.children && (
+      {(isDir || hasDerived) && expanded && node.children && (
         <Box role="group">
           {node.children.map(child => (
             <TreeNodeItem

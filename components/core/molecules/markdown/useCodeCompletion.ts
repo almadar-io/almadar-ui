@@ -1,0 +1,115 @@
+/**
+ * Assisted editing for an editable CodeBlock: a `CodeCompletionProvider` answers "what may
+ * follow the caret?" (the language's own tables — e.g. `orb complete` for `.lolo`); the editor
+ * offers the answer and inserts the chosen candidate in place of the typed prefix.
+ */
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type React from 'react';
+
+export interface CodeCompletion {
+  label: string;
+  detail?: string;
+}
+
+export interface CodeCompletionResult {
+  /** The text before the caret a candidate replaces. */
+  prefix: string;
+  candidates: readonly CodeCompletion[];
+}
+
+/** `offset` is the caret as a JavaScript string index (UTF-16 code units). */
+export type CodeCompletionProvider = (code: string, offset: number) => Promise<CodeCompletionResult | null>;
+
+/** The prefix typed before `offset` is replaced by `label`; the caret lands after it. */
+export function applyCompletion(code: string, offset: number, prefix: string, label: string): { code: string; caret: number } {
+  const at = Math.min(offset, code.length);
+  const start = Math.max(0, at - prefix.length);
+  return { code: code.slice(0, start) + label + code.slice(at), caret: start + label.length };
+}
+
+const REQUEST_DEBOUNCE_MS = 120;
+const NAVIGATION_KEYS = new Set([
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown',
+  'Shift', 'Control', 'Alt', 'Meta', 'Tab', 'Escape', 'Enter',
+]);
+
+interface Offer {
+  result: CodeCompletionResult;
+  offset: number;
+}
+
+export interface CodeCompletionState {
+  offer: Offer | null;
+  /** True when the key was consumed (the caller must not handle it further). */
+  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => boolean;
+  onKeyUp: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  accept: (label: string) => void;
+  dismiss: () => void;
+}
+
+export function useCodeCompletion(
+  provider: CodeCompletionProvider | undefined,
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>,
+  apply: (next: string, caret: number) => void,
+): CodeCompletionState {
+  const [offer, setOffer] = useState<Offer | null>(null);
+  const latest = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  const ask = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!provider || !ta) return;
+    const id = ++latest.current;
+    const code = ta.value;
+    const offset = ta.selectionStart;
+    void provider(code, offset).then((result) => {
+      if (id !== latest.current) return;
+      setOffer(result && result.candidates.length > 0 ? { result, offset } : null);
+    });
+  }, [provider, textareaRef]);
+
+  const dismiss = useCallback(() => {
+    latest.current++;
+    setOffer(null);
+  }, []);
+
+  const accept = useCallback((label: string) => {
+    const ta = textareaRef.current;
+    if (!offer || !ta) return;
+    const next = applyCompletion(ta.value, offer.offset, offer.result.prefix, label);
+    dismiss();
+    apply(next.code, next.caret);
+  }, [offer, textareaRef, apply, dismiss]);
+
+  const onKeyUp = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!provider || NAVIGATION_KEYS.has(e.key) || e.ctrlKey || e.metaKey) return;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(ask, REQUEST_DEBOUNCE_MS);
+  }, [provider, ask]);
+
+  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>): boolean => {
+    if (!provider) return false;
+    if (e.key === ' ' && e.ctrlKey) {
+      e.preventDefault();
+      ask();
+      return true;
+    }
+    const top = offer?.result.candidates[0];
+    if (e.key === 'Tab' && top) {
+      e.preventDefault();
+      accept(top.label);
+      return true;
+    }
+    if (e.key === 'Escape' && offer) {
+      dismiss();
+      return true;
+    }
+    return false;
+  }, [provider, offer, ask, accept, dismiss]);
+
+  return { offer, onKeyDown, onKeyUp, accept, dismiss };
+}

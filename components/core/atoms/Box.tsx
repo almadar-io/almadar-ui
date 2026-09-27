@@ -39,7 +39,10 @@ export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
   'data-theme'?: string;
   /** Text direction for this subtree: "ltr", "rtl" (Arabic/Hebrew content) or "auto" */
   dir?: string;
-  /** Padding on all sides */
+  /**
+   * Padding on all sides
+   * @example md
+   */
   padding?: BoxPadding;
   /** Horizontal padding (overrides padding for x-axis) */
   paddingX?: BoxPadding;
@@ -53,7 +56,10 @@ export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
   marginY?: BoxMargin;
   /** Background color */
   bg?: BoxBg;
-  /** Show border */
+  /**
+   * Show border
+   * @example true
+   */
   border?: boolean;
   /** Border radius */
   rounded?: BoxRounded;

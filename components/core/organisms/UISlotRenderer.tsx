@@ -46,6 +46,7 @@ import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { SlotContainedContext } from "../../../lib/slotContained";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
 import { createLogger } from '@almadar/logger';
+import { propTypeMismatches } from '../../../lib/propTypeMismatch';
 
 const scopeWrapLog = createLogger("almadar:ui:scope-wrap");
 import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
@@ -1914,6 +1915,34 @@ function SlotContentRenderer({
         // V2: edit-form initialData comes pre-bound via `initialData: @payload.data`
         // instead of being hydrated from the entity store.
         : enrichDetailFields([...finalProps.fields] as SlotPropValue[], entityDef);
+    }
+
+    // A prop whose value shape no declared type accepts (an unresolved binding
+    // string reaching an array prop) is reported on this element, not thrown.
+    // Children rendered here arrive through the JSX channel, so they count as present.
+    const typeMismatches = propTypeMismatches(propsSchema, finalProps, renderedChildren !== undefined ? ['children'] : []);
+    if (typeMismatches.length > 0) {
+      slotLog.error('SlotContentRenderer:prop-type-mismatch', {
+        pattern: content.pattern,
+        sourceTrait: content.sourceTrait,
+        mismatches: typeMismatches.map((m) => `${m.prop}: expected ${m.expected.join(' | ')}, got ${m.got}`),
+      });
+      return (
+        <Box
+          className="p-4 text-sm border border-dashed border-error rounded"
+          data-testid="pattern-prop-type-error"
+          data-orb-pattern={content.pattern}
+          data-orb-trait={content.sourceTrait}
+          data-orb-slot={content.slot}
+          data-orb-path={myPath}
+        >
+          {typeMismatches.map((m) => (
+            <Typography key={m.prop} variant="small" color="error">
+              {`${content.pattern}.${m.prop}: expected ${m.expected.join(' | ')}, got ${m.got}`}
+            </Typography>
+          ))}
+        </Box>
+      );
     }
 
     const acceptsChildren = PATTERNS_WITH_CHILDREN.has(content.pattern);

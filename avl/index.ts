@@ -160,6 +160,7 @@ export {
 } from '../components/avl/organisms/index';
 export { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../components/avl/lib/canvas-tools';
 export { KnobField, type KnobFieldProps } from '../components/avl/molecules/KnobField';
+export { KnobSettingRow, type KnobSettingRowProps } from '../components/avl/molecules/KnobSettingRow';
 export {
   ElementEditAccessContext,
   EDITABLE,

@@ -43,7 +43,10 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
    *  @payloadFor action
    */
   actionPayload?: EventPayload;
-  /** Button label text (alternative to children for schema-driven rendering) */
+  /**
+   * Button label text (alternative to children for schema-driven rendering)
+   * @example Button
+   */
   label?: string;
   /** Disable the button (greys out, blocks click events) */
   disabled?: boolean;

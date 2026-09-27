@@ -55,6 +55,7 @@ export interface BreadcrumbProps {
   /**
    * Breadcrumb items. Omit together with `fromNavStack` to render the
    * orbital-scoped navigation stack instead of an authored trail.
+   * @example [{"label": "Home", "href": "/"}, {"label": "Page"}]
    */
   items?: BreadcrumbItem[];
 

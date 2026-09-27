@@ -64,6 +64,10 @@ export {
   type CodeViewerAction,
   toCodeLanguage,
   registerCodeLanguageLoader,
+  applyCompletion,
+  type CodeCompletion,
+  type CodeCompletionProvider,
+  type CodeCompletionResult,
   type CodeLanguageLoader,
   type PrismLanguageGrammar,
 } from './markdown/CodeBlock';

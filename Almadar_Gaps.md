@@ -8,9 +8,11 @@ Every open gap this repo owns lives here. This file is the source of truth; the 
 - **Close by deleting.** Remove the entry in the same commit as the fix. There is no "closed" section; git history is the record.
 - **Cross-repo gaps don't go here.** If fixing it needs another repo, describe it in your report or PR body; the monorepo coordinator files it.
 
-Next code: `G-UI-023`
+Next code: `G-UI-024`
 
 ## Open gaps
+
+- **G-UI-023** — `runtime/__tests__/Ledger.top-priority-repro.test.tsx` "G-UI-019 pitch game read-back" (both topologies) fails locally: the read-back never shows "name a workplace" after saving the game form, against the current `@almadar-io/behaviors` `websites/organisms/std-almadar-pitch.orb` (regenerated 2026-09-26). CI never runs it — the suite is gated on `existsSync` of that sibling file, which a standalone checkout lacks — so the red is invisible there. Fails identically with the new prop-type guard disabled (not caused by it). Fix the read-back (G-UI-019's regression) and give the test a baked fixture so CI runs it (package tests never climb to siblings). `runtime/` [mechanical] — found 2026-09-27
 
 ### UI tier (`@almadar/ui`)
 

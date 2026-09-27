@@ -125,3 +125,43 @@ describe('FileTree reorder (items mode)', () => {
     expect(row.getAttribute('draggable')).toBe('true');
   });
 });
+
+describe('FileTree — a file nests the files derived from it (a `.lolo` source over its `.orb`)', () => {
+  const tree = [{
+    name: 'orbitals', path: 'orbitals', type: 'dir' as const,
+    children: [
+      { name: 'Note.lolo', path: 'orbitals/Note.lolo', type: 'file' as const, note: 'generated', children: [{ name: 'Note.orb', path: 'orbitals/Note.orb', type: 'file' as const }] },
+      { name: 'Plain.orb', path: 'orbitals/Plain.orb', type: 'file' as const },
+    ],
+  }];
+
+  it('clicking the source opens it; its toggle shows the derived file, which opens too', () => {
+    const onFileSelect = vi.fn();
+    render(<FileTree tree={tree} onFileSelect={onFileSelect} />);
+    fireEvent.click(screen.getByText('Note.lolo'));
+    expect(onFileSelect).toHaveBeenLastCalledWith('orbitals/Note.lolo');
+    expect(screen.queryByText('Note.orb')).toBeNull();
+    fireEvent.click(screen.getByTestId('file-tree-toggle-orbitals/Note.lolo'));
+    fireEvent.click(screen.getByText('Note.orb'));
+    expect(onFileSelect).toHaveBeenLastCalledWith('orbitals/Note.orb');
+    expect(screen.getByText('generated')).toBeTruthy();
+  });
+
+  it('control: a file with no derived files has no toggle; a directory still toggles on click', () => {
+    const onFileSelect = vi.fn();
+    render(<FileTree tree={tree} onFileSelect={onFileSelect} />);
+    expect(screen.queryByTestId('file-tree-toggle-orbitals/Plain.orb')).toBeNull();
+    fireEvent.click(screen.getByText('orbitals'));
+    expect(screen.queryByText('Plain.orb')).toBeNull();
+    expect(onFileSelect).not.toHaveBeenCalled();
+  });
+
+  it("edge: the derived file's toggle doesn't open the source", () => {
+    const onFileSelect = vi.fn();
+    render(<FileTree tree={tree} onFileSelect={onFileSelect} />);
+    fireEvent.click(screen.getByTestId('file-tree-toggle-orbitals/Note.lolo'));
+    fireEvent.click(screen.getByTestId('file-tree-toggle-orbitals/Note.lolo'));
+    expect(onFileSelect).not.toHaveBeenCalled();
+    expect(screen.queryByText('Note.orb')).toBeNull();
+  });
+});

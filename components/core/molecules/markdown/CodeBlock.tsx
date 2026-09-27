@@ -305,6 +305,8 @@ import { Box } from '../../atoms/Box';
 import { Button } from '../../atoms/Button';
 import { Badge } from '../../atoms/Badge';
 import { HStack } from '../../atoms/Stack';
+import { useCodeCompletion, type CodeCompletionProvider } from './useCodeCompletion';
+export { applyCompletion, type CodeCompletion, type CodeCompletionProvider, type CodeCompletionResult } from './useCodeCompletion';
 import { Textarea } from '../../atoms/Textarea';
 import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
@@ -578,6 +580,12 @@ export interface CodeBlockProps {
    * @tier presentation
    */
   operators?: readonly EditorOperator[];
+  /**
+   * Editable only: answers the caret's valid continuations after a keystroke (and on
+   * Ctrl-Space); they show under the editor and Tab or a click inserts one.
+   * @tier presentation
+   */
+  completions?: CodeCompletionProvider;
 }
 
 // ── Diff helpers ─────────────────────────────────────────────────────────────
@@ -734,6 +742,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     editable = false,
     onChange,
     errorLines,
+    completions,
     // viewer props
     title,
     mode = 'code',
@@ -948,10 +957,23 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       applyChange: handleEditableChange,
     });
 
+    // A completion is an edit like a keystroke: recorded for undo, then the one change path.
+    const applyCompletionEdit = useCallback((next: string, caret: number) => {
+      const ta = editableTextareaRef.current;
+      if (!ta) return;
+      recordKeystroke(ta.value, ta.selectionStart, next);
+      ta.value = next;
+      ta.setSelectionRange(caret, caret);
+      handleEditableChange(next, 'keystroke');
+    }, [recordKeystroke, handleEditableChange]);
+
+    const completion = useCodeCompletion(editable ? completions : undefined, editableTextareaRef, applyCompletionEdit);
+
     const handleEditableKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const ta = editableTextareaRef.current;
         if (ta) prevCaretRef.current = ta.selectionStart;
+        if (completion.onKeyDown(e)) return;
         const mod = e.metaKey || e.ctrlKey;
         if (!mod) return;
         const key = e.key.toLowerCase();
@@ -963,7 +985,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           redo();
         }
       },
-      [undo, redo],
+      [undo, redo, completion],
     );
 
     const showBlockCaret = isFocused && caretMode !== 'bar';
@@ -1649,7 +1671,10 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               }}
               onScroll={handleEditableScroll}
               onSelect={(e) => setCaretIndex(e.currentTarget.selectionStart)}
-              onKeyUp={(e) => setCaretIndex(e.currentTarget.selectionStart)}
+              onKeyUp={(e) => {
+                setCaretIndex(e.currentTarget.selectionStart);
+                completion.onKeyUp(e);
+              }}
               onClick={(e) => setCaretIndex(e.currentTarget.selectionStart)}
               onKeyDown={handleEditableKeyDown}
               onFocus={() => {
@@ -1757,6 +1782,23 @@ export const CodeBlock = React.memo<CodeBlockProps>(
             </div>
           </div>
         )}
+        {completion.offer && (
+          <Box className="flex-shrink-0 border-t border-border px-2 py-2" data-testid="code-completions">
+            <HStack gap="xs" wrap>
+            {completion.offer.result.candidates.map((c, i) => (
+              <Button
+                key={c.label}
+                size="sm"
+                variant={i === 0 ? 'primary' : 'ghost'}
+                onClick={() => completion.accept(c.label)}
+                data-testid={`code-completion-${c.label}`}
+              >
+                {c.detail ? `${c.label} · ${c.detail}` : c.label}
+              </Button>
+            ))}
+            </HStack>
+          </Box>
+        )}
       </Box>
     );
   },
@@ -1769,6 +1811,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.foldable === next.foldable &&
     prev.editable === next.editable &&
     prev.onChange === next.onChange &&
+    prev.completions === next.completions &&
     prev.errorLines === next.errorLines &&
     prev.mode === next.mode &&
     prev.title === next.title &&
