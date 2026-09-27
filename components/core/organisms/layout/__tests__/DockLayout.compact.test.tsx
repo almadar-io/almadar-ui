@@ -74,6 +74,27 @@ describe('DockLayout compact', () => {
     expect(screen.getByTestId('secondary')).toBeInTheDocument();
   });
 
+  it('a control inside main can open the right panel drawer (the canvas agent button)', () => {
+    function OpenChat(): React.ReactElement {
+      const { showSecondary } = useDockLayout();
+      return <button type="button" data-testid="open-chat" onClick={() => showSecondary()}>Chat</button>;
+    }
+    render(<DockLayout {...regions} main={<OpenChat />} compact />);
+    expect(screen.queryByTestId('secondary')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('open-chat'));
+    expect(screen.getByTestId('secondary')).toBeInTheDocument();
+  });
+
+  it('control: on desktop showSecondary is a no-op (the host owns the right panel)', () => {
+    function OpenChat(): React.ReactElement {
+      const { showSecondary } = useDockLayout();
+      return <button type="button" data-testid="open-chat" onClick={() => showSecondary()}>Chat</button>;
+    }
+    render(<DockLayout {...regions} main={<OpenChat />} compact={false} secondarySidebarCollapsed />);
+    fireEvent.click(screen.getByTestId('open-chat'));
+    expect(screen.queryByTestId('secondary')).not.toBeInTheDocument();
+  });
+
   it('the bottom panel opens from its top-bar button', () => {
     render(<DockLayout {...regions} compact />);
     fireEvent.click(screen.getByTestId('dock-open-bottom-panel'));

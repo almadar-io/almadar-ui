@@ -410,6 +410,12 @@ module.exports = {
 
   // Auto-added by audit-tailwind-safelist.ts (2026-09-26)
   'max-w-[12rem]',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-09-27)
+  'bg-error/5',
+  'bg-success/5',
+  'border-error/20',
+  'border-success/20',
 ],
   theme: {
     fontFamily: {

@@ -15,7 +15,7 @@
 import React from "react";
 import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { Card, Typography, Badge, Icon, Box } from "../atoms/index";
+import { Card, Typography, Badge, Icon, Box, Button } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
@@ -275,16 +275,15 @@ export const Timeline: React.FC<TimelineProps> = ({
                                                 // Project only the JSON-safe fields into the bus payload.
                                                 const { icon: _icon, ...rowSafe } = item;
                                                 return (
-                                                <Box
+                                                <Button
                                                     key={actionIdx}
+                                                    variant="ghost"
+                                                    size="sm"
                                                     action={action.event}
                                                     actionPayload={{ row: rowSafe satisfies EventPayload }}
-                                                    className="cursor-pointer hover:opacity-80 transition-opacity"
                                                 >
-                                                    <Badge variant="default">
-                                                        {action.label}
-                                                    </Badge>
-                                                </Box>
+                                                    {action.label}
+                                                </Button>
                                                 );
                                             })}
                                         </HStack>

@@ -2,16 +2,6 @@
  * Hooks barrel export
  */
 
-// Orbital History hook for version control
-export {
-  useOrbitalHistory,
-  type HistoryTimelineItem,
-  type RevertResult,
-  type HistoryChangeSummary,
-  type UseOrbitalHistoryOptions,
-  type UseOrbitalHistoryResult,
-} from './useOrbitalHistory';
-
 // File System hook for WebContainer operations
 export {
   useFileSystem,

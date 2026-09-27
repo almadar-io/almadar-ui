@@ -219,7 +219,9 @@ export { DocumentPanel, type DocumentPanelProps, type DocumentPanelAction } from
 export { DocumentDetails, type DocumentDetailsProps, type DocumentDetailsField } from './DocumentDetails';
 export { ReplyTree, type ReplyTreeProps } from './ReplyTree';
 export { BranchingLogicBuilder, type BranchingLogicBuilderProps, type BranchingQuestion, type BranchingRule } from './BranchingLogicBuilder';
-export { VersionDiff, type VersionDiffProps, type DiffRevision, type DiffLine as VersionDiffLine, type DiffLineType } from './VersionDiff';
+export { CommitRow, type CommitRowProps, type CommitKind } from './CommitRow';
+export { ChangeList, type ChangeListProps, type ChangeListItem, type ChangeType } from './ChangeList';
+export { VersionDiff, type VersionDiffProps, type DiffRevision, type DiffHunk, type DiffLine as VersionDiffLine, type DiffLineType } from './VersionDiff';
 
 // Documentation molecules — public surface for std behaviors that render
 // help-center / docs-style content (std-public-help-center,

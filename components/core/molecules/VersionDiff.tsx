@@ -1,19 +1,20 @@
 'use client';
 /**
- * VersionDiff Organism Component
+ * VersionDiff Molecule
  *
- * Side-by-side or inline diff render with line-level highlights and
- * a revision picker. Composes atoms for layout. Computes a minimal
- * LCS-based line diff inline (no external diff library).
+ * Side-by-side or inline line diff. Two inputs: `revisions` (whole texts,
+ * with before/after pickers and a minimal LCS diff) or `hunks` (a
+ * pre-computed diff, e.g. one git commit, rendered as-is).
  */
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import type { EventPayloadValue, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Card, Typography, Button, Badge, Icon, Box, Select } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
+import { computeLineDiff } from "../../../lib/lineDiff";
 
 export interface DiffRevision {
     id: string;
@@ -34,6 +35,17 @@ export interface DiffLine {
 
 export type VersionDiffView = "side-by-side" | "inline";
 
+/** One hunk of a pre-computed diff: its header (e.g. `@@ -1,2 +1,2 @@ file`) and lines. */
+export interface DiffHunk {
+    header: string;
+    lines: readonly DiffLine[];
+}
+
+/**
+ * A line diff between two versions — two whole texts, or a pre-computed diff such as one commit.
+ *
+ * @capabilities version diff, compare revisions, what changed, before and after, code diff, commit diff, revision comparison
+ */
 export interface VersionDiffProps {
     /**
      * All available revisions (at least 2). Accepts either a typed array (direct
@@ -41,12 +53,14 @@ export interface VersionDiffProps {
      * (`@payload.revisions`). Narrowed to `[]` internally when the value isn't
      * an array.
      */
-    revisions: readonly DiffRevision[] | EventPayloadValue;
+    revisions?: readonly DiffRevision[] | EventPayloadValue;
+    /** A pre-computed diff to render instead of diffing `revisions` (no revision pickers). */
+    hunks?: readonly DiffHunk[];
     /** Currently selected "before" revision id. */
     beforeId?: string;
     /** Currently selected "after" revision id. */
     afterId?: string;
-    /** Display mode. */
+    /** Display mode to start in; the toggle switches it. */
     view?: VersionDiffView;
     /** Called when the user picks a different "before" revision. */
     onSelectBefore?: (id: string) => void;
@@ -66,55 +80,25 @@ export interface VersionDiffProps {
     className?: string;
 }
 
-/** Minimal LCS-based line diff. */
-function computeDiff(before: string, after: string): DiffLine[] {
-    const beforeLines = before.split("\n");
-    const afterLines = after.split("\n");
-    const m = beforeLines.length;
-    const n = afterLines.length;
+function isDiffRevision(value: DiffRevision | EventPayloadValue): value is DiffRevision {
+    return (
+        typeof value === "object" && value !== null && !Array.isArray(value) &&
+        "id" in value && typeof value.id === "string" &&
+        "label" in value && typeof value.label === "string" &&
+        "content" in value && typeof value.content === "string"
+    );
+}
 
-    const dp: number[][] = Array.from({ length: m + 1 }, () => new Array<number>(n + 1).fill(0));
-    for (let i = m - 1; i >= 0; i--) {
-        for (let j = n - 1; j >= 0; j--) {
-            if (beforeLines[i] === afterLines[j]) {
-                dp[i][j] = dp[i + 1][j + 1] + 1;
-            } else {
-                dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
-            }
-        }
-    }
-
-    const out: DiffLine[] = [];
-    let i = 0;
-    let j = 0;
-    let bn = 1;
-    let an = 1;
-    while (i < m && j < n) {
-        if (beforeLines[i] === afterLines[j]) {
-            out.push({
-                type: "unchanged",
-                beforeLineNumber: bn++,
-                afterLineNumber: an++,
-                content: beforeLines[i],
-            });
-            i++;
-            j++;
-        } else if (dp[i + 1][j] >= dp[i][j + 1]) {
-            out.push({ type: "removed", beforeLineNumber: bn++, content: beforeLines[i] });
-            i++;
-        } else {
-            out.push({ type: "added", afterLineNumber: an++, content: afterLines[j] });
-            j++;
-        }
-    }
-    while (i < m) {
-        out.push({ type: "removed", beforeLineNumber: bn++, content: beforeLines[i++] });
-    }
-    while (j < n) {
-        out.push({ type: "added", afterLineNumber: an++, content: afterLines[j++] });
-    }
+function toRevisions(value: readonly DiffRevision[] | EventPayloadValue | undefined): readonly DiffRevision[] {
+    if (!Array.isArray(value)) return [];
+    const out: DiffRevision[] = [];
+    for (const item of value) if (isDiffRevision(item)) out.push(item);
     return out;
 }
+
+const firstValue = (v: string | string[]): string => (typeof v === "string" ? v : v[0] ?? "");
+
+type DiffRow = { kind: "header"; header: string } | { kind: "line"; line: DiffLine };
 
 const INLINE_STYLES: Record<DiffLineType, { bg: string; prefix: string; text: string }> = {
     added: { bg: "bg-success/10", prefix: "+", text: "text-success" },
@@ -125,6 +109,7 @@ const INLINE_STYLES: Record<DiffLineType, { bg: string; prefix: string; text: st
 
 export const VersionDiff: React.FC<VersionDiffProps> = ({
     revisions: revisionsProp,
+    hunks,
     beforeId,
     afterId,
     view = "side-by-side",
@@ -139,19 +124,17 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
 }) => {
     const { t } = useTranslate();
     const eventBus = useEventBus();
-    const revisions: readonly DiffRevision[] = Array.isArray(revisionsProp)
-        ? (revisionsProp as readonly DiffRevision[])
-        : [];
+    const revisions = useMemo(() => toRevisions(revisionsProp), [revisionsProp]);
     const fallbackBefore = revisions[0]?.id ?? "";
     const fallbackAfter = revisions[1]?.id ?? revisions[0]?.id ?? "";
 
     const [internalBefore, setInternalBefore] = useState<string>(beforeId ?? fallbackBefore);
     const [internalAfter, setInternalAfter] = useState<string>(afterId ?? fallbackAfter);
-    const [internalView, setInternalView] = useState<VersionDiffView>(view);
+    const [activeView, setActiveView] = useState<VersionDiffView>(view);
+    useEffect(() => setActiveView(view), [view]);
 
     const activeBeforeId = beforeId ?? internalBefore;
     const activeAfterId = afterId ?? internalAfter;
-    const activeView = view ?? internalView;
 
     const beforeRev = useMemo(
         () => revisions.find((r) => r.id === activeBeforeId) ?? revisions[0],
@@ -162,24 +145,30 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
         [revisions, activeAfterId],
     );
 
-    const diff = useMemo(
-        () => computeDiff(beforeRev?.content ?? "", afterRev?.content ?? ""),
-        [beforeRev, afterRev],
-    );
+    const rows = useMemo<readonly DiffRow[]>(() => {
+        if (hunks) {
+            return hunks.flatMap((h): DiffRow[] => [
+                { kind: "header", header: h.header },
+                ...h.lines.map((line): DiffRow => ({ kind: "line", line })),
+            ]);
+        }
+        return computeLineDiff(beforeRev?.content ?? "", afterRev?.content ?? "").map((line): DiffRow => ({ kind: "line", line }));
+    }, [hunks, beforeRev, afterRev]);
 
     const stats = useMemo(() => {
         let added = 0;
         let removed = 0;
-        for (const line of diff) {
-            if (line.type === "added") added++;
-            else if (line.type === "removed") removed++;
+        for (const row of rows) {
+            if (row.kind !== "line") continue;
+            if (row.line.type === "added") added++;
+            else if (row.line.type === "removed") removed++;
         }
         return { added, removed };
-    }, [diff]);
+    }, [rows]);
 
     const handleBeforeChange = useCallback(
         (v: string | string[]) => {
-            const id = v as string;
+            const id = firstValue(v);
             setInternalBefore(id);
             onSelectBefore?.(id);
             if (selectBeforeEvent) eventBus.emit(`UI:${selectBeforeEvent}`, { id });
@@ -189,7 +178,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
 
     const handleAfterChange = useCallback(
         (v: string | string[]) => {
-            const id = v as string;
+            const id = firstValue(v);
             setInternalAfter(id);
             onSelectAfter?.(id);
             if (selectAfterEvent) eventBus.emit(`UI:${selectAfterEvent}`, { id });
@@ -198,7 +187,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
     );
 
     const handleViewToggle = useCallback(() => {
-        setInternalView((v) => (v === "side-by-side" ? "inline" : "side-by-side"));
+        setActiveView((v) => (v === "side-by-side" ? "inline" : "side-by-side"));
     }, []);
 
     const handleRevert = useCallback(() => {
@@ -213,21 +202,54 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
         [revisions],
     );
 
-    const beforeLines = useMemo(
-        () =>
-            diff.filter((l) => l.type === "removed" || l.type === "unchanged" || l.type === "context"),
-        [diff],
+    const renderHeader = (header: string, key: string) => (
+        <Box key={key} className="px-3 py-1 bg-info/10 border-y border-border">
+            <Typography variant="caption" className="font-mono text-info">{header}</Typography>
+        </Box>
     );
-    const afterLines = useMemo(
-        () =>
-            diff.filter((l) => l.type === "added" || l.type === "unchanged" || l.type === "context"),
-        [diff],
+
+    const renderColumn = (side: "before" | "after") => (
+        <VStack gap="none" className="font-mono text-xs">
+            {rows.map((row, idx) => {
+                if (row.kind === "header") return renderHeader(row.header, `${side}-h-${idx}`);
+                const { line } = row;
+                const hidden = side === "before" ? line.type === "added" : line.type === "removed";
+                if (hidden) return null;
+                const changed = side === "before" ? line.type === "removed" : line.type === "added";
+                return (
+                    <HStack
+                        key={`${side}-${idx}`}
+                        gap="none"
+                        align="start"
+                        className={cn("px-3 py-0.5", changed && (side === "before" ? "bg-error/10" : "bg-success/10"))}
+                    >
+                        <Typography
+                            variant="caption"
+                            color="secondary"
+                            className="w-8 text-right mr-3 select-none tabular-nums flex-shrink-0"
+                        >
+                            {(side === "before" ? line.beforeLineNumber : line.afterLineNumber) ?? ""}
+                        </Typography>
+                        <Typography
+                            variant="caption"
+                            className={cn(
+                                "font-mono flex-1 min-w-0 whitespace-pre",
+                                changed ? (side === "before" ? "text-error" : "text-success") : "text-foreground",
+                            )}
+                        >
+                            {line.content || " "}
+                        </Typography>
+                    </HStack>
+                );
+            })}
+        </VStack>
     );
+
+    const isEmpty = hunks !== undefined && hunks.length === 0;
 
     return (
         <Card className={cn("overflow-hidden", className)}>
             <VStack gap="none">
-                {/* Header: revision pickers + view toggle + revert */}
                 <HStack
                     gap="sm"
                     align="center"
@@ -236,28 +258,32 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                 >
                     <HStack gap="sm" align="center" className="flex-wrap">
                         <Icon name="git-commit" size="sm" className="text-muted-foreground" />
-                        <Typography variant="small" weight="medium" className="whitespace-nowrap">
-                            {t('versionDiff.compare')}
-                        </Typography>
-                        <Box className="min-w-0 md:min-w-[160px]">
-                            <Select
-                                options={options}
-                                value={activeBeforeId}
-                                onValueChange={handleBeforeChange}
-                                aria-label={t('versionDiff.beforeRevision')}
-                            />
-                        </Box>
-                        <Typography variant="caption" color="secondary">
-                            {t('versionDiff.to')}
-                        </Typography>
-                        <Box className="min-w-0 md:min-w-[160px]">
-                            <Select
-                                options={options}
-                                value={activeAfterId}
-                                onValueChange={handleAfterChange}
-                                aria-label={t('versionDiff.afterRevision')}
-                            />
-                        </Box>
+                        {!hunks && (
+                            <>
+                                <Typography variant="small" weight="medium" className="whitespace-nowrap">
+                                    {t('versionDiff.compare')}
+                                </Typography>
+                                <Box className="min-w-0 md:min-w-[160px]">
+                                    <Select
+                                        options={options}
+                                        value={activeBeforeId}
+                                        onValueChange={handleBeforeChange}
+                                        aria-label={t('versionDiff.beforeRevision')}
+                                    />
+                                </Box>
+                                <Typography variant="caption" color="secondary">
+                                    {t('versionDiff.to')}
+                                </Typography>
+                                <Box className="min-w-0 md:min-w-[160px]">
+                                    <Select
+                                        options={options}
+                                        value={activeAfterId}
+                                        onValueChange={handleAfterChange}
+                                        aria-label={t('versionDiff.afterRevision')}
+                                    />
+                                </Box>
+                            </>
+                        )}
                         {language && <Badge variant="default">{language}</Badge>}
                         <Badge variant="success">+{stats.added}</Badge>
                         <Badge variant="error">-{stats.removed}</Badge>
@@ -275,21 +301,15 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                                     : t('versionDiff.switchToSideBySide')
                             }
                         />
-                        {(onRevert || revertEvent) && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                icon="rotate-ccw"
-                                onClick={handleRevert}
-                            >
+                        {!hunks && (onRevert || revertEvent) && (
+                            <Button variant="ghost" size="sm" icon="rotate-ccw" onClick={handleRevert}>
                                 {t('versionDiff.revert')}
                             </Button>
                         )}
                     </HStack>
                 </HStack>
 
-                {/* Optional revision metadata row */}
-                {(beforeRev?.author || beforeRev?.timestamp || afterRev?.author || afterRev?.timestamp) && (
+                {!hunks && (beforeRev?.author || beforeRev?.timestamp || afterRev?.author || afterRev?.timestamp) && (
                     <HStack
                         gap="sm"
                         align="center"
@@ -309,95 +329,29 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                     </HStack>
                 )}
 
-                {/* Body */}
                 <Box className="overflow-auto bg-muted/20" style={{ maxHeight: 600 }}>
-                    {activeView === "side-by-side" ? (
+                    {isEmpty ? (
+                        <Box className="py-8" data-testid="version-diff-empty">
+                            <Typography variant="body2" color="muted" align="center">
+                                {t('versionDiff.noChanges')}
+                            </Typography>
+                        </Box>
+                    ) : activeView === "side-by-side" ? (
                         <Box className="grid grid-cols-1 md:grid-cols-2">
-                            {/* Before column. Below md the columns stack vertically so the
-                                separator flips from right-edge to bottom-edge. */}
-                            <Box className="border-b md:border-b-0 md:border-r border-border">
-                                <VStack gap="none" className="font-mono text-xs">
-                                    {beforeLines.map((line, idx) => {
-                                        const isRemoved = line.type === "removed";
-                                        return (
-                                            <HStack
-                                                key={`b-${idx}`}
-                                                gap="none"
-                                                align="start"
-                                                className={cn(
-                                                    "px-3 py-0.5",
-                                                    isRemoved && "bg-error/10",
-                                                )}
-                                            >
-                                                <Typography
-                                                    variant="caption"
-                                                    color="secondary"
-                                                    className="w-8 text-right mr-3 select-none tabular-nums flex-shrink-0"
-                                                >
-                                                    {line.beforeLineNumber ?? ""}
-                                                </Typography>
-                                                <Typography
-                                                    variant="caption"
-                                                    className={cn(
-                                                        "font-mono flex-1 min-w-0 whitespace-pre",
-                                                        isRemoved ? "text-error" : "text-foreground",
-                                                    )}
-                                                >
-                                                    {line.content || " "}
-                                                </Typography>
-                                            </HStack>
-                                        );
-                                    })}
-                                </VStack>
+                            {/* Below md the columns stack, so the separator flips from right-edge to bottom-edge. */}
+                            <Box className="border-b md:border-b-0 md:border-r border-border" data-testid="version-diff-before">
+                                {renderColumn("before")}
                             </Box>
-                            {/* After column */}
-                            <Box>
-                                <VStack gap="none" className="font-mono text-xs">
-                                    {afterLines.map((line, idx) => {
-                                        const isAdded = line.type === "added";
-                                        return (
-                                            <HStack
-                                                key={`a-${idx}`}
-                                                gap="none"
-                                                align="start"
-                                                className={cn(
-                                                    "px-3 py-0.5",
-                                                    isAdded && "bg-success/10",
-                                                )}
-                                            >
-                                                <Typography
-                                                    variant="caption"
-                                                    color="secondary"
-                                                    className="w-8 text-right mr-3 select-none tabular-nums flex-shrink-0"
-                                                >
-                                                    {line.afterLineNumber ?? ""}
-                                                </Typography>
-                                                <Typography
-                                                    variant="caption"
-                                                    className={cn(
-                                                        "font-mono flex-1 min-w-0 whitespace-pre",
-                                                        isAdded ? "text-success" : "text-foreground",
-                                                    )}
-                                                >
-                                                    {line.content || " "}
-                                                </Typography>
-                                            </HStack>
-                                        );
-                                    })}
-                                </VStack>
-                            </Box>
+                            <Box data-testid="version-diff-after">{renderColumn("after")}</Box>
                         </Box>
                     ) : (
                         <VStack gap="none" className="font-mono text-xs">
-                            {diff.map((line, idx) => {
+                            {rows.map((row, idx) => {
+                                if (row.kind === "header") return renderHeader(row.header, `i-h-${idx}`);
+                                const { line } = row;
                                 const style = INLINE_STYLES[line.type];
                                 return (
-                                    <HStack
-                                        key={`i-${idx}`}
-                                        gap="none"
-                                        align="start"
-                                        className={cn("px-4 py-0.5", style.bg)}
-                                    >
+                                    <HStack key={`i-${idx}`} gap="none" align="start" className={cn("px-4 py-0.5", style.bg)}>
                                         <Typography
                                             variant="caption"
                                             color="secondary"
@@ -414,10 +368,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                                         </Typography>
                                         <Typography
                                             variant="caption"
-                                            className={cn(
-                                                "font-mono flex-1 min-w-0 whitespace-pre",
-                                                style.text,
-                                            )}
+                                            className={cn("font-mono flex-1 min-w-0 whitespace-pre", style.text)}
                                         >
                                             <Box as="span" className="select-none opacity-50 mr-2">
                                                 {style.prefix}

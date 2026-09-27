@@ -40,9 +40,11 @@ export interface DockLayoutContextValue {
   showPanel: () => void;
   /** Compact: close the menu (an item that opens no panel, e.g. a dialog). */
   closeMenu: () => void;
+  /** Compact: open the right panel's drawer from inside `main`. Desktop: no-op — the host owns that panel. */
+  showSecondary: () => void;
 }
 
-const DockLayoutContext = createContext<DockLayoutContextValue>({ compact: false, showPanel: () => undefined, closeMenu: () => undefined });
+const DockLayoutContext = createContext<DockLayoutContextValue>({ compact: false, showPanel: () => undefined, closeMenu: () => undefined, showSecondary: () => undefined });
 
 /** How a rail inside a DockLayout should render (a column, or compact menu rows) and how it opens its panel. */
 export function useDockLayout(): DockLayoutContextValue {
@@ -56,7 +58,7 @@ export const COMPACT_MEDIA_QUERY = "(max-width: 1023.98px)";
 export function useCompactLayout(): boolean {
   return useMediaQuery(COMPACT_MEDIA_QUERY);
 }
-const DESKTOP_CONTEXT: DockLayoutContextValue = { compact: false, showPanel: () => undefined, closeMenu: () => undefined };
+const DESKTOP_CONTEXT: DockLayoutContextValue = { compact: false, showPanel: () => undefined, closeMenu: () => undefined, showSecondary: () => undefined };
 
 type Region = "sidebar" | "secondary-sidebar" | "bottom-panel";
 
@@ -239,7 +241,12 @@ const CompactDock: React.FC<CompactDockProps> = ({
   const { t } = useTranslate();
   const [open, setOpen] = useState<"left" | "secondary" | "bottom" | null>(null);
   const [leftView, setLeftView] = useState<"menu" | "panel">("menu");
-  const context: DockLayoutContextValue = { compact: true, showPanel: () => setLeftView("panel"), closeMenu: () => setOpen(null) };
+  const context: DockLayoutContextValue = {
+    compact: true,
+    showPanel: () => setLeftView("panel"),
+    closeMenu: () => setOpen(null),
+    showSecondary: () => { if (secondarySidebar) setOpen("secondary"); },
+  };
   const openLeft = () => { setLeftView(rail ? "menu" : "panel"); setOpen("left"); };
   const close = () => setOpen(null);
   const leftContent = leftView === "menu" && rail ? rail : (

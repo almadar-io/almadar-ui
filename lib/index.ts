@@ -71,3 +71,4 @@ export * from './themeTokens';
 // Lucide canonical name → SF Symbol / Material Symbol (native shells icon path) —
 // consumed by pattern-sync's `icon-map` command to emit IconMap.swift/IconMap.kt.
 export * from './iconNativeMap';
+export { computeLineDiff, type LineDiffLine } from './lineDiff';

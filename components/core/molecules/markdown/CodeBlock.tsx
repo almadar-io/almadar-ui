@@ -312,6 +312,7 @@ import { useTranslate } from '../../../../hooks/useTranslate';
 import { createLogger } from '@almadar/logger';
 import type { EventEmit, EventKey, EventListen } from "@almadar/core";
 import { useEditorCapabilities } from './useEditorCapabilities';
+import { computeLineDiff } from '../../../../lib/lineDiff';
 
 const log = createLogger('almadar:ui:markdown-code');
 
@@ -582,21 +583,11 @@ export interface CodeBlockProps {
 // ── Diff helpers ─────────────────────────────────────────────────────────────
 
 function generateDiff(oldVal: string, newVal: string): DiffLine[] {
-  const oldLines = oldVal.split('\n');
-  const newLines = newVal.split('\n');
-  const diff: DiffLine[] = [];
-  const maxLen = Math.max(oldLines.length, newLines.length);
-  for (let i = 0; i < maxLen; i++) {
-    const oldLine = oldLines[i];
-    const newLine = newLines[i];
-    if (oldLine === newLine) {
-      diff.push({ type: 'context', content: oldLine ?? '', lineNumber: i + 1 });
-    } else {
-      if (oldLine !== undefined) diff.push({ type: 'remove', content: oldLine, lineNumber: i + 1 });
-      if (newLine !== undefined) diff.push({ type: 'add', content: newLine, lineNumber: i + 1 });
-    }
-  }
-  return diff;
+  return computeLineDiff(oldVal, newVal).map((line) => ({
+    type: line.type,
+    content: line.content,
+    lineNumber: line.afterLineNumber ?? line.beforeLineNumber,
+  }));
 }
 
 const DIFF_STYLES: Record<DiffLine['type'], { bg: string; prefix: string; text: string }> = {

@@ -114,6 +114,16 @@ describe('CodeBlock', () => {
     expect(addedRow.length).toBeGreaterThan(0);
   });
 
+  it('oldValue/newValue: an inserted line marks only that line added, not every line after it', () => {
+    const { container } = render(
+      <Wrapper>
+        <CodeBlock language="text" title="notes" mode="diff" oldValue={'a\nb\nc'} newValue={'a\nX\nb\nc'} />
+      </Wrapper>,
+    );
+    expect(container.querySelectorAll('.bg-success\\/10')).toHaveLength(1);
+    expect(container.querySelectorAll('.bg-error\\/10')).toHaveLength(0);
+  });
+
   // P0-1 S-A: declaration-only editor capability surface (plugin system,
   // Part D1). Runtime wiring lands in P1 — these props are accepted but
   // inert here.
