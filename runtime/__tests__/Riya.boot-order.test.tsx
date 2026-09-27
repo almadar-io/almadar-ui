@@ -12,7 +12,7 @@ import { clearVerification, getTraitSnapshots, getTransitionsForTrait } from '..
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { EntityRow, OrbitalSchema } from '@almadar/core';
 import {
@@ -26,8 +26,8 @@ import {
 } from '@almadar/runtime';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { OrbPreview } from '../OrbPreview';
+import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
 
-const REPO_ROOT = join(__dirname, '..', '..', '..', '..');
 
 class ResizeObserverStub {
   observe(): void {}
@@ -39,8 +39,8 @@ class ResizeObserverStub {
 async function resolveOrb(orbPath: string): Promise<OrbitalSchema> {
   const raw = JSON.parse(readFileSync(orbPath, 'utf-8')) as OrbitalSchema;
   const result = await preprocessSchema(raw, {
-    basePath: join(REPO_ROOT, 'packages/almadar-behaviors'),
-    stdLibPath: join(REPO_ROOT, 'packages/almadar-std'),
+    basePath: IO_ROOT,
+    stdLibPath: STD_ROOT,
     allowOutsideBasePath: true,
   });
   if (!result.success) throw new Error(`preprocessSchema failed: ${result.errors.join('; ')}`);
@@ -90,7 +90,7 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless', page: str
   };
 }
 
-const SINE = join(REPO_ROOT, 'packages/almadar-behaviors/behaviors/registry/riya/atoms/riya-level-sine.orb');
+const SINE = join(IO_ROOT, 'behaviors/registry/riya/atoms/riya-level-sine.orb');
 
 afterEach(() => {
   cleanup();

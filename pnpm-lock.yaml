@@ -103,6 +103,9 @@ importers:
         specifier: ^2.2.0
         version: 2.6.1
     devDependencies:
+      '@almadar-io/behaviors':
+        specifier: ^0.16.180
+        version: 0.16.180(@almadar/std@16.233.0)
       '@almadar/eslint-plugin':
         specifier: ^2.20.0
         version: 2.20.0(eslint@10.0.0(jiti@1.21.7))
@@ -235,6 +238,11 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
+
+  '@almadar-io/behaviors@0.16.180':
+    resolution: {integrity: sha512-1rZNDy1LV4idADiy+WNst5AFPiajqtzth1cAlB9sUYVZ3JaPvBpeiFuIkTTlFtyV613cmdSWDTzfewY8zdVZyw==, tarball: https://npm.pkg.github.com/download/@almadar-io/behaviors/0.16.180/134807620bb0bea4fd498d66779e22a05b3226d2}
+    peerDependencies:
+      '@almadar/std': ^16.233.0
 
   '@almadar/core@10.108.0':
     resolution: {integrity: sha512-5Q3LuL2ORjsOZ+0mTL60e5S+6leDccydfRI0LuRct/qtFCc4rKesbru9OMKAQG6ns1JAuJ37MRi9AASKfrFOKg==}
@@ -5424,6 +5432,11 @@ snapshots:
   '@adobe/css-tools@4.5.0': {}
 
   '@alloc/quick-lru@5.2.0': {}
+
+  '@almadar-io/behaviors@0.16.180(@almadar/std@16.233.0)':
+    dependencies:
+      '@almadar/core': 10.108.0
+      '@almadar/std': 16.233.0
 
   '@almadar/core@10.108.0':
     dependencies:

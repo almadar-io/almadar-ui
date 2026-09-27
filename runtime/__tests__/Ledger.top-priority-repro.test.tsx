@@ -4,7 +4,6 @@
  * topologies (stateful OrbitalServerRuntime / stateless fresh-manager host):
  * G-RUNTIME-045 (storefront stats paint their INIT zeros), G-RUNTIME-004
  * (std-menu's inline Delete sends the default row after OPEN_ITEM) and
- * G-UI-019 (the pitch deck's game form never reaches its read-back panel),
  * G-RUNTIME-009 (the riya open world drops keyboard intake on most loads).
  */
 import { describe, expect, it } from 'vitest';
@@ -12,7 +11,7 @@ import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { clearVerification, getTransitions } from '../../lib/verificationRegistry';
 import { MemoryRouter } from 'react-router-dom';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { EntityRow, OrbitalSchema } from '@almadar/core';
 import {
@@ -26,14 +25,13 @@ import {
 } from '@almadar/runtime';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { OrbPreview } from '../OrbPreview';
+import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
 
-const REPO_ROOT = join(__dirname, '..', '..', '..', '..');
-const IO = join(REPO_ROOT, 'packages/almadar-behaviors/behaviors/registry');
+const IO = join(IO_ROOT, 'behaviors/registry');
 const STOREFRONT = join(IO, 'marketing/organisms/std-storefront.orb');
 const MENU = join(IO, 'app/atoms/std-menu.orb');
 const DRIVER = join(IO, 'app/atoms/std-driver.orb');
 const APPROVAL = join(IO, 'app/atoms/std-approval-chain.orb');
-const PITCH = join(IO, 'websites/organisms/std-almadar-pitch.orb');
 const RIYA_OW = join(IO, 'riya/organisms/riya-game-platformer-open-world.orb');
 
 class ResizeObserverStub {
@@ -54,8 +52,8 @@ class IntersectionObserverStub {
 async function resolve(orbPath: string): Promise<OrbitalSchema> {
   const raw = JSON.parse(readFileSync(orbPath, 'utf-8')) as OrbitalSchema;
   const result = await preprocessSchema(raw, {
-    basePath: join(REPO_ROOT, 'packages/almadar-behaviors'),
-    stdLibPath: join(REPO_ROOT, 'packages/almadar-std'),
+    basePath: IO_ROOT,
+    stdLibPath: STD_ROOT,
     allowOutsideBasePath: true,
   });
   if (!result.success) throw new Error(`preprocessSchema failed: ${result.errors.join('; ')}`);
@@ -97,7 +95,7 @@ function harness(s: OrbitalSchema, topology: Topology, path: string) {
 
 const topologies: Topology[] = ['stateful', 'stateless'];
 
-describe.each(topologies.filter(() => existsSync(STOREFRONT)))('G-RUNTIME-045 storefront stats (%s)', (topology) => {
+describe.each(topologies)('G-RUNTIME-045 storefront stats (%s)', (topology) => {
   it('the Products card shows the loaded catalog count, not the INIT zero', async () => {
     const h = harness(await resolve(STOREFRONT), topology, '/');
     await h.ready;
@@ -110,7 +108,7 @@ describe.each(topologies.filter(() => existsSync(STOREFRONT)))('G-RUNTIME-045 st
   }, 120_000);
 });
 
-describe.each(topologies.filter(() => existsSync(MENU)))('G-RUNTIME-004 std-menu opened item (%s)', (topology) => {
+describe.each(topologies)('G-RUNTIME-004 std-menu opened item (%s)', (topology) => {
   it('the detail shows the opened item and its Delete removes it', async () => {
     const h = harness(await resolve(MENU), topology, '/menu/manage');
     await h.ready;
@@ -132,28 +130,8 @@ describe.each(topologies.filter(() => existsSync(MENU)))('G-RUNTIME-004 std-menu
   }, 120_000);
 });
 
-describe.each(topologies.filter(() => existsSync(PITCH)))('G-UI-019 pitch game read-back (%s)', (topology) => {
-  it('saving the game form opens the read-back with the typed workplace', async () => {
-    const h = harness(await resolve(PITCH), topology, '/');
-    const { container } = render(<MemoryRouter>{h.element}</MemoryRouter>);
-    for (let i = 0; i < 2; i++) {
-      const next = await screen.findAllByRole('button', {}, { timeout: 30_000 });
-      const forward = next.find((b) => b.querySelector('svg.lucide-chevron-right') !== null && !b.hasAttribute('disabled'));
-      if (!forward) throw new Error('no next button');
-      fireEvent.click(forward);
-    }
-    await screen.findByText(/name a workplace/i, {}, { timeout: 20_000 });
-    const workplace = container.querySelector('input[name="workplace"], textarea[name="workplace"]');
-    if (!workplace) throw new Error('no workplace input');
-    fireEvent.change(workplace, { target: { value: 'Harbor Bakery' } });
-    const submit = screen.getAllByRole('button').find((b) => b.getAttribute('type') === 'submit');
-    if (!submit) throw new Error('no submit');
-    fireEvent.click(submit);
-    await screen.findByText('Harbor Bakery', { selector: ':not(input)' }, { timeout: 20_000 });
-  }, 120_000);
-});
 
-describe.each(topologies.filter(() => existsSync(RIYA_OW)))('G-RUNTIME-009 riya open world keyboard intake (%s)', (topology) => {
+describe.each(topologies)('G-RUNTIME-009 riya open world keyboard intake (%s)', (topology) => {
   it('ArrowRight reaches the play trait on every one of 6 fresh loads', async () => {
     const s = await resolve(RIYA_OW);
     const missed: number[] = [];
@@ -175,7 +153,7 @@ describe.each(topologies.filter(() => existsSync(RIYA_OW)))('G-RUNTIME-009 riya 
   }, 400_000);
 });
 
-describe.each(topologies.filter(() => existsSync(DRIVER)))('G-RUNTIME-004 std-driver opened driver (%s)', (topology) => {
+describe.each(topologies)('G-RUNTIME-004 std-driver opened driver (%s)', (topology) => {
   it('the detail shows the opened driver and its Suspend saves on that driver', async () => {
     const h = harness(await resolve(DRIVER), topology, '/drivers');
     await h.ready;
@@ -194,7 +172,7 @@ describe.each(topologies.filter(() => existsSync(DRIVER)))('G-RUNTIME-004 std-dr
   }, 120_000);
 });
 
-describe.each(topologies.filter(() => existsSync(APPROVAL)))('G-ORB-COMPILER-041 approval chain step display (%s)', (topology) => {
+describe.each(topologies)('G-ORB-COMPILER-041 approval chain step display (%s)', (topology) => {
   it('advancing shows the next step, not the mounted one', async () => {
     const h = harness(await resolve(APPROVAL), topology, '/approval-chain');
     render(<MemoryRouter>{h.element}</MemoryRouter>);

@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { EntityRow, OrbitalSchema } from '@almadar/core';
 import {
@@ -25,11 +25,11 @@ import {
 } from '@almadar/runtime';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { OrbPreview } from '../OrbPreview';
+import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
 
-const REPO_ROOT = join(__dirname, '..', '..', '..', '..');
-const CHAT_ORB = join(REPO_ROOT, 'packages/almadar-behaviors/behaviors/registry/app/organisms/std-realtime-chat.orb');
+const CHAT_ORB = join(IO_ROOT, 'behaviors/registry/app/organisms/std-realtime-chat.orb');
 // project-friday imports std-realtime-chat's whole ChatMessageOrbital.
-const PF_ORB = join(REPO_ROOT, 'packages/almadar-behaviors/behaviors/registry/project-friday/organisms/project-friday.orb');
+const PF_ORB = join(IO_ROOT, 'behaviors/registry/project-friday/organisms/project-friday.orb');
 
 class ResizeObserverStub {
   observe(): void {}
@@ -41,8 +41,8 @@ class ResizeObserverStub {
 async function resolveChat(orbPath: string = CHAT_ORB): Promise<OrbitalSchema> {
   const raw = JSON.parse(readFileSync(orbPath, 'utf-8')) as OrbitalSchema;
   const result = await preprocessSchema(raw, {
-    basePath: join(REPO_ROOT, 'packages/almadar-behaviors'),
-    stdLibPath: join(REPO_ROOT, 'packages/almadar-std'),
+    basePath: IO_ROOT,
+    stdLibPath: STD_ROOT,
     allowOutsideBasePath: true,
   });
   if (!result.success) throw new Error(`preprocessSchema failed: ${result.errors.join('; ')}`);
@@ -109,7 +109,7 @@ const topologies: Array<['stateful' | 'stateless', string]> = [
   ['stateless', CHAT_ORB],
   ['stateful', PF_ORB],
   ['stateless', PF_ORB],
-].filter(([, p]) => existsSync(p)) as Array<['stateful' | 'stateless', string]>;
+] as Array<['stateful' | 'stateless', string]>;
 
 describe.each(topologies)('chat (%s, %s)', (topology, orbPath) => {
   it('lists the seeded conversations in the rail', async () => {

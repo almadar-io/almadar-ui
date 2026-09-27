@@ -18,15 +18,14 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { OrbitalSchema } from '@almadar/core';
 import { preprocessSchema } from '@almadar/runtime';
 import { BrowserPlayground } from '../BrowserPlayground';
+import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
 
-const REPO_ROOT = join(__dirname, '..', '..', '..', '..');
-const GATEWAY_ORB = join(REPO_ROOT, 'packages/almadar-behaviors/behaviors/registry/app/organisms/std-api-gateway.orb');
-const canRunGateway = existsSync(GATEWAY_ORB);
+const GATEWAY_ORB = join(IO_ROOT, 'behaviors/registry/app/organisms/std-api-gateway.orb');
 
 class ResizeObserverStub {
   observe(): void {}
@@ -38,8 +37,8 @@ class ResizeObserverStub {
 async function resolveGateway(): Promise<OrbitalSchema> {
   const raw = JSON.parse(readFileSync(GATEWAY_ORB, 'utf-8')) as OrbitalSchema;
   const result = await preprocessSchema(raw, {
-    basePath: join(REPO_ROOT, 'packages/almadar-behaviors'),
-    stdLibPath: join(REPO_ROOT, 'packages/almadar-std'),
+    basePath: IO_ROOT,
+    stdLibPath: STD_ROOT,
     allowOutsideBasePath: true,
   });
   if (!result.success) throw new Error(`preprocessSchema failed: ${result.errors.join('; ')}`);

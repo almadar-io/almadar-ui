@@ -198,6 +198,7 @@
     }
   },
   "devDependencies": {
+    "@almadar-io/behaviors": "^0.16.180",
     "@almadar/eslint-plugin": "^2.20.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
@@ -215,6 +216,7 @@
     "@types/react-syntax-highlighter": "^15.5.0",
     "@types/three": "^0.160.0",
     "@typescript-eslint/parser": "8.65.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitejs/plugin-react": "^4.2.0",
     "@vitest/ui": "^3.2.6",
     "autoprefixer": "^10.4.0",
@@ -235,10 +237,9 @@
     "tsup": "^8.0.0",
     "tsx": "^4.7.0",
     "turbo": "^2.8.17",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^5.2.0",
-    "vitest": "^3.2.6",
-    "@typescript/native": "npm:typescript@^7.0.2",
-    "typescript": "npm:@typescript/typescript6@^6.0.2"
+    "vitest": "^3.2.6"
   },
   "repository": {
     "type": "git",

@@ -18,15 +18,14 @@
 import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { OrbitalSchema } from '@almadar/core';
 import { preprocessSchema } from '@almadar/runtime';
 import { BrowserPlayground } from '../BrowserPlayground';
+import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
 
-const REPO_ROOT = join(__dirname, '..', '..', '..', '..');
-const SNAKE_ORB = join(REPO_ROOT, 'packages/almadar-behaviors/behaviors/registry/game/organisms/std-snake.orb');
-const canRunSnake = existsSync(SNAKE_ORB);
+const SNAKE_ORB = join(IO_ROOT, 'behaviors/registry/game/organisms/std-snake.orb');
 
 // jsdom has no ResizeObserver (the shell/canvas measure with it).
 class ResizeObserverStub {
@@ -39,15 +38,15 @@ class ResizeObserverStub {
 async function resolveSnake(): Promise<OrbitalSchema> {
   const raw = JSON.parse(readFileSync(SNAKE_ORB, 'utf-8')) as OrbitalSchema;
   const result = await preprocessSchema(raw, {
-    basePath: join(REPO_ROOT, 'packages/almadar-behaviors'),
-    stdLibPath: join(REPO_ROOT, 'packages/almadar-std'),
+    basePath: IO_ROOT,
+    stdLibPath: STD_ROOT,
     allowOutsideBasePath: true,
   });
   if (!result.success) throw new Error(`preprocessSchema failed: ${result.errors.join('; ')}`);
   return result.data.schema;
 }
 
-describe.skipIf(!canRunSnake)('std-snake render — exactly one game shell (G-UI-012)', () => {
+describe('std-snake render — exactly one game shell (G-UI-012)', () => {
   it('INIT renders a single shell: embedded canvas/hud stay in the sidecar, not extra main panels', async () => {
     const schema = await resolveSnake();
     render(<BrowserPlayground schema={schema} fit />);
