@@ -40,6 +40,10 @@ interface Offer {
 
 export interface CodeCompletionState {
   offer: Offer | null;
+  /** Index of the highlighted candidate (↑/↓ move it; Tab takes it). */
+  selected: number;
+  /** Whether a list narrowed by a typed prefix is open now (current even before the next render). */
+  isNarrowed: () => boolean;
   /** True when the key was consumed (the caller must not handle it further). */
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => boolean;
   onKeyUp: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
@@ -53,6 +57,8 @@ export function useCodeCompletion(
   apply: (next: string, caret: number) => void,
 ): CodeCompletionState {
   const [offer, setOffer] = useState<Offer | null>(null);
+  const [selected, setSelected] = useState(0);
+  const narrowed = useRef(false);
   const latest = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -68,12 +74,16 @@ export function useCodeCompletion(
     const offset = ta.selectionStart;
     void provider(code, offset).then((result) => {
       if (id !== latest.current) return;
-      setOffer(result && result.candidates.length > 0 ? { result, offset } : null);
+      const next = result && result.candidates.length > 0 ? { result, offset } : null;
+      narrowed.current = next !== null && next.result.prefix.length > 0;
+      setOffer(next);
+      setSelected(0);
     });
   }, [provider, textareaRef]);
 
   const dismiss = useCallback(() => {
     latest.current++;
+    narrowed.current = false;
     setOffer(null);
   }, []);
 
@@ -98,10 +108,16 @@ export function useCodeCompletion(
       ask();
       return true;
     }
-    const top = offer?.result.candidates[0];
-    if (e.key === 'Tab' && top) {
+    const count = offer?.result.candidates.length ?? 0;
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && count > 0) {
       e.preventDefault();
-      accept(top.label);
+      setSelected((i) => (i + (e.key === 'ArrowDown' ? 1 : count - 1)) % count);
+      return true;
+    }
+    const chosen = offer?.result.candidates[Math.min(selected, count - 1)];
+    if (e.key === 'Tab' && chosen) {
+      e.preventDefault();
+      accept(chosen.label);
       return true;
     }
     if (e.key === 'Escape' && offer) {
@@ -109,7 +125,9 @@ export function useCodeCompletion(
       return true;
     }
     return false;
-  }, [provider, offer, ask, accept, dismiss]);
+  }, [provider, offer, selected, ask, accept, dismiss]);
 
-  return { offer, onKeyDown, onKeyUp, accept, dismiss };
+  const isNarrowed = useCallback(() => narrowed.current, []);
+
+  return { offer, selected, isNarrowed, onKeyDown, onKeyUp, accept, dismiss };
 }

@@ -659,5 +659,12 @@
   "changeList.inspect": "Inspect",
   "changeList.empty": "No changes in this version.",
   "commitRow.kind.redo": "Redo",
-  "commitRow.kind.snapshot": "Snapshot"
+  "commitRow.kind.snapshot": "Snapshot",
+  "codeAssist.thinking": "Thinking…",
+  "codeAssist.findingFixes": "Finding fixes…",
+  "codeAssist.suggested": "{{count}} suggested",
+  "codeAssist.keys": "Tab accept · ⌘/Ctrl+Enter accept all · Esc dismiss",
+  "codeAssist.acceptAll": "Accept all",
+  "codeAssist.suggestFixes": "Suggest fixes for {{count}} problem(s) · ⌘/Ctrl+.",
+  "codeAssist.line": "Line {{line}}"
 }

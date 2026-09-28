@@ -114,6 +114,36 @@ describe('OrbInspector tab bar', () => {
   });
 });
 
+describe('OrbInspector tabs with nothing to show', () => {
+  // The Inspector tab's sections (entity fields, service mode, traits) all belong to
+  // the orbital overview or an entity-aware pattern; a tab that renders nothing is
+  // not offered, and the panel opens on Design instead.
+  it('a designer with an element selected gets no Inspector tab and lands on Design', () => {
+    const { container } = renderWithSelection(
+      <OrbInspector node={overviewNode} schema={schema} userType="designer" defaultTab="inspector" onClose={() => {}} />,
+      badgeSelection,
+    );
+    expect(screen.queryByRole('button', { name: 'Inspector' })).not.toBeInTheDocument();
+    expect(within(contentPane(container)).getByText('Props')).toBeInTheDocument();
+  });
+
+  it('control: with nothing selected the Inspector tab stays and shows the traits', () => {
+    const { container } = renderWithSelection(
+      <OrbInspector node={overviewNode} schema={schema} userType="designer" onClose={() => {}} />,
+    );
+    expect(screen.getByRole('button', { name: 'Inspector' })).toBeInTheDocument();
+    expect(within(contentPane(container)).getByText('TaskList')).toBeInTheDocument();
+  });
+
+  it('edge: an architect with an entity-aware pattern selected keeps Inspector (entity fields)', () => {
+    renderWithSelection(
+      <OrbInspector node={overviewNode} schema={schema} userType="architect" onClose={() => {}} />,
+      { patternType: 'data-grid', nodeData: overviewNode },
+    );
+    expect(screen.getByRole('button', { name: 'Inspector' })).toBeInTheDocument();
+  });
+});
+
 describe('OrbInspector Design tab', () => {
   it('renders Pattern Props for a selected pattern plus the Styles content', () => {
     const { container } = renderWithSelection(

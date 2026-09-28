@@ -215,6 +215,12 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
     return findTransition(schema, orbitalName, traitName, transitionEvent);
   }, [schema, orbitalName, traitName, transitionEvent]);
   const traits = useMemo(() => findTraits(schema, orbitalName), [schema, orbitalName]);
+  // The Inspector tab's sections. A tab with none of them to show is not offered.
+  const showEntityFields = userType === 'architect' && ((Boolean(selectedPattern) && isEntityPattern) || (!selectedPattern && !isExpanded)) && Boolean(entity);
+  const showServiceMode = editable && !selectedPattern && !isExpanded && node.layer === 'Services';
+  const showTraits = !selectedPattern && !isExpanded && traits.length > 0;
+  const inspectorHasContent = showEntityFields || showServiceMode || showTraits;
+  const shownTab: InspectorTab = activeTab === 'inspector' && !inspectorHasContent ? 'design' : activeTab;
 
   // Resolve current pattern config values from the schema.
   //
@@ -447,12 +453,13 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
         <Box className="flex px-4 gap-4">
           {(['inspector', 'design', 'prototype', 'code'] as const)
             .filter((tab) => tab !== 'code' || userType === 'architect')
+            .filter((tab) => tab !== 'inspector' || inspectorHasContent)
             .map((tab) => (
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab)}
                 className={`pb-2 text-xs font-medium border-b-2 cursor-pointer bg-transparent border-x-0 border-t-0 px-0 capitalize ${
-                  activeTab === tab
+                  shownTab === tab
                     ? 'border-[var(--color-primary)] text-foreground'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
@@ -465,7 +472,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
 
       {/* Scrollable content */}
       <Box className="flex-1 overflow-y-auto">
-        {activeTab === 'code' && userType === 'architect' ? (
+        {shownTab === 'code' && userType === 'architect' ? (
           /* ── Code Tab (architect only) ── */
           /* GAP-51: when editable, the CodeBlock molecule renders the existing
              Textarea atom internally and forwards keystrokes via UI:CODE_CHANGE
@@ -483,7 +490,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
               onChange={editable ? (code) => eventBus.emit('UI:CODE_CHANGE', { code }) : undefined}
             />
           </Box>
-        ) : activeTab === 'design' ? (
+        ) : shownTab === 'design' ? (
           /* ── Design Tab ── Pattern Props + Styles + render-ui source. */
           <>
             {/* Pattern Props */}
@@ -557,7 +564,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
               </Box>
             )}
           </>
-        ) : activeTab === 'prototype' ? (
+        ) : shownTab === 'prototype' ? (
           /* ── Prototype Tab ── State Transition + Trigger + Guard + Effects. */
           <>
             {/* State Transition */}
@@ -657,7 +664,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
           /* ── Inspector Tab (overview) ── orbital-scoped sections only. */
           <>
             {/* Entity Fields (architect only — designer/builder hide entity persistence + field types) */}
-            {userType === 'architect' && ((selectedPattern && isEntityPattern) || (!selectedPattern && !isExpanded)) && entity && (
+            {showEntityFields && entity && (
               <Box className="px-4 py-3 border-b border-border/40">
                 <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.entity')}</Typography>
                 <Box className="flex items-center gap-2 mb-2">
@@ -720,7 +727,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             )}
 
             {/* Service Mode Toggle (service behaviors only) */}
-            {editable && !selectedPattern && !isExpanded && node.layer === 'Services' && (
+            {showServiceMode && (
               <Box className="px-4 py-3 border-b border-border/40">
                 <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('orbInspector.serviceMode')}</Typography>
                 <HStack gap="sm" className="items-center">
@@ -754,7 +761,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             )}
 
             {/* Traits (orbital overview) */}
-            {!selectedPattern && !isExpanded && traits.length > 0 && (
+            {showTraits && (
               <Box className="px-4 py-3 border-b border-border/40">
                 <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.traits')}</Typography>
                 <Box className="flex flex-col gap-1">

@@ -305,9 +305,24 @@ import { Box } from '../../atoms/Box';
 import { Button } from '../../atoms/Button';
 import { Badge } from '../../atoms/Badge';
 import { HStack } from '../../atoms/Stack';
-import { useCodeCompletion, type CodeCompletionProvider } from './useCodeCompletion';
-export { applyCompletion, type CodeCompletion, type CodeCompletionProvider, type CodeCompletionResult } from './useCodeCompletion';
+import { useCodeCompletion, type CodeCompletionProvider } from '../../../../hooks/useCodeCompletion';
+import { useCodeAssist, type CodeAssistProvider } from '../../../../hooks/useCodeAssist';
+export { type CodeAssistProvider, type CodeAssistRequest, type CodeAssistResult } from '../../../../hooks/useCodeAssist';
+export { applySuggestions, type CodeSuggestion } from '../../../../lib/codeAssist';
+import { diagnosticAt, diagnosticRanges, remapRanges, underlineSegments, type CodeDiagnostic, type DiagnosticRange } from '../../../../lib/codeDiagnostics';
+export { type CodeDiagnostic } from '../../../../lib/codeDiagnostics';
+export { applyCompletion, type CodeCompletion, type CodeCompletionProvider, type CodeCompletionResult } from '../../../../hooks/useCodeCompletion';
 import { Textarea } from '../../atoms/Textarea';
+
+const MONO_EDITOR_FONT = 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace';
+const GHOST_COLOR = '#7f848e';
+const GUTTER_COLOR = '#858585';
+/** A selection's moving end — where the caret is drawn. */
+const caretOf = (ta: HTMLTextAreaElement): number => (ta.selectionDirection === 'backward' ? ta.selectionStart : ta.selectionEnd);
+const DIAGNOSTIC_ERROR_COLOR = '#f14c4c';
+const DIAGNOSTIC_WARNING_COLOR = '#cca700';
+/** 13px × 1.5 — the editable textarea's line box. */
+const EDITOR_LINE_PX = 19.5;
 import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
@@ -586,6 +601,39 @@ export interface CodeBlockProps {
    * @tier presentation
    */
   completions?: CodeCompletionProvider;
+  /**
+   * Editable only: model-assisted editing. Asked after a pause (and on Ctrl-Space) for a
+   * completion at the caret, shown as ghost text; on ⌘/Ctrl-. for fixes, listed under the
+   * editor. Tab accepts the next, ⌘/Ctrl-Enter accepts all, Escape dismisses.
+   * @tier presentation
+   */
+  assist?: CodeAssistProvider;
+  /**
+   * Editable only: how many problems the host knows the code has (some, like a parse
+   * error, have no line to mark). With `assist`, the editor offers to fix them.
+   * @tier presentation
+   */
+  problems?: number;
+  /**
+   * Editable only: problems located in the code (1-based line/column in characters,
+   * `endColumn` just past the last one), each underlined exactly — red wavy for an
+   * error, amber for a warning, dotted where the position is approximate. The
+   * message of the one under the caret shows below the editor.
+   * @tier presentation
+   */
+  diagnostics?: readonly CodeDiagnostic[];
+  /**
+   * The code `diagnostics` were computed on. When the editor's text has moved on,
+   * each range is carried over the edit; a range the edit touches is dropped until
+   * the code is checked again. Absent: they describe the current text.
+   * @tier presentation
+   */
+  diagnosticsCode?: string;
+  /**
+   * Editable only: number the lines in a gutter (lines with errors in red). Default on.
+   * @tier presentation
+   */
+  lineNumbers?: boolean;
 }
 
 // ── Diff helpers ─────────────────────────────────────────────────────────────
@@ -624,6 +672,16 @@ const HIDDEN_LINE_NUMBERS: React.CSSProperties = { display: 'none' };
  * per-line DOM).
  */
 export const HIGHLIGHT_CAPACITY_BYTES = 512 * 1024;
+
+/**
+ * What the editable overlay paints for `value`. A textarea ending in a newline
+ * shows an empty last line; a block element drops a trailing newline. Painting a
+ * space after it keeps both the same height, or the overlay scrolls one line short
+ * of the caret at the bottom of the file.
+ */
+export function overlayText(value: string): string {
+  return value === '' || value.endsWith('\n') ? `${value} ` : value;
+}
 
 /** Loads the Prism grammar for `language` on demand; returns readiness so the
  *  highlight re-renders once the lazy chunk arrives. */
@@ -743,6 +801,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     onChange,
     errorLines,
     completions,
+    assist: assistProvider,
+    problems,
+    diagnostics,
+    diagnosticsCode,
+    lineNumbers,
     // viewer props
     title,
     mode = 'code',
@@ -925,6 +988,9 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       }
     }, [code]);
 
+    const editableGutterRef = useRef<HTMLDivElement | null>(null);
+    // Bumped on scroll so layers positioned outside the scrolled overlay re-measure.
+    const [scrollTick, setScrollTick] = useState(0);
     const handleEditableScroll = useCallback(() => {
       const ta = editableTextareaRef.current;
       const ov = editableOverlayRef.current;
@@ -932,6 +998,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         ov.scrollTop = ta.scrollTop;
         ov.scrollLeft = ta.scrollLeft;
       }
+      if (ta && editableGutterRef.current) editableGutterRef.current.scrollTop = ta.scrollTop;
+      setScrollTick((n) => n + 1);
     }, []);
 
     // The ONE change path: a keystroke and a plugin-driven capability edit
@@ -945,7 +1013,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       const ta = editableTextareaRef.current;
       // Keeps caretIndex live after a capability edit too (MOTION/OPERATE/
       // INSERT_TEXT already moved `ta.selectionStart` by the time this runs).
-      if (ta) setCaretIndex(ta.selectionStart);
+      if (ta) setCaretIndex(caretOf(ta));
       onChange?.(v);
     }, [onChange]);
 
@@ -955,6 +1023,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       events: { onMotion, onOperate, onInsertText, onSetMode },
       focused: isFocused,
       applyChange: handleEditableChange,
+      onCaret: setCaretIndex,
     });
 
     // A completion is an edit like a keystroke: recorded for undo, then the one change path.
@@ -968,11 +1037,61 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     }, [recordKeystroke, handleEditableChange]);
 
     const completion = useCodeCompletion(editable ? completions : undefined, editableTextareaRef, applyCompletionEdit);
+    // A list the typed prefix has narrowed is the exact answer; an empty-prefix list is only a menu.
+    const keywordListNarrowed = completion.isNarrowed;
+    const askOnPause = useCallback(() => !keywordListNarrowed(), [keywordListNarrowed]);
+    const assist = useCodeAssist(editable ? assistProvider : undefined, editableTextareaRef, applyCompletionEdit, askOnPause);
+    const problemCount = problems ?? errorLines?.size ?? 0;
+    const diagnosticRangesNow = useMemo((): DiagnosticRange[] => {
+      if (!editable || !diagnostics || diagnostics.length === 0) return [];
+      const basis = diagnosticsCode ?? editableValue;
+      return remapRanges(basis, editableValue, diagnosticRanges(basis, diagnostics));
+    }, [editable, diagnostics, diagnosticsCode, editableValue]);
+    const diagnosticUnderlines = useMemo(
+      () => (diagnosticRangesNow.length > 0 ? underlineSegments(editableValue, diagnosticRangesNow) : []),
+      [diagnosticRangesNow, editableValue],
+    );
+    const diagnosticHere = diagnosticAt(diagnosticRangesNow, caretIndex);
+    const showGutter = editable && lineNumbers !== false;
+    const lineCount = editableValue.split('\n').length;
+    const gutterWidth = showGutter ? String(lineCount).length * 8 + 20 : 0;
+    const errorLineSet = useMemo(() => {
+      const set = new Set<number>(errorLines ? [...errorLines.keys()] : []);
+      for (const r of diagnosticRangesNow) {
+        if (r.severity === 'error') set.add(editableValue.slice(0, r.from).split('\n').length);
+      }
+      return set;
+    }, [errorLines, diagnosticRangesNow, editableValue]);
+    const ghost = assist.atCaret ? assist.suggestions[0] : undefined;
+    const keyword = completion.offer ? completion.offer.result.candidates[completion.selected] : undefined;
+    // What shows at the caret: the model's completion, else the rest of the highlighted keyword.
+    const inline = ghost
+      ? { at: ghost.from, text: ghost.text }
+      : completion.offer && keyword
+        ? {
+            at: completion.offer.offset,
+            text: keyword.label.startsWith(completion.offer.result.prefix) ? keyword.label.slice(completion.offer.result.prefix.length) : '',
+          }
+        : undefined;
+    const ghostLines = inline ? inline.text.split('\n') : [];
+    const listed = ghost ? assist.suggestions.slice(1) : assist.suggestions;
+    const ghostAnchorRef = useRef<HTMLDivElement | null>(null);
+    const [anchor, setAnchor] = useState({ top: 0, left: 0, scrollTop: 0, scrollLeft: 0, height: 0 });
+    useLayoutEffect(() => {
+      const a = ghostAnchorRef.current;
+      const ov = editableOverlayRef.current;
+      if (a && ov) setAnchor({ top: a.offsetTop, left: a.offsetLeft, scrollTop: ov.scrollTop, scrollLeft: ov.scrollLeft, height: ov.clientHeight });
+    }, [inline?.at, inline?.text, editableValue, scrollTick]);
+    // A completion from the model wins Tab over the language's keyword list.
+    useEffect(() => {
+      if (ghost) completion.dismiss();
+    }, [ghost, completion.dismiss]);
 
     const handleEditableKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const ta = editableTextareaRef.current;
         if (ta) prevCaretRef.current = ta.selectionStart;
+        if (assist.onKeyDown(e)) return;
         if (completion.onKeyDown(e)) return;
         const mod = e.metaKey || e.ctrlKey;
         if (!mod) return;
@@ -985,7 +1104,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           redo();
         }
       },
-      [undo, redo, completion],
+      [undo, redo, completion, assist],
     );
 
     const showBlockCaret = isFocused && caretMode !== 'bar';
@@ -1116,7 +1235,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               lineHeight: '1.5',
             }}
           >
-            {editableValue || ' '}
+            {overlayText(editableValue)}
           </div>
         ) : (
         <SyntaxHighlighter
@@ -1144,7 +1263,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
             },
           }}
         >
-          {editableValue || ' '}
+          {overlayText(editableValue)}
         </SyntaxHighlighter>
         ),
       [editableValue, editableOverCapacity, plainCodeColor, language, activeStyle, errorLines, errorLineProps, languageReady],
@@ -1645,20 +1764,198 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               overflow: 'hidden',
             }}
           >
+            {showGutter && (
+              <Box
+                ref={editableGutterRef}
+                aria-hidden
+                data-testid="code-editor-gutter"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  bottom: 0,
+                  width: gutterWidth,
+                  overflow: 'hidden',
+                  paddingTop: '1rem',
+                  paddingBottom: '1rem',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                }}
+              >
+                {Array.from({ length: lineCount }, (_, i) => {
+                  const isError = errorLineSet.has(i + 1);
+                  return (
+                    <Box
+                      key={i}
+                      data-error={isError ? 'true' : undefined}
+                      style={{
+                        height: EDITOR_LINE_PX,
+                        paddingRight: 8,
+                        textAlign: 'right',
+                        fontFamily: MONO_EDITOR_FONT,
+                        fontSize: '13px',
+                        lineHeight: '1.5',
+                        color: isError ? DIAGNOSTIC_ERROR_COLOR : GUTTER_COLOR,
+                      }}
+                    >
+                      {i + 1}
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
             <div
               ref={editableOverlayRef}
               aria-hidden
+              data-testid="code-editor-overlay"
               style={{
                 position: 'absolute',
                 top: 0,
-                left: 0,
-                width: '100%',
+                left: gutterWidth,
+                width: `calc(100% - ${gutterWidth}px)`,
                 height: '100%',
                 overflow: 'hidden',
                 pointerEvents: 'none',
               }}
             >
               {editableHighlightedElement}
+              {diagnosticUnderlines.length > 0 && (
+                <Box
+                  aria-hidden
+                  data-testid="code-diagnostics-layer"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    minWidth: '100%',
+                    padding: '1rem',
+                    margin: 0,
+                    whiteSpace: 'pre',
+                    color: 'transparent',
+                    fontFamily: MONO_EDITOR_FONT,
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                  }}
+                >
+                  {diagnosticUnderlines.map((seg, i) => {
+                    const mark = seg.range ?? seg.marker;
+                    if (!mark) return <React.Fragment key={i}>{seg.text}</React.Fragment>;
+                    return (
+                      <Box
+                        as="span"
+                        key={i}
+                        data-testid="code-diagnostic"
+                        data-severity={mark.severity}
+                        data-approximate={String(mark.approximate)}
+                        style={{
+                          textDecorationLine: 'underline',
+                          textDecorationStyle: mark.approximate ? 'dotted' : 'wavy',
+                          textDecorationColor: mark.severity === 'error' ? DIAGNOSTIC_ERROR_COLOR : DIAGNOSTIC_WARNING_COLOR,
+                          textDecorationThickness: '1.5px',
+                          textDecorationSkipInk: 'none',
+                          textUnderlineOffset: '3px',
+                        }}
+                      >
+                        {seg.range ? seg.text : '\u00a0'}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
+              {inline && (
+                <Box
+                  aria-hidden
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    minWidth: '100%',
+                    padding: '1rem',
+                    margin: 0,
+                    whiteSpace: 'pre',
+                    color: 'transparent',
+                    fontFamily: MONO_EDITOR_FONT,
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                  }}
+                >
+                  {editableValue.slice(0, inline.at)}
+                  <Box as="span" ref={ghostAnchorRef} />
+                  {ghostLines[0] !== '' && (
+                    <Box as="span" data-testid="code-assist-ghost" style={{ color: GHOST_COLOR, backgroundColor: '#1e1e1e', fontStyle: 'italic' }}>
+                      {ghostLines[0]}
+                    </Box>
+                  )}
+                </Box>
+              )}
+              {inline && ghostLines.length > 1 && (
+                <Box
+                  aria-hidden
+                  data-testid="code-assist-ghost-rest"
+                  style={{
+                    position: 'absolute',
+                    top: anchor.top + EDITOR_LINE_PX,
+                    left: 0,
+                    minWidth: '100%',
+                    padding: '0 1rem',
+                    margin: 0,
+                    whiteSpace: 'pre',
+                    color: GHOST_COLOR,
+                    fontStyle: 'italic',
+                    backgroundColor: '#1e1e1e',
+                    borderTop: '1px dashed #3c3c3c',
+                    borderBottom: '1px dashed #3c3c3c',
+                    fontFamily: MONO_EDITOR_FONT,
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                  }}
+                >
+                  {ghostLines.slice(1).join('\n')}
+                </Box>
+              )}
+              {/* Block/underline caret render (SET_MODE), SV4-4: only while
+                  focused — the plugin re-announces SET_MODE on every
+                  EDITOR_FOCUS, and blur resets caretMode to 'bar' (the hook).
+                  Position comes from a hidden mirror div that copies the
+                  textarea's computed font/padding/width/wrap (the standard
+                  textarea-caret technique) so wrapped lines and tabs measure
+                  correctly — character-cell `ch`/row math doesn't. */}
+              {showBlockCaret && (
+                <div
+                  ref={caretMirrorRef}
+                  aria-hidden
+                  data-testid="editor-caret-mirror"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    padding: '1rem',
+                    margin: 0,
+                    border: 'none',
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {editableValue.slice(0, caretIndex)}
+                  <span ref={caretMarkerRef} data-testid="editor-caret-marker">{'​'}</span>
+                </div>
+              )}
+              {showBlockCaret && caretGeometry && (
+                <span
+                  aria-hidden
+                  data-testid="editor-caret"
+                  style={{
+                    position: 'absolute',
+                    top: caretGeometry.top,
+                    left: caretGeometry.left,
+                    width: '1ch',
+                    height: caretMode === 'block' ? caretGeometry.lineHeight || '1.2em' : '2px',
+                    backgroundColor: caretMode === 'block' ? 'rgba(230, 230, 230, 0.5)' : undefined,
+                    borderBottom: caretMode === 'underline' ? '2px solid #e6e6e6' : undefined,
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
             </div>
             <Textarea
               key={editableTextareaKey}
@@ -1667,15 +1964,21 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               onChange={(e) => {
                 const next = e.target.value;
                 recordKeystroke(editableValue, prevCaretRef.current, next);
+                assist.onEdited(editableValue, next);
                 handleEditableChange(next, 'keystroke');
               }}
               onScroll={handleEditableScroll}
-              onSelect={(e) => setCaretIndex(e.currentTarget.selectionStart)}
+              onSelect={(e) => setCaretIndex(caretOf(e.currentTarget))}
               onKeyUp={(e) => {
-                setCaretIndex(e.currentTarget.selectionStart);
+                setCaretIndex(caretOf(e.currentTarget));
+                if (e.key.startsWith('Arrow') || e.key === 'Home' || e.key === 'End' || e.key.startsWith('Page')) assist.onCaretMoved(e.currentTarget.selectionStart);
                 completion.onKeyUp(e);
+                assist.onKeyUp(e);
               }}
-              onClick={(e) => setCaretIndex(e.currentTarget.selectionStart)}
+              onClick={(e) => {
+                setCaretIndex(caretOf(e.currentTarget));
+                assist.onCaretMoved(e.currentTarget.selectionStart);
+              }}
               onKeyDown={handleEditableKeyDown}
               onFocus={() => {
                 setIsFocused(true);
@@ -1689,8 +1992,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               style={{
                 position: 'absolute',
                 top: 0,
-                left: 0,
-                width: '100%',
+                left: gutterWidth,
+                width: `calc(100% - ${gutterWidth}px)`,
                 height: '100%',
                 padding: '1rem',
                 margin: 0,
@@ -1709,48 +2012,42 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 overflow: 'auto',
               }}
             />
-            {/* Block/underline caret render (SET_MODE), SV4-4: only while
-                focused — the plugin re-announces SET_MODE on every
-                EDITOR_FOCUS, and blur resets caretMode to 'bar' (the hook).
-                Position comes from a hidden mirror div that copies the
-                textarea's computed font/padding/width/wrap (the standard
-                textarea-caret technique) so wrapped lines and tabs measure
-                correctly — character-cell `ch`/row math doesn't. */}
-            {showBlockCaret && (
-              <div
-                ref={caretMirrorRef}
-                aria-hidden
-                data-testid="editor-caret-mirror"
+            {completion.offer && (
+              <Box
+                data-testid="code-completions"
+                role="listbox"
+                className="rounded border border-border shadow-lg"
                 style={{
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  padding: '1rem',
-                  margin: 0,
-                  border: 'none',
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
+                  zIndex: 2,
+                  left: gutterWidth + Math.max(0, anchor.left - anchor.scrollLeft),
+                  ...(anchor.top - anchor.scrollTop > anchor.height / 2
+                    ? { bottom: anchor.height - (anchor.top - anchor.scrollTop) }
+                    : { top: anchor.top - anchor.scrollTop + EDITOR_LINE_PX }),
+                  maxHeight: '12rem',
+                  minWidth: '12rem',
+                  overflowY: 'auto',
+                  backgroundColor: '#252526',
                 }}
               >
-                {editableValue.slice(0, caretIndex)}
-                <span ref={caretMarkerRef} data-testid="editor-caret-marker">{'​'}</span>
-              </div>
-            )}
-            {showBlockCaret && caretGeometry && (
-              <span
-                aria-hidden
-                data-testid="editor-caret"
-                style={{
-                  position: 'absolute',
-                  top: caretGeometry.top,
-                  left: caretGeometry.left,
-                  width: '1ch',
-                  height: caretMode === 'block' ? caretGeometry.lineHeight || '1.2em' : '2px',
-                  backgroundColor: caretMode === 'block' ? 'rgba(230, 230, 230, 0.5)' : undefined,
-                  borderBottom: caretMode === 'underline' ? '2px solid #e6e6e6' : undefined,
-                  pointerEvents: 'none',
-                }}
-              />
+                {completion.offer.result.candidates.map((c, i) => (
+                  <Box
+                    key={c.label}
+                    role="option"
+                    aria-selected={i === completion.selected}
+                    onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                    onClick={() => completion.accept(c.label)}
+                    className="cursor-pointer px-2 py-0.5"
+                    style={{ backgroundColor: i === completion.selected ? '#04395e' : undefined }}
+                    data-testid={`code-completion-${c.label}`}
+                  >
+                    <HStack gap="sm" align="center" justify="between">
+                      <Typography variant="caption" className="font-mono" style={{ color: '#e6e6e6' }}>{c.label}</Typography>
+                      {c.detail && <Typography variant="caption" color="secondary">{c.detail}</Typography>}
+                    </HStack>
+                  </Box>
+                ))}
+              </Box>
             )}
           </Box>
         ) : (
@@ -1782,21 +2079,63 @@ export const CodeBlock = React.memo<CodeBlockProps>(
             </div>
           </div>
         )}
-        {completion.offer && (
-          <Box className="flex-shrink-0 border-t border-border px-2 py-2" data-testid="code-completions">
-            <HStack gap="xs" wrap>
-            {completion.offer.result.candidates.map((c, i) => (
-              <Button
-                key={c.label}
-                size="sm"
-                variant={i === 0 ? 'primary' : 'ghost'}
-                onClick={() => completion.accept(c.label)}
-                data-testid={`code-completion-${c.label}`}
-              >
-                {c.detail ? `${c.label} · ${c.detail}` : c.label}
-              </Button>
-            ))}
+        {diagnosticHere && (
+          <Box className="flex-shrink-0 border-t border-border px-2 py-1" data-testid="code-diagnostic-at-caret">
+            <Typography variant="caption" style={{ color: diagnosticHere.severity === 'error' ? DIAGNOSTIC_ERROR_COLOR : DIAGNOSTIC_WARNING_COLOR }}>
+              {diagnosticHere.message}
+            </Typography>
+          </Box>
+        )}
+        {editable && assistProvider && (assist.asking || assist.suggestions.length > 0 || assist.note || problemCount > 0) && (
+          <Box className="flex-shrink-0 border-t border-border px-2 py-1.5" data-testid="code-assist-bar">
+            <HStack gap="sm" align="center" wrap>
+              {assist.asking && (
+                <Typography variant="caption" color="secondary">
+                  {assist.asking === 'fix' ? t('codeAssist.findingFixes') : t('codeAssist.thinking')}
+                </Typography>
+              )}
+              {assist.suggestions.length > 0 && (
+                <>
+                  <Badge variant="info" size="sm">{t('codeAssist.suggested', { count: assist.suggestions.length })}</Badge>
+                  <Typography variant="caption" color="secondary">{t('codeAssist.keys')}</Typography>
+                  {listed.length > 0 && (
+                    <Button size="sm" variant="primary" onClick={assist.acceptAll} data-testid="code-assist-accept-all">
+                      {t('codeAssist.acceptAll')}
+                    </Button>
+                  )}
+                </>
+              )}
+              {!assist.asking && assist.suggestions.length === 0 && problemCount > 0 && (
+                <Button size="sm" variant="secondary" onClick={() => assist.request('fix', 'explicit')} data-testid="code-assist-request-fix">
+                  {t('codeAssist.suggestFixes', { count: problemCount })}
+                </Button>
+              )}
+              {assist.note && <Typography variant="caption" color="secondary">{assist.note}</Typography>}
             </HStack>
+            {listed.map((s, i) => (
+              <Box
+                key={`${s.from}-${s.to}-${i}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => assist.accept(s)}
+                className="mt-1 cursor-pointer rounded border border-border px-2 py-1 hover:bg-muted/50"
+                data-testid={`code-assist-fix-${i}`}
+              >
+                <Typography variant="caption" color="secondary">
+                  {t('codeAssist.line', { line: editableValue.slice(0, s.from).split('\n').length })}{s.why ? ` · ${s.why}` : ''}
+                </Typography>
+                {s.to > s.from && (
+                  <Typography variant="caption" className="block whitespace-pre font-mono" style={{ color: '#f48771' }}>
+                    {editableValue.slice(s.from, s.to).replace(/^/gm, '− ')}
+                  </Typography>
+                )}
+                {s.text !== '' && (
+                  <Typography variant="caption" className="block whitespace-pre font-mono" style={{ color: '#89d185' }}>
+                    {s.text.replace(/^\n/, '').replace(/^/gm, '+ ')}
+                  </Typography>
+                )}
+              </Box>
+            ))}
           </Box>
         )}
       </Box>
@@ -1812,6 +2151,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.editable === next.editable &&
     prev.onChange === next.onChange &&
     prev.completions === next.completions &&
+    prev.assist === next.assist &&
+    prev.problems === next.problems &&
+    prev.diagnostics === next.diagnostics &&
+    prev.diagnosticsCode === next.diagnosticsCode &&
+    prev.lineNumbers === next.lineNumbers &&
     prev.errorLines === next.errorLines &&
     prev.mode === next.mode &&
     prev.title === next.title &&

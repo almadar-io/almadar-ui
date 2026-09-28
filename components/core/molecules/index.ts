@@ -68,6 +68,12 @@ export {
   type CodeCompletion,
   type CodeCompletionProvider,
   type CodeCompletionResult,
+  applySuggestions,
+  type CodeSuggestion,
+  type CodeAssistProvider,
+  type CodeAssistRequest,
+  type CodeAssistResult,
+  type CodeDiagnostic,
   type CodeLanguageLoader,
   type PrismLanguageGrammar,
 } from './markdown/CodeBlock';

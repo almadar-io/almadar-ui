@@ -659,5 +659,12 @@
   "changeList.inspect": "فحص",
   "changeList.empty": "لا توجد تغييرات في هذه النسخة.",
   "commitRow.kind.redo": "إعادة",
-  "commitRow.kind.snapshot": "لقطة"
+  "commitRow.kind.snapshot": "لقطة",
+  "codeAssist.thinking": "جارٍ التفكير…",
+  "codeAssist.findingFixes": "جارٍ البحث عن إصلاحات…",
+  "codeAssist.suggested": "{{count}} مقترح",
+  "codeAssist.keys": "Tab للقبول · ⌘/Ctrl+Enter لقبول الكل · Esc للإلغاء",
+  "codeAssist.acceptAll": "قبول الكل",
+  "codeAssist.suggestFixes": "اقتراح إصلاحات لـ {{count}} مشكلة · ⌘/Ctrl+.",
+  "codeAssist.line": "السطر {{line}}"
 }

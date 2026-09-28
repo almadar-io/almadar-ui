@@ -45,6 +45,8 @@ export interface UseEditorCapabilitiesArgs {
   editorId: string | undefined;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   events: EditorCapabilityEvents;
+  /** The caret's new index after a MOTION/OPERATE moved it (the selection's moving end). */
+  onCaret?: (index: number) => void;
   /** Whether the textarea is currently focused — the block/underline caret only ever renders while true; the falling edge resets `caretMode` to `'bar'`. */
   focused: boolean;
   /** The ONE change path — same one a keystroke drives. `origin` distinguishes a keystroke (subject to undo coalescing) from a capability edit (always its own history step). */
@@ -237,15 +239,21 @@ export function useEditorCapabilities(args: UseEditorCapabilitiesArgs): UseEdito
     }
     const ta = args.textareaRef.current;
     if (!ta) return;
-    const newCaret = applyMotion(ta.value, ta.selectionStart, motion, count);
-    // Simplification (documented, E3): a held selection EXTENDS its end to
-    // the new caret instead of collapsing, so repeated motions grow/shrink
-    // a VISUAL-style selection rather than losing it.
-    if (ta.selectionStart !== ta.selectionEnd) {
-      ta.setSelectionRange(ta.selectionStart, newCaret);
+    const selecting = ta.selectionStart !== ta.selectionEnd;
+    // The end that moves: the caret, or a held selection's far end from its anchor.
+    const backward = ta.selectionDirection === 'backward';
+    const moving = selecting && !backward ? ta.selectionEnd : ta.selectionStart;
+    const newCaret = applyMotion(ta.value, moving, motion, count);
+    // A held selection EXTENDS from its anchor to the new caret instead of
+    // collapsing, so repeated motions grow/shrink a VISUAL-style selection —
+    // in either direction.
+    if (selecting) {
+      const anchor = backward ? ta.selectionEnd : ta.selectionStart;
+      ta.setSelectionRange(Math.min(anchor, newCaret), Math.max(anchor, newCaret), newCaret < anchor ? 'backward' : 'forward');
     } else {
       ta.setSelectionRange(newCaret, newCaret);
     }
+    args.onCaret?.(newCaret);
   });
 
   useEventListener(`UI:${args.events.onOperate}`, (evt: BusEvent) => {
@@ -291,6 +299,7 @@ export function useEditorCapabilities(args: UseEditorCapabilitiesArgs): UseEdito
 
     if (operator === 'yank') {
       ta.setSelectionRange(result.caret, result.caret);
+      args.onCaret?.(result.caret);
     } else {
       ta.value = result.text;
       ta.setSelectionRange(result.caret, result.caret);

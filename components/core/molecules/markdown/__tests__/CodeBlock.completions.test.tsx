@@ -129,6 +129,36 @@ describe('CodeBlock completions', () => {
   });
 });
 
+describe('CodeBlock completions: the list at the caret', () => {
+  it('the selected candidate shows as ghost text; ArrowDown/ArrowUp move the selection and Tab takes it', async () => {
+    vi.useFakeTimers();
+    const { ta, onChange, getByTestId } = setup(vi.fn<CodeCompletionProvider>().mockResolvedValue(USES));
+    await type(ta, 's');
+    expect(getByTestId('code-assist-ghost').textContent).toBe('es');
+    expect(fireEvent.keyDown(ta, { key: 'ArrowDown' })).toBe(false);
+    expect(getByTestId('code-assist-ghost').textContent).toBe('e');
+    expect(getByTestId('code-completion-use').getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(ta, { key: 'ArrowUp' });
+    fireEvent.keyDown(ta, { key: 'ArrowDown' });
+    fireEvent.keyDown(ta, { key: 'Tab' });
+    expect(onChange).toHaveBeenLastCalledWith('orbital A {\n  use');
+  });
+
+  it('control: arrows with no list open move the caret as usual', () => {
+    const { ta } = setup(undefined);
+    expect(fireEvent.keyDown(ta, { key: 'ArrowDown' })).toBe(true);
+  });
+
+  it('edge: the selection wraps, and a candidate not extending the prefix shows no ghost', async () => {
+    vi.useFakeTimers();
+    const { ta, getByTestId, queryByTestId } = setup(vi.fn<CodeCompletionProvider>().mockResolvedValue({ prefix: 'us', candidates: [{ label: 'uses' }, { label: 'orbital' }] }));
+    await type(ta, 's');
+    fireEvent.keyDown(ta, { key: 'ArrowUp' });
+    expect(getByTestId('code-completion-orbital').getAttribute('aria-selected')).toBe('true');
+    expect(queryByTestId('code-assist-ghost')).toBeNull();
+  });
+});
+
 describe('applyCompletion', () => {
   it('replaces the prefix before the offset and puts the caret after the label', () => {
     expect(applyCompletion('a us b', 4, 'us', 'uses')).toEqual({ code: 'a uses b', caret: 6 });

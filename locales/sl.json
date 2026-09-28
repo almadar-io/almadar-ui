@@ -659,5 +659,12 @@
   "changeList.inspect": "Preglej",
   "changeList.empty": "V tej različici ni sprememb.",
   "commitRow.kind.redo": "Uveljavitev",
-  "commitRow.kind.snapshot": "Posnetek"
+  "commitRow.kind.snapshot": "Posnetek",
+  "codeAssist.thinking": "Razmišljam…",
+  "codeAssist.findingFixes": "Iščem popravke…",
+  "codeAssist.suggested": "{{count}} predlogov",
+  "codeAssist.keys": "Tab sprejmi · ⌘/Ctrl+Enter sprejmi vse · Esc opusti",
+  "codeAssist.acceptAll": "Sprejmi vse",
+  "codeAssist.suggestFixes": "Predlagaj popravke za {{count}} težav · ⌘/Ctrl+.",
+  "codeAssist.line": "Vrstica {{line}}"
 }
