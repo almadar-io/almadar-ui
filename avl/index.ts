@@ -46,6 +46,7 @@ export {
 
 // AVL Molecules (SVG composites)
 export { AvlStateMachine, type AvlStateMachineProps } from '../components/avl/molecules/index';
+export { AvlCircuit, type AvlCircuitProps } from '../components/avl/molecules/index';
 export { AvlGlyph, AVL_GLYPH_KINDS, type AvlGlyphProps, type AvlGlyphKind } from '../components/avl/molecules/index';
 export { AvlOrbitalUnit, type AvlOrbitalUnitProps, type AvlOrbitalUnitTrait, type AvlOrbitalUnitPage } from '../components/avl/molecules/index';
 export { AvlClosedCircuit, type AvlClosedCircuitProps, type AvlClosedCircuitState, type AvlClosedCircuitTransition } from '../components/avl/molecules/index';
@@ -160,6 +161,19 @@ export {
   type CrossLink,
   type ZoomLevel,
 } from '../components/avl/organisms/index';
+export { AvlTransitionDetail, type AvlTransitionDetailProps } from '../components/avl/organisms/AvlTransitionDetail';
+export { traitLevelFromTrait, type TraitTransitionInfo } from '../lib/avl-schema-parser';
+export {
+  armsOf,
+  armPosition,
+  firedTransition,
+  stateMachinePlayback,
+  transitionPlayback,
+  type AvlPlayStep,
+  type AvlStepRequest,
+  type AvlStateMachinePlayback,
+  type AvlTransitionPlayback,
+} from '../lib/avl-play';
 export { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../lib/canvas-tools';
 export { KnobField, type KnobFieldProps } from '../components/avl/molecules/KnobField';
 export { KnobSettingRow, type KnobSettingRowProps } from '../components/avl/molecules/KnobSettingRow';

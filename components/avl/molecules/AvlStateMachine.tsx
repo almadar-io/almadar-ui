@@ -6,7 +6,7 @@
  * optional execution position (active state, fired transition, visited path).
  */
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { formatSExpr, type EventEmit } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { Box } from '../../core/atoms/Box';
@@ -14,6 +14,7 @@ import { Typography } from '../../core/atoms/Typography';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
+import { useContainerWidth } from '../../../hooks/useContainerWidth';
 import { gearTeethPath } from '../../../lib/jazari/svg-paths';
 import { computeTraitLayout, roundedEdgePath, type ElkLayout, type TraitLayoutMetrics } from '../../../lib/avl-elk-layout';
 import { AVL_FONT, AVL_INK, AVL_STROKE, avlTint } from '../../../lib/avl-theme';
@@ -36,6 +37,8 @@ export interface AvlStateMachineProps {
   stateClickEvent?: EventEmit<{ stateId: string }>;
   /** Emits UI:{transitionClickEvent} with { index, event, from, to } when a transition label is clicked. */
   transitionClickEvent?: EventEmit<{ index: number; event: string; from: string; to: string }>;
+  /** Direct transition-click callback, for React hosts (e.g. a canvas node). */
+  onTransitionClick?: (transition: { index: number; event: string; from: string; to: string }) => void;
   /** State picked in an editor (first click). */
   selectedState?: string;
   /** Source of a transition being drawn — the next state click picks its target. */
@@ -92,20 +95,6 @@ function metricsFor(nodeShape: 'pill' | 'gear', direction: 'ltr' | 'rtl'): Trait
   };
 }
 
-function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>): number | null {
-  const [width, setWidth] = useState<number | null>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    setWidth(el.clientWidth);
-    if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [ref]);
-  return width;
-}
-
 export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
   trait,
   activeState,
@@ -113,6 +102,7 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
   visitedStates,
   stateClickEvent,
   transitionClickEvent,
+  onTransitionClick,
   selectedState,
   pendingSourceState,
   nodeShape = 'pill',
@@ -123,6 +113,7 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
 }) => {
   const { t } = useTranslate();
   const eventBus = useEventBus();
+  const clickable = transitionClickEvent !== undefined || onTransitionClick !== undefined;
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [layout, setLayout] = useState<ElkLayout | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -255,10 +246,14 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
                     key={`label-${e.id}`}
                     data-testid="avl-sm-label"
                     data-event={tr.event}
-                    role={transitionClickEvent ? 'button' : undefined}
-                    tabIndex={transitionClickEvent ? 0 : undefined}
-                    onClick={transitionClickEvent ? () => eventBus.emit(`UI:${transitionClickEvent}`, { index: tr.index, event: tr.event, from: tr.from, to: tr.to }) : undefined}
-                    className={`absolute flex flex-col items-center justify-center ${transitionClickEvent ? 'cursor-pointer' : ''}`}
+                    role={clickable ? 'button' : undefined}
+                    tabIndex={clickable ? 0 : undefined}
+                    onClick={clickable ? () => {
+                      const payload = { index: tr.index, event: tr.event, from: tr.from, to: tr.to };
+                      onTransitionClick?.(payload);
+                      if (transitionClickEvent) eventBus.emit(`UI:${transitionClickEvent}`, payload);
+                    } : undefined}
+                    className={`absolute flex flex-col items-center justify-center ${clickable ? 'cursor-pointer' : ''}`}
                     style={{ left: MARGIN + e.labelX, top: MARGIN + e.labelY, width: e.labelW, height: e.labelH }}
                   >
                     <Box

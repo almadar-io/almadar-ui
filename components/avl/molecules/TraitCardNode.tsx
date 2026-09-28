@@ -1,22 +1,11 @@
 'use client';
 
 /**
- * TraitCardNode — React Flow node for the `trait-expanded` view level.
- *
- * Renders one card per trait of a single orbital. The card body shows
- * the trait's state-machine flow chart (states + transitions, laid out
- * by ELK) via the existing `AvlTraitScene` organism. Clicking a
- * transition arc drills into L4 transition detail.
- *
- * Left edge has one target handle per `listens[]` event; right edge
- * has one source handle per `emits[]` event. Edges produced by
- * `orbitalToTraitGraph` connect emit handles to listen handles where
- * the event names match within the same orbital.
- *
- * Transition clicks bubble through `TraitCardSelectionContext`
- * (mirrors `PatternSelectionContext` in `OrbPreviewNode`). FlowCanvas
- * wraps the canvas in a provider that translates the context callback
- * into its `onNodeClick({ level: 'transition', ... })` prop.
+ * TraitCardNode — React Flow node for the `trait-expanded` view level: one
+ * card per trait, its state machine drawn by `AvlStateMachine`. A transition
+ * click drills into L4 through `TraitCardSelectionContext`; a played scene in
+ * the same context lights the machine (active state, fired transition, path).
+ * Left handles are the trait's listens, right handles its emits.
  */
 
 import React, { createContext, useContext, useMemo } from 'react';
@@ -26,8 +15,9 @@ import { Box } from '../../core/atoms/Box';
 import { HStack, VStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
-import { AvlTraitScene } from '../organisms/AvlTraitScene';
+import { AvlStateMachine } from './AvlStateMachine';
 import { parseTraitLevel } from '../../../lib/avl-schema-parser';
+import { stateMachinePlayback, type AvlPlayStep } from '../../../lib/avl-play';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { type PreviewNodeData } from '../../../lib/avl-preview-converter';
 
@@ -46,6 +36,8 @@ export interface TraitCardTransitionClick {
 
 export interface TraitCardSelectionContextValue {
   selectTransition: (sel: TraitCardTransitionClick) => void;
+  /** Played steps and the step shown (index), lighting each card's machine. */
+  scene?: { steps: readonly AvlPlayStep[]; cursor: number };
 }
 
 export const TraitCardSelectionContext = createContext<TraitCardSelectionContextValue>({
@@ -57,29 +49,28 @@ export const TraitCardSelectionContext = createContext<TraitCardSelectionContext
 // ---------------------------------------------------------------------------
 
 const CARD_WIDTH = 540;
-const SCENE_WIDTH = 600;
-const SCENE_HEIGHT = 400;
 
 const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
   const data = props.data as PreviewNodeData;
   const { t } = useTranslate();
-  const { selectTransition } = useContext(TraitCardSelectionContext);
+  const { selectTransition, scene } = useContext(TraitCardSelectionContext);
 
   const orbitalName = data.orbitalName;
   const traitName = data.traitName ?? '';
   const linkedEntity = data.linkedEntity ?? '';
-  const transitions = data.transitions ?? [];
   const emits = data.emits ?? [];
   const listens = data.listens ?? [];
   const fullSchema = data._fullSchema as OrbitalSchema | undefined;
 
-  // Parse the trait-level data the same way the old cosmic L3 did, so
-  // the embedded `AvlTraitScene` gets the ELK-laid-out states +
-  // transitions + emit/listen swim lanes it expects.
   const traitLevelData = useMemo(() => {
     if (!fullSchema) return null;
     return parseTraitLevel(fullSchema, orbitalName, traitName);
   }, [fullSchema, orbitalName, traitName]);
+
+  const playback = useMemo(
+    () => (traitLevelData && scene ? stateMachinePlayback(traitLevelData, orbitalName, scene.steps, scene.cursor) : null),
+    [traitLevelData, scene, orbitalName],
+  );
 
   return (
     <Box
@@ -114,33 +105,24 @@ const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
         </HStack>
 
         {traitLevelData ? (
-          // `nodrag` + `nowheel` tell xyflow to skip its drag/wheel
-          // handlers on this element, so transition-arc clicks inside
-          // the SVG actually reach React's onClick handlers instead of
-          // being swallowed by the node-drag behavior. `nopan` keeps the
-          // ReactFlow canvas from panning when the user scrolls or
-          // pans within the trait card.
-          <svg
-            viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`}
-            className="nodrag nopan nowheel"
-            style={{ width: '100%', height: 'auto', display: 'block' }}
-          >
-            <AvlTraitScene
-              data={traitLevelData}
-              onTransitionClick={(idx) => {
-                const t = transitions[idx];
-                if (!t) return;
-                selectTransition({
-                  orbitalName,
-                  traitName,
-                  transitionEvent: t.event,
-                  fromState: t.fromState,
-                  toState: t.toState,
-                  index: idx,
-                });
-              }}
+          // xyflow skips drag/pan/wheel on these classes, so label clicks reach the machine.
+          <Box className="nodrag nopan nowheel">
+            <AvlStateMachine
+              trait={traitLevelData}
+              showHeader={false}
+              activeState={playback?.activeState}
+              activeTransition={playback?.activeTransition}
+              visitedStates={playback?.visitedStates}
+              onTransitionClick={(tr) => selectTransition({
+                orbitalName,
+                traitName,
+                transitionEvent: tr.event,
+                fromState: tr.from,
+                toState: tr.to,
+                index: tr.index,
+              })}
             />
-          </svg>
+          </Box>
         ) : (
           <Typography variant="small" color="muted">{t('avl.noStateMachine')}</Typography>
         )}

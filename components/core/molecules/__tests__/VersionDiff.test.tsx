@@ -1,9 +1,21 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { VersionDiff, type DiffHunk, type DiffRevision } from '../VersionDiff';
+import { VersionDiff, type DiffHunk, type DiffLine, type DiffRevision } from '../VersionDiff';
 import { EventBusProvider } from '../../../../providers/EventBusProvider';
 import { useEventBus } from '../../../../hooks/useEventBus';
+
+const translate = vi.hoisted(() => ({ calls: 0 }));
+vi.mock('../../../../hooks/useTranslate', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../hooks/useTranslate')>();
+  return {
+    ...actual,
+    useTranslate: () => {
+      translate.calls++;
+      return actual.useTranslate();
+    },
+  };
+});
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <EventBusProvider debug={false}>{children}</EventBusProvider>
@@ -97,5 +109,76 @@ describe('VersionDiff', () => {
   it('edge: empty hunks show the no-changes message', () => {
     render(<Wrapper><VersionDiff hunks={[]} /></Wrapper>);
     expect(screen.getByTestId('version-diff-empty')).toBeTruthy();
+  });
+});
+
+describe('VersionDiff — a re-render with the same diff renders nothing again', () => {
+  function Host({ tick, diff }: { tick: number; diff: DiffHunk[] }) {
+    return (
+      <>
+        <span data-tick={tick} />
+        <VersionDiff hunks={diff} view="inline" />
+      </>
+    );
+  }
+  it('the parent re-rendering for anything else leaves the diff alone', () => {
+    const { rerender } = render(<Host tick={0} diff={hunks} />, { wrapper: Wrapper });
+    translate.calls = 0;
+    rerender(<Host tick={1} diff={hunks} />);
+    rerender(<Host tick={2} diff={hunks} />);
+    expect(translate.calls).toBe(0);
+  });
+
+  it('control: a new diff renders', () => {
+    const { rerender } = render(<Host tick={0} diff={hunks} />, { wrapper: Wrapper });
+    translate.calls = 0;
+    rerender(<Host tick={1} diff={[{ header: 'b', lines: [{ type: 'added', afterLineNumber: 1, content: 'x' }] }]} />);
+    expect(translate.calls).toBeGreaterThan(0);
+    expect(screen.getAllByText('x').length).toBeGreaterThan(0);
+  });
+});
+
+describe('VersionDiff — long unchanged runs collapse to context', () => {
+  const unchanged = (from: number, to: number): DiffLine[] =>
+    Array.from({ length: to - from + 1 }, (_, i) => ({ type: 'unchanged' as const, beforeLineNumber: from + i, afterLineNumber: from + i, content: `line ${from + i}` }));
+  const big: DiffHunk[] = [{
+    header: 'schema.orb',
+    lines: [...unchanged(1, 50), { type: 'added', afterLineNumber: 51, content: 'the change' }, ...unchanged(51, 100)],
+  }];
+
+  it('keeps three lines of context around a change and names what it hid', () => {
+    render(<Wrapper><VersionDiff hunks={big} view="inline" /></Wrapper>);
+    expect(screen.getByText('the change')).toBeTruthy();
+    for (const n of [48, 49, 50, 51, 52, 53]) expect(screen.getByText(`line ${n}`)).toBeTruthy();
+    expect(screen.queryByText('line 10')).toBeNull();
+    expect(screen.queryByText('line 90')).toBeNull();
+    const gaps = screen.getAllByTestId('version-diff-gap');
+    expect(gaps).toHaveLength(2);
+    expect(gaps[0].textContent).toContain('47');
+    expect(gaps[1].textContent).toContain('47');
+  });
+
+  it('opening a gap shows the lines it hid', () => {
+    render(<Wrapper><VersionDiff hunks={big} view="inline" /></Wrapper>);
+    fireEvent.click(screen.getAllByTestId('version-diff-gap')[0]);
+    expect(screen.getByText('line 10')).toBeTruthy();
+    expect(screen.getAllByTestId('version-diff-gap')).toHaveLength(1);
+  });
+
+  it('control: a small diff shows every line and no gap', () => {
+    const small: DiffHunk[] = [{ header: 'a', lines: [...unchanged(1, 5), { type: 'removed', beforeLineNumber: 6, content: 'gone' }, ...unchanged(6, 10)] }];
+    render(<Wrapper><VersionDiff hunks={small} view="side-by-side" /></Wrapper>);
+    expect(screen.queryByTestId('version-diff-gap')).toBeNull();
+    expect(screen.getAllByText('line 1').length).toBeGreaterThan(0);
+  });
+
+  it('edge: context lines a caller chose are never collapsed', () => {
+    const context: DiffHunk[] = [{
+      header: 'b',
+      lines: [...Array.from({ length: 20 }, (_, i) => ({ type: 'context' as const, beforeLineNumber: i + 1, afterLineNumber: i + 1, content: `ctx ${i + 1}` })), { type: 'added', afterLineNumber: 21, content: 'new' }],
+    }];
+    render(<Wrapper><VersionDiff hunks={context} view="inline" /></Wrapper>);
+    expect(screen.getByText('ctx 1')).toBeTruthy();
+    expect(screen.queryByTestId('version-diff-gap')).toBeNull();
   });
 });

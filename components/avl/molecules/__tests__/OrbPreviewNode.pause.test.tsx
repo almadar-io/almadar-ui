@@ -834,3 +834,25 @@ describe('OrbPreviewNode — the live area owns its gestures', () => {
     expect(toggle.closest('.nopan')).toBeNull();
   });
 });
+
+describe('OrbPreviewNode — status marks', () => {
+  it('a card whose orbital has problems carries an error badge with its own label', async () => {
+    renderCard({ status: 'error' });
+    await screen.findByText('Go');
+    const badge = screen.getByTestId('orb-preview-error-badge');
+    expect(badge.getAttribute('title')).toBeTruthy();
+    expect(badge.getAttribute('title')).not.toBe(badge.getAttribute('data-testid'));
+  });
+
+  it('control: an idle card has no badge', async () => {
+    renderCard({ status: 'idle' });
+    await screen.findByText('Go');
+    expect(screen.queryByTestId('orb-preview-error-badge')).toBeNull();
+  });
+
+  it('edge: a running card shows the spinner, not the error badge', async () => {
+    renderCard({ status: 'running' });
+    await screen.findByText('Go');
+    expect(screen.queryByTestId('orb-preview-error-badge')).toBeNull();
+  });
+});

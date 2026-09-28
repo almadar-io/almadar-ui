@@ -16,13 +16,14 @@
  */
 
 import React, { useMemo, useState, useCallback, useRef, useEffect, useLayoutEffect, useReducer } from 'react';
-import type { OrbitalSchema } from '@almadar/core';
-import { isInlineTrait } from '@almadar/core';
+import type { EventEmit, OrbitalSchema } from '@almadar/core';
 import {
   parseApplicationLevel,
-  parseTransitionLevel,
+  parseTraitLevel,
   type CrossLink,
 } from '../../../lib/avl-schema-parser';
+import { transitionPlayback, type AvlPlayStep, type AvlStepRequest } from '../../../lib/avl-play';
+import { RangeSlider } from '../../core/atoms/RangeSlider';
 import {
   zoomReducer,
   initialZoomState,
@@ -83,6 +84,18 @@ export interface AvlOrbitalsCosmicZoomProps {
    * GAP-54: maximum zoom factor when scroll-wheel zooming. Default 3.
    */
   maxZoom?: number;
+  /** Played steps, in order; they light the L3 state machines and the L4 circuits. A scrubber picks the step shown. */
+  scene?: readonly AvlPlayStep[];
+  /** Emits UI:{stepEvent} from L4's Step button — the host plays the transition and appends the result to `scene`. */
+  stepEvent?: EventEmit<AvlStepRequest>;
+  /** Emits UI:{playEvent} with the drilled trait; the host keeps stepping it until paused or stopped. */
+  playEvent?: EventEmit<{ orbital: string; trait: string }>;
+  /** Emits UI:{pauseEvent} while `playing`. */
+  pauseEvent?: EventEmit<{ orbital: string; trait: string }>;
+  /** Emits UI:{stopEvent}; the host ends the run and clears the scene. */
+  stopEvent?: EventEmit<{ orbital: string; trait: string }>;
+  /** Whether the host is continuously playing. */
+  playing?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -344,6 +357,12 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   onOrbitalSelect,
   minZoom = 0.4,
   maxZoom = 3,
+  scene,
+  stepEvent,
+  playEvent,
+  pauseEvent,
+  stopEvent,
+  playing = false,
 }) => {
   const { t } = useTranslate();
   // Parse schema
@@ -444,21 +463,13 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   // that into the cosmic dispatch sequence: record the trait name so the
   // breadcrumb has a label at L4, then drill to the transition scene.
   const handleCanvasNodeClick = useCallback(
-    (ctx: { level: ViewLevel | 'code' | 'transition'; orbital: string; trait?: string; transition?: string }) => {
-      if (ctx.level !== 'transition' || !ctx.trait || !ctx.transition) return;
-      // Resolve the transition's index in the cosmic schema. The index
-      // keys `parseTransitionLevel` for the L4 detail scene — without
-      // it the L4 useMemo returns null and L4 renders blank.
-      const orbital = parsedSchema.orbitals?.find(o => o.name === ctx.orbital);
-      const traitRef = orbital?.traits?.find(t => isInlineTrait(t) && t.name === ctx.trait);
-      if (!traitRef || !isInlineTrait(traitRef)) return;
-      const idx = traitRef.stateMachine?.transitions?.findIndex(t => t.event === ctx.transition) ?? -1;
-      if (idx < 0) return;
+    (ctx: { level: ViewLevel | 'code' | 'transition'; orbital: string; trait?: string; transition?: string; transitionIndex?: number }) => {
+      if (ctx.level !== 'transition' || !ctx.trait || ctx.transitionIndex === undefined) return;
       dispatch({ type: 'SELECT_TRAIT', trait: ctx.trait });
-      dispatch({ type: 'ZOOM_INTO_TRANSITION', transitionIndex: idx, targetPosition: { x: 0, y: 0 } });
+      dispatch({ type: 'ZOOM_INTO_TRANSITION', transitionIndex: ctx.transitionIndex, targetPosition: { x: 0, y: 0 } });
       Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
     },
-    [parsedSchema],
+    [],
   );
 
   const handleZoomOut = useCallback(() => {
@@ -492,15 +503,24 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   // now — L3 (trait) renders an embedded FlowCanvas instead, which
   // builds its own graph internally. Drops the orbitalLevelData /
   // traitLevelData memos that drove the retired L2 + AvlTraitScene.
-  const transitionLevelData = useMemo(() => {
-    if (!state.selectedOrbital || !state.selectedTrait || state.selectedTransition === null) return null;
-    return parseTransitionLevel(
-      parsedSchema,
-      state.selectedOrbital,
-      state.selectedTrait,
-      state.selectedTransition,
-    );
-  }, [parsedSchema, state.selectedOrbital, state.selectedTrait, state.selectedTransition]);
+  const selectedTrait = useMemo(() => {
+    if (!state.selectedOrbital || !state.selectedTrait) return null;
+    return parseTraitLevel(parsedSchema, state.selectedOrbital, state.selectedTrait);
+  }, [parsedSchema, state.selectedOrbital, state.selectedTrait]);
+  const selectedTransition = state.selectedTransition === null ? undefined : selectedTrait?.transitions[state.selectedTransition];
+
+  const steps = useMemo(() => scene ?? [], [scene]);
+  const [cursor, setCursor] = useState(steps.length - 1);
+  useEffect(() => setCursor(steps.length - 1), [steps.length]);
+  const sceneView = useMemo(() => ({ steps, cursor }), [steps, cursor]);
+  const selectedPlayback = useMemo(
+    () => (selectedTrait && selectedTransition && state.selectedOrbital
+      ? transitionPlayback(selectedTrait, state.selectedOrbital, selectedTransition, steps, cursor)
+      : undefined),
+    [selectedTrait, selectedTransition, state.selectedOrbital, steps, cursor],
+  );
+  const playTarget = state.selectedOrbital && state.selectedTrait ? { orbital: state.selectedOrbital, trait: state.selectedTrait } : null;
+  const showSceneBar = (state.level === 'trait' || state.level === 'transition') && (steps.length > 0 || (playTarget !== null && playEvent !== undefined && state.level === 'transition'));
 
   // Schema scoped to the selected orbital, fed to the embedded FlowCanvas
   // at the trait-expanded level. Stripping siblings keeps xyflow's node
@@ -813,6 +833,7 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             initialLevel="trait-expanded"
             initialOrbital={state.selectedOrbital}
             onNodeClick={handleCanvasNodeClick}
+            scene={sceneView}
             width="100%"
             height="100%"
           />
@@ -824,19 +845,59 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             CodeBlock instead of being truncated. SVG variant
             (`AvlTransitionScene`) is preserved for `Avl3DTransitionScene`
             but no longer used by 2D cosmic. */}
-      {state.level === 'transition' && transitionLevelData && (
+      {state.level === 'transition' && selectedTransition && state.selectedOrbital && state.selectedTrait && (
         <Box
           position="absolute"
           style={{
             inset: 0,
             paddingTop: 56,
-            paddingBottom: 24,
+            paddingBottom: showSceneBar ? 72 : 24,
             paddingLeft: 24,
             paddingRight: 24,
             overflowY: 'auto',
           }}
         >
-          <AvlTransitionDetail data={transitionLevelData} />
+          <AvlTransitionDetail
+            orbital={state.selectedOrbital}
+            trait={state.selectedTrait}
+            transition={selectedTransition}
+            playback={selectedPlayback}
+            stepEvent={stepEvent}
+          />
+        </Box>
+      )}
+
+      {showSceneBar && (
+        <Box
+          position="absolute"
+          data-testid="avl-scene-bar"
+          className="bg-card border border-border rounded-md shadow-sm"
+          style={{ left: '50%', transform: 'translateX(-50%)', bottom: 12, zIndex: 30, padding: '6px 12px', width: 'min(560px, calc(100% - 320px))' }}
+        >
+          <HStack gap="sm" align="center">
+            {playTarget && playEvent && state.level === 'transition' ? (
+              playing && pauseEvent ? (
+                <Button variant="secondary" size="sm" action={pauseEvent} actionPayload={playTarget} leftIcon="pause" title={t('avl.play.pause')} data-testid="avl-scene-pause" />
+              ) : (
+                <Button variant="primary" size="sm" action={playEvent} actionPayload={playTarget} leftIcon="play" title={t('avl.play.play')} data-testid="avl-scene-play" />
+              )
+            ) : null}
+            {playTarget && stopEvent && steps.length > 0 ? (
+              <Button variant="ghost" size="sm" action={stopEvent} actionPayload={playTarget} leftIcon="stop" title={t('avl.play.stop')} data-testid="avl-scene-stop" />
+            ) : null}
+            {steps.length > 0 ? (
+              <>
+                <Box className="flex-1 min-w-0">
+                  <RangeSlider min={0} max={Math.max(0, steps.length - 1)} step={1} value={Math.max(0, cursor)} onChange={setCursor} size="sm" aria-label={t('avl.play.scene')} />
+                </Box>
+                <Box data-testid="avl-scene-position">
+                  <Typography variant="small" color="muted">
+                    {t('avl.play.sceneStep', { n: cursor + 1, total: steps.length })}
+                  </Typography>
+                </Box>
+              </>
+            ) : null}
+          </HStack>
         </Box>
       )}
 

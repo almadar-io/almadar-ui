@@ -1661,6 +1661,16 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
           />
         </>
       )}
+      {isError && (
+        <Box
+          data-testid="orb-preview-error-badge"
+          className="absolute top-2 right-2 flex items-center justify-center rounded-full pointer-events-none"
+          style={{ width: 18, height: 18, background: 'var(--color-error)', color: 'var(--color-background)', zIndex: 2 }}
+          title={t('orbPreview.hasProblems')}
+        >
+          <Icon name="alert-triangle" size="xs" />
+        </Box>
+      )}
 
       {/* Layer color band */}
       {layerColor && (

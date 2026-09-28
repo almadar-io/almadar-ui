@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { AVL_INK, avlTint } from '../avl-theme';
 import { AVL_3D_COLORS } from '../avl-3d-layout';
 import { DOMAIN_COLORS } from '../../components/avl/molecules/AvlBehaviorGlyph';
-import { OPERATOR_CATEGORY_COLORS, STATE_COLORS, EFFECT_CATEGORY_COLORS, CONNECTION_COLORS, getStateRole, effectCategoryOf } from '../avl-theme';
+import { OPERATOR_CATEGORY_COLORS, STATE_COLORS, EFFECT_CATEGORY_COLORS, CONNECTION_COLORS, getStateRole, effectCategoryOf, effectZoneOf } from '../avl-theme';
 import { EFFECT_OPERATORS, EFFECT_OPERATOR_FAMILIES, FieldTypeSchema } from '@almadar/core';
 import { getStdEffectOperators } from '@almadar/std/registry';
 import { FIELD_TYPE_SHAPES } from '../../components/avl/atoms/AvlFieldType';
@@ -56,6 +56,14 @@ describe('AVL covers every case @almadar/core declares', () => {
   it('classifies every core effect operator and effect family', () => {
     for (const op of EFFECT_OPERATORS) expect(effectCategoryOf(op), op).not.toBeNull();
     for (const family of EFFECT_OPERATOR_FAMILIES) expect(effectCategoryOf(`${family}/x`), family).not.toBeNull();
+  });
+
+  it('gives every core effect a world zone (persist lands in the store, set on the entity)', () => {
+    for (const op of EFFECT_OPERATORS) expect(effectZoneOf(op), op).not.toBeNull();
+    for (const family of EFFECT_OPERATOR_FAMILIES) expect(effectZoneOf(`${family}/x`), family).not.toBeNull();
+    expect(effectZoneOf('persist')).toBe('store');
+    expect(effectZoneOf('set')).toBe('entity');
+    expect(effectZoneOf('made-up')).toBeNull();
   });
 
   it('classifies every effect operator the std registry runs', () => {

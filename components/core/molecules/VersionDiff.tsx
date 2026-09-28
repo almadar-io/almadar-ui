@@ -98,7 +98,44 @@ function toRevisions(value: readonly DiffRevision[] | EventPayloadValue | undefi
 
 const firstValue = (v: string | string[]): string => (typeof v === "string" ? v : v[0] ?? "");
 
-type DiffRow = { kind: "header"; header: string } | { kind: "line"; line: DiffLine };
+type DiffRow =
+    | { kind: "header"; header: string }
+    | { kind: "line"; line: DiffLine }
+    | { kind: "gap"; id: number; count: number };
+
+/** Unchanged lines kept on each side of a change; a run hiding fewer than MIN_HIDDEN lines stays open. */
+const CONTEXT_LINES = 3;
+const MIN_HIDDEN = 4;
+
+/**
+ * Long runs of unchanged lines become one "N unchanged lines" row (its id: the first hidden row's
+ * index), keeping CONTEXT_LINES next to each change. Lines a caller marked `context` are kept.
+ */
+function collapseUnchanged(rows: readonly DiffRow[], expanded: ReadonlySet<number>): DiffRow[] {
+    const isUnchanged = (row: DiffRow | undefined): boolean => row?.kind === "line" && row.line.type === "unchanged";
+    const out: DiffRow[] = [];
+    let i = 0;
+    while (i < rows.length) {
+        if (!isUnchanged(rows[i])) {
+            out.push(rows[i]);
+            i++;
+            continue;
+        }
+        let j = i;
+        while (j < rows.length && isUnchanged(rows[j])) j++;
+        const keepHead = rows[i - 1]?.kind === "line" ? CONTEXT_LINES : 0;
+        const keepTail = rows[j]?.kind === "line" ? CONTEXT_LINES : 0;
+        const hidden = j - i - keepHead - keepTail;
+        const id = i + keepHead;
+        if (hidden < MIN_HIDDEN || expanded.has(id)) {
+            out.push(...rows.slice(i, j));
+        } else {
+            out.push(...rows.slice(i, i + keepHead), { kind: "gap", id, count: hidden }, ...rows.slice(j - keepTail, j));
+        }
+        i = j;
+    }
+    return out;
+}
 
 const INLINE_STYLES: Record<DiffLineType, { bg: string; prefix: string; text: string }> = {
     added: { bg: "bg-success/10", prefix: "+", text: "text-success" },
@@ -107,7 +144,7 @@ const INLINE_STYLES: Record<DiffLineType, { bg: string; prefix: string; text: st
     context: { bg: "", prefix: " ", text: "text-muted-foreground" },
 };
 
-export const VersionDiff: React.FC<VersionDiffProps> = ({
+const VersionDiffInner: React.FC<VersionDiffProps> = ({
     revisions: revisionsProp,
     hunks,
     beforeId,
@@ -154,6 +191,10 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
         }
         return computeLineDiff(beforeRev?.content ?? "", afterRev?.content ?? "").map((line): DiffRow => ({ kind: "line", line }));
     }, [hunks, beforeRev, afterRev]);
+
+    const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set());
+    useEffect(() => setExpanded(new Set()), [rows]);
+    const shown = useMemo(() => collapseUnchanged(rows, expanded), [rows, expanded]);
 
     const stats = useMemo(() => {
         let added = 0;
@@ -208,10 +249,25 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
         </Box>
     );
 
+    const renderGap = (row: { id: number; count: number }, key: string) => (
+        <Button
+            key={key}
+            variant="ghost"
+            size="sm"
+            icon="chevrons-up-down"
+            data-testid="version-diff-gap"
+            className="w-full justify-start rounded-none bg-muted/40 text-muted-foreground"
+            onClick={() => setExpanded((open) => new Set(open).add(row.id))}
+        >
+            {t("versionDiff.unchangedLines", { count: row.count })}
+        </Button>
+    );
+
     const renderColumn = (side: "before" | "after") => (
         <VStack gap="none" className="font-mono text-xs">
-            {rows.map((row, idx) => {
+            {shown.map((row, idx) => {
                 if (row.kind === "header") return renderHeader(row.header, `${side}-h-${idx}`);
+                if (row.kind === "gap") return renderGap(row, `${side}-g-${row.id}`);
                 const { line } = row;
                 const hidden = side === "before" ? line.type === "added" : line.type === "removed";
                 if (hidden) return null;
@@ -346,8 +402,9 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                         </Box>
                     ) : (
                         <VStack gap="none" className="font-mono text-xs">
-                            {rows.map((row, idx) => {
+                            {shown.map((row, idx) => {
                                 if (row.kind === "header") return renderHeader(row.header, `i-h-${idx}`);
+                                if (row.kind === "gap") return renderGap(row, `i-g-${row.id}`);
                                 const { line } = row;
                                 const style = INLINE_STYLES[line.type];
                                 return (
@@ -386,4 +443,5 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
     );
 };
 
+export const VersionDiff = React.memo(VersionDiffInner);
 VersionDiff.displayName = "VersionDiff";

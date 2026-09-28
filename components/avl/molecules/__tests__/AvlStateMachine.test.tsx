@@ -112,6 +112,16 @@ describe('AvlStateMachine', () => {
     expect(onTransition).toHaveBeenCalledWith({ index: 4, event: 'RETRY', from: 'failed', to: 'editing' });
   });
 
+  it('a React host gets transition clicks through onTransitionClick (control: labels are inert without a handler)', async () => {
+    const { unmount } = await renderMachine();
+    expect(screen.getAllByTestId('avl-sm-label').every((l) => l.getAttribute('role') === null)).toBe(true);
+    unmount();
+    const onTransitionClick = vi.fn();
+    await renderMachine({ onTransitionClick });
+    fireEvent.click(screen.getAllByTestId('avl-sm-label').find((l) => l.dataset.event === 'SAVE')!);
+    expect(onTransitionClick).toHaveBeenCalledWith({ index: 1, event: 'SAVE', from: 'editing', to: 'saving' });
+  });
+
   it('fills its container instead of a fixed pixel width', async () => {
     await renderMachine();
     expect(screen.getByTestId('avl-state-machine').style.width).toBe('100%');

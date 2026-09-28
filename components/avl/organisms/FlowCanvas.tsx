@@ -42,6 +42,7 @@ import { ElementEditAccessContext, type ElementEditAccessResolver } from '../../
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, type CanvasStatePicker, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { CANVAS_TOOLS, type CanvasTool } from '../../../lib/canvas-tools';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
+import type { AvlPlayStep } from '../../../lib/avl-play';
 import { EventFlowEdge } from '../molecules/EventFlowEdge';
 import { canvasViewGraph, stateOptionsOf, initialStateOf, orbitalToTraitGraph, LIVE_STATE, canvasViewChanged, type CanvasStateOptions, type CanvasViewport } from '../../../lib/avl-preview-converter';
 import { OrbInspector } from './OrbInspector';
@@ -129,7 +130,11 @@ export interface FlowCanvasProps {
     orbital: string;
     trait?: string;
     transition?: string;
+    /** With `level: 'transition'`: the clicked transition's index in the trait's state machine. */
+    transitionIndex?: number;
   }) => void;
+  /** With `initialLevel="trait-expanded"`: played steps lighting each trait card's state machine. */
+  scene?: { steps: readonly AvlPlayStep[]; cursor: number };
   /** Fired when the focused orbital, the scope, or the focused card's state changes. */
   onFocusChange?: (focus: CanvasFocusChange) => void;
   /** The orbital cards open on (local view) — or, with `initialLevel="trait-expanded"`, the orbital whose traits are shown. */
@@ -270,6 +275,7 @@ function FlowCanvasInner({
   onSelectedNodeChange,
   onSelectedPatternChange,
   externalInspector = false,
+  scene,
 }: FlowCanvasProps) {
   const { t } = useTranslate();
   // Render-time NODE_TYPES / EDGE_TYPES — not module-level. When vite's
@@ -658,9 +664,11 @@ function FlowCanvasInner({
         orbital: sel.orbitalName,
         trait: sel.traitName,
         transition: sel.transitionEvent,
+        transitionIndex: sel.index,
       });
     },
-  }), [onNodeClick]);
+    scene,
+  }), [onNodeClick, scene]);
 
   const showOrbitalNav = !traitLevel && orbitalNames.length > 0;
 

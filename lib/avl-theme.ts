@@ -127,6 +127,31 @@ const EFFECT_FAMILY_CATEGORY: Record<EffectOperatorFamily, EffectCategory> = {
   session: 'system', compose: 'system', trace: 'control', memory: 'data', application: 'system',
 };
 
+/** Where in the world an effect lands — drawn as the actuator's target. */
+export type EffectZone = 'entity' | 'store' | 'bus' | 'screen' | 'route' | 'toast' | 'remote' | 'instances' | 'flow' | 'timer' | 'model' | 'system';
+
+const EFFECT_OPERATOR_ZONE: Record<EffectOperator, EffectZone> = {
+  'render-ui': 'screen', 'navigate': 'route', 'navigate-back': 'route',
+  'set': 'entity', 'swap': 'entity', 'ref': 'store', 'deref': 'store', 'watch': 'store',
+  'persist': 'store', 'fetch': 'store', 'fetch-stream': 'store',
+  'emit': 'bus', 'send-server': 'bus', 'notify': 'toast', 'call-service': 'remote',
+  'integration/http': 'remote', 'integration/github-get-repo': 'remote', 'integration/github-create-issue': 'remote',
+  'spawn': 'instances', 'despawn': 'instances',
+  'do': 'flow', 'if': 'flow', 'when': 'flow', 'let': 'flow', 'log': 'flow', 'atomic': 'flow',
+  'wait': 'timer', 'async/delay': 'timer', 'async/debounce': 'timer', 'async/throttle': 'timer', 'async/interval': 'timer',
+  'async/race': 'timer', 'async/all': 'timer', 'async/sequence': 'timer', 'async/timeout': 'timer', 'async/retry': 'timer',
+  'forward': 'model', 'train': 'model', 'evaluate': 'model', 'checkpoint/save': 'model', 'checkpoint/load': 'model',
+  'nn/setWeights': 'model', 'train/loop': 'model', 'train/step': 'model', 'train/clipGradients': 'model',
+  'train/clipWeights': 'model', 'train/sgd': 'model', 'train/adam': 'model', 'prob/seed': 'model', 'prob/condition': 'model',
+  'workspace/write-orbital': 'system', 'workspace/write-file': 'system', 'workspace/write-schema': 'system',
+  'workspace/write-plan': 'system', 'workspace/archive-orbital': 'system', 'lolo/emit-body': 'system',
+};
+
+const EFFECT_FAMILY_ZONE: Record<EffectOperatorFamily, EffectZone> = {
+  agent: 'system', os: 'system', browser: 'system', llm: 'remote', behavior: 'system', validate: 'flow',
+  session: 'system', compose: 'system', trace: 'flow', memory: 'store', application: 'system',
+};
+
 function isEffectOperator(head: string): head is EffectOperator {
   return head in EFFECT_OPERATOR_CATEGORY;
 }
@@ -175,3 +200,14 @@ export const OPERATOR_CATEGORY_COLORS: Record<OperatorCategory, string> = {
   'std-trace': 'var(--color-muted-foreground)', 'std-behavior': avlBlend('var(--color-accent)', 60, 'var(--color-success)'),
   'std-integration': avlBlend('var(--color-warning)', 60, 'var(--color-info)'),
 };
+
+/** Where an effect head lands; null when @almadar/core declares no such effect. */
+export function effectZoneOf(head: string): EffectZone | null {
+  if (isEffectOperator(head)) return EFFECT_OPERATOR_ZONE[head];
+  const slash = head.indexOf('/');
+  if (slash > 0) {
+    const prefix = head.slice(0, slash);
+    if (isEffectFamily(prefix)) return EFFECT_FAMILY_ZONE[prefix];
+  }
+  return null;
+}

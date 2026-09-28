@@ -1,4 +1,5 @@
 export { AvlStateMachine, type AvlStateMachineProps } from './AvlStateMachine';
+export { AvlCircuit, type AvlCircuitProps } from './AvlCircuit';
 export { AvlGlyph, AVL_GLYPH_KINDS, type AvlGlyphProps, type AvlGlyphKind } from './AvlGlyph';
 export { AvlOrbitalUnit, type AvlOrbitalUnitProps, type AvlOrbitalUnitTrait, type AvlOrbitalUnitPage } from './AvlOrbitalUnit';
 export { AvlClosedCircuit, type AvlClosedCircuitProps, type AvlClosedCircuitState, type AvlClosedCircuitTransition } from './AvlClosedCircuit';
