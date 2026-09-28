@@ -76,8 +76,8 @@ describe('FlowCanvas default (externalInspector absent)', () => {
         initialSelectedNode={preselectedNode}
       />,
     );
-    // OrbInspector's own tab bar — proves it mounted inline.
-    expect(screen.getByRole('button', { name: 'Inspector' })).toBeInTheDocument();
+    // OrbInspector's own tab bar (Design is always offered) — proves it mounted inline.
+    expect(screen.getByRole('button', { name: 'Design' })).toBeInTheDocument();
   });
 
   it('clears the inline inspector on Escape and reports it via onSelectedNodeChange', () => {
@@ -90,9 +90,9 @@ describe('FlowCanvas default (externalInspector absent)', () => {
         onSelectedNodeChange={onSelectedNodeChange}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Inspector' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Design' })).toBeInTheDocument();
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('button', { name: 'Inspector' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Design' })).not.toBeInTheDocument();
     expect(onSelectedNodeChange).toHaveBeenCalledWith(null);
   });
 });
@@ -104,7 +104,7 @@ describe('FlowCanvas inline inspector leaves the toolbar alone', () => {
   it('the toolbar spans above the canvas-and-inspector row', () => {
     render(<FlowCanvas schema={schema} initialOrbital="TaskBoard" initialSelectedNode={preselectedNode} />);
     const toolbar = screen.getByTestId('flow-canvas-toolbar');
-    const inspectorButton = screen.getByRole('button', { name: 'Inspector' });
+    const inspectorButton = screen.getByRole('button', { name: 'Design' });
     const pane = screen.getByTestId('flow-canvas');
     expect(pane.contains(toolbar)).toBe(false);
     const row = toolbar.nextElementSibling;
@@ -129,7 +129,7 @@ describe('FlowCanvas externalInspector=true', () => {
         externalInspector
       />,
     );
-    expect(screen.queryByRole('button', { name: 'Inspector' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Design' })).not.toBeInTheDocument();
   });
 
   it('still fires onSelectedNodeChange on clear-on-escape with the inspector suppressed', () => {
@@ -145,7 +145,7 @@ describe('FlowCanvas externalInspector=true', () => {
     );
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onSelectedNodeChange).toHaveBeenCalledWith(null);
-    expect(screen.queryByRole('button', { name: 'Inspector' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Design' })).not.toBeInTheDocument();
   });
 
   it('fires onSelectedNodeChange with the node on click-select of a card showing a state', async () => {

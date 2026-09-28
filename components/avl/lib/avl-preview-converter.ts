@@ -26,7 +26,7 @@ import type {
   EntityData,
   JsonObject,
 } from '@almadar/core';
-import { renderUiEntriesOf, type AnyPatternConfig } from '@almadar/core/patterns';
+import { eventKeyPropsOf, eventListPropsOf, renderUiEntriesOf, type AnyPatternConfig } from '@almadar/core/patterns';
 import type {
   PreviewNodeData,
   EventEdgeData,
@@ -178,23 +178,35 @@ function findEventSources(
   if (depth > 10) return sources; // Prevent infinite recursion
 
   const patternType = typeof config.type === 'string' ? config.type : undefined;
-  const event = typeof config.event === 'string' ? config.event : undefined;
 
-  // Check if this element fires an event
-  if (patternType && event) {
-    // Compute a vertical position hint based on the element's depth and index
-    // This helps position the source handle near the trigger element
+  // The events this element fires: the props the registry declares as event
+  // outlets, and each item of its event-list (action) props.
+  const events: string[] = [];
+  if (patternType) {
+    for (const prop of eventKeyPropsOf(patternType)) {
+      const value = config[prop];
+      if (typeof value === 'string' && value) events.push(value);
+    }
+    for (const [prop, field] of eventListPropsOf(patternType)) {
+      const items = config[prop];
+      if (!Array.isArray(items)) continue;
+      for (const item of items) {
+        if (item === null || typeof item !== 'object' || Array.isArray(item)) continue;
+        const value = (item as JsonObject)[field];
+        if (typeof value === 'string' && value) events.push(value);
+      }
+    }
+  }
+  if (patternType && events.length > 0) {
+    // A vertical position hint from the element's depth and index, so the
+    // source handle sits near the trigger element.
     const positionHint = totalSiblings > 1
       ? (siblingIndex + 0.5) / totalSiblings
       : 0.5 + (depth * 0.1);
-
-    sources.push({
-      event,
-      patternType,
-      label: typeof config.label === 'string' ? config.label : typeof config.content === 'string' ? config.content : typeof config.text === 'string' ? config.text : undefined,
-      path,
-      positionHint: Math.min(Math.max(positionHint, 0.1), 0.9),
-    });
+    const label = typeof config.label === 'string' ? config.label : typeof config.content === 'string' ? config.content : typeof config.text === 'string' ? config.text : undefined;
+    for (const event of events) {
+      sources.push({ event, patternType, label, path, positionHint: Math.min(Math.max(positionHint, 0.1), 0.9) });
+    }
   }
 
   // Recurse into children
@@ -212,7 +224,7 @@ function findEventSources(
 
   // Recurse into named props that might be pattern configs (e.g., flip-card front/back)
   for (const [key, value] of Object.entries(config)) {
-    if (key === 'children' || key === 'type' || key === 'event') continue;
+    if (key === 'children' || key === 'type') continue;
     if (value !== null && typeof value === 'object' && !Array.isArray(value) && 'type' in value) {
       sources.push(
         ...findEventSources(value as JsonObject, `${path}.${key}`, depth + 1, totalSiblings, siblingIndex),
