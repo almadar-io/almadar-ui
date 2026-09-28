@@ -1,13 +1,19 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps, AvlPersistenceKind } from '../types/avl-atom-types';
+import { type AvlBaseProps } from '../../../lib/avl-theme';
+import { type EntityPersistence } from '@almadar/core';
 
 export interface AvlPersistenceProps extends AvlBaseProps {
-  kind: AvlPersistenceKind;
+  kind: EntityPersistence;
   size?: number;
   label?: string;
 }
+
+const PERSISTENCE_STROKE: Record<EntityPersistence, { strokeDasharray?: string; strokeWidth: number }> = {
+  persistent: { strokeWidth: 2.5 },
+  runtime: { strokeDasharray: '6 3', strokeWidth: 2 },
+};
 
 export const AvlPersistence: React.FC<AvlPersistenceProps> = ({
   x = 0,
@@ -21,14 +27,7 @@ export const AvlPersistence: React.FC<AvlPersistenceProps> = ({
 }) => {
   const half = size / 2;
 
-  const strokeProps: { strokeDasharray?: string; strokeWidth: number } = (() => {
-    switch (kind) {
-      case 'persistent': return { strokeWidth: 2.5 };
-      case 'runtime': return { strokeDasharray: '6 3', strokeWidth: 2 };
-      case 'singleton': return { strokeWidth: 3 };
-      case 'instance': return { strokeDasharray: '2 3', strokeWidth: 2 };
-    }
-  })();
+  const strokeProps = PERSISTENCE_STROKE[kind];
 
   return (
     <g className={className} opacity={opacity}>
@@ -44,23 +43,11 @@ export const AvlPersistence: React.FC<AvlPersistenceProps> = ({
         strokeLinecap="round"
       />
 
-      {/* Singleton: second line */}
-      {kind === 'singleton' && (
-        <line
-          x1={x - half}
-          y1={y + 5}
-          x2={x + half}
-          y2={y + 5}
-          stroke={color}
-          strokeWidth={1.5}
-          strokeLinecap="round"
-        />
-      )}
 
       {label && (
         <text
           x={x}
-          y={y + (kind === 'singleton' ? 20 : 14)}
+          y={y + 14}
           textAnchor="middle"
           fill={color}
           fontSize={8}

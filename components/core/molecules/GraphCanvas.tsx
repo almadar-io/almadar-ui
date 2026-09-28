@@ -27,6 +27,7 @@ import { Maximize2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { forceSimulation, forceManyBody, forceLink, forceCollide, forceX, forceY } from "d3-force";
 import type { UiError } from '../atoms/types';
 import { ThemedPortal } from "../../../lib/ThemedPortal";
+import { THEME_SERIES, resolveThemeColor } from "../../../lib/theme-color";
 
 export type GraphNodeMark =
     | { kind: 'suggested'; suggestionId: string }
@@ -132,15 +133,8 @@ export interface GraphCanvasProps {
     className?: string;
 }
 
-/** Group colors using CSS variables */
-const GROUP_COLORS = [
-    "var(--color-primary)",
-    "var(--color-success)",
-    "var(--color-warning)",
-    "var(--color-error)",
-    "var(--color-info)",
-    "var(--color-accent)",
-];
+/** Group colors — the shared semantic series every chart/diagram draws from. */
+export const GROUP_COLORS = THEME_SERIES;
 
 /**
  * Sector-gravity strengths (d3 forceX/Y = fraction-of-the-way per tick). Grouped nodes
@@ -210,12 +204,12 @@ function edgeKeyOf(a: string, b: string): string {
 /**
  * Canvas 2D `fillStyle`/`strokeStyle` cannot resolve CSS custom properties (`var(--x)`),
  * so resolve them against the element's computed style; pass through literal colors.
+ * An unresolvable `var()` (no declared fallback, undefined token) returns the raw
+ * expression rather than a guessed color — the honest result of a genuinely missing token.
  */
-function resolveColor(color: string, el: Element): string {
-    const m = /^var\((--[^,)]+)(?:,\s*([^)]+))?\)$/.exec(color.trim());
-    if (!m) return color;
-    const resolved = getComputedStyle(el).getPropertyValue(m[1]).trim();
-    return resolved || (m[2]?.trim() ?? '#888888');
+export function resolveColor(color: string, el: Element): string {
+    if (!/^var\(/.test(color.trim())) return color;
+    return resolveThemeColor(color, el)?.css ?? color;
 }
 
 /** Long labels are truncated on the node; the full text shows in a hover tooltip. */
@@ -633,8 +627,12 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const fontFamily = resolveColor("var(--font-family)", canvas) || "system-ui";
         const fgColor = resolveColor("var(--color-foreground)", canvas);
         const mutedColor = resolveColor("var(--color-muted-foreground)", canvas) || fgColor;
-        const bgColor = resolveColor("var(--color-background)", canvas) || "#ffffff";
-        const accentFg = resolveColor("var(--color-accent-foreground)", canvas) || "#ffffff";
+        const bgColor = resolveColor("var(--color-background)", canvas) || fgColor;
+        const accentFg = resolveColor("var(--color-accent-foreground)", canvas) || bgColor;
+        // Canvas needs a translucent ring around unselected nodes; resolveColor only
+        // returns opaque colors, so resolve foreground directly to keep its r/g/b for an rgba().
+        const fgResolved = resolveThemeColor("var(--color-foreground)", canvas);
+        const nodeRingColor = fgResolved ? `rgba(${fgResolved.r}, ${fgResolved.g}, ${fgResolved.b}, 0.13)` : fgColor;
         const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
 
         // Pre-scale by devicePixelRatio so the backing store renders crisp on HiDPI displays.
@@ -670,7 +668,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             ctx.beginPath();
             ctx.moveTo(source.x!, source.y!);
             ctx.lineTo(target.x!, target.y!);
-            ctx.strokeStyle = incident ? accentColor : (edge.color || "#888888");
+            ctx.strokeStyle = incident ? accentColor : (edge.color || mutedColor);
             ctx.lineWidth = incident ? 2 : Math.max(0.75, w);
             ctx.stroke();
 
@@ -728,7 +726,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 ctx.strokeStyle = accentColor;
                 ctx.lineWidth = 3;
             } else {
-                ctx.strokeStyle = isHovered ? "#ffffff" : "#00000020";
+                ctx.strokeStyle = isHovered ? bgColor : nodeRingColor;
                 ctx.lineWidth = isHovered ? 2 : 1;
             }
             ctx.stroke();

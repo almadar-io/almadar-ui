@@ -165,3 +165,48 @@ describe('FileTree — a file nests the files derived from it (a `.lolo` source 
     expect(screen.queryByText('Note.orb')).toBeNull();
   });
 });
+
+describe('FileTree — children loaded on expand (onNodeExpand)', () => {
+  const lolo = { name: 'Note.lolo', path: 'orbitals/Note.lolo', type: 'file' as const, expandable: true };
+
+  it('an expandable node with no children yet shows a toggle; expanding it asks for them once', () => {
+    const onNodeExpand = vi.fn();
+    const { rerender } = render(<FileTree tree={[lolo]} onNodeExpand={onNodeExpand} />);
+    fireEvent.click(screen.getByTestId('file-tree-toggle-orbitals/Note.lolo'));
+    expect(onNodeExpand).toHaveBeenCalledTimes(1);
+    expect(onNodeExpand).toHaveBeenCalledWith('orbitals/Note.lolo');
+    rerender(<FileTree tree={[{ ...lolo, children: [{ name: 'AppShell → std-app-layout', path: 'behavior:std-app-layout', type: 'file', note: 'std' }] }]} onNodeExpand={onNodeExpand} />);
+    expect(screen.getByText('AppShell → std-app-layout')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('file-tree-toggle-orbitals/Note.lolo'));
+    expect(onNodeExpand).toHaveBeenCalledTimes(1);
+  });
+
+  it('control: a file with neither children nor expandable has no toggle and reports nothing', () => {
+    const onNodeExpand = vi.fn();
+    render(<FileTree tree={[{ name: 'notes.md', path: 'notes.md', type: 'file' }]} onNodeExpand={onNodeExpand} />);
+    expect(screen.queryByTestId('file-tree-toggle-notes.md')).toBeNull();
+    expect(onNodeExpand).not.toHaveBeenCalled();
+  });
+});
+
+describe('FileTree — expandedPaths (reveal)', () => {
+  const lolo = { name: 'Note.lolo', path: 'orbitals/Note.lolo', type: 'file' as const, expandable: true };
+
+  it('a path listed later is expanded, asking for its children once', () => {
+    const onNodeExpand = vi.fn();
+    const { rerender } = render(<FileTree tree={[lolo]} onNodeExpand={onNodeExpand} />);
+    expect(onNodeExpand).not.toHaveBeenCalled();
+    rerender(<FileTree tree={[lolo]} onNodeExpand={onNodeExpand} expandedPaths={['orbitals/Note.lolo']} />);
+    expect(onNodeExpand).toHaveBeenCalledTimes(1);
+    rerender(<FileTree tree={[{ ...lolo, children: [{ name: 'AppShell → std-app-layout', path: 'behavior:std-app-layout', type: 'file' }] }]} onNodeExpand={onNodeExpand} expandedPaths={['orbitals/Note.lolo']} />);
+    expect(screen.getByText('AppShell → std-app-layout')).toBeTruthy();
+    expect(onNodeExpand).toHaveBeenCalledTimes(1);
+  });
+
+  it('control: without expandedPaths nothing is expanded or asked for', () => {
+    const onNodeExpand = vi.fn();
+    render(<FileTree tree={[{ ...lolo, children: [{ name: 'Note.orb', path: 'orbitals/Note.orb', type: 'file' }] }]} onNodeExpand={onNodeExpand} />);
+    expect(screen.queryByText('Note.orb')).toBeNull();
+    expect(onNodeExpand).not.toHaveBeenCalled();
+  });
+});

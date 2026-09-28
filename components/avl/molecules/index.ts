@@ -1,4 +1,5 @@
-export { AvlStateMachine, type AvlStateMachineProps, type AvlStateMachineState, type AvlStateMachineTransition } from './AvlStateMachine';
+export { AvlStateMachine, type AvlStateMachineProps } from './AvlStateMachine';
+export { AvlGlyph, AVL_GLYPH_KINDS, type AvlGlyphProps, type AvlGlyphKind } from './AvlGlyph';
 export { AvlOrbitalUnit, type AvlOrbitalUnitProps, type AvlOrbitalUnitTrait, type AvlOrbitalUnitPage } from './AvlOrbitalUnit';
 export { AvlClosedCircuit, type AvlClosedCircuitProps, type AvlClosedCircuitState, type AvlClosedCircuitTransition } from './AvlClosedCircuit';
 export { AvlEmitListen, type AvlEmitListenProps } from './AvlEmitListen';
@@ -7,13 +8,14 @@ export { AvlExprTree, type AvlExprTreeProps, type AvlExprTreeNode } from './AvlE
 export { AvlTransitionLane, type AvlTransitionLaneProps, type AvlTransitionLaneEffect } from './AvlTransitionLane';
 export { AvlSwimLane, type AvlSwimLaneProps } from './AvlSwimLane';
 export { AvlBehaviorGlyph, type AvlBehaviorGlyphProps, type BehaviorLevel, type GlyphSize, type BehaviorGlyphChild, type BehaviorGlyphConnection, DOMAIN_COLORS } from './AvlBehaviorGlyph';
-export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../lib/avl-layout';
+export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../../../lib/avl-layout';
 
 // V3: Canvas types + utilities
-export { type ZoomBand, type AvlNodeData, type AvlEdgeData, type AvlEdgeKind, ZOOM_BAND_THRESHOLDS } from '../types/avl-canvas-types';
-export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from '../lib/avl-zoom-band';
-export { schemaToFlowGraph } from '../lib/avl-flow-converter';
-export { computeTraitLayout, edgePath, stateWidth, STATE_H, type LayoutNode, type LayoutEdge, type ElkLayout } from '../lib/avl-elk-layout';
+export { type ZoomBand, ZOOM_BAND_THRESHOLDS } from '../../../lib/avl-zoom-band';
+export { type AvlNodeData, type AvlEdgeData, type AvlEdgeKind } from '../../../lib/avl-flow-converter';
+export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from '../../../lib/avl-zoom-band';
+export { schemaToFlowGraph } from '../../../lib/avl-flow-converter';
+export { computeTraitLayout, edgePath, stateWidth, STATE_H, type LayoutNode, type LayoutEdge, type ElkLayout } from '../../../lib/avl-elk-layout';
 
 // V3: React Flow node components
 export { SystemNode, type SystemNodeProps } from './SystemNode';
@@ -31,8 +33,8 @@ export { AvlPageEdge } from './AvlPageEdge';
 export { AvlBindingEdge } from './AvlBindingEdge';
 
 // V3 Revised: UI Projection components
-export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry, type ScreenSize, SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
-export { schemaToOverviewGraph, stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, type CanvasStateView, type CanvasStateOption, type CanvasStateGroup, type CanvasStateOptions, type CanvasViewOptions } from '../lib/avl-preview-converter';
+export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry, type ScreenSize, SCREEN_SIZE_PRESETS } from '../../../lib/avl-preview-converter';
+export { schemaToOverviewGraph, stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, type CanvasStateView, type CanvasStateOption, type CanvasStateGroup, type CanvasStateOptions, type CanvasViewOptions } from '../../../lib/avl-preview-converter';
 export { OrbPreviewNode, ScreenSizeContext } from './OrbPreviewNode';
 export { EventFlowEdge } from './EventFlowEdge';
 

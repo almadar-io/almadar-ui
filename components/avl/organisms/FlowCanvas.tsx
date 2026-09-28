@@ -38,21 +38,20 @@ import { Select } from '../../core/atoms/Select';
 import { ButtonGroup } from '../../core/molecules/ButtonGroup';
 import { IconButton } from '../../core/molecules/IconButton';
 import { useCompactLayout } from '../../core/organisms/layout/DockLayout';
-import { ElementEditAccessContext, type ElementEditAccessResolver } from '../lib/element-edit-access';
+import { ElementEditAccessContext, type ElementEditAccessResolver } from '../../../lib/element-edit-access';
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, type CanvasStatePicker, type SelectedPattern } from '../molecules/OrbPreviewNode';
-import { CANVAS_TOOLS, type CanvasTool } from '../lib/canvas-tools';
+import { CANVAS_TOOLS, type CanvasTool } from '../../../lib/canvas-tools';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
 import { EventFlowEdge } from '../molecules/EventFlowEdge';
-import { canvasViewGraph, stateOptionsOf, initialStateOf, orbitalToTraitGraph, LIVE_STATE, canvasViewChanged, type CanvasStateOptions, type CanvasViewport } from '../lib/avl-preview-converter';
-import type { ViewLevel, PreviewNodeData, EventEdgeData, ScreenSize } from '../types/avl-preview-types';
-import { SCREEN_SIZE_PRESETS, detectScreenSize } from '../types/avl-preview-types';
+import { canvasViewGraph, stateOptionsOf, initialStateOf, orbitalToTraitGraph, LIVE_STATE, canvasViewChanged, type CanvasStateOptions, type CanvasViewport } from '../../../lib/avl-preview-converter';
 import { OrbInspector } from './OrbInspector';
-import { validateWire } from '../lib/wire-validation';
+import { validateWire } from '../../../lib/wire-validation';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { isEditableTarget } from '../../../lib/keyMapEvent';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { createLogger } from '@almadar/logger';
 import { perfStart, perfEnd, profilerOnRender } from '../../../lib/perf';
+import { type ViewLevel, type PreviewNodeData, type EventEdgeData, type ScreenSize, SCREEN_SIZE_PRESETS, detectScreenSize } from '../../../lib/avl-preview-converter';
 
 // ---------------------------------------------------------------------------
 // Node & edge type registries

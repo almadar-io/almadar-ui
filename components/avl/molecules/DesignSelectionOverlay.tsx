@@ -30,7 +30,7 @@ import {
   type LayoutAxis,
   type OverlayRect,
   type PaddingSide,
-} from '../lib/selection-geometry';
+} from '../../../lib/selection-geometry';
 import { layoutOf, sizingOf, snapToSpacingStep, spacingOf, withLayout, withSizing, withSpacing, defaultSpacingStepPx, type DesignAlignment, type DesignAxis, type DesignJustify, type DesignSpacing, type SpacingStepPx } from '../../../lib/design-classes';
 
 type ResizeEdge = 'e' | 's' | 'se';

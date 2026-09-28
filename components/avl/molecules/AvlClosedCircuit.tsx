@@ -6,8 +6,7 @@ import { AvlTransition } from '../atoms/AvlTransition';
 import { AvlEvent } from '../atoms/AvlEvent';
 import { AvlGuard } from '../atoms/AvlGuard';
 import { AvlEffect } from '../atoms/AvlEffect';
-import type { AvlEffectType } from '../types/avl-atom-types';
-import { ringPositions } from '../lib/avl-layout';
+import { ringPositions } from '../../../lib/avl-layout';
 
 export interface AvlClosedCircuitState {
   name: string;
@@ -18,7 +17,7 @@ export interface AvlClosedCircuitTransition {
   to: string;
   event?: string;
   guard?: string;
-  effects?: AvlEffectType[];
+  effects?: string[];
 }
 
 export interface AvlClosedCircuitProps {

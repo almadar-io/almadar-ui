@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps, AvlOperatorNamespace } from '../types/avl-atom-types';
-import { AVL_OPERATOR_COLORS } from '../types/avl-atom-types';
+import { type AvlBaseProps, OPERATOR_CATEGORY_COLORS } from '../../../lib/avl-theme';
+import { type OperatorCategory } from '@almadar/std';
 
 export interface AvlOperatorProps extends AvlBaseProps {
   name: string;
-  namespace?: AvlOperatorNamespace;
+  namespace?: OperatorCategory;
   size?: number;
 }
 
@@ -20,7 +20,7 @@ export const AvlOperator: React.FC<AvlOperatorProps> = ({
   opacity = 1,
   className,
 }) => {
-  const opColor = color ?? AVL_OPERATOR_COLORS[namespace];
+  const opColor = color ?? OPERATOR_CATEGORY_COLORS[namespace];
 
   return (
     <g className={className} opacity={opacity}>

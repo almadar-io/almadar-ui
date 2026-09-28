@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps } from '../types/avl-atom-types';
+import { type AvlBaseProps } from '../../../lib/avl-theme';
 
 export interface AvlFieldProps extends AvlBaseProps {
   /** Angle in radians from entity center. */

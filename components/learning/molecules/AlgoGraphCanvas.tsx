@@ -81,21 +81,21 @@ export interface AlgoGraphCanvasProps {
   error?: UiError | null;
 }
 
-const NODE_STATE_COLOR: Record<AlgoGraphNodeState, string> = {
-  unvisited: '#cbd5e1',
-  frontier: '#f59e0b',
-  current: '#ef4444',
-  visited: '#22c55e',
-  goal: '#8b5cf6',
-  path: '#0ea5e9',
+export const NODE_STATE_COLOR: Record<AlgoGraphNodeState, string> = {
+  unvisited: 'var(--color-muted-foreground)',
+  frontier: 'var(--color-warning)',
+  current: 'var(--color-primary)',
+  visited: 'var(--color-success)',
+  goal: 'var(--color-accent)',
+  path: 'var(--color-info)',
 };
 
-const EDGE_STATE_COLOR: Record<AlgoGraphEdgeState, string> = {
-  default: '#9ca3af',
-  tree: '#16a34a',
-  relaxed: '#f59e0b',
-  candidate: '#38bdf8',
-  path: '#dc2626',
+export const EDGE_STATE_COLOR: Record<AlgoGraphEdgeState, string> = {
+  default: 'var(--color-border)',
+  tree: 'var(--color-success)',
+  relaxed: 'var(--color-warning)',
+  candidate: 'var(--color-primary)',
+  path: 'var(--color-info)',
 };
 
 const DEFAULT_NODE_RADIUS = 18;
@@ -392,7 +392,7 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
         text: g.label,
         fontSize: 11,
         align: 'center',
-        color: '#374151',
+        color: 'var(--color-foreground)',
       });
     }
 
@@ -412,7 +412,7 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
     }
 
     for (const g of nodeGeoms) {
-      out.push({ type: 'circle', id: g.id, x: g.x, y: g.y, radius: g.radius, color: g.color, fill: `${g.color}33` });
+      out.push({ type: 'circle', id: g.id, x: g.x, y: g.y, radius: g.radius, color: g.color, fill: `color-mix(in srgb, ${g.color} 20%, transparent)` });
     }
 
     const badgeGeoms: { cx: number; cy: number; w: number; h: number; color: string; text: string }[] = [];
@@ -426,7 +426,7 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
         w,
         h: 14,
         // Borderless pill: same color drives both stroke and fill.
-        color: g.badge.color ?? '#1e293b',
+        color: g.badge.color ?? 'var(--color-foreground)',
         text: g.badge.text,
       });
     }
@@ -434,7 +434,7 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
       out.push({ type: 'rect', x: b.cx - b.w / 2, y: b.cy - b.h / 2, width: b.w, height: b.h, color: b.color, fill: b.color });
     }
     for (const b of badgeGeoms) {
-      out.push({ type: 'text', x: b.cx, y: b.cy, text: b.text, fontSize: 9, align: 'center', color: '#ffffff' });
+      out.push({ type: 'text', x: b.cx, y: b.cy, text: b.text, fontSize: 9, align: 'center', color: 'var(--color-primary-foreground)' });
     }
 
     for (const g of nodeGeoms) {
@@ -446,7 +446,7 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
         text: g.label,
         fontSize: 12,
         align: 'center',
-        color: '#111827',
+        color: 'var(--color-foreground)',
       });
     }
 

@@ -194,3 +194,7 @@ declare module 'react-syntax-highlighter/dist/esm/languages/prism/ini.js' {
 declare module 'react-syntax-highlighter/dist/esm/languages/prism/clike.js' {
   export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/clike';
 }
+
+declare module 'react-syntax-highlighter/dist/esm/create-element.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/create-element';
+}

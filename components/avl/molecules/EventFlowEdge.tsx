@@ -17,8 +17,10 @@ import {
   EdgeLabelRenderer,
   type EdgeProps,
 } from '@xyflow/react';
-import type { EventEdgeData } from '../types/avl-preview-types';
+import { avlTint } from '../../../lib/avl-theme';
 import { createLogger } from '@almadar/logger';
+import { type EventEdgeData } from '../../../lib/avl-preview-converter';
+import { CONNECTION_COLORS } from '../../../lib/avl-theme';
 
 const edgeLog = createLogger('almadar:ui:nan-coord');
 
@@ -74,7 +76,11 @@ const EventFlowEdgeInner: React.FC<EdgeProps> = (props) => {
     targetPosition,
   });
 
-  const strokeColor = isCrossOrbital ? '#F97316' : isBackward ? '#94A3B8' : '#1E293B';
+  const strokeColor = isCrossOrbital
+    ? CONNECTION_COLORS.emitListen.color
+    : isBackward
+    ? CONNECTION_COLORS.backward.color
+    : CONNECTION_COLORS.forward.color;
   const strokeDash = isCrossOrbital ? '6 4' : isBackward ? '6 3' : 'none';
   const strokeWidth = isCrossOrbital ? 1.5 : 2;
 
@@ -109,7 +115,7 @@ const EventFlowEdgeInner: React.FC<EdgeProps> = (props) => {
               backgroundColor: 'var(--color-card)',
               padding: '2px 8px',
               borderRadius: 'var(--radius-sm)',
-              border: `1px solid ${strokeColor}30`,
+              border: `1px solid ${avlTint(strokeColor, 19)}`,
               whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',

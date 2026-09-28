@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { AvlEffect } from '../atoms/AvlEffect';
-import { CONNECTION_COLORS, type AvlEffectType } from '../types/avl-atom-types';
+import { CONNECTION_COLORS } from '../../../lib/avl-theme';
 
 export interface AvlTransitionLaneEffect {
-  type: AvlEffectType | string;
+  type: string | string;
 }
 
 export interface AvlTransitionLaneProps {
@@ -128,7 +128,7 @@ export const AvlTransitionLane: React.FC<AvlTransitionLaneProps> = ({
               key={i}
               x={padding + 12 + i * effectSpacing}
               y={effectsRow + rowHeight * 0.5}
-              effectType={eff.type as AvlEffectType}
+              effectType={eff.type}
               size={10}
               showBackground
             />

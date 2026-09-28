@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import type { ZoomBand } from '../types/avl-canvas-types';
+import { type ZoomBand } from '../../../lib/avl-zoom-band';
 
 export interface ZoomBreadcrumbProps {
   band: ZoomBand;

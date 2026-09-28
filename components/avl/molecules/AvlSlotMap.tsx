@@ -142,7 +142,7 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
               height={slot.height}
               rx={3}
               ry={3}
-              fill="black"
+              fill="var(--color-foreground)"
               opacity={0.06}
             />
           )}
@@ -153,7 +153,7 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
             height={slot.height}
             rx={3}
             ry={3}
-            fill={isOverlay ? 'var(--color-surface, #fff)' : color}
+            fill={isOverlay ? 'var(--color-surface)' : color}
             opacity={isOverlay ? 0.9 : 0.08}
             stroke={color}
             strokeWidth={isOverlay ? 1.5 : 1}

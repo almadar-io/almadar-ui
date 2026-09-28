@@ -4,14 +4,15 @@
  * Behavior registries come from the installed packages (`test/helpers/behavior-packages.ts`).
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PACKAGE_ROOT, escapesPackage } from './helpers/behavior-packages';
 
 const tracked = execFileSync('git', ['ls-files'], { cwd: PACKAGE_ROOT, encoding: 'utf-8' })
   .split('\n')
-  .filter((f) => /\.(ts|tsx)$/.test(f) && /(__tests__|\.test\.|^test\/)/.test(f));
+  .filter((f) => /\.(ts|tsx)$/.test(f) && /(__tests__|\.test\.|^test\/)/.test(f))
+  .filter((f) => existsSync(join(PACKAGE_ROOT, f)));
 
 describe('ui tests stay inside the package', () => {
   it('no test builds a path into a sibling package', () => {

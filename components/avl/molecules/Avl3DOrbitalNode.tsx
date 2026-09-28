@@ -13,9 +13,11 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { MathUtils, type Group } from 'three';
-import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
+import { AVL_3D_COLORS } from '../../../lib/avl-3d-layout';
+import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 import { Avl3DTooltip } from '../atoms/Avl3DTooltip';
+import { AVL_INK } from '../../../lib/avl-theme';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -55,6 +57,7 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
 }) => {
   const groupRef = useRef<Group>(null);
   const [hovered, setHovered] = useState(false);
+  const palette = useAvl3DPalette();
 
   // U2: Wider scale range (0.6 to 3.0) for stronger visual hierarchy
   const scale = useMemo(() => 0.6 + Math.min(traitCount, 8) * 0.3, [traitCount]);
@@ -76,14 +79,16 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
   const baseBrightness = 0.3 + Math.min(pageCount, 5) * 0.05;
   const emissiveIntensity = hovered ? 0.8 : baseBrightness;
 
+  if (!palette) return null;
+
   return (
     <group position={position}>
       {/* Outer glow shell */}
       <mesh scale={scale * 1.3}>
         <sphereGeometry args={[1, 16, 16]} />
         <meshStandardMaterial
-          color={AVL_3D_COLORS.orbitalRim}
-          emissive={AVL_3D_COLORS.orbitalRim}
+          color={palette.orbitalRim}
+          emissive={palette.orbitalRim}
           emissiveIntensity={hovered ? 0.2 : 0.06}
           transparent
           opacity={hovered ? 0.08 : 0.03}
@@ -112,8 +117,8 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
         >
           <torusGeometry args={[1, 0.18, 24, 64]} />
           <meshStandardMaterial
-            color={AVL_3D_COLORS.orbitalSphere}
-            emissive={AVL_3D_COLORS.orbitalRim}
+            color={palette.orbitalSphere}
+            emissive={palette.orbitalRim}
             emissiveIntensity={emissiveIntensity}
             roughness={0.2}
             metalness={0.7}
@@ -127,8 +132,8 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
         >
           <torusGeometry args={[1, 0.06, 12, 64]} />
           <meshStandardMaterial
-            color={AVL_3D_COLORS.traitOrbit}
-            emissive={AVL_3D_COLORS.traitOrbit}
+            color={palette.traitOrbit}
+            emissive={palette.traitOrbit}
             emissiveIntensity={0.25}
             transparent
             opacity={0.4}
@@ -140,8 +145,8 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
       <mesh scale={scale * 0.25}>
         <icosahedronGeometry args={[1, 1]} />
         <meshStandardMaterial
-          color={AVL_3D_COLORS.entityCore}
-          emissive={AVL_3D_COLORS.entityCoreGlow}
+          color={palette.entityCore}
+          emissive={palette.entityCoreGlow}
           emissiveIntensity={2.0}
           roughness={0.1}
         />
@@ -149,7 +154,7 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
 
       {/* Nucleus point light */}
       <pointLight
-        color={AVL_3D_COLORS.entityCoreGlow}
+        color={palette.entityCoreGlow}
         intensity={0.5}
         distance={3}
         decay={2}
@@ -159,7 +164,7 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
       <Avl3DLabel
         position={[0, scale + 0.6, 0]}
         text={name}
-        color="#ffffff"
+        color={AVL_INK.text}
         fontSize={hovered ? 14 : 12}
       />
 
@@ -167,7 +172,7 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
       <Avl3DLabel
         position={[0, -(scale + 0.4), 0]}
         text={entityName}
-        color="#999999"
+        color={AVL_INK.quiet}
         fontSize={10}
       />
 

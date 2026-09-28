@@ -49,7 +49,6 @@ export * from './getNestedValue';
 export * from './keyMapEvent';
 
 // Visualizer
-export * from './visualizer/index';
 
 // Content parsing
 export * from './parseContentSegments';

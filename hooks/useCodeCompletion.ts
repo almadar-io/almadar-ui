@@ -6,19 +6,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type React from 'react';
 
-export interface CodeCompletion {
-  label: string;
-  detail?: string;
-}
+import type { CodeCompletionProvider, CodeCompletionResult } from '../lib/codeCompletion';
 
-export interface CodeCompletionResult {
-  /** The text before the caret a candidate replaces. */
-  prefix: string;
-  candidates: readonly CodeCompletion[];
-}
-
-/** `offset` is the caret as a JavaScript string index (UTF-16 code units). */
-export type CodeCompletionProvider = (code: string, offset: number) => Promise<CodeCompletionResult | null>;
+export type { CodeCompletion, CodeCompletionProvider, CodeCompletionResult } from '../lib/codeCompletion';
 
 /** The prefix typed before `offset` is replaced by `label`; the caret lands after it. */
 export function applyCompletion(code: string, offset: number, prefix: string, label: string): { code: string; caret: number } {
@@ -36,6 +26,8 @@ const NAVIGATION_KEYS = new Set([
 interface Offer {
   result: CodeCompletionResult;
   offset: number;
+  /** The text the candidates were computed for: once the buffer moves on, the offer is stale. */
+  code: string;
 }
 
 export interface CodeCompletionState {
@@ -74,7 +66,7 @@ export function useCodeCompletion(
     const offset = ta.selectionStart;
     void provider(code, offset).then((result) => {
       if (id !== latest.current) return;
-      const next = result && result.candidates.length > 0 ? { result, offset } : null;
+      const next = result && result.candidates.length > 0 ? { result, offset, code } : null;
       narrowed.current = next !== null && next.result.prefix.length > 0;
       setOffer(next);
       setSelected(0);
@@ -90,6 +82,10 @@ export function useCodeCompletion(
   const accept = useCallback((label: string) => {
     const ta = textareaRef.current;
     if (!offer || !ta) return;
+    if (ta.value !== offer.code) {
+      dismiss();
+      return;
+    }
     const next = applyCompletion(ta.value, offer.offset, offer.result.prefix, label);
     dismiss();
     apply(next.code, next.caret);
@@ -97,9 +93,13 @@ export function useCodeCompletion(
 
   const onKeyUp = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (!provider || NAVIGATION_KEYS.has(e.key) || e.ctrlKey || e.metaKey) return;
+    if (offer && textareaRef.current?.value !== offer.code) {
+      narrowed.current = false;
+      setOffer(null);
+    }
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(ask, REQUEST_DEBOUNCE_MS);
-  }, [provider, ask]);
+  }, [provider, ask, offer, textareaRef]);
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>): boolean => {
     if (!provider) return false;
@@ -114,7 +114,8 @@ export function useCodeCompletion(
       setSelected((i) => (i + (e.key === 'ArrowDown' ? 1 : count - 1)) % count);
       return true;
     }
-    const chosen = offer?.result.candidates[Math.min(selected, count - 1)];
+    const fresh = offer !== null && textareaRef.current?.value === offer.code;
+    const chosen = fresh ? offer.result.candidates[Math.min(selected, count - 1)] : undefined;
     if (e.key === 'Tab' && chosen) {
       e.preventDefault();
       accept(chosen.label);
@@ -125,7 +126,7 @@ export function useCodeCompletion(
       return true;
     }
     return false;
-  }, [provider, offer, selected, ask, accept, dismiss]);
+  }, [provider, offer, selected, ask, accept, dismiss, textareaRef]);
 
   const isNarrowed = useCallback(() => narrowed.current, []);
 

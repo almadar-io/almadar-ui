@@ -10,7 +10,7 @@ import { answerToMutations } from '@almadar/core';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { KnobField } from './KnobField';
-import type { ElementKnob } from '../lib/element-edit-access';
+import type { ElementKnob } from '../../../lib/element-edit-access';
 import { useEventBus } from '../../../hooks/useEventBus';
 
 const COMMIT_ON_CHANGE: ReadonlySet<DomainQuestionInputType> = new Set(['boolean', 'enum', 'persistence', 'multiselect']);

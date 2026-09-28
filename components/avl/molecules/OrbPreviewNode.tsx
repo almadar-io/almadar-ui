@@ -19,7 +19,8 @@ import { isInlineTrait, isPageReference } from '@almadar/core';
 import type { EditFocus, EntityRef, TraitRef } from '@almadar/core';
 import { collectEmbeddedTraits } from '../../../lib/embedded-traits';
 
-import { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../lib/canvas-tools';
+import { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../../../lib/canvas-tools';
+import { avlTint } from '../../../lib/avl-theme';
 
 function entityNameOf(ref: EntityRef | undefined): string | undefined {
   if (!ref) return undefined;
@@ -32,16 +33,15 @@ import { Button } from '../../core/atoms/Button';
 import { Icon } from '../../core/atoms/Icon';
 import { Select } from '../../core/atoms/Select';
 import { IconButton } from '../../core/molecules/IconButton';
-import { LIVE_STATE, type CanvasStateOptions } from '../lib/avl-preview-converter';
-import { resolvePatternConfig, patternNodeAt, parseClipboardPatterns, PATTERN_CLIPBOARD_TYPE } from '../lib/resolve-pattern-config';
+import { LIVE_STATE, type CanvasStateOptions } from '../../../lib/avl-preview-converter';
+import { resolvePatternConfig, patternNodeAt, parseClipboardPatterns, PATTERN_CLIPBOARD_TYPE } from '../../../lib/resolve-pattern-config';
 import { isEditableTarget } from '../../../lib/keyMapEvent';
-import { useInlineTextEdit } from '../hooks/useInlineTextEdit';
+import { useInlineTextEdit } from '../../../hooks/useInlineTextEdit';
 import { DesignSelectionOverlay } from './DesignSelectionOverlay';
-import { axisPositionFrom, distanceLines, insertionLineRect, layoutBoxOf, marqueeHits, marqueeRect, offsetWithin, renderedAlignment, renderedSpacing, snapMove, spacingScaleOf, type GuideLine, type MeasureLine, type OffsetInParent, type OverlayRect } from '../lib/selection-geometry';
+import { axisPositionFrom, distanceLines, insertionLineRect, layoutBoxOf, marqueeHits, marqueeRect, offsetWithin, renderedAlignment, renderedSpacing, snapMove, spacingScaleOf, type GuideLine, type MeasureLine, type OffsetInParent, type OverlayRect } from '../../../lib/selection-geometry';
 import { DesignGuidesOverlay } from './DesignGuidesOverlay';
 import { BrowserPlayground } from '../../../runtime/BrowserPlayground';
-import type { PreviewNodeData, PatternEventSource, ScreenSize } from '../types/avl-preview-types';
-import { SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
+import { avlSeries } from '../../../lib/avl-theme';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import {
@@ -49,14 +49,16 @@ import {
   useCanvasDraggable,
   type CanvasDropTarget,
   type CanvasContainerNode,
-} from '../hooks/useCanvasDnd';
-import { formatPayloadTooltip } from '../lib/wire-validation';
-import { deriveEditFocusFromElement, traitOfElement, withNodeTransition } from '../lib/derive-edit-focus';
-import { ElementEditAccessContext, propAccessAt } from '../lib/element-edit-access';
-import { computeInsertionIndex, type DOMRectLike, type InsertionAxis } from '../lib/compute-insertion-index';
-import { directPatternChildren, resolveDirectChildren } from '../lib/resolve-direct-children';
+} from '../../../hooks/useCanvasDnd';
+import { formatPayloadTooltip } from '../../../lib/wire-validation';
+import { deriveEditFocusFromElement, traitOfElement, withNodeTransition } from '../../../lib/derive-edit-focus';
+import { ElementEditAccessContext, propAccessAt } from '../../../lib/element-edit-access';
+import { computeInsertionIndex, type DOMRectLike, type InsertionAxis } from '../../../lib/compute-insertion-index';
+import { directPatternChildren, resolveDirectChildren } from '../../../lib/resolve-direct-children';
 import { createLogger } from '@almadar/logger';
 import { type SpacingStepPx, positionOf, withPosition } from '../../../lib/design-classes';
+import { type PreviewNodeData, type PatternEventSource, type ScreenSize, SCREEN_SIZE_PRESETS } from '../../../lib/avl-preview-converter';
+import { STATE_COLORS, CONNECTION_COLORS, type StateRole } from '../../../lib/avl-theme';
 
 const eventHandleLog = createLogger('almadar:ui:nan-coord');
 const orbPreviewLog = createLogger('almadar:ui:orb-preview-node');
@@ -131,23 +133,15 @@ interface PatternInstanceDragData {
 // State role colors
 // ---------------------------------------------------------------------------
 
-const ROLE_COLORS: Record<string, { border: string; dot: string }> = {
-  initial: { border: '#16A34A', dot: '#22C55E' },
-  terminal: { border: '#DC2626', dot: '#EF4444' },
-  hub: { border: '#2563EB', dot: '#3B82F6' },
-  error: { border: '#D97706', dot: '#F59E0B' },
-  default: { border: 'var(--color-border)', dot: '#6B7280' },
+const ROLE_COLORS: Record<StateRole, { border: string; dot: string }> = {
+  initial: { border: STATE_COLORS.initial.border, dot: STATE_COLORS.initial.border },
+  terminal: { border: STATE_COLORS.terminal.border, dot: STATE_COLORS.terminal.border },
+  hub: { border: STATE_COLORS.hub.border, dot: STATE_COLORS.hub.border },
+  default: { border: 'var(--color-border)', dot: STATE_COLORS.default.border },
 };
 
-const LAYER_COLORS: Record<string, string> = {
-  Infrastructure: '#3B82F6',
-  Services: '#F59E0B',
-  'UI Patterns': '#8B5CF6',
-  Game: '#22C55E',
-  ML: '#EC4899',
-  Domain: '#6366F1',
-  Community: '#6B7280',
-};
+const LAYER_ORDER = ['Infrastructure', 'Services', 'UI Patterns', 'Game', 'ML', 'Domain', 'Community'] as const;
+const LAYER_COLORS: Record<string, string> = Object.fromEntries(LAYER_ORDER.map((layer, i) => [layer, avlSeries(i)]));
 
 // ---------------------------------------------------------------------------
 // Handle styles
@@ -171,7 +165,7 @@ function eventHandleStyle(source: PatternEventSource): React.CSSProperties {
     });
   }
   return {
-    background: '#F97316',
+    background: CONNECTION_COLORS.emitListen.color,
     width: 10,
     height: 10,
     border: '2px solid var(--color-card)',
@@ -1595,7 +1589,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             <Box
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
               style={{
-                backgroundColor: 'rgba(0,0,0,0.04)',
+                backgroundColor: avlTint('var(--color-foreground)', 4),
                 zIndex: 2,
               }}
             >
@@ -1616,7 +1610,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             <Box
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
               style={{
-                backgroundColor: l1IsOver ? 'rgba(20,184,166,0.15)' : 'rgba(20,184,166,0.06)',
+                backgroundColor: l1IsOver ? avlTint('var(--color-primary)', 15) : avlTint('var(--color-primary)', 6),
                 zIndex: 2,
               }}
             >
@@ -1721,9 +1715,9 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
                 key={src.event}
                 className="rounded-full px-1 py-0 text-xs font-medium leading-tight"
                 style={{
-                  backgroundColor: '#F9731615',
-                  color: '#F97316',
-                  border: '1px solid #F9731630',
+                  backgroundColor: avlTint(CONNECTION_COLORS.emitListen.color, 8),
+                  color: CONNECTION_COLORS.emitListen.color,
+                  border: `1px solid ${avlTint(CONNECTION_COLORS.emitListen.color, 19)}`,
                 }}
                 title={`${src.label ?? src.patternType} \u2192 ${src.event}${src.payloadFields?.length ? ` ${formatPayloadTooltip(src.payloadFields)}` : ''}`}
               >

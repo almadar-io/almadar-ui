@@ -1,15 +1,14 @@
-// AVL Atom types
-export type {
-  AvlBaseProps,
-  AvlEffectType,
-  AvlFieldTypeKind,
-  AvlPersistenceKind,
-  AvlOperatorNamespace,
-} from '../types/avl-atom-types';
-export { AVL_OPERATOR_COLORS, AVL_FIELD_TYPE_SHAPES } from '../types/avl-atom-types';
-// V2 color system
-export type { StateRole, EffectCategory } from '../types/avl-atom-types';
-export { STATE_COLORS, EFFECT_CATEGORY_COLORS, EFFECT_TYPE_TO_CATEGORY, CONNECTION_COLORS, getStateRole } from '../types/avl-atom-types';
+// Shared drawing contract + classification (lib/avl-theme); kinds come from @almadar/core / @almadar/std.
+export type { AvlBaseProps, StateRole, EffectCategory } from '../../../lib/avl-theme';
+export {
+  STATE_COLORS,
+  EFFECT_CATEGORY_COLORS,
+  OPERATOR_CATEGORY_COLORS,
+  CONNECTION_COLORS,
+  getStateRole,
+  effectCategoryOf,
+} from '../../../lib/avl-theme';
+export { FIELD_TYPE_SHAPES, type FieldTypeShape } from './AvlFieldType';
 
 // Tier 1: Structural Primitives
 export { AvlOrbital, type AvlOrbitalProps } from './AvlOrbital';

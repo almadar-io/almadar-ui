@@ -10,17 +10,25 @@ import { LearningCanvas } from '../LearningCanvas';
 afterEach(() => vi.restoreAllMocks());
 
 function mount(onShapeClick: (p: { index: number }) => void): HTMLCanvasElement {
-  const ctx = new Proxy({} as CanvasRenderingContext2D, {
-    get(_t, prop) {
-      if (prop === 'measureText') return () => ({ width: 0 });
-      if (prop === 'getImageData') return () => ({ data: new Uint8ClampedArray(4) });
-      return () => undefined;
-    },
-    set() {
-      return true;
-    },
+  // resolveColor (LearningCanvas.tsx) reads `ctx.canvas` to resolve a shape's var()
+  // color/fallback against the real element — the mock must answer that with the
+  // actual canvas, not fall through to the catch-all no-op.
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (
+    this: HTMLCanvasElement,
+  ) {
+    const canvasEl = this;
+    return new Proxy({} as CanvasRenderingContext2D, {
+      get(_t, prop) {
+        if (prop === 'canvas') return canvasEl;
+        if (prop === 'measureText') return () => ({ width: 0 });
+        if (prop === 'getImageData') return () => ({ data: new Uint8ClampedArray(4) });
+        return () => undefined;
+      },
+      set() {
+        return true;
+      },
+    });
   });
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => ctx);
   const { container } = render(
     <LearningCanvas
       width={600}

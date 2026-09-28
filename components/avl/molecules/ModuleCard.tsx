@@ -14,24 +14,28 @@ import { Handle, Position, useNodeId, ReactFlowProvider } from '@xyflow/react';
 import { AvlEntity } from '../atoms/AvlEntity';
 import { AvlFieldType } from '../atoms/AvlFieldType';
 import { AvlPage } from '../atoms/AvlPage';
-import { CONNECTION_COLORS, type AvlFieldTypeKind, type AvlPersistenceKind } from '../types/avl-atom-types';
 import { MiniStateMachine } from './MiniStateMachine';
-import type { AvlNodeData } from '../types/avl-canvas-types';
+import { CONNECTION_COLORS } from '../../../lib/avl-theme';
+import { type FieldType, type EntityPersistence } from '@almadar/core';
+import { type AvlNodeData } from '../../../lib/avl-flow-converter';
 
 /**
- * ModuleCard — a card summarizing one course module or lesson with progress
- * and entry point.
+ * ModuleCard — a compact summary card for one orbital module: its entity and
+ * fields, a mini state machine per trait, and its pages.
  *
- * @capabilities course module card, lesson card, curriculum unit card, learning-path step card
+ * @capabilities orbital module summary card, entity and trait overview card, app architecture node card
  */
 export interface ModuleCardProps {
+  /** The orbital to summarize.
+   * @example {"orbitalName":"OrderOrbital","entityName":"Order","persistence":"persistent","fields":[{"name":"customer","type":"string","required":true,"hasDefault":false},{"name":"qty","type":"number","required":true,"hasDefault":true},{"name":"status","type":"string","required":false,"hasDefault":true}],"traits":[{"name":"OrderFlow","stateCount":5,"eventCount":7,"transitionCount":7,"emits":["ORDER_SAVED"],"listens":["PAYMENT_OK"]}],"pages":[{"name":"Orders","route":"/orders"}],"traitDetails":{"OrderFlow":{"name":"OrderFlow","linkedEntity":"Order","states":[{"name":"browsing","isInitial":true,"isTerminal":false},{"name":"editing","isInitial":false,"isTerminal":false},{"name":"saving","isInitial":false,"isTerminal":false},{"name":"confirmed","isInitial":false,"isTerminal":true},{"name":"failed","isInitial":false,"isTerminal":false}],"transitions":[{"from":"browsing","to":"editing","event":"EDIT","effects":[{"type":"render-ui","args":[]}],"index":0},{"from":"editing","to":"saving","event":"SAVE","effects":[{"type":"persist","args":[]},{"type":"notify","args":[]}],"index":1},{"from":"saving","to":"confirmed","event":"SAVED","effects":[{"type":"emit","args":[]},{"type":"render-ui","args":[]}],"index":2},{"from":"saving","to":"failed","event":"SAVE_FAILED","effects":[{"type":"notify","args":[]}],"index":3},{"from":"failed","to":"editing","event":"RETRY","effects":[],"index":4},{"from":"editing","to":"browsing","event":"CANCEL","effects":[{"type":"render-ui","args":[]}],"index":5},{"from":"confirmed","to":"browsing","event":"DONE","effects":[{"type":"navigate","args":[]}],"index":6}],"emittedEvents":["ORDER_SAVED"],"listenedEvents":["PAYMENT_OK"]}},"externalLinks":[{"targetOrbital":"PaymentOrbital","eventName":"PAYMENT_OK","direction":"in","traitName":"OrderFlow"}]}
+   */
   data: AvlNodeData;
 }
 
-function toFieldKind(type: string): AvlFieldTypeKind {
+function toFieldKind(type: string): FieldType {
   const normalized = type.toLowerCase();
   if (['string', 'number', 'boolean', 'date', 'enum', 'object', 'array'].includes(normalized)) {
-    return normalized as AvlFieldTypeKind;
+    return normalized as FieldType;
   }
   return 'string';
 }
@@ -82,7 +86,7 @@ const ModuleCardInner: React.FC<ModuleCardProps> = ({ data }) => {
       <div className={`px-3 py-2 border-b border-[var(--color-border)] ${PERSISTENCE_BORDER[persistence] ?? ''}`}>
         <div className="flex items-center gap-1.5 mb-1.5">
           <svg width={18} height={18} viewBox="0 0 20 20">
-            <AvlEntity x={10} y={10} r={8} persistence={persistence as AvlPersistenceKind} />
+            <AvlEntity x={10} y={10} r={8} persistence={persistence as EntityPersistence} />
           </svg>
           <span className="text-sm font-semibold text-[var(--color-foreground)]">{entityName}</span>
           <span className="ml-auto text-xs opacity-50" title={persistence}>

@@ -14,6 +14,7 @@ import { Html } from '@react-three/drei';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { VStack } from '../../core/atoms/Stack';
+import { AVL_INK, avlTint } from '../../../lib/avl-theme';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -40,7 +41,7 @@ export const Avl3DTooltip: React.FC<Avl3DTooltipProps> = ({
   position,
   title,
   rows,
-  accentColor = '#5b9bd5',
+  accentColor = AVL_INK.focus,
 }) => {
   return (
     <Html
@@ -52,21 +53,21 @@ export const Avl3DTooltip: React.FC<Avl3DTooltipProps> = ({
     >
       <Box
         style={{
-          background: 'rgba(12, 18, 34, 0.92)',
+          background: avlTint(AVL_INK.surface, 92),
           backdropFilter: 'blur(8px)',
           borderLeft: `3px solid ${accentColor}`,
           borderRadius: '6px',
           padding: '8px 12px',
           minWidth: '140px',
           maxWidth: '220px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          boxShadow: 'var(--shadow-lg)',
         }}
       >
         <VStack gap="xs">
           <Typography
             variant="small"
             style={{
-              color: '#ffffff',
+              color: AVL_INK.text,
               fontWeight: 600,
               fontSize: '12px',
               lineHeight: 1.3,
@@ -87,7 +88,7 @@ export const Avl3DTooltip: React.FC<Avl3DTooltipProps> = ({
               <Typography
                 variant="small"
                 style={{
-                  color: '#8899bb',
+                  color: AVL_INK.quiet,
                   fontSize: '10px',
                   whiteSpace: 'nowrap',
                 }}
@@ -97,7 +98,7 @@ export const Avl3DTooltip: React.FC<Avl3DTooltipProps> = ({
               <Typography
                 variant="small"
                 style={{
-                  color: '#ccddf0',
+                  color: AVL_INK.text,
                   fontSize: '10px',
                   fontWeight: 500,
                   textAlign: 'right',

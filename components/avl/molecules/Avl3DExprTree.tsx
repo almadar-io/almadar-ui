@@ -11,9 +11,9 @@
 
 import React, { useMemo } from 'react';
 import { Vector3 } from 'three';
-import { AVL_OPERATOR_COLORS } from '../types/avl-atom-types';
-import type { ExprTreeNode } from '../lib/avl-schema-parser';
-import { treeLayout3D, type Position3D } from '../lib/avl-3d-layout';
+import type { ExprTreeNode } from '../../../lib/avl-schema-parser';
+import { exprOperatorPaletteKey, treeLayout3D, type Position3D } from '../../../lib/avl-3d-layout';
+import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 
 // ---------------------------------------------------------------------------
@@ -34,16 +34,6 @@ export interface Avl3DExprTreeProps {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Map operator label to a namespace color */
-function operatorColor(label: string): string {
-  if (['+', '-', '*', '/', '%', 'mod'].includes(label)) return AVL_OPERATOR_COLORS.arithmetic;
-  if (['=', '!=', '<', '>', '<=', '>=', 'eq', 'neq', 'lt', 'gt'].includes(label)) return AVL_OPERATOR_COLORS.comparison;
-  if (['and', 'or', 'not', 'if', 'cond'].includes(label)) return AVL_OPERATOR_COLORS.logic;
-  if (['concat', 'upper', 'lower', 'trim', 'substr'].includes(label)) return AVL_OPERATOR_COLORS.string;
-  if (['map', 'filter', 'reduce', 'find', 'count', 'sum'].includes(label)) return AVL_OPERATOR_COLORS.collection;
-  return '#4A90D9'; // default blue
-}
 
 /** Compute edge between parent and child positions */
 function edgeGeometry(parent: Position3D, child: Position3D): {
@@ -123,6 +113,9 @@ export const Avl3DExprTree: React.FC<Avl3DExprTreeProps> = ({
     return result;
   }, [expression, layoutResults]);
 
+  const palette = useAvl3DPalette();
+  if (!palette) return null;
+
   return (
     <group>
       {/* Edges (thin cylinders) */}
@@ -136,7 +129,7 @@ export const Avl3DExprTree: React.FC<Avl3DExprTreeProps> = ({
           >
             <cylinderGeometry args={[0.015, 0.015, geo.length, 6]} />
             <meshStandardMaterial
-              color="#555555"
+              color={palette.transitionArc}
               transparent
               opacity={0.5}
             />
@@ -153,7 +146,7 @@ export const Avl3DExprTree: React.FC<Avl3DExprTreeProps> = ({
         ];
 
         if (entry.node.type === 'operator') {
-          const opColor = operatorColor(entry.node.label);
+          const opColor = palette[exprOperatorPaletteKey(entry.node.label)];
           return (
             <group key={i} position={pos}>
               {/* Rounded box for operators */}
@@ -183,8 +176,8 @@ export const Avl3DExprTree: React.FC<Avl3DExprTreeProps> = ({
               <mesh scale={0.08}>
                 <torusKnotGeometry args={[2, 0.6, 48, 8, 2, 3]} />
                 <meshStandardMaterial
-                  color="#4A90D9"
-                  emissive="#4A90D9"
+                  color={palette.exprBinding}
+                  emissive={palette.exprBinding}
                   emissiveIntensity={0.4}
                   transparent
                   opacity={0.85}
@@ -194,7 +187,7 @@ export const Avl3DExprTree: React.FC<Avl3DExprTreeProps> = ({
               <Avl3DLabel
                 position={[0, -0.35, 0]}
                 text={entry.node.label}
-                color="#4A90D9"
+                color={palette.exprBinding}
                 fontSize={9}
               />
             </group>
@@ -207,8 +200,8 @@ export const Avl3DExprTree: React.FC<Avl3DExprTreeProps> = ({
             <mesh rotation={[Math.PI / 6, Math.PI / 4, 0]}>
               <boxGeometry args={[0.2, 0.2, 0.2]} />
               <meshStandardMaterial
-                color="#888888"
-                emissive="#666666"
+                color={palette.exprLiteral}
+                emissive={palette.exprLiteral}
                 emissiveIntensity={0.2}
                 roughness={0.5}
               />
@@ -216,7 +209,7 @@ export const Avl3DExprTree: React.FC<Avl3DExprTreeProps> = ({
             <Avl3DLabel
               position={[0, -0.3, 0]}
               text={entry.node.label}
-              color="#999999"
+              color={palette.exprLiteral}
               fontSize={8}
             />
           </group>

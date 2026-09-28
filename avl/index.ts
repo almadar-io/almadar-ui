@@ -31,21 +31,22 @@ export { AvlSExpr, type AvlSExprProps } from '../components/avl/atoms/index';
 export { AvlLiteral, type AvlLiteralProps } from '../components/avl/atoms/index';
 export { AvlBindingRef, type AvlBindingRefProps } from '../components/avl/atoms/index';
 
-// AVL Types + Constants
-export type {
-  AvlBaseProps,
-  AvlEffectType,
-  AvlFieldTypeKind,
-  AvlPersistenceKind,
-  AvlOperatorNamespace,
+// AVL drawing contract + classification (kinds come from @almadar/core / @almadar/std)
+export type { AvlBaseProps, StateRole, EffectCategory } from '../components/avl/atoms/index';
+export {
+  STATE_COLORS,
+  EFFECT_CATEGORY_COLORS,
+  OPERATOR_CATEGORY_COLORS,
+  CONNECTION_COLORS,
+  getStateRole,
+  effectCategoryOf,
+  FIELD_TYPE_SHAPES,
+  type FieldTypeShape,
 } from '../components/avl/atoms/index';
-export { AVL_OPERATOR_COLORS, AVL_FIELD_TYPE_SHAPES } from '../components/avl/atoms/index';
-// V2 color system
-export type { StateRole, EffectCategory } from '../components/avl/atoms/index';
-export { STATE_COLORS, EFFECT_CATEGORY_COLORS, EFFECT_TYPE_TO_CATEGORY, CONNECTION_COLORS, getStateRole } from '../components/avl/atoms/index';
 
 // AVL Molecules (SVG composites)
-export { AvlStateMachine, type AvlStateMachineProps, type AvlStateMachineState, type AvlStateMachineTransition } from '../components/avl/molecules/index';
+export { AvlStateMachine, type AvlStateMachineProps } from '../components/avl/molecules/index';
+export { AvlGlyph, AVL_GLYPH_KINDS, type AvlGlyphProps, type AvlGlyphKind } from '../components/avl/molecules/index';
 export { AvlOrbitalUnit, type AvlOrbitalUnitProps, type AvlOrbitalUnitTrait, type AvlOrbitalUnitPage } from '../components/avl/molecules/index';
 export { AvlClosedCircuit, type AvlClosedCircuitProps, type AvlClosedCircuitState, type AvlClosedCircuitTransition } from '../components/avl/molecules/index';
 export { AvlEmitListen, type AvlEmitListenProps } from '../components/avl/molecules/index';
@@ -59,9 +60,10 @@ export { AvlSwimLane, type AvlSwimLaneProps } from '../components/avl/molecules/
 export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../components/avl/molecules/index';
 
 // V3: Canvas types
-export { type ZoomBand, type AvlNodeData, type AvlEdgeData, ZOOM_BAND_THRESHOLDS } from '../components/avl/types/avl-canvas-types';
-export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from '../components/avl/lib/avl-zoom-band';
-export { schemaToFlowGraph } from '../components/avl/lib/avl-flow-converter';
+export { type ZoomBand, ZOOM_BAND_THRESHOLDS } from '../lib/avl-zoom-band';
+export { type AvlNodeData, type AvlEdgeData } from '../lib/avl-flow-converter';
+export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from '../lib/avl-zoom-band';
+export { schemaToFlowGraph } from '../lib/avl-flow-converter';
 
 // V3: React Flow node types
 export { SystemNode } from '../components/avl/molecules/SystemNode';
@@ -79,19 +81,19 @@ export { AvlPageEdge } from '../components/avl/molecules/AvlPageEdge';
 export { AvlBindingEdge } from '../components/avl/molecules/AvlBindingEdge';
 
 // V3: ELK layout (shared)
-export { computeTraitLayout, edgePath, type LayoutNode, type LayoutEdge, type ElkLayout } from '../components/avl/lib/avl-elk-layout';
+export { computeTraitLayout, edgePath, type LayoutNode, type LayoutEdge, type ElkLayout } from '../lib/avl-elk-layout';
 
 // V3 Revised: UI Projection components
-export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry } from '../components/avl/types/avl-preview-types';
-export { schemaToOverviewGraph, stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, type CanvasStateView, type CanvasStateOption, type CanvasStateGroup, type CanvasStateOptions, type CanvasViewOptions } from '../components/avl/lib/avl-preview-converter';
+export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry } from '../lib/avl-preview-converter';
+export { schemaToOverviewGraph, stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, type CanvasStateView, type CanvasStateOption, type CanvasStateGroup, type CanvasStateOptions, type CanvasViewOptions } from '../lib/avl-preview-converter';
 export { OrbPreviewNode, type SelectedPattern } from '../components/avl/molecules/OrbPreviewNode';
 export { EventFlowEdge } from '../components/avl/molecules/EventFlowEdge';
 
 // DOM → EditFocus (inspect primitive). Reads `data-orb-*` (incl. `data-orb-orbital`
 // stamped by UISlotRenderer) off a clicked element so consumers (runtime-verify
 // catalog, studio chatbox) can turn a rendered node into an EditFocus.
-export { deriveEditFocusFromElement } from '../components/avl/lib/derive-edit-focus';
-export { useInlineTextEdit, type InlineTextEditOptions } from '../components/avl/hooks/useInlineTextEdit';
+export { deriveEditFocusFromElement } from '../lib/derive-edit-focus';
+export { useInlineTextEdit, type InlineTextEditOptions } from '../hooks/useInlineTextEdit';
 
 // Canvas DnD (mirrors useDataDnd; pointer-sensor based so it works inside
 // React Flow nodes — the HTML5 DnD path was swallowed by RF's pan/zoom).
@@ -111,7 +113,7 @@ export {
   type UseCanvasDraggableResult,
   type UseCanvasDroppableArgs,
   type UseCanvasDroppableResult,
-} from '../components/avl/hooks/useCanvasDnd';
+} from '../hooks/useCanvasDnd';
 
 // V3 Revised: Behavior Compose
 
@@ -158,7 +160,7 @@ export {
   type CrossLink,
   type ZoomLevel,
 } from '../components/avl/organisms/index';
-export { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../components/avl/lib/canvas-tools';
+export { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../lib/canvas-tools';
 export { KnobField, type KnobFieldProps } from '../components/avl/molecules/KnobField';
 export { KnobSettingRow, type KnobSettingRowProps } from '../components/avl/molecules/KnobSettingRow';
 export {
@@ -170,4 +172,4 @@ export {
   type ElementKnob,
   type ElementPropAccess,
   type ElementSettings,
-} from '../components/avl/lib/element-edit-access';
+} from '../lib/element-edit-access';

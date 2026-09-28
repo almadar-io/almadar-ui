@@ -14,30 +14,18 @@
 
 import React, { useMemo } from 'react';
 import { cn } from '../../../lib/cn';
-import type { AvlEffectType, AvlPersistenceKind, EffectCategory } from '../types/avl-atom-types';
-import { EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS } from '../types/avl-atom-types';
+import { avlSeries, effectCategoryOf } from '../../../lib/avl-theme';
+import { type EntityPersistence } from '@almadar/core';
+import { type EffectCategory, EFFECT_CATEGORY_COLORS } from '../../../lib/avl-theme';
 
 // ─── Domain Colors ────────────────────────────────────────────
-export const DOMAIN_COLORS: Record<string, string> = {
-  commerce: '#14b8a6',
-  healthcare: '#3b82f6',
-  education: '#6366f1',
-  finance: '#10b981',
-  scheduling: '#f59e0b',
-  workflow: '#f97316',
-  social: '#ec4899',
-  media: '#a855f7',
-  gaming: '#ef4444',
-  iot: '#06b6d4',
-  crm: '#0ea5e9',
-  analytics: '#8b5cf6',
-  communication: '#f43f5e',
-  content: '#84cc16',
-  location: '#22c55e',
-  hr: '#64748b',
-  legal: '#78716c',
-  'real-estate': '#a8a29e',
-};
+const DOMAIN_ORDER = [
+  'commerce', 'healthcare', 'education', 'finance', 'scheduling', 'workflow',
+  'social', 'media', 'gaming', 'iot', 'crm', 'analytics',
+  'communication', 'content', 'location', 'hr', 'legal', 'real-estate',
+] as const;
+
+export const DOMAIN_COLORS: Record<string, string> = Object.fromEntries(DOMAIN_ORDER.map((domain, i) => [domain, avlSeries(i)]));
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -48,8 +36,8 @@ export interface BehaviorGlyphChild {
   name: string;
   fieldCount?: number;
   stateCount?: number;
-  persistence?: AvlPersistenceKind;
-  effectTypes?: AvlEffectType[];
+  persistence?: EntityPersistence;
+  effectTypes?: string[];
 }
 
 export interface BehaviorGlyphConnection {
@@ -72,9 +60,9 @@ export interface AvlBehaviorGlyphProps {
   /** State count (drives ring count) */
   stateCount?: number;
   /** Persistence type (drives core shape) */
-  persistence?: AvlPersistenceKind;
+  persistence?: EntityPersistence;
   /** Effect types used (drives markers on rings) */
-  effectTypes?: AvlEffectType[];
+  effectTypes?: string[];
   /** Child behaviors for molecule/organism composition */
   children?: BehaviorGlyphChild[];
   /** Event connections between children (organism level) */
@@ -102,7 +90,7 @@ const SIZE_MAP: Record<GlyphSize, number> = {
 // ─── Persistence Core Shapes ──────────────────────────────────
 
 function PersistenceCore({ cx, cy, r, persistence, color }: {
-  cx: number; cy: number; r: number; persistence: AvlPersistenceKind; color: string;
+  cx: number; cy: number; r: number; persistence: EntityPersistence; color: string;
 }) {
   switch (persistence) {
     case 'runtime':
@@ -112,23 +100,6 @@ function PersistenceCore({ cx, cy, r, persistence, color }: {
           <circle cx={cx} cy={cy} r={r * 0.4} fill={color} opacity={0.3}>
             <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2s" repeatCount="indefinite" />
           </circle>
-        </>
-      );
-    case 'singleton':
-      return (
-        <rect
-          x={cx - r * 0.7} y={cy - r * 0.7}
-          width={r * 1.4} height={r * 1.4}
-          transform={`rotate(45 ${cx} ${cy})`}
-          fill={color} fillOpacity={0.15}
-          stroke={color} strokeWidth={1.5}
-        />
-      );
-    case 'instance':
-      return (
-        <>
-          <circle cx={cx} cy={cy} r={r} fill={color} fillOpacity={0.1} stroke={color} strokeWidth={1} strokeDasharray="2 2" />
-          <circle cx={cx} cy={cy} r={r * 0.5} fill={color} fillOpacity={0.2} />
         </>
       );
     case 'persistent':
@@ -203,16 +174,16 @@ function StateRings({ cx, cy, baseR, count, color, animated }: {
 // ─── Effect Markers ───────────────────────────────────────────
 
 function EffectMarkers({ cx, cy, r, effectTypes, baseColor }: {
-  cx: number; cy: number; r: number; effectTypes: AvlEffectType[]; baseColor: string;
+  cx: number; cy: number; r: number; effectTypes: string[]; baseColor: string;
 }) {
   if (effectTypes.length === 0) return null;
 
   // Deduplicate by category
   const seen = new Set<EffectCategory>();
-  const categories: { type: AvlEffectType; category: EffectCategory }[] = [];
+  const categories: { type: string; category: EffectCategory }[] = [];
   for (const t of effectTypes) {
-    const cat = EFFECT_TYPE_TO_CATEGORY[t];
-    if (!seen.has(cat)) {
+    const cat = effectCategoryOf(t);
+    if (cat !== null && !seen.has(cat)) {
       seen.add(cat);
       categories.push({ type: t, category: cat });
     }
@@ -242,7 +213,7 @@ function EffectMarkers({ cx, cy, r, effectTypes, baseColor }: {
 
 function AtomGlyph({ cx, cy, radius, fieldCount, stateCount, persistence, effectTypes, color, animated, showLabels, name }: {
   cx: number; cy: number; radius: number; fieldCount: number; stateCount: number;
-  persistence: AvlPersistenceKind; effectTypes: AvlEffectType[];
+  persistence: EntityPersistence; effectTypes: string[];
   color: string; animated: boolean; showLabels: boolean; name: string;
 }) {
   const coreR = radius * 0.25;
@@ -455,7 +426,7 @@ export const AvlBehaviorGlyph: React.FC<AvlBehaviorGlyphProps> = ({
   className,
   onClick,
 }) => {
-  const resolvedColor = colorOverride ?? (domain ? DOMAIN_COLORS[domain] ?? '#14b8a6' : '#14b8a6');
+  const resolvedColor = colorOverride ?? (domain ? DOMAIN_COLORS[domain] ?? 'var(--color-primary)' : 'var(--color-primary)');
   const dim = SIZE_MAP[size];
   const radius = dim * 0.4;
   const cx = dim / 2;

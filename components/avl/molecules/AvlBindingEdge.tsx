@@ -10,7 +10,7 @@
 import React from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react';
 
-const BINDING_COLOR = '#8B5CF6';
+const BINDING_COLOR = 'var(--color-accent)';
 
 export const AvlBindingEdge: React.FC<EdgeProps> = ({
   id,

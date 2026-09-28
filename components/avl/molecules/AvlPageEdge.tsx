@@ -9,7 +9,7 @@
 import React from 'react';
 import { BaseEdge, getBezierPath, type EdgeProps } from '@xyflow/react';
 
-const PAGE_EDGE_COLOR = '#64748B';
+const PAGE_EDGE_COLOR = 'var(--color-muted-foreground)';
 
 export const AvlPageEdge: React.FC<EdgeProps> = ({
   id,

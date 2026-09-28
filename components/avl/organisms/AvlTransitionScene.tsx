@@ -9,8 +9,8 @@
 
 import React from 'react';
 import { AvlEffect } from '../atoms/AvlEffect';
-import { getStateRole, STATE_COLORS, type AvlEffectType } from '../types/avl-atom-types';
-import type { TransitionLevelData, ExprTreeNode } from '../lib/avl-schema-parser';
+import type { TransitionLevelData, ExprTreeNode } from '../../../lib/avl-schema-parser';
+import { getStateRole, STATE_COLORS } from '../../../lib/avl-theme';
 
 export interface AvlTransitionSceneProps {
   data: TransitionLevelData;
@@ -31,20 +31,20 @@ function flattenEffect(node: ExprTreeNode): { type: string; args: string[] } {
   return { type: node.label, args };
 }
 
-function mapEffectType(label: string): AvlEffectType {
-  const valid: AvlEffectType[] = [
+function mapEffectType(label: string): string {
+  const valid: string[] = [
     'render-ui', 'set', 'persist', 'fetch', 'emit', 'navigate',
     'call-service', 'spawn', 'despawn', 'do', 'if', 'log',
   ];
-  return valid.includes(label as AvlEffectType) ? (label as AvlEffectType) : 'log';
+  return valid.includes(label) ? (label) : 'log';
 }
 
 export const AvlTransitionScene: React.FC<AvlTransitionSceneProps> = ({
   data,
   color = 'var(--color-primary)',
 }) => {
-  const fromRole = getStateRole(data.from, true);
-  const toRole = getStateRole(data.to, false, false);
+  const fromRole = getStateRole();
+  const toRole = getStateRole();
   const fromColors = STATE_COLORS[fromRole];
   const toColors = STATE_COLORS[toRole];
 

@@ -11,25 +11,11 @@
 
 import React, { useMemo, useState } from 'react';
 import { Quaternion, Vector3 } from 'three';
-import { AVL_3D_COLORS, arcCurve3D, selfLoopCurve3D } from '../lib/avl-3d-layout';
-
-// V4: Effect type color mapping
-function effectTypeColor(type: string): string {
-  switch (type) {
-    case 'render-ui': return '#5b9bd5';
-    case 'set': return '#e0944a';
-    case 'persist': return '#4ecb71';
-    case 'fetch': return '#5b9bd5';
-    case 'emit': return '#a78bda';
-    case 'navigate': return '#40c8aa';
-    case 'call-service': return '#a78bda';
-    case 'spawn': return '#4ecb71';
-    case 'despawn': return '#f06060';
-    default: return '#888888';
-  }
-}
+import { arcCurve3D, effectTypePaletteKey, selfLoopCurve3D } from '../../../lib/avl-3d-layout';
+import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 import { Avl3DTooltip } from '../atoms/Avl3DTooltip';
+import { AVL_INK } from '../../../lib/avl-theme';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -79,9 +65,10 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
   fromState,
   toState,
   onClick,
-  color = AVL_3D_COLORS.transitionArc,
+  color,
 }) => {
   const [hovered, setHovered] = useState(false);
+  const palette = useAvl3DPalette();
 
   const { tubeArgs, labelPos, guardPos, arrowPos, arrowQuat, effectPositions } = useMemo(() => {
     const offset = 1.5 + index * 0.8;
@@ -119,6 +106,10 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
 
   const emissiveIntensity = hovered ? 0.8 : 0.4;
 
+  if (!palette) return null;
+
+  const arcColor = color ?? palette.transitionArc;
+
   return (
     <group>
       {/* Tube along curve */}
@@ -139,8 +130,8 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
       >
         <tubeGeometry args={[tubeArgs[0], tubeArgs[1], tubeArgs[2], tubeArgs[3], tubeArgs[4]]} />
         <meshStandardMaterial
-          color={color}
-          emissive={color}
+          color={arcColor}
+          emissive={arcColor}
           emissiveIntensity={emissiveIntensity}
           transparent
           opacity={hovered ? 0.9 : 0.7}
@@ -152,8 +143,8 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
         <mesh position={guardPos} scale={0.15}>
           <octahedronGeometry args={[1, 0]} />
           <meshStandardMaterial
-            color={AVL_3D_COLORS.guardPass}
-            emissive={AVL_3D_COLORS.guardPass}
+            color={palette.guardPass}
+            emissive={palette.guardPass}
             emissiveIntensity={0.8}
           />
         </mesh>
@@ -167,8 +158,8 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
       >
         <coneGeometry args={[1, 2, 8]} />
         <meshStandardMaterial
-          color={color}
-          emissive={color}
+          color={arcColor}
+          emissive={arcColor}
           emissiveIntensity={0.6}
         />
       </mesh>
@@ -177,7 +168,7 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
       <Avl3DLabel
         position={labelPos}
         text={event}
-        color={hovered ? '#ffffff' : color}
+        color={hovered ? AVL_INK.text : arcColor}
         fontSize={hovered ? 11 : 9}
       />
 
@@ -186,7 +177,7 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
         <Avl3DTooltip
           position={[labelPos[0], labelPos[1] + 0.6, labelPos[2]]}
           title={event}
-          accentColor={AVL_3D_COLORS.transitionArc}
+          accentColor={arcColor}
           rows={[
             ...(fromState && toState ? [{ label: 'Transition', value: `${fromState} → ${toState}` }] : []),
             ...(hasGuard ? [{ label: 'Guard', value: 'Yes' }] : []),
@@ -201,7 +192,7 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
       {effectTypes && effectTypes.length > 0 && effectTypes.slice(0, 4).map((effectType, ei) => {
         const pt = effectPositions[ei];
         if (!pt) return null;
-        const eColor = effectTypeColor(effectType);
+        const eColor = palette[effectTypePaletteKey(effectType)];
         return (
           <group key={ei} position={pt}>
             <mesh scale={0.06}>

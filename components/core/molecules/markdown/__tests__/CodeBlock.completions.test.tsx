@@ -65,6 +65,23 @@ describe('CodeBlock completions', () => {
     expect(queryByTestId('code-completions')).toBeNull();
   });
 
+  it('an offer never outlives its text: typing on hides it, and Tab cannot insert from it', async () => {
+    vi.useFakeTimers();
+    const provider = vi.fn<CodeCompletionProvider>()
+      .mockResolvedValueOnce(USES)
+      .mockReturnValueOnce(new Promise<CodeCompletionResult | null>(() => {}));
+    const { ta, onChange, queryByTestId } = setup(provider);
+    await type(ta, 's');
+    expect(queryByTestId('code-completions')).toBeTruthy();
+    fireEvent.change(ta, { target: { value: 'orbital A {\n  usx' } });
+    await type(ta, 'x');
+    expect(queryByTestId('code-completions')).toBeNull();
+    onChange.mockClear();
+    const tab = fireEvent.keyDown(ta, { key: 'Tab' });
+    expect(onChange).not.toHaveBeenCalledWith(expect.stringContaining('uses'));
+    expect(tab).toBe(true);
+  });
+
   it('a click inserts the chosen candidate', async () => {
     vi.useFakeTimers();
     const { ta, onChange, getByTestId } = setup(vi.fn<CodeCompletionProvider>().mockResolvedValue(USES));

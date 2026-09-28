@@ -22,17 +22,16 @@ import {
   parseApplicationLevel,
   parseTransitionLevel,
   type CrossLink,
-} from '../lib/avl-schema-parser';
+} from '../../../lib/avl-schema-parser';
 import {
   zoomReducer,
   initialZoomState,
   getBreadcrumbs,
   type ZoomLevel,
-} from '../lib/avl-zoom-state';
+} from '../../../lib/avl-zoom-state';
 import { AvlTransitionDetail } from './AvlTransitionDetail';
 import { AvlOrbitalUnit } from '../molecules/AvlOrbitalUnit';
-import type { AvlPersistenceKind } from '../types/avl-atom-types';
-import { curveControlPoint } from '../lib/avl-layout';
+import { curveControlPoint } from '../../../lib/avl-layout';
 import { createLogger } from '@almadar/logger';
 import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
@@ -41,7 +40,8 @@ import { Button } from '../../core/atoms/Button';
 import { Icon } from '../../core/atoms/Icon';
 import { FlowCanvas } from './FlowCanvas';
 import { useTranslate } from '../../../hooks/useTranslate';
-import type { ViewLevel } from '../types/avl-preview-types';
+import { type EntityPersistence } from '@almadar/core';
+import { type ViewLevel } from '../../../lib/avl-preview-converter';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -93,7 +93,7 @@ interface OrbitalView {
   name: string;
   entityName: string;
   fieldCount: number;
-  persistence: AvlPersistenceKind;
+  persistence: EntityPersistence;
   traits: Array<{ name: string }>;
   pages: Array<{ name: string }>;
   /** Center X in px within the container */
@@ -304,7 +304,7 @@ const EventWireOverlay: React.FC<EventWireOverlayProps> = ({
                 width={labelW}
                 height={14}
                 rx={3}
-                fill="var(--color-background, #fff)"
+                fill="var(--color-background)"
                 stroke={color}
                 strokeWidth={0.5}
                 opacity={0.9}
@@ -336,7 +336,7 @@ const EventWireOverlay: React.FC<EventWireOverlayProps> = ({
 export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   schema: schemaProp,
   className,
-  color = 'var(--color-primary, #4A90D9)',
+  color = 'var(--color-primary)',
   animated = true,
   width = '100%',
   height = 450,
@@ -394,7 +394,7 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
         name: o.name,
         entityName: o.entityName,
         fieldCount: o.fieldCount,
-        persistence: (o.persistence || 'persistent') as AvlPersistenceKind,
+        persistence: (o.persistence || 'persistent') as EntityPersistence,
         traits: o.traitNames.map(n => ({ name: n })),
         pages: o.pageNames.map(n => ({ name: n })),
         cx: positions[i]?.cx ?? 0,
@@ -626,7 +626,7 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
           top: 12,
           left: 12,
           zIndex: 30,
-          background: 'var(--color-card, rgba(255,255,255,0.92))',
+          background: 'var(--color-card)',
           padding: '4px 12px',
           borderRadius: 6,
           border: `1px solid ${color}`,
@@ -671,7 +671,7 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             bottom: 12,
             right: 12,
             zIndex: 30,
-            background: 'var(--color-card, rgba(255,255,255,0.85))',
+            background: 'var(--color-card)',
             padding: '2px 8px',
             borderRadius: 4,
             opacity: 0.8,

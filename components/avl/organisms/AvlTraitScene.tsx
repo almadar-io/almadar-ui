@@ -16,9 +16,9 @@ const log = createLogger('almadar:ui:avl:trait-scene');
 import { AvlTransitionLane } from '../molecules/AvlTransitionLane';
 import { AvlSwimLane } from '../molecules/AvlSwimLane';
 import { AvlClickTarget } from './AvlClickTarget';
-import { CONNECTION_COLORS, type AvlEffectType } from '../types/avl-atom-types';
-import { computeTraitLayout, edgePath, type ElkLayout } from '../lib/avl-elk-layout';
-import type { TraitLevelData } from '../lib/avl-schema-parser';
+import { computeTraitLayout, edgePath, type ElkLayout } from '../../../lib/avl-elk-layout';
+import type { TraitLevelData } from '../../../lib/avl-schema-parser';
+import { CONNECTION_COLORS } from '../../../lib/avl-theme';
 
 export interface AvlTraitSceneProps {
   data: TraitLevelData;
@@ -122,7 +122,7 @@ export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
                 y={edge.labelY}
                 event={edge.event}
                 guard={edge.guardExpr}
-                effects={edge.effects.map(e => ({ type: e.type as AvlEffectType }))}
+                effects={edge.effects.map(e => ({ type: e.type }))}
                 width={edge.labelW}
                 isBackward={edge.isBackward}
                 isSelfLoop={edge.isSelf}

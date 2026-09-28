@@ -8,12 +8,17 @@ Every open gap this repo owns lives here. This file is the source of truth; the 
 - **Close by deleting.** Remove the entry in the same commit as the fix. There is no "closed" section; git history is the record.
 - **Cross-repo gaps don't go here.** If fixing it needs another repo, describe it in your report or PR body; the monorepo coordinator files it.
 
-Next code: `G-UI-026`
+Next code: `G-UI-030`
 
 ## Open gaps
 
 
 ### UI tier (`@almadar/ui`)
+
+- **G-UI-026** — AVL docs diagrams `AvlClosedCircuit`, `AvlEmitListen`, `AvlSlotMap`, `AvlOrbitalUnit` (used by almadar/orb MDX) still use the pre-redesign fixed-size SVG layouts; redesign to the approved AVL standard (tokens, fit-to-container, ≥12px text) and admit them in `components/avl/patterns.ts`. `AvlExprTree` is replaced by the Part B circuit view. `components/avl/molecules` · [architectural]
+- **G-UI-027** — `AvlBehaviorGlyph` has no consumer anywhere in the monorepo (only a palette test). Retire it or give it a user. `components/avl/molecules/AvlBehaviorGlyph.tsx` · [owner-decision]
+- **G-UI-028** — `ScaledDiagram` finds its target by scanning children for inline pixel widths (a heuristic); its only diagram consumers (Jazari/StateMachineView) now self-fit. Retire the pattern or give it an explicit contract. `components/core/molecules/ScaledDiagram.tsx` · [owner-decision]
+- **G-UI-029** — `CodeBlock` is always VS-Code-dark and never uses `ORB_COLORS.light`, ignoring the active theme. `components/core/molecules/markdown/CodeBlock.tsx` · [mechanical]
 
 
 - **G-UI-025** — `useKeyboardRouter` emits `UI:KEY` for whichever editor is focused, but only `preventDefault`s keys for editors declared in its capture table. An editor the host forgets to declare gets its plugin keymap applied without the capture, so vim NORMAL-mode `u` undoes *and* types `u`. Found in the builder (the building-block editor was missing from `editorIds`, fixed there with one declared-id module). Proposal (substrate, needs owner consult): the router logs, once per id, a focus from an editor that no capture entry names while any plugin entry exists, so the class surfaces in one place. `hooks/useKeyboardRouter.ts` [mechanical] — found 2026-09-27

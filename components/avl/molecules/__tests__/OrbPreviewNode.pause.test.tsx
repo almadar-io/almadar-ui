@@ -9,13 +9,13 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { ReactFlowProvider, type NodeProps } from '@xyflow/react';
 import type { OrbitalSchema, Trait } from '@almadar/core';
 import { OrbPreviewNode, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, type CanvasStatePicker, type SelectedPattern } from '../OrbPreviewNode';
-import { stateOptionsOf, LIVE_STATE } from '../../lib/avl-preview-converter';
-import { CANVAS_TOOLS, type CanvasTool } from '../../lib/canvas-tools';
-import { CanvasDndProvider } from '../../hooks/useCanvasDnd';
+import { stateOptionsOf, LIVE_STATE } from '../../../../lib/avl-preview-converter';
+import { CANVAS_TOOLS, type CanvasTool } from '../../../../lib/canvas-tools';
+import { CanvasDndProvider } from '../../../../hooks/useCanvasDnd';
 import { EventBusProvider } from '../../../../providers/EventBusProvider';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import type { EventPayload } from '@almadar/core';
-import type { PreviewNodeData } from '../../types/avl-preview-types';
+import { type PreviewNodeData } from '../../../../lib/avl-preview-converter';
 
 class ResizeObserverStub {
   observe(): void {}

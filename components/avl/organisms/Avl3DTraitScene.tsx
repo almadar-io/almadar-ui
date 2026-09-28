@@ -10,11 +10,12 @@
  */
 
 import React, { useMemo } from 'react';
-import type { TraitLevelData } from '../lib/avl-schema-parser';
-import { fibonacciSpherePositions } from '../lib/avl-3d-layout';
+import type { TraitLevelData } from '../../../lib/avl-schema-parser';
+import { fibonacciSpherePositions } from '../../../lib/avl-3d-layout';
 import { Avl3DStateNode } from '../molecules/Avl3DStateNode';
 import { Avl3DTransitionArc } from '../molecules/Avl3DTransitionArc';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
+import { AVL_INK } from '../../../lib/avl-theme';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -79,7 +80,7 @@ export const Avl3DTraitScene: React.FC<Avl3DTraitSceneProps> = ({
       <Avl3DLabel
         position={[0, 5, 0]}
         text={`${data.name} (${data.linkedEntity})`}
-        color="#ffffff"
+        color={AVL_INK.text}
         fontSize={14}
       />
 

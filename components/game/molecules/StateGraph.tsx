@@ -1,18 +1,16 @@
 /**
  * StateGraph (molecule)
  *
- * Dumb visual renderer for a state-machine graph: lays states out on a circle,
- * draws the player's transitions as SVG arrows, and emits a node-click event.
- * All state (which transitions exist, the pending "from" selection, test results)
+ * A player-built state machine drawn by the AVL state-machine renderer. All
+ * state (which transitions exist, the pending "from" selection, test results)
  * lives in the .lolo FSM — this molecule only renders and reports clicks.
  */
 import * as React from 'react';
-import { Box, type Point } from '../../core/atoms/index';
+import { Box } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
-import { useEventBus } from '../../../hooks/useEventBus';
 import type { EventEmit } from '@almadar/core';
-import { StateNode } from './StateNode';
-import { TransitionArrow } from './TransitionArrow';
+import { AvlStateMachine } from '../../avl/molecules/AvlStateMachine';
+import type { TraitLevelData } from '../../../lib/avl-schema-parser';
 
 export interface StateGraphTransition {
     from: string;
@@ -47,18 +45,6 @@ export interface StateGraphProps {
     className?: string;
 }
 
-function layoutStates(states: string[], width: number, height: number): Record<string, Point> {
-    const cx = width / 2;
-    const cy = height / 2;
-    const radius = Math.min(cx, cy) - 60;
-    const positions: Record<string, Point> = {};
-    states.forEach((state, i) => {
-        const angle = (2 * Math.PI * i) / Math.max(states.length, 1) - Math.PI / 2;
-        positions[state] = { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) };
-    });
-    return positions;
-}
-
 export function StateGraph({
     states,
     transitions = [],
@@ -71,56 +57,36 @@ export function StateGraph({
     nodeClickEvent,
     className,
 }: StateGraphProps): React.JSX.Element {
-    const eventBus = useEventBus();
-    const nodes = states ?? [];
-    const positions = React.useMemo(() => layoutStates(nodes, width, height), [nodes, width, height]);
+    const trait = React.useMemo<TraitLevelData>(() => ({
+        name: 'StateGraph',
+        linkedEntity: '',
+        states: (states ?? []).map((name) => ({ name, isInitial: name === initialState, isTerminal: false })),
+        transitions: transitions.map((tr, index) => ({
+            from: tr.from,
+            to: tr.to,
+            event: tr.event,
+            guard: tr.guardHint ?? null,
+            effects: [],
+            index,
+        })),
+        emittedEvents: [],
+        listenedEvents: [],
+    }), [states, transitions, initialState]);
 
     return (
         <Box
             position="relative"
-            className={cn('rounded-container border border-border bg-background overflow-hidden', className)}
+            className={cn('rounded-container border border-border bg-background overflow-auto p-2', className)}
             style={{ width, height }}
         >
-            <svg width={width} height={height} className="absolute inset-0" style={{ pointerEvents: 'none' }}>
-                <defs>
-                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--color-border)" />
-                    </marker>
-                    <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--color-primary)" />
-                    </marker>
-                </defs>
-                {transitions.map((tr, i) => {
-                    const fromPos = positions[tr.from];
-                    const toPos = positions[tr.to];
-                    if (!fromPos || !toPos) return null;
-                    return (
-                        <TransitionArrow
-                            key={`${tr.from}-${tr.event}-${tr.to}-${i}`}
-                            from={fromPos}
-                            to={toPos}
-                            eventLabel={tr.event}
-                            guardHint={tr.guardHint}
-                            isActive={tr.from === currentState}
-                        />
-                    );
-                })}
-            </svg>
-            {nodes.map(state => {
-                const pos = positions[state];
-                if (!pos) return null;
-                return (
-                    <StateNode
-                        key={state}
-                        name={state}
-                        position={pos}
-                        isCurrent={state === currentState}
-                        isSelected={state === selectedState || state === addingFrom}
-                        isInitial={state === initialState}
-                        onClick={nodeClickEvent ? () => eventBus.emit(`UI:${nodeClickEvent}`, { stateId: state }) : undefined}
-                    />
-                );
-            })}
+            <AvlStateMachine
+                trait={trait}
+                activeState={currentState || undefined}
+                selectedState={selectedState || undefined}
+                pendingSourceState={addingFrom || undefined}
+                stateClickEvent={nodeClickEvent}
+                showHeader={false}
+            />
         </Box>
     );
 }

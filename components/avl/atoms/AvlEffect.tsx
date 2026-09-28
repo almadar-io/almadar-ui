@@ -1,19 +1,24 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps, AvlEffectType } from '../types/avl-atom-types';
-import { EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS } from '../types/avl-atom-types';
+import { createLogger } from '@almadar/logger';
+import type { EffectOperator } from '@almadar/core';
+import { EFFECT_CATEGORY_COLORS, asEffectOperator, effectCategoryOf, type AvlBaseProps, type EffectCategory } from '../../../lib/avl-theme';
+
+const log = createLogger('almadar:ui:avl:effect');
 
 export interface AvlEffectProps extends AvlBaseProps {
-  effectType: AvlEffectType;
+  /** Effect operator as it appears in the program (`set`, `emit`, `llm/generate`, …). */
+  effectType: string;
   size?: number;
   label?: string;
   /** V2: Render a category-colored background circle behind the icon. */
   showBackground?: boolean;
 }
 
-function effectIcon(type: AvlEffectType, x: number, y: number, s: number, color: string): React.ReactNode {
-  // Each effect type gets a distinct mini-icon
+type Glyph = (x: number, y: number, s: number, color: string) => React.ReactNode;
+
+function headIcon(type: EffectOperator, x: number, y: number, s: number, color: string): React.ReactNode | null {
   switch (type) {
     case 'render-ui':
       // Grid: ⊞
@@ -131,7 +136,61 @@ function effectIcon(type: AvlEffectType, x: number, y: number, s: number, color:
           ¶
         </text>
       );
+    default:
+      return null;
   }
+}
+
+const clock: Glyph = (x, y, s, color) => (
+  <g>
+    <circle cx={x} cy={y} r={s} fill="none" stroke={color} strokeWidth={1.5} />
+    <polyline points={`${x},${y - s * 0.6} ${x},${y} ${x + s * 0.5},${y + s * 0.3}`} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" />
+  </g>
+);
+
+const neuron: Glyph = (x, y, s, color) => (
+  <g>
+    <line x1={x - s} y1={y - s * 0.6} x2={x + s * 0.8} y2={y} stroke={color} strokeWidth={1} />
+    <line x1={x - s} y1={y + s * 0.6} x2={x + s * 0.8} y2={y} stroke={color} strokeWidth={1} />
+    <circle cx={x - s} cy={y - s * 0.6} r={s * 0.3} fill={color} />
+    <circle cx={x - s} cy={y + s * 0.6} r={s * 0.3} fill={color} />
+    <circle cx={x + s * 0.8} cy={y} r={s * 0.35} fill={color} />
+  </g>
+);
+
+const gear: Glyph = (x, y, s, color) => (
+  <g>
+    <circle cx={x} cy={y} r={s * 0.75} fill="none" stroke={color} strokeWidth={1.5} strokeDasharray={`${s * 0.5} ${s * 0.3}`} />
+    <circle cx={x} cy={y} r={s * 0.3} fill={color} />
+  </g>
+);
+
+const unknown: Glyph = (x, y, s, color) => (
+  <g>
+    <circle cx={x} cy={y} r={s} fill="none" stroke={color} strokeWidth={1.2} strokeDasharray="2 2" />
+    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill={color} fontSize={s * 1.4}>?</text>
+  </g>
+);
+
+const CATEGORY_GLYPH: Record<EffectCategory, Glyph> = {
+  ui: (x, y, s, c) => headIcon('render-ui', x, y, s, c),
+  data: (x, y, s, c) => headIcon('set', x, y, s, c),
+  communication: (x, y, s, c) => headIcon('emit', x, y, s, c),
+  lifecycle: (x, y, s, c) => headIcon('spawn', x, y, s, c),
+  control: (x, y, s, c) => headIcon('if', x, y, s, c),
+  async: clock,
+  compute: neuron,
+  system: gear,
+};
+
+function effectIcon(type: string, x: number, y: number, s: number, color: string): React.ReactNode {
+  const op = asEffectOperator(type);
+  const own = op ? headIcon(op, x, y, s, color) : null;
+  if (own) return own;
+  const category = effectCategoryOf(type);
+  if (category) return CATEGORY_GLYPH[category](x, y, s, color);
+  log.error('unknown-effect-operator', { effectType: type });
+  return unknown(x, y, s, color);
 }
 
 export const AvlEffect: React.FC<AvlEffectProps> = ({
@@ -145,13 +204,13 @@ export const AvlEffect: React.FC<AvlEffectProps> = ({
   className,
   showBackground = false,
 }) => {
-  const category = EFFECT_TYPE_TO_CATEGORY[effectType] ?? 'control';
-  const catColors = EFFECT_CATEGORY_COLORS[category];
-  const iconColor = showBackground ? catColors.color : color;
+  const category = effectCategoryOf(effectType);
+  const catColors = category ? EFFECT_CATEGORY_COLORS[category] : null;
+  const iconColor = showBackground && catColors ? catColors.color : color;
 
   return (
     <g className={className} opacity={opacity}>
-      {showBackground && (
+      {showBackground && catColors && (
         <>
           <circle cx={x} cy={y} r={size * 1.2} fill={catColors.bg} />
           <circle cx={x} cy={y} r={size * 1.2} fill="none" stroke={catColors.color} strokeWidth={0.5} opacity={0.3} />

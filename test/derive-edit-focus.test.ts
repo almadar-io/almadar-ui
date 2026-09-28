@@ -12,7 +12,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { EditFocus } from '@almadar/core';
-import { deriveEditFocusFromElement, traitOfElement, withNodeTransition } from '../components/avl/lib/derive-edit-focus';
+import { deriveEditFocusFromElement, traitOfElement, withNodeTransition } from '../lib/derive-edit-focus';
 
 function baseFocus(overrides: Partial<EditFocus> = {}): EditFocus {
   return { level: 'node', orbital: 'Widgets', label: 'typography', ...overrides };

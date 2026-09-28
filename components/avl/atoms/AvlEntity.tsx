@@ -1,27 +1,20 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps, AvlPersistenceKind } from '../types/avl-atom-types';
+import { type AvlBaseProps } from '../../../lib/avl-theme';
+import { type EntityPersistence } from '@almadar/core';
 
 export interface AvlEntityProps extends AvlBaseProps {
   r?: number;
   fieldCount?: number;
-  persistence?: AvlPersistenceKind;
+  persistence?: EntityPersistence;
   label?: string;
 }
 
-function persistenceStroke(kind: AvlPersistenceKind): { strokeDasharray?: string; strokeWidth: number } {
-  switch (kind) {
-    case 'persistent':
-      return { strokeWidth: 2.5 };
-    case 'runtime':
-      return { strokeDasharray: '6 3', strokeWidth: 2 };
-    case 'singleton':
-      return { strokeWidth: 3.5 };
-    case 'instance':
-      return { strokeDasharray: '2 3', strokeWidth: 2 };
-  }
-}
+const PERSISTENCE_STROKE: Record<EntityPersistence, { strokeDasharray?: string; strokeWidth: number }> = {
+  persistent: { strokeWidth: 2.5 },
+  runtime: { strokeDasharray: '6 3', strokeWidth: 2 },
+};
 
 export const AvlEntity: React.FC<AvlEntityProps> = ({
   x = 0,
@@ -34,7 +27,7 @@ export const AvlEntity: React.FC<AvlEntityProps> = ({
   opacity = 1,
   className,
 }) => {
-  const strokeProps = persistenceStroke(persistence);
+  const strokeProps = PERSISTENCE_STROKE[persistence];
 
   // Radiating facet lines
   const facets = Array.from({ length: fieldCount }, (_, i) => {
@@ -65,17 +58,6 @@ export const AvlEntity: React.FC<AvlEntityProps> = ({
         strokeDasharray={strokeProps.strokeDasharray}
       />
 
-      {/* Singleton: double border */}
-      {persistence === 'singleton' && (
-        <circle
-          cx={x}
-          cy={y}
-          r={r - 4}
-          fill="none"
-          stroke={color}
-          strokeWidth={1.5}
-        />
-      )}
 
       {/* Radiating field lines */}
       {facets.map((f, i) => (

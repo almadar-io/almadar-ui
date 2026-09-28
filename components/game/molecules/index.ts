@@ -127,8 +127,6 @@ export { SequenceBar, type SequenceBarProps } from './SequenceBar';
 // Event Handler (ages 9-12)
 export * from '../../../lib/puzzleObject';
 // State Architect (ages 13+)
-export { StateNode, type StateNodeProps } from './StateNode';
-export { TransitionArrow, type TransitionArrowProps } from './TransitionArrow';
 export { StateJsonView, type StateJsonViewProps } from './StateJsonView';
 
 export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../../../lib/physicsPresets';

@@ -14,8 +14,8 @@ import { AvlState } from '../atoms/AvlState';
 import { AvlEvent } from '../atoms/AvlEvent';
 import { AvlGuard } from '../atoms/AvlGuard';
 import { AvlEffect } from '../atoms/AvlEffect';
-import { getStateRole, type AvlEffectType } from '../types/avl-atom-types';
-import type { AvlNodeData } from '../types/avl-canvas-types';
+import { getStateRole } from '../../../lib/avl-theme';
+import { type AvlNodeData } from '../../../lib/avl-flow-converter';
 
 export interface DetailViewProps {
   data: AvlNodeData;
@@ -48,8 +48,8 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
   }
   const maxTC = Math.max(...Object.values(transitionCounts), 0);
 
-  const fromRole = getStateRole(transition.from, fromState?.isInitial ?? undefined, fromState?.isTerminal ?? undefined, transitionCounts[transition.from] ?? 0, maxTC);
-  const toRole = getStateRole(transition.to, toState?.isInitial ?? undefined, toState?.isTerminal ?? undefined, transitionCounts[transition.to] ?? 0, maxTC);
+  const fromRole = getStateRole(fromState?.isInitial ?? undefined, fromState?.isTerminal ?? undefined, transitionCounts[transition.from] ?? 0, maxTC);
+  const toRole = getStateRole(toState?.isInitial ?? undefined, toState?.isTerminal ?? undefined, transitionCounts[transition.to] ?? 0, maxTC);
 
   const hasGuard = transition.guard != null;
 
@@ -108,7 +108,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
                 <div key={i} className="flex items-start gap-1.5">
                   <span className="text-xs text-[var(--color-muted-foreground)] w-3 text-right mt-0.5">{i + 1}.</span>
                   <svg width={18} height={18} viewBox="0 0 20 20">
-                    <AvlEffect x={10} y={10} effectType={effect.type as AvlEffectType} size={8} showBackground />
+                    <AvlEffect x={10} y={10} effectType={effect.type} size={8} showBackground />
                   </svg>
                   <span className="text-xs text-[var(--color-foreground)]">{effect.type}</span>
                 </div>

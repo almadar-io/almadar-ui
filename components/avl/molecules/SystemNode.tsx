@@ -13,19 +13,19 @@ import { AvlEntity } from '../atoms/AvlEntity';
 import { AvlFieldType } from '../atoms/AvlFieldType';
 import { AvlState } from '../atoms/AvlState';
 import { AvlPage } from '../atoms/AvlPage';
-import { getStateRole } from '../types/avl-atom-types';
-import type { AvlFieldTypeKind } from '../types/avl-atom-types';
-import type { AvlNodeData } from '../types/avl-canvas-types';
+import { getStateRole } from '../../../lib/avl-theme';
+import { type FieldType } from '@almadar/core';
+import { type AvlNodeData } from '../../../lib/avl-flow-converter';
 
 export interface SystemNodeProps {
   data: AvlNodeData;
 }
 
-/** Map a field type string from the parser to an AvlFieldTypeKind. */
-function toFieldKind(type: string): AvlFieldTypeKind {
+/** Map a field type string from the parser to an FieldType. */
+function toFieldKind(type: string): FieldType {
   const normalized = type.toLowerCase();
   if (['string', 'number', 'boolean', 'date', 'enum', 'object', 'array'].includes(normalized)) {
-    return normalized as AvlFieldTypeKind;
+    return normalized as FieldType;
   }
   return 'string';
 }
@@ -70,7 +70,7 @@ export const SystemNode: React.FC<SystemNodeProps> = ({ data }) => {
       {/* Row 1: Name + entity glyph + field type dots */}
       <div className="flex items-center gap-1.5 mb-1">
         <svg width={14} height={14} viewBox="0 0 20 20">
-          <AvlEntity x={10} y={10} r={8} persistence={persistence as 'persistent' | 'runtime' | 'singleton' | 'instance'} />
+          <AvlEntity x={10} y={10} r={8} persistence={persistence} />
         </svg>
         <span className="text-xs font-semibold text-[var(--color-foreground)] truncate flex-1">
           {orbitalName}
@@ -92,7 +92,7 @@ export const SystemNode: React.FC<SystemNodeProps> = ({ data }) => {
           <svg width={stateChain.length * 14 + 2} height={10} viewBox={`0 0 ${stateChain.length * 14 + 2} 10`}>
             {stateChain.map((s, i) => {
               const tc = transitionCounts[s.name] ?? 0;
-              const role = getStateRole(s.name, s.isInitial ?? undefined, s.isTerminal ?? undefined, tc, maxTC);
+              const role = getStateRole(s.isInitial ?? undefined, s.isTerminal ?? undefined, tc, maxTC);
               return (
                 <React.Fragment key={s.name}>
                   <AvlState x={i * 14 + 1} y={1} width={10} height={8} name="" role={role} isInitial={s.isInitial ?? undefined} isTerminal={s.isTerminal ?? undefined} />

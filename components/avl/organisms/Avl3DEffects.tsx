@@ -13,8 +13,9 @@
 import React, { useMemo } from 'react';
 import { EffectComposer, Bloom, DepthOfField, Vignette } from '@react-three/postprocessing';
 import { Sparkles, Stars } from '@react-three/drei';
-import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
-import type { ZoomLevel } from '../lib/avl-zoom-state';
+import type { AVL_3D_COLORS } from '../../../lib/avl-3d-layout';
+import { useAvl3DPalette } from '../../../providers/avl-3d-context';
+import type { ZoomLevel } from '../../../lib/avl-zoom-state';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -49,21 +50,23 @@ const DOF_CONFIG: Record<ZoomLevel, { focusDistance: number; focalLength: number
   transition: null,
 };
 
-// Two sparkle layers: cool blue dust + warm gold accents
-const SPARKLE_CONFIGS: Record<ZoomLevel, Array<{ count: number; size: number; speed: number; opacity: number; scale: number; color: string }>> = {
+// Two sparkle layers: cool blue dust + warm gold accents. Colors are resolved
+// per render from the AVL_3D_COLORS palette key, never a raw token — Sparkles
+// is a three.js material and cannot evaluate `var()`.
+const SPARKLE_CONFIGS: Record<ZoomLevel, Array<{ count: number; size: number; speed: number; opacity: number; scale: number; colorKey: keyof typeof AVL_3D_COLORS }>> = {
   application: [
-    { count: 60, size: 1.2, speed: 0.2, opacity: 0.35, scale: 35, color: AVL_3D_COLORS.sparkle },
-    { count: 15, size: 1.8, speed: 0.1, opacity: 0.2, scale: 25, color: AVL_3D_COLORS.sparkleWarm },
+    { count: 60, size: 1.2, speed: 0.2, opacity: 0.35, scale: 35, colorKey: 'sparkle' },
+    { count: 15, size: 1.8, speed: 0.1, opacity: 0.2, scale: 25, colorKey: 'sparkleWarm' },
   ],
   orbital: [
-    { count: 30, size: 0.8, speed: 0.15, opacity: 0.25, scale: 18, color: AVL_3D_COLORS.sparkle },
-    { count: 8, size: 1.2, speed: 0.08, opacity: 0.15, scale: 12, color: AVL_3D_COLORS.sparkleWarm },
+    { count: 30, size: 0.8, speed: 0.15, opacity: 0.25, scale: 18, colorKey: 'sparkle' },
+    { count: 8, size: 1.2, speed: 0.08, opacity: 0.15, scale: 12, colorKey: 'sparkleWarm' },
   ],
   trait: [
-    { count: 15, size: 0.6, speed: 0.1, opacity: 0.2, scale: 12, color: AVL_3D_COLORS.sparkle },
+    { count: 15, size: 0.6, speed: 0.1, opacity: 0.2, scale: 12, colorKey: 'sparkle' },
   ],
   transition: [
-    { count: 8, size: 0.4, speed: 0.08, opacity: 0.15, scale: 8, color: AVL_3D_COLORS.sparkle },
+    { count: 8, size: 0.4, speed: 0.08, opacity: 0.15, scale: 8, colorKey: 'sparkle' },
   ],
 };
 
@@ -83,15 +86,17 @@ export const Avl3DEffects: React.FC<Avl3DEffectsProps> = ({
   level,
   enabled = true,
 }) => {
-  if (!enabled) return null;
+  const palette = useAvl3DPalette();
+
+  // Memoize stars config to prevent re-renders
+  const starsKey = useMemo(() => `stars-${level}`, [level]);
+
+  if (!enabled || !palette) return null;
 
   const bloom = BLOOM_CONFIG[level];
   const dof = DOF_CONFIG[level];
   const sparkles = SPARKLE_CONFIGS[level];
   const stars = STARS_CONFIG[level];
-
-  // Memoize stars config to prevent re-renders
-  const starsKey = useMemo(() => `stars-${level}`, [level]);
 
   return (
     <>
@@ -115,7 +120,7 @@ export const Avl3DEffects: React.FC<Avl3DEffectsProps> = ({
           speed={cfg.speed}
           opacity={cfg.opacity}
           scale={cfg.scale}
-          color={cfg.color}
+          color={palette[cfg.colorKey]}
         />
       ))}
 

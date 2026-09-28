@@ -23,24 +23,28 @@ import {
   parseOrbitalLevel,
   parseTraitLevel,
   parseTransitionLevel,
-} from '../lib/avl-schema-parser';
+} from '../../../lib/avl-schema-parser';
 import {
   zoomReducer,
   initialZoomState,
   getBreadcrumbs,
   type ZoomLevel,
-} from '../lib/avl-zoom-state';
+} from '../../../lib/avl-zoom-state';
 import { Scene3D } from '../../../lib/drawable/three/Scene3D';
 import { Camera3D } from '../../../lib/drawable/three/Camera3D';
 import { Lighting3D } from '../../../lib/drawable/three/Lighting3D';
-import { AVL_3D_COLORS, CAMERA_POSITIONS } from '../lib/avl-3d-layout';
+import { AVL_3D_COLORS, CAMERA_POSITIONS } from '../../../lib/avl-3d-layout';
 import { Avl3DApplicationScene } from './Avl3DApplicationScene';
 import { Avl3DOrbitalScene } from './Avl3DOrbitalScene';
 import { Avl3DTraitScene } from './Avl3DTraitScene';
 import { Avl3DTransitionScene } from './Avl3DTransitionScene';
 import { Avl3DEffects } from './Avl3DEffects';
-import { Avl3DContext, type Avl3DModelOverrides } from '../providers/avl-3d-context';
+import { Avl3DContext, type Avl3DModelOverrides } from '../../../providers/avl-3d-context';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { useThemeColors } from '../../../hooks/useThemeColors';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:avl-3d-viewer');
 
 // ---------------------------------------------------------------------------
 // Props
@@ -168,6 +172,25 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
   modelOverrides = {},
 }) => {
   const { t } = useTranslate();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Resolve every AVL_3D_COLORS token against the active theme — three.js
+  // materials and lights cannot evaluate `var()`/`color-mix()` themselves.
+  const resolvedColors = useThemeColors(AVL_3D_COLORS, containerRef);
+  const palette = useMemo(() => {
+    if (!resolvedColors) return null;
+    const out = {} as Record<keyof typeof AVL_3D_COLORS, string>;
+    for (const key of Object.keys(AVL_3D_COLORS) as Array<keyof typeof AVL_3D_COLORS>) {
+      const resolved = resolvedColors[key];
+      if (!resolved) {
+        log.error('avl-3d-palette-key-unresolved', { key, value: AVL_3D_COLORS[key] });
+        return null;
+      }
+      out[key] = resolved.css;
+    }
+    return out;
+  }, [resolvedColors]);
+
   // Parse schema
   const schema: OrbitalSchema = useMemo(() => {
     if (typeof schemaProp === 'string') {
@@ -181,7 +204,8 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
   const configValue = useMemo(() => ({
     modelOverrides,
     effectsEnabled: effects,
-  }), [modelOverrides, effects]);
+    palette,
+  }), [modelOverrides, effects, palette]);
 
   // Zoom state machine (reused from 2D viewer)
   const [state, dispatch] = useReducer(zoomReducer, initialZoomState);
@@ -312,6 +336,7 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
 
   return (
     <Box
+      ref={containerRef}
       className={`relative ${className ?? ''}`}
       style={{
         width,
@@ -364,66 +389,69 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
         </Typography>
       )}
 
-      {/* R3F Canvas */}
-      <Canvas
-        style={{ width: '100%', height: '100%' }}
-        camera={{
-          position: cameraConfig.position,
-          fov: 60,
-          near: 0.1,
-          far: 200,
-        }}
-        onCreated={({ gl }) => {
-          gl.setClearColor(AVL_3D_COLORS.background);
-        }}
-      >
-        <Avl3DContext.Provider value={configValue}>
-          <Scene3D
-            background={AVL_3D_COLORS.background}
-            fog={{ color: AVL_3D_COLORS.fog, near: 30, far: 80 }}
-          >
-            <Camera3D
-              mode="perspective"
-              position={cameraConfig.position}
-              target={cameraConfig.target}
-              enableOrbit
-              minDistance={3}
-              maxDistance={80}
-            />
-            <Lighting3D
-              ambientIntensity={0.35}
-              ambientColor="#8090c0"
-              directionalIntensity={0.5}
-              directionalColor="#c0d0f0"
-              directionalPosition={[8, 15, 12]}
-              shadows={false}
-            />
+      {/* R3F Canvas — held back until every AVL_3D_COLORS token has resolved,
+          so no material/light ever receives an unparsed `var()` string. */}
+      {palette && (
+        <Canvas
+          style={{ width: '100%', height: '100%' }}
+          camera={{
+            position: cameraConfig.position,
+            fov: 60,
+            near: 0.1,
+            far: 200,
+          }}
+          onCreated={({ gl }) => {
+            gl.setClearColor(palette.background);
+          }}
+        >
+          <Avl3DContext.Provider value={configValue}>
+            <Scene3D
+              background={palette.background}
+              fog={{ color: palette.fog, near: 30, far: 80 }}
+            >
+              <Camera3D
+                mode="perspective"
+                position={cameraConfig.position}
+                target={cameraConfig.target}
+                enableOrbit
+                minDistance={3}
+                maxDistance={80}
+              />
+              <Lighting3D
+                ambientIntensity={0.35}
+                ambientColor={palette.lightAmbient}
+                directionalIntensity={0.5}
+                directionalColor={palette.lightDirectional}
+                directionalPosition={[8, 15, 12]}
+                shadows={false}
+              />
 
-            {/* Fill light from below for depth (subtle uplighting) */}
-            <pointLight
-              position={[0, -10, 0]}
-              color="#2040a0"
-              intensity={0.15}
-              distance={50}
-              decay={2}
-            />
+              {/* Fill light from below for depth (subtle uplighting) */}
+              <pointLight
+                position={[0, -10, 0]}
+                color={palette.lightFill}
+                intensity={0.15}
+                distance={50}
+                decay={2}
+              />
 
-            <CameraController
-              targetPosition={cameraConfig.position}
-              targetLookAt={cameraConfig.target}
-              animated={animated}
-            />
+              <CameraController
+                targetPosition={cameraConfig.position}
+                targetLookAt={cameraConfig.target}
+                animated={animated}
+              />
 
-            {/* B5: Fade wrapper for smooth zoom transitions */}
-            <SceneFade animating={state.animating}>
-              {sceneContent}
-            </SceneFade>
+              {/* B5: Fade wrapper for smooth zoom transitions */}
+              <SceneFade animating={state.animating}>
+                {sceneContent}
+              </SceneFade>
 
-            {/* Postprocessing effects + ambient particles */}
-            <Avl3DEffects level={state.level} enabled={effects} />
-          </Scene3D>
-        </Avl3DContext.Provider>
-      </Canvas>
+              {/* Postprocessing effects + ambient particles */}
+              <Avl3DEffects level={state.level} enabled={effects} />
+            </Scene3D>
+          </Avl3DContext.Provider>
+        </Canvas>
+      )}
     </Box>
   );
 };

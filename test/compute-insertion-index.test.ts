@@ -8,7 +8,7 @@
  * geometry, so these tests exercise it directly with hand-built rects.
  */
 import { describe, it, expect } from 'vitest';
-import { computeInsertionIndex, type DOMRectLike } from '../components/avl/lib/compute-insertion-index';
+import { computeInsertionIndex, type DOMRectLike } from '../lib/compute-insertion-index';
 
 function rect(top: number, left: number, width: number, height: number): DOMRectLike {
   return { top, left, right: left + width, bottom: top + height, width, height };

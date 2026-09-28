@@ -75,3 +75,20 @@ export function orderSuggestions(suggestions: readonly CodeSuggestion[], caret: 
   const i = byPos.findIndex((s) => s.from === caret && s.to === caret);
   return i < 0 ? byPos : [byPos[i], ...byPos.slice(0, i), ...byPos.slice(i + 1)];
 }
+
+export interface CodeAssistRequest {
+  code: string;
+  /** The caret, as a JavaScript string index. */
+  offset: number;
+  kind: 'complete' | 'fix';
+  trigger: 'idle' | 'explicit';
+}
+
+export interface CodeAssistResult {
+  suggestions: readonly CodeSuggestion[];
+  /** A short line for the author (e.g. what is left after the fixes). */
+  note?: string;
+}
+
+/** What an editable CodeBlock's model assist answers: a completion at the caret, or fixes for its problems. */
+export type CodeAssistProvider = (request: CodeAssistRequest) => Promise<CodeAssistResult | null>;

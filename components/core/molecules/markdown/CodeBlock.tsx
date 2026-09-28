@@ -33,6 +33,8 @@ import type { UiError } from '../../atoms/types';
 // handles it via legacy directory resolution but vitest doesn't. Adding the
 // extensions here makes both code paths work.
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-light.js';
+import createHighlightElement from 'react-syntax-highlighter/dist/esm/create-element.js';
+import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js';
 import { orbLanguage, loloLanguage, ORB_COLORS, translateLolo, translateOrb } from '@almadar/syntax';
 import { coreTables, type LanguageCode } from '@almadar/core/i18n';
@@ -309,6 +311,7 @@ import { useCodeCompletion, type CodeCompletionProvider } from '../../../../hook
 import { useCodeAssist, type CodeAssistProvider } from '../../../../hooks/useCodeAssist';
 export { type CodeAssistProvider, type CodeAssistRequest, type CodeAssistResult } from '../../../../hooks/useCodeAssist';
 export { applySuggestions, type CodeSuggestion } from '../../../../lib/codeAssist';
+import { identifierAt, type CodeIdentifier } from '../../../../lib/codeIdentifiers';
 import { diagnosticAt, diagnosticRanges, remapRanges, underlineSegments, type CodeDiagnostic, type DiagnosticRange } from '../../../../lib/codeDiagnostics';
 export { type CodeDiagnostic } from '../../../../lib/codeDiagnostics';
 export { applyCompletion, type CodeCompletion, type CodeCompletionProvider, type CodeCompletionResult } from '../../../../hooks/useCodeCompletion';
@@ -319,6 +322,60 @@ const GHOST_COLOR = '#7f848e';
 const GUTTER_COLOR = '#858585';
 /** A selection's moving end — where the caret is drawn. */
 const caretOf = (ta: HTMLTextAreaElement): number => (ta.selectionDirection === 'backward' ? ta.selectionStart : ta.selectionEnd);
+
+type HighlightRows = Parameters<NonNullable<SyntaxHighlighterProps['renderer']>>[0];
+type HighlightNode = HighlightRows['rows'][number];
+
+/** A highlighted node with its token classes kept as `data-token` (inline styles drop them from `className`). */
+function withTokenTypes(node: HighlightNode): HighlightNode {
+  if (node.type !== 'element') return node;
+  const classes = node.properties?.className;
+  return {
+    ...node,
+    ...(node.properties
+      ? { properties: { ...node.properties, ...(Array.isArray(classes) && classes.length > 0 ? { 'data-token': classes.join(' ') } : {}) } }
+      : {}),
+    ...(node.children ? { children: node.children.map(withTokenTypes) } : {}),
+  };
+}
+
+/** The editor's highlighter renderer: the stock element builder over token-typed nodes. */
+function renderWithTokenTypes({ rows, stylesheet, useInlineStyles }: HighlightRows): React.ReactNode {
+  return rows.map((node, i) => createHighlightElement({ node: withTokenTypes(node), stylesheet, useInlineStyles, key: `code-segment-${i}` }));
+}
+
+/** The token types of the highlighted text at `offset` (`comment`, `string`, …); empty when unstyled. */
+function tokenClassAt(layer: HTMLElement, offset: number): string {
+  const walker = document.createTreeWalker(layer, NodeFilter.SHOW_TEXT);
+  let pos = 0;
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const length = node.textContent?.length ?? 0;
+    if (offset < pos + length) return node.parentElement?.closest('[data-token]')?.getAttribute('data-token') ?? '';
+    pos += length;
+  }
+  return '';
+}
+
+/**
+ * The text offset under a point: the textarea is lifted out of hit-testing for one
+ * lookup, so the point lands in the highlighted text beneath it, which holds the same
+ * characters at the same places.
+ */
+function offsetUnderPointer(ta: HTMLTextAreaElement, layer: HTMLElement | null, x: number, y: number): number | null {
+  if (!layer || typeof document.caretRangeFromPoint !== 'function') return null;
+  const previous = ta.style.pointerEvents;
+  ta.style.pointerEvents = 'none';
+  const range = document.caretRangeFromPoint(x, y);
+  ta.style.pointerEvents = previous;
+  if (!range || !layer.contains(range.startContainer)) return null;
+  const walker = document.createTreeWalker(layer, NodeFilter.SHOW_TEXT);
+  let pos = 0;
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node === range.startContainer) return pos + range.startOffset;
+    pos += node.textContent?.length ?? 0;
+  }
+  return null;
+}
 const DIAGNOSTIC_ERROR_COLOR = '#f14c4c';
 const DIAGNOSTIC_WARNING_COLOR = '#cca700';
 /** 13px × 1.5 — the editable textarea's line box. */
@@ -623,6 +680,14 @@ export interface CodeBlockProps {
    */
   diagnostics?: readonly CodeDiagnostic[];
   /**
+   * Editable only: go to definition. Whether the identifier (a dotted path is one)
+   * leads somewhere; with Cmd/Ctrl held the one under the pointer is underlined
+   * when it does. Comments and strings never qualify.
+   */
+  definitionAt?: (identifier: string) => boolean;
+  /** Editable only: Cmd/Ctrl+click, or Cmd/Ctrl+Enter at the caret, on an identifier `definitionAt` accepts. */
+  onGoToDefinition?: (identifier: string) => void;
+  /**
    * The code `diagnostics` were computed on. When the editor's text has moved on,
    * each range is carried over the edit; a range the edit touches is dropped until
    * the code is checked again. Absent: they describe the current text.
@@ -804,6 +869,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     assist: assistProvider,
     problems,
     diagnostics,
+    definitionAt,
+    onGoToDefinition,
     diagnosticsCode,
     lineNumbers,
     // viewer props
@@ -966,6 +1033,17 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const [editableTextareaKey, setEditableTextareaKey] = useState(0);
     const lastPropCodeRef = useRef(code);
     const editableTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+    // The highlighted text under the textarea: its token spans say what a position is (comment, string, …).
+    const highlightLayerRef = useRef<HTMLDivElement | null>(null);
+    const [definitionHover, setDefinitionHover] = useState<CodeIdentifier | null>(null);
+    const definitionAtOffset = useCallback((code: string, offset: number): CodeIdentifier | null => {
+      if (!definitionAt) return null;
+      const id = identifierAt(code, offset);
+      if (!id) return null;
+      const layer = highlightLayerRef.current;
+      if (layer && /\b(comment|string)\b/.test(tokenClassAt(layer, id.start))) return null;
+      return definitionAt(id.text) ? id : null;
+    }, [definitionAt]);
     const editableOverlayRef = useRef<HTMLDivElement | null>(null);
     // SV4-4: the block/underline caret only ever renders while focused.
     const [isFocused, setIsFocused] = useState(false);
@@ -1095,6 +1173,14 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         if (completion.onKeyDown(e)) return;
         const mod = e.metaKey || e.ctrlKey;
         if (!mod) return;
+        if (e.key === 'Enter' && ta && onGoToDefinition) {
+          const id = definitionAtOffset(ta.value, ta.selectionStart);
+          if (id) {
+            e.preventDefault();
+            onGoToDefinition(id.text);
+            return;
+          }
+        }
         const key = e.key.toLowerCase();
         if (key === 'z' && !e.shiftKey) {
           e.preventDefault();
@@ -1104,7 +1190,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           redo();
         }
       },
-      [undo, redo, completion, assist],
+      [undo, redo, completion, assist, onGoToDefinition, definitionAtOffset],
     );
 
     const showBlockCaret = isFocused && caretMode !== 'bar';
@@ -1240,6 +1326,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         ) : (
         <SyntaxHighlighter
           PreTag="div"
+          renderer={renderWithTokenTypes}
           language={language}
           style={activeStyle}
           wrapLines={errorLines && errorLines.size > 0}
@@ -1818,7 +1905,37 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 pointerEvents: 'none',
               }}
             >
-              {editableHighlightedElement}
+              <Box ref={highlightLayerRef} style={{ display: 'contents' }}>
+                {editableHighlightedElement}
+              </Box>
+              {definitionHover && (
+                <Box
+                  aria-hidden
+                  data-testid="code-definition-layer"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    minWidth: '100%',
+                    padding: '1rem',
+                    margin: 0,
+                    whiteSpace: 'pre',
+                    color: 'transparent',
+                    fontFamily: MONO_EDITOR_FONT,
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                  }}
+                >
+                  {editableValue.slice(0, definitionHover.start)}
+                  <Box
+                    as="span"
+                    data-testid="code-definition-link"
+                    style={{ textDecorationLine: 'underline', textDecorationColor: 'var(--color-primary)', textUnderlineOffset: '3px' }}
+                  >
+                    {editableValue.slice(definitionHover.start, definitionHover.end)}
+                  </Box>
+                </Box>
+              )}
               {diagnosticUnderlines.length > 0 && (
                 <Box
                   aria-hidden
@@ -1978,6 +2095,23 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               onClick={(e) => {
                 setCaretIndex(caretOf(e.currentTarget));
                 assist.onCaretMoved(e.currentTarget.selectionStart);
+                if ((e.metaKey || e.ctrlKey) && onGoToDefinition) {
+                  const id = definitionAtOffset(e.currentTarget.value, e.currentTarget.selectionStart);
+                  if (id) onGoToDefinition(id.text);
+                }
+              }}
+              onMouseMove={(e) => {
+                if (!definitionAt) return;
+                if (!(e.metaKey || e.ctrlKey)) {
+                  if (definitionHover) setDefinitionHover(null);
+                  return;
+                }
+                const offset = offsetUnderPointer(e.currentTarget, highlightLayerRef.current, e.clientX, e.clientY);
+                const id = offset === null ? null : definitionAtOffset(e.currentTarget.value, offset);
+                if (id?.start !== definitionHover?.start || id?.end !== definitionHover?.end) setDefinitionHover(id);
+              }}
+              onMouseLeave={() => {
+                if (definitionHover) setDefinitionHover(null);
               }}
               onKeyDown={handleEditableKeyDown}
               onFocus={() => {
@@ -2154,6 +2288,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.assist === next.assist &&
     prev.problems === next.problems &&
     prev.diagnostics === next.diagnostics &&
+    prev.definitionAt === next.definitionAt &&
+    prev.onGoToDefinition === next.onGoToDefinition &&
     prev.diagnosticsCode === next.diagnosticsCode &&
     prev.lineNumbers === next.lineNumbers &&
     prev.errorLines === next.errorLines &&

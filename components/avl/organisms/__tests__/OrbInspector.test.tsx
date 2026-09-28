@@ -17,8 +17,8 @@ import type { EventPayload } from '@almadar/core';
 import type { OrbitalSchema } from '@almadar/core';
 import { OrbInspector } from '../OrbInspector';
 import { PatternSelectionContext, type SelectedPattern } from '../../molecules/OrbPreviewNode';
-import type { PreviewNodeData } from '../../types/avl-preview-types';
-import type { ElementEditAccessResolver } from '../../lib/element-edit-access';
+import type { ElementEditAccessResolver } from '../../../../lib/element-edit-access';
+import { type PreviewNodeData } from '../../../../lib/avl-preview-converter';
 
 /** Scrollable content pane only — the header repeats the pattern type /
  *  transition event as its title, which collides with content-area text

@@ -15,9 +15,11 @@ import React, { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { MathUtils } from 'three';
 import { RoundedBox } from '@react-three/drei';
-import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
+import { AVL_3D_COLORS } from '../../../lib/avl-3d-layout';
+import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 import { Avl3DTooltip } from '../atoms/Avl3DTooltip';
+import { AVL_INK } from '../../../lib/avl-theme';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -61,16 +63,20 @@ export const Avl3DStateNode: React.FC<Avl3DStateNodeProps> = ({
   onClick,
 }) => {
   const [hovered, setHovered] = useState(false);
+  const palette = useAvl3DPalette();
 
-  const baseColor = active ? AVL_3D_COLORS.stateActive : AVL_3D_COLORS.stateIdle;
-  const emissiveColor = active ? AVL_3D_COLORS.stateActive : AVL_3D_COLORS.stateEdge;
-  const emissiveIntensity = active ? 2.0 : hovered ? 0.8 : 0.3;
   const targetScale = hovered ? 1.08 : 1;
   const currentScale = useRef(1);
   useFrame((_, delta) => {
     currentScale.current = MathUtils.damp(currentScale.current, targetScale, 6, delta);
   });
   const scale = currentScale.current;
+
+  if (!palette) return null;
+
+  const baseColor = active ? palette.stateActive : palette.stateIdle;
+  const emissiveColor = active ? palette.stateActive : palette.stateEdge;
+  const emissiveIntensity = active ? 2.0 : hovered ? 0.8 : 0.3;
 
   return (
     <group position={position}>
@@ -122,8 +128,8 @@ export const Avl3DStateNode: React.FC<Avl3DStateNodeProps> = ({
           <mesh rotation={[0, 0, -Math.PI / 2]}>
             <coneGeometry args={[0.12, 0.25, 8]} />
             <meshStandardMaterial
-              color={AVL_3D_COLORS.stateActive}
-              emissive={AVL_3D_COLORS.stateActive}
+              color={palette.stateActive}
+              emissive={palette.stateActive}
               emissiveIntensity={1.0}
             />
           </mesh>
@@ -131,8 +137,8 @@ export const Avl3DStateNode: React.FC<Avl3DStateNodeProps> = ({
           <mesh position={[-0.2, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
             <cylinderGeometry args={[0.02, 0.02, 0.25, 6]} />
             <meshStandardMaterial
-              color={AVL_3D_COLORS.stateActive}
-              emissive={AVL_3D_COLORS.stateActive}
+              color={palette.stateActive}
+              emissive={palette.stateActive}
               emissiveIntensity={0.6}
             />
           </mesh>
@@ -145,8 +151,8 @@ export const Avl3DStateNode: React.FC<Avl3DStateNodeProps> = ({
           <mesh scale={0.15}>
             <octahedronGeometry args={[1, 0]} />
             <meshStandardMaterial
-              color={AVL_3D_COLORS.guardFail}
-              emissive={AVL_3D_COLORS.guardFail}
+              color={palette.guardFail}
+              emissive={palette.guardFail}
               emissiveIntensity={1.0}
             />
           </mesh>
@@ -154,8 +160,8 @@ export const Avl3DStateNode: React.FC<Avl3DStateNodeProps> = ({
           <mesh rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[0.2, 0.015, 8, 24]} />
             <meshStandardMaterial
-              color={AVL_3D_COLORS.guardFail}
-              emissive={AVL_3D_COLORS.guardFail}
+              color={palette.guardFail}
+              emissive={palette.guardFail}
               emissiveIntensity={0.5}
             />
           </mesh>
@@ -165,7 +171,7 @@ export const Avl3DStateNode: React.FC<Avl3DStateNodeProps> = ({
       {/* Active state point light */}
       {active && (
         <pointLight
-          color={AVL_3D_COLORS.stateActive}
+          color={palette.stateActive}
           intensity={1.5}
           distance={4}
           decay={2}
@@ -176,7 +182,7 @@ export const Avl3DStateNode: React.FC<Avl3DStateNodeProps> = ({
       <Avl3DLabel
         position={[0, -0.55, 0]}
         text={name}
-        color={active ? AVL_3D_COLORS.stateActive : '#ffffff'}
+        color={active ? palette.stateActive : AVL_INK.text}
         fontSize={11}
       />
 

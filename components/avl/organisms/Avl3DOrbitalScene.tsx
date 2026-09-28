@@ -12,11 +12,12 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
-import type { OrbitalLevelData } from '../lib/avl-schema-parser';
-import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
+import type { OrbitalLevelData } from '../../../lib/avl-schema-parser';
+import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DEntityCore } from '../molecules/Avl3DEntityCore';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 import { Avl3DTooltip } from '../atoms/Avl3DTooltip';
+import { AVL_INK } from '../../../lib/avl-theme';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -65,9 +66,10 @@ function TraitOrbit({
   transitionCount = 0,
   onClick,
   onHover,
-}: TraitOrbitProps): React.JSX.Element {
+}: TraitOrbitProps): React.JSX.Element | null {
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2);
+  const palette = useAvl3DPalette();
 
   useFrame((_, delta) => {
     angleRef.current += delta * speed;
@@ -80,6 +82,8 @@ function TraitOrbit({
     groupRef.current.position.set(x, y, z);
   });
 
+  if (!palette) return null;
+
   const opacity = dimmed ? 0.2 : 0.5;
   const emissiveIntensity = highlighted ? 0.8 : 0.4;
 
@@ -89,8 +93,8 @@ function TraitOrbit({
       <mesh rotation={[tilt, 0, 0]}>
         <torusGeometry args={[radius, 0.015, 8, 64]} />
         <meshStandardMaterial
-          color={AVL_3D_COLORS.traitOrbit}
-          emissive={AVL_3D_COLORS.traitOrbit}
+          color={palette.traitOrbit}
+          emissive={palette.traitOrbit}
           emissiveIntensity={emissiveIntensity}
           transparent
           opacity={opacity}
@@ -117,8 +121,8 @@ function TraitOrbit({
         >
           <sphereGeometry args={[0.25, 16, 16]} />
           <meshStandardMaterial
-            color={AVL_3D_COLORS.traitOrbit}
-            emissive={AVL_3D_COLORS.traitOrbit}
+            color={palette.traitOrbit}
+            emissive={palette.traitOrbit}
             emissiveIntensity={highlighted ? 1.2 : 0.6}
             transparent
             opacity={dimmed ? 0.3 : 0.9}
@@ -129,7 +133,7 @@ function TraitOrbit({
         <Avl3DLabel
           position={[0, 0.5, 0]}
           text={name}
-          color={dimmed ? '#666666' : '#ffffff'}
+          color={dimmed ? AVL_INK.quiet : AVL_INK.text}
           fontSize={highlighted ? 13 : 11}
         />
 
@@ -138,7 +142,7 @@ function TraitOrbit({
           <Avl3DTooltip
             position={[0.8, 0.8, 0]}
             title={name}
-            accentColor={AVL_3D_COLORS.traitOrbitHighlight}
+            accentColor={palette.traitOrbitHighlight}
             rows={[
               { label: 'States', value: String(stateCount) },
               { label: 'Events', value: String(eventCount) },
@@ -160,15 +164,18 @@ interface PagePortalProps {
   position: [number, number, number];
 }
 
-function PagePortal({ name, position }: PagePortalProps): React.JSX.Element {
+function PagePortal({ name, position }: PagePortalProps): React.JSX.Element | null {
+  const palette = useAvl3DPalette();
+  if (!palette) return null;
+
   return (
     <group position={position}>
       {/* V1: Hexagonal prism (portal/gateway shape) */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.35, 0.35, 0.12, 6]} />
         <meshStandardMaterial
-          color={AVL_3D_COLORS.pagePortal}
-          emissive={AVL_3D_COLORS.pagePortal}
+          color={palette.pagePortal}
+          emissive={palette.pagePortal}
           emissiveIntensity={0.5}
           transparent
           opacity={0.7}
@@ -180,8 +187,8 @@ function PagePortal({ name, position }: PagePortalProps): React.JSX.Element {
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.25, 0.25, 0.14, 6]} />
         <meshStandardMaterial
-          color={AVL_3D_COLORS.pagePortal}
-          emissive={AVL_3D_COLORS.pagePortal}
+          color={palette.pagePortal}
+          emissive={palette.pagePortal}
           emissiveIntensity={0.8}
           transparent
           opacity={0.2}
@@ -193,7 +200,7 @@ function PagePortal({ name, position }: PagePortalProps): React.JSX.Element {
       <Avl3DLabel
         position={[0, -0.5, 0]}
         text={name}
-        color={AVL_3D_COLORS.pagePortal}
+        color={palette.pagePortal}
         fontSize={9}
       />
     </group>

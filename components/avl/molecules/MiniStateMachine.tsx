@@ -11,8 +11,8 @@
 import React from 'react';
 import { AvlState } from '../atoms/AvlState';
 import { AvlEffect } from '../atoms/AvlEffect';
-import { getStateRole, type AvlEffectType } from '../types/avl-atom-types';
-import type { TraitLevelData } from '../lib/avl-schema-parser';
+import type { TraitLevelData } from '../../../lib/avl-schema-parser';
+import { getStateRole } from '../../../lib/avl-theme';
 
 export interface MiniStateMachineProps {
   data: TraitLevelData;
@@ -53,7 +53,7 @@ export const MiniStateMachine: React.FC<MiniStateMachineProps> = ({ data, classN
       {states.map((s, i) => {
         const x = 2 + i * (NODE_W + GAP + ARROW_W + GAP);
         const tc = transitionCounts[s.name] ?? 0;
-        const role = getStateRole(s.name, s.isInitial ?? undefined, s.isTerminal ?? undefined, tc, maxTC);
+        const role = getStateRole(s.isInitial ?? undefined, s.isTerminal ?? undefined, tc, maxTC);
 
         return (
           <React.Fragment key={s.name}>
@@ -98,7 +98,7 @@ export const MiniStateMachine: React.FC<MiniStateMachineProps> = ({ data, classN
               key={et}
               x={2 + i * 14}
               y={NODE_H + 4}
-              effectType={et as AvlEffectType}
+              effectType={et}
               size={10}
               showBackground
             />

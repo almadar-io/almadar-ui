@@ -74,7 +74,7 @@ import {
   parseOrbitalLevel,
   parseTraitLevel,
   traitTransitionRenderUi,
-} from '../lib/avl-schema-parser';
+} from '../../../lib/avl-schema-parser';
 
 /** Narrows an `SExpr` to its object-literal branch — a nested pattern config, never an `@entity.X`/`@trait.X` binding string or other literal. */
 function isSExprObject(value: SExpr | undefined): value is SExprObject {

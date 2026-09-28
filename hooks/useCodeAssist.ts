@@ -6,23 +6,9 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type React from 'react';
-import { applySuggestions, orderSuggestions, remapSuggestions, singleChange, type CodeSuggestion } from '../lib/codeAssist';
+import { applySuggestions, orderSuggestions, remapSuggestions, singleChange, type CodeAssistProvider, type CodeAssistRequest, type CodeAssistResult, type CodeSuggestion } from '../lib/codeAssist';
 
-export interface CodeAssistRequest {
-  code: string;
-  /** The caret, as a JavaScript string index. */
-  offset: number;
-  kind: 'complete' | 'fix';
-  trigger: 'idle' | 'explicit';
-}
-
-export interface CodeAssistResult {
-  suggestions: readonly CodeSuggestion[];
-  /** A short line for the author (e.g. what is left after the fixes). */
-  note?: string;
-}
-
-export type CodeAssistProvider = (request: CodeAssistRequest) => Promise<CodeAssistResult | null>;
+export type { CodeAssistProvider, CodeAssistRequest, CodeAssistResult } from '../lib/codeAssist';
 
 const IDLE_MS = 600;
 const NAVIGATION_KEYS = new Set([

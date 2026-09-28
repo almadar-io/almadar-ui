@@ -149,9 +149,9 @@ export interface AlgorithmCanvasProps {
   error?: UiError | null;
 }
 
-const DEFAULT_BAR_COLOR = '#3b82f6';
-const DEFAULT_CELL_COLOR = '#e5e7eb';
-const DEFAULT_POINTER_COLOR = '#dc2626';
+export const DEFAULT_BAR_COLOR = 'var(--color-primary)';
+export const DEFAULT_CELL_COLOR = 'var(--color-muted)';
+export const DEFAULT_POINTER_COLOR = 'var(--color-error)';
 const POINTER_BAND = 34;
 // Reserves the label band above the tallest bar: 8px offset + an 11px centered label.
 const TOP_PAD = 26;
@@ -161,7 +161,7 @@ const PANEL_FAMILY_ORDER = ['bars', 'slots', 'cells', 'buckets', 'frames'] as co
 type PanelFamily = (typeof PANEL_FAMILY_ORDER)[number];
 
 // ranges
-const RANGE_COLOR_DEFAULT = '#3b82f6';
+export const RANGE_COLOR_DEFAULT = 'var(--color-primary)';
 const RANGE_FILL_OPACITY = 0.15;
 // 16 (not 8) so the first bracket's label at bracketY - 6 clears the panel's top edge.
 const BRACKET_TOP_OFFSET = 16;
@@ -170,23 +170,24 @@ const BRACKET_TICK_H = 6;
 const BRACKET_LABEL_OFFSET = 6;
 
 // slots
-const SLOT_EMPTY_FILL = '#f1f5f9';
-const SLOT_EMPTY_STROKE = '#cbd5e1';
-const SLOT_FILLED_STROKE = '#9ca3af';
-const SLOT_HIGHLIGHT_DEFAULT = '#f59e0b';
-const SLOT_VALUE_TEXT_COLOR = '#ffffff';
+export const SLOT_EMPTY_FILL = 'var(--color-muted)';
+export const SLOT_EMPTY_STROKE = 'var(--color-border)';
+export const SLOT_FILLED_STROKE = 'var(--color-muted-foreground)';
+export const SLOT_HIGHLIGHT_DEFAULT = 'var(--color-warning)';
+export const SLOT_VALUE_TEXT_COLOR = 'var(--color-primary-foreground)';
 
 // frames
-const FRAME_ACTIVE_COLOR = '#3b82f6';
-const FRAME_RETURNING_COLOR = '#f59e0b';
-const FRAME_DONE_COLOR = '#94a3b8';
-const FRAME_RIM_COLOR: Record<string, string> = {
-  active: '#1d4ed8',
-  returning: '#b45309',
-  done: '#64748b',
+export const FRAME_ACTIVE_COLOR = 'var(--color-primary)';
+export const FRAME_RETURNING_COLOR = 'var(--color-warning)';
+export const FRAME_DONE_COLOR = 'var(--color-muted-foreground)';
+// Rims are a darker-toward-foreground shade of the fill, one per frame state.
+export const FRAME_RIM_COLOR: Record<string, string> = {
+  active: 'color-mix(in srgb, var(--color-primary) 70%, var(--color-foreground))',
+  returning: 'color-mix(in srgb, var(--color-warning) 70%, var(--color-foreground))',
+  done: 'color-mix(in srgb, var(--color-muted-foreground) 70%, var(--color-foreground))',
 };
-const FRAME_LABEL_COLOR = '#ffffff';
-const FRAME_DETAIL_COLOR = '#e2e8f0';
+export const FRAME_LABEL_COLOR = 'var(--color-primary-foreground)';
+export const FRAME_DETAIL_COLOR = 'color-mix(in srgb, var(--color-primary-foreground) 80%, transparent)';
 const FRAME_TWO_LINE_MIN_H = 22;
 // Strips are fixed-height slabs stacked from the panel bottom (a real call
 // stack silhouette) — never stretched to fill the panel; they only compress
@@ -197,21 +198,21 @@ const FRAME_BOTTOM_PAD = 8;
 const FRAME_MIN_H = 12;
 
 // buckets
-const BUCKET_INDEX_FILL = '#e2e8f0';
-const BUCKET_INDEX_STROKE = '#9ca3af';
-const BUCKET_INDEX_TEXT = '#374151';
-const BUCKET_ENTRY_TEXT = '#ffffff';
-const BUCKET_ENTRY_DEFAULT = '#3b82f6';
-const BUCKET_ENTRY_HIGHLIGHT = '#f59e0b';
-const BUCKET_ENTRY_PROBING = '#38bdf8';
+export const BUCKET_INDEX_FILL = 'var(--color-muted)';
+export const BUCKET_INDEX_STROKE = 'var(--color-muted-foreground)';
+export const BUCKET_INDEX_TEXT = 'var(--color-foreground)';
+export const BUCKET_ENTRY_TEXT = 'var(--color-primary-foreground)';
+export const BUCKET_ENTRY_DEFAULT = 'var(--color-primary)';
+export const BUCKET_ENTRY_HIGHLIGHT = 'var(--color-warning)';
+export const BUCKET_ENTRY_PROBING = 'var(--color-info)';
 const BUCKET_ENTRY_MIN_W = 24;
 const BUCKET_ENTRY_MAX_W = 64;
 
 // cells: rowLabels/colLabels/corner decorations
-const AXIS_LABEL_COLOR = '#6b7280';
+export const AXIS_LABEL_COLOR = 'var(--color-muted-foreground)';
 const AXIS_LABEL_FONT_SIZE = 10;
 // Near-black like the cell value label — mid-gray corners washed out on colored cell fills.
-const CORNER_TEXT_COLOR = '#111827';
+export const CORNER_TEXT_COLOR = 'var(--color-foreground)';
 const CORNER_FONT_SIZE = 7;
 const CORNER_MIN_CELL = 28;
 const CORNER_INSET_X = 3;
@@ -310,7 +311,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             x: x + barW / 2,
             y: baseline - bh - 8,
             text: label,
-            color: '#374151',
+            color: 'var(--color-foreground)',
             fontSize: 11,
             align: 'center',
           });
@@ -396,7 +397,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x: x + w / 2,
               y: auxBaseline - bh - 8,
               text: label,
-              color: '#374151',
+              color: 'var(--color-foreground)',
               fontSize: 11,
               align: 'center',
             });
@@ -562,7 +563,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
           y: y + 1,
           width: cw - 2,
           height: ch - 2,
-          color: '#9ca3af',
+          color: 'var(--color-border)',
           fill: color,
         });
         const label = c.label ?? (c.value != null ? String(c.value) : undefined);
@@ -572,7 +573,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             x: x + cw / 2,
             y: y + ch / 2,
             text: label,
-            color: '#111827',
+            color: 'var(--color-foreground)',
             fontSize: 12,
             align: 'center',
           });

@@ -11,6 +11,7 @@
 import React from 'react';
 import { Html } from '@react-three/drei';
 import { Typography } from '../../core/atoms/Typography';
+import { AVL_INK, avlTint } from '../../../lib/avl-theme';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -38,7 +39,7 @@ export interface Avl3DLabelProps {
 export const Avl3DLabel: React.FC<Avl3DLabelProps> = ({
   position,
   text,
-  color = '#ffffff',
+  color = AVL_INK.text,
   fontSize = 12,
   className,
   occlude = false,
@@ -58,7 +59,7 @@ export const Avl3DLabel: React.FC<Avl3DLabelProps> = ({
           color,
           fontSize: `${fontSize}px`,
           whiteSpace: 'nowrap',
-          textShadow: '0 0 4px rgba(0,0,0,0.8)',
+          textShadow: `0 0 4px ${avlTint(AVL_INK.canvas, 80)}`,
           userSelect: 'none',
         }}
       >

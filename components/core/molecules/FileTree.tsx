@@ -10,7 +10,7 @@
  * Follows atomic design: composes Box, Icon, Typography atoms.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
@@ -32,6 +32,8 @@ export interface FileTreeNode {
   children?: FileTreeNode[];
   /** A short muted note after the name (e.g. "generated"). */
   note?: string;
+  /** Has children not loaded yet: shows the toggle, and expanding it calls `onNodeExpand`. */
+  expandable?: boolean;
   /** File size in bytes (optional, for display) */
   size?: number;
   /** Detected language for syntax highlighting */
@@ -69,6 +71,10 @@ export interface FileTreeProps {
   look?: 'files' | 'nav';
   /** Called when a file is clicked */
   onFileSelect?: (path: string) => void;
+  /** Called the first time a node marked `expandable` is expanded, with its path, so its children can be loaded. */
+  onNodeExpand?: (path: string) => void;
+  /** Paths to show expanded (e.g. to reveal a node): each is expanded when it appears here, loading its children if needed. */
+  expandedPaths?: readonly string[];
   /** Called when a node is clicked, in flat `items` mode; carries the
    *  selected node's id. Presence-gated: binding this prop is what turns on
    *  the click-to-select affordance, mirroring Badge's `onRemove`.
@@ -122,6 +128,8 @@ interface TreeNodeItemProps {
   indent: number;
   selectedPath?: string;
   onFileSelect?: (path: string) => void;
+  onNodeExpand?: (path: string) => void;
+  expandedPaths?: readonly string[];
   defaultExpanded?: boolean;
 }
 
@@ -131,10 +139,22 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   indent,
   selectedPath,
   onFileSelect,
+  onNodeExpand,
+  expandedPaths,
   defaultExpanded = false,
 }) => {
   const isDir = node.type === 'dir';
-  const hasDerived = !isDir && (node.children?.length ?? 0) > 0;
+  const hasDerived = !isDir && ((node.children?.length ?? 0) > 0 || node.expandable === true);
+  const askedRef = useRef(false);
+  const revealed = expandedPaths?.includes(node.path) === true;
+  useEffect(() => {
+    if (!revealed) return;
+    setExpanded(true);
+    if (node.expandable === true && !askedRef.current) {
+      askedRef.current = true;
+      onNodeExpand?.(node.path);
+    }
+  }, [revealed, node.expandable, node.path, onNodeExpand]);
   const [expanded, setExpanded] = useState(isDir && (defaultExpanded || depth < 1));
   const isSelected = node.path === selectedPath;
 
@@ -174,6 +194,10 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
             className="flex-shrink-0 flex items-center"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
+              if (!expanded && node.expandable === true && !askedRef.current) {
+                askedRef.current = true;
+                onNodeExpand?.(node.path);
+              }
               setExpanded((prev) => !prev);
             }}
           >
@@ -219,6 +243,8 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
               indent={indent}
               selectedPath={selectedPath}
               onFileSelect={onFileSelect}
+              onNodeExpand={onNodeExpand}
+              expandedPaths={expandedPaths}
               defaultExpanded={depth < 0}
             />
           ))}
@@ -532,6 +558,8 @@ export const FileTree: React.FC<FileTreeProps> = ({
   selectedId,
   look = 'files',
   onFileSelect,
+  onNodeExpand,
+  expandedPaths,
   onNodeSelect,
   onNodeAction,
   nodeActionIcon,
@@ -572,6 +600,8 @@ export const FileTree: React.FC<FileTreeProps> = ({
           indent={indent}
           selectedPath={selectedPath}
           onFileSelect={onFileSelect}
+          onNodeExpand={onNodeExpand}
+          expandedPaths={expandedPaths}
           defaultExpanded
         />
       ))}

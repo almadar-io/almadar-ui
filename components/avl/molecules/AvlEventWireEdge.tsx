@@ -9,7 +9,8 @@
 
 import React from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type Edge, type EdgeProps } from '@xyflow/react';
-import { CONNECTION_COLORS } from '../types/avl-atom-types';
+import { avlTint } from '../../../lib/avl-theme';
+import { CONNECTION_COLORS } from '../../../lib/avl-theme';
 
 export interface AvlEventWireEdgeData {
   [key: string]: string | boolean | undefined;
@@ -36,7 +37,7 @@ export const AvlEventWireEdge: React.FC<EdgeProps<AvlEventWireFlowEdge>> = ({
   });
 
   const isCompatible = data?.compatible !== false;
-  const wireColor = isCompatible ? CONNECTION_COLORS.emitListen.color : '#EF4444';
+  const wireColor = isCompatible ? CONNECTION_COLORS.emitListen.color : 'var(--color-error)';
 
   return (
     <>
@@ -61,7 +62,7 @@ export const AvlEventWireEdge: React.FC<EdgeProps<AvlEventWireFlowEdge>> = ({
             style={{
               color: wireColor,
               borderColor: wireColor,
-              backgroundColor: `${wireColor}14`,
+              backgroundColor: avlTint(wireColor, 8),
             }}
           >
             {data?.event ?? ''}

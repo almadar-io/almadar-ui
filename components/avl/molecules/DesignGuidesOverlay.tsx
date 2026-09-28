@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { Box } from '../../core/atoms/Box';
-import type { GuideLine, MeasureLine } from '../lib/selection-geometry';
+import type { GuideLine, MeasureLine } from '../../../lib/selection-geometry';
 
 export interface DesignGuidesOverlayProps {
   guides: readonly GuideLine[];

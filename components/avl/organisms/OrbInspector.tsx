@@ -18,7 +18,7 @@
 
 import React, { useContext, useMemo, useCallback, useState } from 'react';
 import type { Effect, Entity, EntityCall, EntityField, EventPayload, EventPayloadValue, Expression, FieldType, OrbitalDefinition, OrbitalSchema, PatternNode, ThemeDefinition, Trait, Transition } from '@almadar/core';
-import { FieldTypeSchema } from '@almadar/core';
+import { EFFECT_OPERATORS, FieldTypeSchema } from '@almadar/core';
 import type { PatternPropDef } from '@almadar/core/patterns';
 import { Box } from '../../core/atoms/Box';
 import { Button } from '../../core/atoms/Button';
@@ -34,24 +34,21 @@ import { AvlEvent } from '../atoms/AvlEvent';
 import { AvlGuard } from '../atoms/AvlGuard';
 import { AvlEffect } from '../atoms/AvlEffect';
 import { AvlFieldType } from '../atoms/AvlFieldType';
-import {
-  getStateRole, type StateRole, type AvlEffectType, type AvlFieldTypeKind,
-  EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS,
-} from '../types/avl-atom-types';
-import type { PreviewNodeData } from '../types/avl-preview-types';
 import { PatternSelectionContext, type SelectedPattern } from '../molecules/OrbPreviewNode';
-import { axisPositionFrom, type OffsetInParent } from '../lib/selection-geometry';
-import { ElementEditAccessContext, type ElementEditAccessResolver, type ElementKnob, type ElementPropAccess } from '../lib/element-edit-access';
+import { axisPositionFrom, type OffsetInParent } from '../../../lib/selection-geometry';
+import { ElementEditAccessContext, type ElementEditAccessResolver, type ElementKnob, type ElementPropAccess } from '../../../lib/element-edit-access';
 import { KnobSettingRow } from '../molecules/KnobSettingRow';
 import { getPatternDefinition, isEntityAwarePattern, renderUiEntriesOf } from '@almadar/core/patterns';
 
 import { Switch } from '../../core/atoms/Switch';
 import { cn } from '../../../lib/cn';
-import { findTransition, resolvePatternConfig } from '../lib/resolve-pattern-config';
+import { findTransition, resolvePatternConfig } from '../../../lib/resolve-pattern-config';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { DESIGN_COLOR_TOKENS, DESIGN_RADIUS_TOKENS, DESIGN_SPACING_SCALE, isArbitraryClass, positionOf, sizeLimitOf, sizingOf, spacingOf, withPosition, withSizeLimit, withSizing, withSpacing, tokenOfDesignClass, type DesignColorUtility, type DesignClassToken, type DesignConstraint, type DesignSizeLimit } from '../../../lib/design-classes';
+import { getStateRole, type StateRole, EFFECT_CATEGORY_COLORS, effectCategoryOf } from '../../../lib/avl-theme';
+import { type PreviewNodeData } from '../../../lib/avl-preview-converter';
 
 const inspectorLog = createLogger('almadar:ui:inspector');
 
@@ -66,27 +63,17 @@ function formatExpression(expr: Expression | null | undefined): string {
   return String(expr);
 }
 
-const KNOWN_EFFECTS = new Set([
-  'render-ui', 'set', 'persist', 'fetch', 'emit', 'navigate',
-  'call-service', 'spawn', 'despawn', 'do', 'if', 'log',
-]);
-
 function effectSummary(type: string): string {
   return type;
 }
 
-const FIELD_TYPE_MAP: Record<string, AvlFieldTypeKind> = {
-  string: 'string', number: 'number', boolean: 'boolean',
-  date: 'date', enum: 'enum', object: 'object', array: 'array',
-};
-
-function findEntity(schema: OrbitalSchema, orbitalName: string): { name: string; persistence: string; fields: Array<{ name: string; type: string; required?: boolean }> } | null {
+function findEntity(schema: OrbitalSchema, orbitalName: string): { name: string; persistence: string; fields: Array<{ name: string; type: FieldType; required?: boolean }> } | null {
   const orbital = (schema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
   if (!orbital || typeof orbital.entity === 'string') return null;
   const e = orbital.entity as Entity | EntityCall;
   const fields = (e.fields ?? []).map((f: EntityField) => ({
     name: f.name ?? '',
-    type: f.type ?? 'string',
+    type: f.type,
     required: f.required,
   }));
   return { name: e.name ?? orbitalName, persistence: e.persistence ?? 'runtime', fields };
@@ -105,9 +92,9 @@ function findTraits(schema: OrbitalSchema, orbitalName: string): Array<{ name: s
 const FIELD_TYPE_OPTIONS: Array<{ value: string; label: string }> =
   FieldTypeSchema.options.map((v: FieldType) => ({ value: v, label: v }));
 
-// Derived from EFFECT_TYPE_TO_CATEGORY keys (canonical source in avl/types.ts)
+// Derived from @almadar/core EFFECT_OPERATORS (canonical source)
 const EFFECT_TYPE_OPTIONS: Array<{ value: string; label: string }> =
-  (Object.keys(EFFECT_TYPE_TO_CATEGORY) as AvlEffectType[]).map(v => ({ value: v, label: v }));
+  EFFECT_OPERATORS.map((v) => ({ value: v, label: v }));
 
 // ---------------------------------------------------------------------------
 // Props
@@ -572,9 +559,9 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
               <Box className="px-4 py-3 border-b border-border/40">
                 <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.transition')}</Typography>
                 <svg width="100%" height={44} viewBox="0 0 280 44">
-                  <AvlState x={8} y={8} name={fromState} role={getStateRole(fromState) as StateRole} width={90} height={26} />
+                  <AvlState x={8} y={8} name={fromState} role={getStateRole()} width={90} height={26} />
                   <line x1={104} y1={21} x2={158} y2={21} stroke="var(--color-foreground)" strokeWidth={2} markerEnd="url(#orb-arrow)" />
-                  <AvlState x={164} y={8} name={toState} role={getStateRole(toState) as StateRole} width={90} height={26} />
+                  <AvlState x={164} y={8} name={toState} role={getStateRole()} width={90} height={26} />
                   <defs>
                     <marker id="orb-arrow" markerWidth={8} markerHeight={6} refX={8} refY={3} orient="auto">
                       <path d="M0,0 L8,3 L0,6 Z" fill="var(--color-foreground)" />
@@ -628,14 +615,14 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                 </Typography>
                 <Box className="flex flex-col gap-1.5">
                   {effectTypes.map((type, i) => {
-                    const isKnown = KNOWN_EFFECTS.has(type);
-                    const category = EFFECT_TYPE_TO_CATEGORY[type as AvlEffectType];
+                    const category = effectCategoryOf(type);
+                    const isKnown = category !== null;
                     const catColor = category ? EFFECT_CATEGORY_COLORS[category] : undefined;
                     return (
                       <HStack key={i} gap="xs" className="items-center">
                         <Typography variant="small" className="text-muted-foreground text-xs w-4 text-right shrink-0">{i + 1}.</Typography>
                         {isKnown && (
-                          <svg width={16} height={16}><AvlEffect x={8} y={8} effectType={type as AvlEffectType} size={6} showBackground /></svg>
+                          <svg width={16} height={16}><AvlEffect x={8} y={8} effectType={type} size={6} showBackground /></svg>
                         )}
                         <Typography variant="small" className="text-xs flex-1" style={{ color: catColor?.color }}>
                           {effectSummary(type)}
@@ -675,7 +662,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                 <Box className="flex flex-col gap-1">
                   {entity.fields.map(f => (
                     <HStack key={f.name} gap="xs" className="items-center">
-                      <svg width={12} height={12}><AvlFieldType x={6} y={6} kind={FIELD_TYPE_MAP[f.type] ?? 'string'} size={4} /></svg>
+                      <svg width={12} height={12}><AvlFieldType x={6} y={6} kind={f.type} size={4} /></svg>
                       {editable ? (
                         <>
                           <Input
@@ -808,8 +795,8 @@ function AddEffectButton({ onAdd }: { onAdd: (type: string) => void }): React.Re
               className="px-3 py-1.5 text-xs cursor-pointer hover:bg-muted/50 flex items-center gap-2"
               onClick={() => { onAdd(opt.value); setOpen(false); }}
             >
-              {KNOWN_EFFECTS.has(opt.value) && (
-                <svg width={14} height={14}><AvlEffect x={7} y={7} effectType={opt.value as AvlEffectType} size={5} showBackground /></svg>
+              {effectCategoryOf(opt.value) !== null && (
+                <svg width={14} height={14}><AvlEffect x={7} y={7} effectType={opt.value} size={5} showBackground /></svg>
               )}
               <Typography variant="small" className="text-xs">{opt.label}</Typography>
             </Box>

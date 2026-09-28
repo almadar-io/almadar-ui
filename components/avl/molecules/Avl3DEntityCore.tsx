@@ -12,8 +12,10 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Mesh } from 'three';
-import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
+import { AVL_3D_COLORS, persistencePaletteKey } from '../../../lib/avl-3d-layout';
+import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
+import { AVL_INK } from '../../../lib/avl-theme';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -58,16 +60,6 @@ function fieldPositions(count: number, radius: number): [number, number, number]
   return positions;
 }
 
-/** Persistence badge color */
-function persistenceColor(persistence: string): string {
-  switch (persistence) {
-    case 'persistent': return '#4A90D9';
-    case 'runtime': return '#27AE60';
-    case 'singleton': return '#E8913A';
-    default: return '#999999';
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -80,6 +72,7 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
   fields,
 }) => {
   const coreRef = useRef<Mesh>(null);
+  const palette = useAvl3DPalette();
 
   // Slow rotation for visual interest
   useFrame((_, delta) => {
@@ -88,8 +81,10 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
     coreRef.current.rotation.x += delta * 0.1;
   });
 
+  if (!palette) return null;
+
   const fieldPos = fieldPositions(fieldCount, 1.4);
-  const pColor = persistenceColor(persistence);
+  const pColor = palette[persistencePaletteKey(persistence)];
 
   return (
     <group position={position}>
@@ -97,8 +92,8 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
       <mesh ref={coreRef}>
         <icosahedronGeometry args={[1, 2]} />
         <meshStandardMaterial
-          color={AVL_3D_COLORS.entityCore}
-          emissive={AVL_3D_COLORS.entityCoreGlow}
+          color={palette.entityCore}
+          emissive={palette.entityCoreGlow}
           emissiveIntensity={2.0}
           roughness={0.15}
           metalness={0.85}
@@ -109,8 +104,8 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
       <mesh scale={1.2}>
         <sphereGeometry args={[1, 24, 24]} />
         <meshStandardMaterial
-          color={AVL_3D_COLORS.entityCoreGlow}
-          emissive={AVL_3D_COLORS.entityCoreGlow}
+          color={palette.entityCoreGlow}
+          emissive={palette.entityCoreGlow}
           emissiveIntensity={0.6}
           transparent
           opacity={0.1}
@@ -122,8 +117,8 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
       <mesh scale={1.6}>
         <sphereGeometry args={[1, 16, 16]} />
         <meshStandardMaterial
-          color={AVL_3D_COLORS.entityCore}
-          emissive={AVL_3D_COLORS.entityCore}
+          color={palette.entityCore}
+          emissive={palette.entityCore}
           emissiveIntensity={0.2}
           transparent
           opacity={0.04}
@@ -133,7 +128,7 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
 
       {/* Point light for warm glow on nearby objects */}
       <pointLight
-        color={AVL_3D_COLORS.entityCoreGlow}
+        color={palette.entityCoreGlow}
         intensity={2.5}
         distance={10}
         decay={2}
@@ -161,8 +156,8 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
               <sphereGeometry args={[1, 8, 8]} />
             )}
             <meshStandardMaterial
-              color="#ffffff"
-              emissive="#ffffff"
+              color={palette.fieldParticle}
+              emissive={palette.fieldParticle}
               emissiveIntensity={0.8}
               transparent
               opacity={0.7}
@@ -234,7 +229,7 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
       <Avl3DLabel
         position={[0, -2.3, 0]}
         text={`${fieldCount} fields`}
-        color="#999999"
+        color={AVL_INK.quiet}
         fontSize={10}
       />
     </group>

@@ -11,7 +11,7 @@
  * instead of DOM adjacency, immune to how many layout layers sit in between.
  */
 import { describe, it, expect } from 'vitest';
-import { directPatternChildren, resolveDirectChildren } from '../components/avl/lib/resolve-direct-children';
+import { directPatternChildren, resolveDirectChildren } from '../lib/resolve-direct-children';
 
 describe('resolveDirectChildren', () => {
   it('returns direct children in path order', () => {

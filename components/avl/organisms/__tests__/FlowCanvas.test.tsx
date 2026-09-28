@@ -10,7 +10,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import type { EventPayload, OrbitalSchema } from '@almadar/core';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { FlowCanvas } from '../FlowCanvas';
-import type { PreviewNodeData } from '../../types/avl-preview-types';
+import { type PreviewNodeData } from '../../../../lib/avl-preview-converter';
 
 // jsdom has no ResizeObserver; React Flow's viewport pane measures itself
 // with one on mount. A no-op stub is enough for the graph to render.

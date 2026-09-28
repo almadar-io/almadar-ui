@@ -43,7 +43,6 @@ export {
   DomStateMachineVisualizer,
   OrbitalStateMachineView,
   type StateMachineViewProps,
-  type TransitionBundle,
 } from "./StateMachineView";
 
 // Jazari state machine visualization

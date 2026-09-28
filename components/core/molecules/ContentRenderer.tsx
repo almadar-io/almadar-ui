@@ -15,7 +15,6 @@ import { VStack } from '../atoms/Stack';
 import { MarkdownContent } from './markdown/MarkdownContent';
 import { CodeBlock, toCodeLanguage } from './markdown/CodeBlock';
 import { QuizBlock } from './QuizBlock';
-import { ScaledDiagram } from './ScaledDiagram';
 import { JazariStateMachine } from './JazariStateMachine';
 import {
   parseContentSegments,
@@ -105,12 +104,10 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
                   code={segment.content}
                   language={toCodeLanguage(segment.language)}
                 />
-                <ScaledDiagram>
-                  <JazariStateMachine
-                    schema={schema}
-                    direction={direction}
-                  />
-                </ScaledDiagram>
+                <JazariStateMachine
+                  schema={schema}
+                  direction={direction}
+                />
               </VStack>
             );
           }

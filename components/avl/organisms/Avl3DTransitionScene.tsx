@@ -10,11 +10,12 @@
  */
 
 import React from 'react';
-import type { TransitionLevelData } from '../lib/avl-schema-parser';
-import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
+import type { TransitionLevelData } from '../../../lib/avl-schema-parser';
+import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DStateNode } from '../molecules/Avl3DStateNode';
 import { Avl3DExprTree } from '../molecules/Avl3DExprTree';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
+import { AVL_INK } from '../../../lib/avl-theme';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -34,6 +35,9 @@ export interface Avl3DTransitionSceneProps {
 export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
   data,
 }) => {
+  const palette = useAvl3DPalette();
+  if (!palette) return null;
+
   return (
     <group>
       {/* From state (top) */}
@@ -47,8 +51,8 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
         <mesh>
           <boxGeometry args={[2, 0.6, 0.4]} />
           <meshStandardMaterial
-            color={AVL_3D_COLORS.transitionArc}
-            emissive={AVL_3D_COLORS.transitionArc}
+            color={palette.transitionArc}
+            emissive={palette.transitionArc}
             emissiveIntensity={0.5}
             roughness={0.3}
           />
@@ -56,7 +60,7 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
         <Avl3DLabel
           position={[0, 0, 0.3]}
           text={data.event}
-          color="#ffffff"
+          color={AVL_INK.text}
           fontSize={13}
         />
       </group>
@@ -64,7 +68,7 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
       {/* Connecting line: from state -> event */}
       <mesh position={[0, 3.1, 0]}>
         <cylinderGeometry args={[0.02, 0.02, 1.2, 6]} />
-        <meshStandardMaterial color="#555555" transparent opacity={0.5} />
+        <meshStandardMaterial color={palette.transitionArc} transparent opacity={0.5} />
       </mesh>
 
       {/* Guard gate (if guard exists) */}
@@ -74,8 +78,8 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
           <mesh rotation={[0, 0, Math.PI / 4]}>
             <boxGeometry args={[0.5, 0.5, 0.3]} />
             <meshStandardMaterial
-              color={AVL_3D_COLORS.guardPass}
-              emissive={AVL_3D_COLORS.guardPass}
+              color={palette.guardPass}
+              emissive={palette.guardPass}
               emissiveIntensity={0.6}
             />
           </mesh>
@@ -83,7 +87,7 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
           {/* Connecting line: event -> guard */}
           <mesh position={[0, 0.7, 0]}>
             <cylinderGeometry args={[0.02, 0.02, 0.8, 6]} />
-            <meshStandardMaterial color="#555555" transparent opacity={0.5} />
+            <meshStandardMaterial color={palette.transitionArc} transparent opacity={0.5} />
           </mesh>
 
           {/* Guard expression tree (to the right) */}
@@ -96,7 +100,7 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
           <Avl3DLabel
             position={[1.5, 0.3, 0]}
             text="guard"
-            color={AVL_3D_COLORS.guardPass}
+            color={palette.guardPass}
             fontSize={9}
           />
         </group>
@@ -108,7 +112,7 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
           <Avl3DLabel
             position={[0, 0.4, 0]}
             text={`${data.effects.length} effect${data.effects.length > 1 ? 's' : ''}`}
-            color="#E8913A"
+            color={AVL_INK.caution}
             fontSize={10}
           />
 
@@ -129,7 +133,7 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
       {/* Connecting line to target state */}
       <mesh position={[0, data.guard ? -2.5 : -1.5, 0]}>
         <cylinderGeometry args={[0.02, 0.02, 1.2, 6]} />
-        <meshStandardMaterial color="#555555" transparent opacity={0.5} />
+        <meshStandardMaterial color={palette.transitionArc} transparent opacity={0.5} />
       </mesh>
 
       {/* To state (bottom) */}

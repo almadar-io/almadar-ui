@@ -22,6 +22,7 @@ import type { UiError } from '../../core/atoms/types';
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
 import type { Projector } from '../../../lib/drawable/contract';
+import { THEME_SERIES, resolveThemeColor } from '../../../lib/theme-color';
 
 /** Canvas 2D `ctx.font` cannot resolve CSS vars — read the theme contract's
  *  body slot off the element so in-canvas text follows the active theme. */
@@ -96,7 +97,7 @@ export interface LearningReadout {
   label: string;
   /** Chip value, shown after the label. */
   value: string | number;
-  /** Chip fill/border color (default '#334155'). */
+  /** Chip fill/border color (default `var(--color-foreground)`). */
   color?: string;
 }
 
@@ -129,9 +130,9 @@ export interface LearningTracePanel {
   xLabel?: string;
   /** Top-right inside label, e.g. the y-axis quantity. */
   yLabel?: string;
-  /** Panel border color (default '#94a3b8'). */
+  /** Panel border color (default `var(--color-border)`). */
   frameColor?: string;
-  /** Panel fill color (default '#ffffff'). */
+  /** Panel fill color (default `var(--color-card)`). */
   backgroundColor?: string;
   /** Panel fill opacity (default 0.85). */
   backgroundOpacity?: number;
@@ -139,7 +140,7 @@ export interface LearningTracePanel {
 
 const DASH_PATTERNS = { solid: [], dashed: [6, 4], dotted: [2, 3] } as const;
 
-const TRACE_SERIES_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#f59e0b'];
+export const TRACE_SERIES_COLORS = THEME_SERIES;
 
 export interface LearningCanvasProps {
   /** Additional CSS classes. */
@@ -188,22 +189,25 @@ export interface LearningCanvasProps {
   error?: UiError | null;
 }
 
-function resolveColor(
+/** `value` resolved if it's a `var()` token, passed through unchanged if it's a literal, or null if the token is undefined. */
+function resolveTokenOrLiteral(value: string, ctx: CanvasRenderingContext2D): string | null {
+  if (!value.startsWith('var(')) return value;
+  return resolveThemeColor(value, ctx.canvas)?.css ?? null;
+}
+
+export function resolveColor(
   color: string | undefined,
   ctx: CanvasRenderingContext2D,
   fallback: string,
 ): string {
-  if (!color) return fallback;
-  if (color.startsWith('var(')) {
-    // Canvas cannot resolve CSS variables directly; try to read from the canvas style.
-    const style = (ctx.canvas as HTMLCanvasElement).style;
-    const m = /^var\((--[^,)]+)(?:,\s*([^)]+))?\)$/.exec(color);
-    if (m) {
-      const computed = getComputedStyle(ctx.canvas).getPropertyValue(m[1]).trim();
-      return computed || m[2]?.trim() || fallback;
-    }
+  // `fallback` may itself be a token (a default drawn from the theme) — resolve it
+  // too, rather than handing an unparsed `var()` string to a 2D context. If even the
+  // fallback's token is undefined, the raw fallback expression is the honest last resort.
+  if (color) {
+    const resolved = resolveTokenOrLiteral(color, ctx);
+    if (resolved !== null) return resolved;
   }
-  return color;
+  return resolveTokenOrLiteral(fallback, ctx) ?? fallback;
 }
 
 function shapeBounds(shape: LearningShape): { x: number; y: number; w: number; h: number } | null {
@@ -286,8 +290,8 @@ function drawShape(
   ctx.save();
   const opacity = shape.opacity ?? 1;
   ctx.globalAlpha = opacity;
-  const stroke = resolveColor(shape.color, ctx, '#333333');
-  const fill = shape.fill ? resolveColor(shape.fill, ctx, '#cccccc') : undefined;
+  const stroke = resolveColor(shape.color, ctx, 'var(--color-foreground)');
+  const fill = shape.fill ? resolveColor(shape.fill, ctx, 'var(--color-muted)') : undefined;
   ctx.lineWidth = shape.lineWidth ?? 2;
   const dashPattern = shape.dash ? DASH_PATTERNS[shape.dash] : undefined;
   if (dashPattern) ctx.setLineDash([...dashPattern]);
@@ -480,14 +484,14 @@ function readoutShapes(readouts: LearningReadout[], width: number, fontFamily?: 
       rightEdge = width - 6;
       chipX = rightEdge - chipW;
     }
-    const color = readout.color ?? '#334155';
+    const color = readout.color ?? 'var(--color-foreground)';
     out.push({ type: 'rect', x: chipX, y: rowY, width: chipW, height: chipH, color, fill: color });
     out.push({
       type: 'text',
       x: chipX + chipW / 2,
       y: rowY + chipH / 2,
       text,
-      color: '#ffffff',
+      color: 'var(--color-primary-foreground)',
       fontSize: 10,
       align: 'center',
       fontFamily,
@@ -517,8 +521,8 @@ function traceShapes(panel: LearningTracePanel, k: number, width: number, height
     yHi += 1;
   }
 
-  const backgroundColor = panel.backgroundColor ?? '#ffffff';
-  const frameColor = panel.frameColor ?? '#94a3b8';
+  const backgroundColor = panel.backgroundColor ?? 'var(--color-card)';
+  const frameColor = panel.frameColor ?? 'var(--color-border)';
   const out: LearningShape[] = [];
   out.push({
     type: 'rect',
@@ -559,10 +563,10 @@ function traceShapes(panel: LearningTracePanel, k: number, width: number, height
   });
 
   if (panel.yLabel) {
-    out.push({ type: 'text', x: x + w - 6, y: y + 10, text: panel.yLabel, color: '#6b7280', fontSize: 9, align: 'right', fontFamily });
+    out.push({ type: 'text', x: x + w - 6, y: y + 10, text: panel.yLabel, color: 'var(--color-muted-foreground)', fontSize: 9, align: 'right', fontFamily });
   }
   if (panel.xLabel) {
-    out.push({ type: 'text', x: x + w - 6, y: y + h - 6, text: panel.xLabel, color: '#6b7280', fontSize: 9, align: 'right', fontFamily });
+    out.push({ type: 'text', x: x + w - 6, y: y + h - 6, text: panel.xLabel, color: 'var(--color-muted-foreground)', fontSize: 9, align: 'right', fontFamily });
   }
 
   return out;

@@ -5,7 +5,7 @@ import { AvlEntity } from '../atoms/AvlEntity';
 import { AvlTrait } from '../atoms/AvlTrait';
 import { AvlPage } from '../atoms/AvlPage';
 import { AvlOrbital } from '../atoms/AvlOrbital';
-import type { AvlPersistenceKind } from '../types/avl-atom-types';
+import { type EntityPersistence } from '@almadar/core';
 
 export interface AvlOrbitalUnitTrait {
   name: string;
@@ -19,7 +19,7 @@ export interface AvlOrbitalUnitPage {
 export interface AvlOrbitalUnitProps {
   entityName: string;
   fields?: number;
-  persistence?: AvlPersistenceKind;
+  persistence?: EntityPersistence;
   traits: AvlOrbitalUnitTrait[];
   pages: AvlOrbitalUnitPage[];
   className?: string;

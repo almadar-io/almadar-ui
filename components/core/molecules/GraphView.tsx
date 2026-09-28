@@ -14,6 +14,7 @@ import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/index';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { computeStaticLayout, type GraphViewLayout } from '../../../lib/graphViewLayouts';
+import { THEME_SERIES } from '../../../lib/theme-color';
 
 export type GraphViewNode = {
   id: string;
@@ -60,20 +61,11 @@ export interface GraphViewProps {
   layout?: 'force' | 'flow' | 'tree' | 'radial';
 }
 
-/** Default group colors using Tailwind palette values */
-const GROUP_COLORS = [
-  '#3b82f6', // blue-500
-  '#10b981', // emerald-500
-  '#f59e0b', // amber-500
-  '#ef4444', // red-500
-  '#8b5cf6', // violet-500
-  '#ec4899', // pink-500
-  '#06b6d4', // cyan-500
-  '#84cc16', // lime-500
-];
+/** Default group colors — the shared semantic series every chart/diagram draws from. SVG evaluates var() directly. */
+export const GROUP_COLORS = THEME_SERIES;
 
-const DEFAULT_NODE_COLOR = '#3b82f6';
-const DEFAULT_EDGE_COLOR = '#9ca3af';
+export const DEFAULT_NODE_COLOR = 'var(--color-muted-foreground)';
+export const DEFAULT_EDGE_COLOR = 'var(--color-border)';
 const DEFAULT_NODE_SIZE = 8;
 
 interface SimNode {
@@ -447,7 +439,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
                 r={isHovered ? node.size * 1.4 : node.size}
                 fill={node.color}
                 opacity={isHighlighted ? 1 : 0.3}
-                stroke={isHovered ? '#ffffff' : 'none'}
+                stroke={isHovered ? 'var(--color-background)' : 'none'}
                 strokeWidth={isHovered ? 2 : 0}
               />
               {showLabels && (

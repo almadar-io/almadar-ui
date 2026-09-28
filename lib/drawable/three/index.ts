@@ -122,7 +122,7 @@ export { Avl3DOrbitalScene, type Avl3DOrbitalSceneProps } from '../../../compone
 export { Avl3DTraitScene, type Avl3DTraitSceneProps } from '../../../components/avl/organisms/Avl3DTraitScene';
 export { Avl3DTransitionScene, type Avl3DTransitionSceneProps } from '../../../components/avl/organisms/Avl3DTransitionScene';
 export { Avl3DEffects, type Avl3DEffectsProps } from '../../../components/avl/organisms/Avl3DEffects';
-export { Avl3DContext, useAvl3DConfig, type Avl3DModelOverrides, type Avl3DConfig } from '../../../components/avl/providers/avl-3d-context';
+export { Avl3DContext, useAvl3DConfig, type Avl3DModelOverrides, type Avl3DConfig } from '../../../providers/avl-3d-context';
 export {
     AVL_3D_COLORS,
     CAMERA_POSITIONS,
@@ -133,4 +133,4 @@ export {
     selfLoopCurve3D,
     treeLayout3D,
     type Position3D,
-} from '../../../components/avl/lib/avl-3d-layout';
+} from '../../avl-3d-layout';
