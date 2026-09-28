@@ -12,7 +12,7 @@
  * the Button atom raises) — it owns no app-specific state.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box } from '../atoms/Box';
 import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -68,6 +68,9 @@ export function ChatBar({
   const { t } = useTranslate();
   const eventBus = useEventBus();
   const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  // A host's UI:CHAT_FOCUS prompt, shown until the next message is sent.
+  const [requestedPlaceholder, setRequestedPlaceholder] = useState<string | null>(null);
   // Contextual-edit focus chip: shows the canvas element the user picked.
   const [focus, setFocus] = useState<EditFocus | null>(null);
 
@@ -94,12 +97,19 @@ export function ChatBar({
     const unsubSend = eventBus.on('UI:CHAT_SEND', () => {
       setInputValue('');
       setFocus(null);
+      setRequestedPlaceholder(null);
+    });
+    const unsubFocus = eventBus.on('UI:CHAT_FOCUS', (e) => {
+      const hint = e.payload?.placeholder;
+      if (typeof hint === 'string' && hint.length > 0) setRequestedPlaceholder(hint);
+      inputRef.current?.focus();
     });
     const unsubSelect = eventBus.on(ELEMENT_SELECTED_EVENT, (e) => {
       setFocus(parseEditFocus(e.payload?.focus));
     });
     return () => {
       unsubSend();
+      unsubFocus();
       unsubSelect();
     };
   }, [eventBus]);
@@ -202,8 +212,9 @@ export function ChatBar({
               renders the <textarea> directly, so flex-1 actually grows it.
               Single-row default with `rows={1}` + `resize-none`. */}
           <Textarea
+            ref={inputRef}
             value={inputValue}
-            placeholder={placeholder ?? t('chatBar.askTheAgentAnything')}
+            placeholder={requestedPlaceholder ?? placeholder ?? t('chatBar.askTheAgentAnything')}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}

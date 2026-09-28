@@ -9,7 +9,6 @@
  */
 
 import React, { useCallback, useContext, useEffect, Suspense, lazy } from "react";
-import { createPortal } from "react-dom";
 import type { EventPayload, EntityRow, FieldValue, EventKey } from "@almadar/core";
 import type { RelationFieldCardinality } from "../molecules/RelationSelect";
 import type { ItemActionPayload } from "@almadar/core/patterns";
@@ -34,7 +33,6 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../../lib/cn";
-import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { SlotContainedContext } from "../../../lib/slotContained";
 import { humanizeFieldName, humanizeEnumValue } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
@@ -46,6 +44,7 @@ import { useRenderSlot } from "../../../providers/RenderSlotContext";
 import type { DisplayStateProps } from "./types";
 import type { RelationOption } from "../molecules/RelationSelect";
 import { formatFileSize } from "../molecules/UploadDropZone";
+import { ThemedPortal } from "../../../lib/ThemedPortal";
 
 function getBadgeVariant(
   fieldName: string,
@@ -1136,7 +1135,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   // only real app pages portal to the shared root (fixed resolves to viewport —
   // but see the dashboard containment note above for why the portal exists).
   if (contained || typeof document === "undefined") return panel;
-  return createPortal(panel, getOrCreatePortalRoot());
+  return (<ThemedPortal>{panel}</ThemedPortal>);
 };
 
 DetailPanel.displayName = "DetailPanel";

@@ -24,7 +24,6 @@ import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, Reso
 import { isRenderBindingMarker } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/core/patterns";
 import { SELF_OVERLAY_PATTERN_TYPES } from "@almadar/core/patterns";
-import { createPortal } from "react-dom";
 import {
   useUISlots,
   type UISlot,
@@ -141,6 +140,7 @@ import { COMPONENT_REGISTRY } from "./component-registry.generated";
 // Legacy imports kept for direct use in slot wrappers below (used by non-registry code)
 import { DataTable } from "./DataTable";
 import type { UiError } from '../atoms/types';
+import { ThemedPortal } from "../../../lib/ThemedPortal";
 // ============================================================================
 // Component Registry (auto-generated, imported from component-registry.generated.ts)
 // ============================================================================
@@ -892,11 +892,6 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
     setPortalRoot(getOrCreatePortalRoot());
   }, []);
 
-  // Keep theme in sync when the host page's theme changes
-  useEffect(() => {
-    if (portalRoot) getOrCreatePortalRoot();
-  });
-
   // X / overlay click on an interactive portal slot is a user dismiss.
   // Emit UI:CLOSE + UI:CANCEL so the owning trait's `useUIEvents` hook
   // dispatches them and the state machine actually advances, mirroring
@@ -994,7 +989,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
       );
   }
 
-  return createPortal(wrapper, portalRoot);
+  return (<ThemedPortal container={portalRoot}>{wrapper}</ThemedPortal>);
 }
 
 // ============================================================================
@@ -1023,11 +1018,6 @@ function SlotPortal({
   useEffect(() => {
     setPortalRoot(getOrCreatePortalRoot());
   }, []);
-
-  // Keep theme in sync when the host page's theme changes
-  useEffect(() => {
-    if (portalRoot) getOrCreatePortalRoot();
-  });
 
   if (!portalRoot) return null;
 
@@ -1127,7 +1117,7 @@ function SlotPortal({
       wrapper = <Box id={slotId}>{slotContent}</Box>;
   }
 
-  return createPortal(wrapper, portalRoot);
+  return (<ThemedPortal container={portalRoot}>{wrapper}</ThemedPortal>);
 }
 
 function getToastPosition(position?: string): string {

@@ -34,7 +34,7 @@
 
 import React, { type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import { isThemeRegistryKey, type ThemeRef } from '@almadar/core';
-import { useTheme } from './ThemeContext';
+import { useTheme, useThemeScope, ThemeScopeContext } from './ThemeContext';
 import { themeTokensToCssVars, resolveThemeForRuntime } from '../lib/themeTokens';
 import { Box } from '../components/core/atoms/Box';
 
@@ -53,12 +53,15 @@ export function OrbitalThemeProvider({ theme, children }: OrbitalThemeProviderPr
   // useTheme provides the document-level resolved color mode. Per-orbital
   // overrides ride on top of that mode's variant.
   const { resolvedMode } = useTheme();
+  const parent = useThemeScope();
 
   if (isThemeRegistryKey(theme)) {
     return (
-      <Box data-theme={theme} className={SURFACE}>
-        {children}
-      </Box>
+      <ThemeScopeContext.Provider value={{ ...parent, theme }}>
+        <Box data-theme={theme} className={SURFACE}>
+          {children}
+        </Box>
+      </ThemeScopeContext.Provider>
     );
   }
 
@@ -72,9 +75,11 @@ export function OrbitalThemeProvider({ theme, children }: OrbitalThemeProviderPr
   // keys in the React CSS type. Plain `as` (not `as unknown as`) — matches
   // the project's no-unknown-cast rule.
   return (
-    <Box data-orbital-theme={resolved.name} className={SURFACE} style={vars as CSSProperties}>
-      {children}
-    </Box>
+    <ThemeScopeContext.Provider value={{ ...parent, vars: { ...parent.vars, ...vars } }}>
+      <Box data-orbital-theme={resolved.name} className={SURFACE} style={vars as CSSProperties}>
+        {children}
+      </Box>
+    </ThemeScopeContext.Provider>
   );
 }
 

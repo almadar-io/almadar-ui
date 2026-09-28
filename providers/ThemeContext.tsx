@@ -201,6 +201,23 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+/**
+ * The theme in effect at a point of the React tree: what `data-theme`, mode
+ * class and inline token variables a subtree renders under. Portaled UI reads
+ * it so a modal takes the theme of the place it opened from.
+ */
+export interface ThemeScope {
+  theme?: string;
+  mode?: ResolvedMode;
+  vars?: Readonly<Record<string, string>>;
+}
+
+export const ThemeScopeContext = createContext<ThemeScope>({});
+
+export function useThemeScope(): ThemeScope {
+  return useContext(ThemeScopeContext);
+}
+
 /** Storage keys */
 const THEME_STORAGE_KEY = "theme";
 const MODE_STORAGE_KEY = "theme-mode";
@@ -408,9 +425,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     ],
   );
 
+  const scope = useMemo<ThemeScope>(() => ({ theme: appliedTheme, mode: resolvedMode }), [appliedTheme, resolvedMode]);
+
   return (
     <ThemeContext.Provider value={contextValue}>
-      {children}
+      <ThemeScopeContext.Provider value={scope}>{children}</ThemeScopeContext.Provider>
     </ThemeContext.Provider>
   );
 };

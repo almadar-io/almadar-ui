@@ -7,12 +7,11 @@
  */
 
 import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
-import { createPortal } from "react-dom";
 import { Typography } from "../atoms/Typography";
 import { usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
-import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { useTapReveal } from "../../../hooks/useTapReveal";
+import { ThemedPortal } from "../../../lib/ThemedPortal";
 
 export type PopoverPosition = "top" | "bottom" | "left" | "right";
 export type PopoverTrigger = "click" | "hover";
@@ -319,7 +318,7 @@ export const Popover: React.FC<PopoverProps> = ({
     <>
       {triggerElement}
       {panel && typeof document !== "undefined"
-        ? createPortal(panel, getOrCreatePortalRoot())
+        ? (<ThemedPortal>{panel}</ThemedPortal>)
         : panel}
     </>
   );

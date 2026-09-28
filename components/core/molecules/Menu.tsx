@@ -7,7 +7,6 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { Box } from "../atoms/Box";
 import type { IconInput } from "../atoms/index";
@@ -16,12 +15,12 @@ import { Divider } from "../atoms/Divider";
 import { Typography } from "../atoms/Typography";
 import { Badge } from "../atoms/Badge";
 import { cn } from "../../../lib/cn";
-import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useNavStack } from "../../../providers/NavStackContext";
 import { followHref } from "../../../lib/followHref";
 import type { EventKey } from "@almadar/core";
+import { ThemedPortal } from "../../../lib/ThemedPortal";
 
 export interface MenuItem {
   /** Item ID (auto-generated from label if not provided) */
@@ -223,7 +222,7 @@ function SubMenu({
     </div>
   );
 
-  return typeof document !== "undefined" ? createPortal(panel, getOrCreatePortalRoot()) : panel;
+  return typeof document !== "undefined" ? (<ThemedPortal>{panel}</ThemedPortal>) : panel;
 }
 
 // One menu row. Submenus open on hover, which never fires on touch — so a tap
@@ -485,7 +484,7 @@ export const Menu: React.FC<MenuProps> = ({
     <>
       {triggerElement}
       {panel && typeof document !== "undefined"
-        ? createPortal(panel, getOrCreatePortalRoot())
+        ? (<ThemedPortal>{panel}</ThemedPortal>)
         : panel}
     </>
   );

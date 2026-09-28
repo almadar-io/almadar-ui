@@ -7,17 +7,16 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import type { EventEmit } from "@almadar/core";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Dialog } from "../atoms/Dialog";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
-import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { usePresence } from "../atoms/Presence";
+import { ThemedPortal } from "../../../lib/ThemedPortal";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
@@ -177,7 +176,7 @@ export const Modal: React.FC<ModalProps> = ({
   // two sibling `fixed inset-0` layers cause a ghost compositor artifact.
   // No aria-hidden here: this div is also the open Dialog's ancestor, and
   // Dialog already declares its own role="dialog"/aria-modal="true".
-  return createPortal(
+  return (<ThemedPortal>{
     <div
       className={cn(
         "fixed inset-0 z-[1000]",
@@ -290,9 +289,7 @@ export const Modal: React.FC<ModalProps> = ({
             </Box>
           )}
         </Dialog>
-    </div>,
-    getOrCreatePortalRoot(),
-  );
+    </div>}</ThemedPortal>);
 };
 
 Modal.displayName = "Modal";

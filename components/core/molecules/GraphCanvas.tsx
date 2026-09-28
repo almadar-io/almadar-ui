@@ -15,7 +15,6 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import type { EventKey, EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { Card, Typography, Badge, Button, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
@@ -25,9 +24,9 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useCanvasGestures } from "../../../hooks/useCanvasGestures";
 import { Maximize2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
-import { createPortal } from "react-dom";
 import { forceSimulation, forceManyBody, forceLink, forceCollide, forceX, forceY } from "d3-force";
 import type { UiError } from '../atoms/types';
+import { ThemedPortal } from "../../../lib/ThemedPortal";
 
 export type GraphNodeMark =
     | { kind: 'suggested'; suggestionId: string }
@@ -1066,7 +1065,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         onPointerLeave={handlePointerLeave}
                         onDoubleClick={handleDoubleClick}
                     />
-                    {typeof window !== "undefined" && showLabelTooltip && labelTooltipStyle && createPortal(
+                    {typeof window !== "undefined" && showLabelTooltip && labelTooltipStyle && (<ThemedPortal>{
                         <div
                             className={cn(
                                 "fixed z-50 px-3 py-2 max-w-xs",
@@ -1079,9 +1078,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                             role="tooltip"
                         >
                             {hoveredObj?.label}
-                        </div>,
-                        getOrCreatePortalRoot()
-                    )}
+                        </div>}</ThemedPortal>)}
                 </Box>
 
                 {/* Legend */}

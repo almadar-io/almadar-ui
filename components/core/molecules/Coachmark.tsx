@@ -9,14 +9,13 @@
  * Portals into the shared portal root so it escapes the canvas/preview transform contexts.
  */
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
-import { createPortal } from "react-dom";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
 import { Icon } from "../atoms/Icon";
 import { cn } from "../../../lib/cn";
-import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { ThemedPortal } from "../../../lib/ThemedPortal";
 
 export type CoachmarkPlacement = "top" | "bottom" | "left" | "right";
 export type CoachmarkAnchor =
@@ -268,13 +267,11 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
     </div>
   ) : null;
 
-  return createPortal(
+  return (<ThemedPortal>{
     <>
       {beacon}
       {card}
-    </>,
-    getOrCreatePortalRoot(),
-  );
+    </>}</ThemedPortal>);
 };
 
 Coachmark.displayName = "Coachmark";

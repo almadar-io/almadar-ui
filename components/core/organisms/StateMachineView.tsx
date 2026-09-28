@@ -18,7 +18,6 @@
  */
 
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import type {
   DomLayoutData,
   DomStateNode,
@@ -36,12 +35,12 @@ import { Icon } from '../atoms/Icon';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { useEventListener } from '../../../hooks/useEventBus';
 import { cn } from '../../../lib/cn';
-import { getOrCreatePortalRoot } from '../../../lib/portalRoot';
 // StateMachineView is a state-machine visualization organism; DomLayoutData
 // is a nested structural type that doesn't fit EntityRow's primitive-field
 // constraint. Takes its layout directly via the `layoutData` prop.
 import { X } from 'lucide-react';
 import type { UiError } from '../atoms/types';
+import { ThemedPortal } from "../../../lib/ThemedPortal";
 
 // =============================================================================
 // Types
@@ -505,7 +504,7 @@ const BundleTooltip: React.FC<{
   const safeY = wouldGoOffTop ? tooltip.y + 40 : tooltip.y;
   const transform = wouldGoOffTop ? 'translateX(-50%)' : 'translate(-50%, -100%)';
 
-  return createPortal(
+  return (<ThemedPortal>{
     <Box
       className={cn(
         'fixed z-50 animate-in fade-in-0 zoom-in-95 duration-fast',
@@ -645,9 +644,7 @@ const BundleTooltip: React.FC<{
           ))}
         </VStack>
       </Box>
-    </Box>,
-    getOrCreatePortalRoot(),
-  );
+    </Box>}</ThemedPortal>);
 };
 
 /** Entity input box */

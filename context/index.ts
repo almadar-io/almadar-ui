@@ -19,6 +19,9 @@ export {
 export {
   ThemeProvider,
   useTheme,
+  ThemeScopeContext,
+  useThemeScope,
+  type ThemeScope,
   BUILT_IN_THEMES,
   type UIThemeDefinition,
   type ThemeProviderProps,
