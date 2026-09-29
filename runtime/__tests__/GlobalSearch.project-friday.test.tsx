@@ -60,7 +60,6 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
   const persistence = new MockPersistenceAdapter({ ownerId: 'viewer-1', ownerFields: ['ChannelMember.member'] });
   const runtime = new OrbitalServerRuntime({ mode: 'mock', debug: false, persistence });
   const ready = runtime.register(s);
-  const user = runtime.getDefaultUser();
   const traitIndex = buildTraitIndex(s.orbitals);
   const transport = topology === 'stateful'
     ? createInProcessTransport(async (orbital, request) => {
@@ -79,7 +78,8 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
           frames,
           runEffects: createIndexStageRunner({ traitIndex, persistence, frames, manager, schema: s }),
           runtimeRowSentinel: true,
-          ...(user !== undefined ? { user } : {}),
+          // Registration resolves the viewer (the app's first persona when none is named).
+          ...(runtime.getDefaultUser() !== undefined ? { user: runtime.getDefaultUser() } : {}),
         },
         request,
       );

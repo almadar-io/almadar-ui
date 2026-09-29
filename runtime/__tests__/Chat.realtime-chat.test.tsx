@@ -53,6 +53,7 @@ interface Harness {
   element: React.ReactElement;
   persistence: MockPersistenceAdapter;
   ready: Promise<void>;
+  viewer: () => string | undefined;
 }
 
 /** One seeded store per test (viewer-owned memberships, as the hosted store's
@@ -61,7 +62,6 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
   const persistence = new MockPersistenceAdapter({ ownerId: 'viewer-1', ownerFields: ['ChannelMember.member'] });
   const runtime = new OrbitalServerRuntime({ mode: 'mock', debug: false, persistence });
   const ready = runtime.register(s);
-  const user = runtime.getDefaultUser();
   const traitIndex = buildTraitIndex(s.orbitals);
   const transport = topology === 'stateful'
     ? createInProcessTransport(async (orbital, request) => {
@@ -80,7 +80,8 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
           frames,
           runEffects: createIndexStageRunner({ traitIndex, persistence, frames, manager, schema: s }),
           runtimeRowSentinel: true,
-          ...(user !== undefined ? { user } : {}),
+          // Registration resolves the viewer (the app's first persona when none is named).
+          ...(runtime.getDefaultUser() !== undefined ? { user: runtime.getDefaultUser() } : {}),
         },
         request,
       );
@@ -89,6 +90,7 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
     element: <OrbPreview schema={s} transport={transport} initialPagePath="/chat" isolated />,
     persistence,
     ready,
+    viewer: () => runtime.getDefaultUser()?.id,
   };
 }
 
@@ -97,11 +99,11 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
 async function seedMessageInOpenConversation(h: Harness, content: string): Promise<void> {
   await h.ready;
   const memberships = (await h.persistence.list('ChannelMember'))
-    .filter((m) => m['member'] === 'viewer-1')
+    .filter((m) => m['member'] === h.viewer())
     .sort((a, b) => String(b['lastMessageAt'] ?? '').localeCompare(String(a['lastMessageAt'] ?? '')));
   const channel = memberships[0]?.['channel'];
   if (typeof channel !== 'string') throw new Error('seed has no viewer membership');
-  await h.persistence.create('ChatMessage', { channel, content, sender: 'viewer-1', senderName: 'Dev Viewer', timestamp: '2026-09-24T00:00:00.000Z' });
+  await h.persistence.create('ChatMessage', { channel, content, sender: h.viewer(), senderName: 'Dev Viewer', timestamp: '2026-09-24T00:00:00.000Z' });
 }
 
 const topologies: Array<['stateful' | 'stateless', string]> = [
@@ -131,10 +133,10 @@ describe.each(topologies)('chat (%s, %s)', (topology, orbPath) => {
   it('clicking another conversation in the rail opens it', async () => {
     const h = harness(await resolveChat(orbPath), topology);
     await h.ready;
-    const memberships = (await h.persistence.list('ChannelMember')).filter((m) => m['member'] === 'viewer-1')
+    const memberships = (await h.persistence.list('ChannelMember')).filter((m) => m['member'] === h.viewer())
       .sort((a, b) => String(b['lastMessageAt'] ?? '').localeCompare(String(a['lastMessageAt'] ?? '')));
     const other = memberships[memberships.length - 1];
-    await h.persistence.create('ChatMessage', { channel: other['channel'], content: 'in the other room', sender: 'viewer-1', senderName: 'Dev Viewer', timestamp: '2026-09-24T00:00:00.000Z' });
+    await h.persistence.create('ChatMessage', { channel: other['channel'], content: 'in the other room', sender: h.viewer(), senderName: 'Dev Viewer', timestamp: '2026-09-24T00:00:00.000Z' });
     render(<MemoryRouter>{h.element}</MemoryRouter>);
     const title = other['isDirect'] === true ? String(other['channelName']) : `# ${String(other['channelName'])}`;
     fireEvent.click(await screen.findByText(title, {}, { timeout: 15_000 }));

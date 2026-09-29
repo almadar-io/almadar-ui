@@ -33,6 +33,7 @@ import { Button } from '../../core/atoms/Button';
 import { Icon } from '../../core/atoms/Icon';
 import { Select } from '../../core/atoms/Select';
 import { IconButton } from '../../core/molecules/IconButton';
+import { Badge } from '../../core/atoms/Badge';
 import { LIVE_STATE, type CanvasStateOptions } from '../../../lib/avl-preview-converter';
 import { resolvePatternConfig, patternNodeAt, parseClipboardPatterns, PATTERN_CLIPBOARD_TYPE } from '../../../lib/resolve-pattern-config';
 import { isEditableTarget } from '../../../lib/keyMapEvent';
@@ -116,6 +117,32 @@ export interface CanvasStatePicker {
 }
 
 export const CanvasStatePickerContext = createContext<CanvasStatePicker | null>(null);
+
+/** A trait's latest verification verdict, as the host keeps it. */
+export interface CardVerdict {
+  status: 'pass' | 'fail' | 'stale' | 'running';
+  detail?: string;
+}
+
+/**
+ * A host that verifies from the canvas (Studio's Designer): each card shows controls to verify
+ * the transition it shows (`UI:CARD_VERIFY_STEP`) or its trait's whole walk
+ * (`UI:CARD_VERIFY_TRAIT`, paused and stopped with `UI:CARD_VERIFY_PAUSE` / `_STOP`), and the
+ * trait's verdict. Absent: no verify controls.
+ */
+export interface CanvasVerify {
+  verdictOf: (orbital: string, trait: string) => CardVerdict | undefined;
+  playing: (orbital: string) => boolean;
+}
+
+export const CanvasVerifyContext = createContext<CanvasVerify | null>(null);
+
+const VERDICT_VARIANT: Record<CardVerdict['status'], 'success' | 'error' | 'warning' | 'info'> = {
+  pass: 'success',
+  fail: 'error',
+  stale: 'warning',
+  running: 'info',
+};
 
 /**
  * `useCanvasDraggable`'s `'pattern-instance'` payload data (see
@@ -748,6 +775,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const isSuccess = status === 'success';
   const isError = status === 'error';
   const statePicker = useContext(CanvasStatePickerContext);
+  const verify = useContext(CanvasVerifyContext);
   const stateOptions = useMemo(() => {
     if (!statePicker || data.kind === 'trait-card') return null;
     const { own, groups } = statePicker.optionsOf(data.orbitalName);
@@ -756,6 +784,17 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       groups: groups.map((g) => ({ label: `${g.alias} · ${g.behaviorName}`, options: g.options.map((o) => ({ value: o.id, label: o.label })) })),
     };
   }, [statePicker, data.orbitalName, data.kind, t]);
+  const shownStep = useMemo(() => {
+    if (!verify || !statePicker || data.kind === 'trait-card') return null;
+    const { own, groups } = statePicker.optionsOf(data.orbitalName);
+    const chosen = statePicker.chosen(data.orbitalName);
+    const option = [...own, ...groups.flatMap((g) => g.options)].find((o) => o.id === chosen);
+    const trait = option?.data.traitName;
+    if (!option || !trait) return null;
+    return { trait, event: option.data.transitionEvent ?? '', from: option.data.fromState ?? '' };
+  }, [verify, statePicker, data.orbitalName, data.kind]);
+  const verdict = shownStep ? verify?.verdictOf(data.orbitalName, shownStep.trait) : undefined;
+  const verifyPlaying = verify?.playing(data.orbitalName) ?? false;
   const sublabel = data.entityName ?? '';
 
   const orbitalSchema = useMemo(() => {
@@ -1707,6 +1746,44 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
               data-testid={`canvas-state-${data.orbitalName}`}
               className="h-7 py-0 text-xs"
             />
+          </Box>
+        )}
+        {shownStep && (
+          <Box className="nodrag flex shrink-0 items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+            {verdict && (
+              <Badge
+                variant={VERDICT_VARIANT[verdict.status]}
+                size="sm"
+                data-testid={`card-verdict-${data.orbitalName}`}
+                data-status={verdict.status}
+                title={verdict.detail}
+              >
+                {t(`canvas.verdict.${verdict.status}`)}
+              </Badge>
+            )}
+            <IconButton
+              icon="check-circle"
+              label={t('canvas.verifyTransition')}
+              tooltipPosition="top"
+              className="w-6 h-6"
+              data-testid={`card-verify-transition-${data.orbitalName}`}
+              onClick={() => eventBus.emit('UI:CARD_VERIFY_STEP', { orbital: data.orbitalName, trait: shownStep.trait, from: shownStep.from, event: shownStep.event, payload: {} })}
+            />
+            {verifyPlaying ? (
+              <>
+                <IconButton icon="pause" label={t('canvas.verifyPause')} tooltipPosition="top" className="w-6 h-6" data-testid={`card-verify-pause-${data.orbitalName}`} onClick={() => eventBus.emit('UI:CARD_VERIFY_PAUSE', { orbital: data.orbitalName, trait: shownStep.trait })} />
+                <IconButton icon="square" label={t('canvas.verifyStop')} tooltipPosition="top" className="w-6 h-6" data-testid={`card-verify-stop-${data.orbitalName}`} onClick={() => eventBus.emit('UI:CARD_VERIFY_STOP', { orbital: data.orbitalName, trait: shownStep.trait })} />
+              </>
+            ) : (
+              <IconButton
+                icon="list-checks"
+                label={t('canvas.verifyTrait')}
+                tooltipPosition="top"
+                className="w-6 h-6"
+                data-testid={`card-verify-trait-${data.orbitalName}`}
+                onClick={() => eventBus.emit('UI:CARD_VERIFY_TRAIT', { orbital: data.orbitalName, trait: shownStep.trait })}
+              />
+            )}
           </Box>
         )}
         <IconButton

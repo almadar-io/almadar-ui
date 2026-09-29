@@ -52,6 +52,7 @@ interface Harness {
   element: React.ReactElement;
   persistence: MockPersistenceAdapter;
   ready: Promise<void>;
+  viewer: () => string | undefined;
 }
 
 /** One seeded store per test (viewer-owned memberships, as the hosted store's
@@ -60,7 +61,6 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
   const persistence = new MockPersistenceAdapter({ ownerId: 'viewer-1', ownerFields: ['ChannelMember.member'] });
   const runtime = new OrbitalServerRuntime({ mode: 'mock', debug: false, persistence });
   const ready = runtime.register(s);
-  const user = runtime.getDefaultUser();
   const traitIndex = buildTraitIndex(s.orbitals);
   const transport = topology === 'stateful'
     ? createInProcessTransport(async (orbital, request) => {
@@ -79,7 +79,8 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
           frames,
           runEffects: createIndexStageRunner({ traitIndex, persistence, frames, manager, schema: s }),
           runtimeRowSentinel: true,
-          ...(user !== undefined ? { user } : {}),
+          // Registration resolves the viewer (the app's first persona when none is named).
+          ...(runtime.getDefaultUser() !== undefined ? { user: runtime.getDefaultUser() } : {}),
         },
         request,
       );
@@ -88,6 +89,7 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
     element: <OrbPreview schema={s} transport={transport} initialPagePath="/admin/finance/transactions" isolated />,
     persistence,
     ready,
+    viewer: () => runtime.getDefaultUser()?.id,
   };
 }
 
@@ -96,16 +98,21 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless'): Harness 
 describe.each(topologies)('project-friday transactions type filter (%s)', (topology) => {
   it('filtering by type and then back to all restores every row', async () => {
     const h = harness(await resolveChat(PF_ORB), topology);
+    await h.ready;
+    // One of the viewer's own income rows: shown under "all", gone under "expense".
+    const income = (await h.persistence.list('Transaction')).find((r) => r['holder'] === h.viewer() && r['type'] === 'income');
+    const label = String(income?.['description'] ?? '');
+    expect(label).not.toBe('');
     const { container } = render(<MemoryRouter>{h.element}</MemoryRouter>);
-    await screen.findByText('Basalt Redwood', {}, { timeout: 30_000 });
+    await screen.findByText(label, {}, { timeout: 30_000 });
     const select = () => {
       const el = container.querySelector('select');
       if (!el) throw new Error('no type select');
       return el;
     };
     fireEvent.change(select(), { target: { value: 'expense' } });
-    await waitFor(() => expect(screen.queryByText('Basalt Redwood')).toBeNull(), { timeout: 20_000 });
+    await waitFor(() => expect(screen.queryByText(label)).toBeNull(), { timeout: 20_000 });
     fireEvent.change(select(), { target: { value: 'all' } });
-    await screen.findByText('Basalt Redwood', {}, { timeout: 20_000 });
+    await screen.findByText(label, {}, { timeout: 20_000 });
   }, 120_000);
 });

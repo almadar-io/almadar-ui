@@ -13,11 +13,7 @@
 
 import React, { useMemo, useState, useCallback, useEffect, Profiler } from 'react';
 import {
-  ReactFlow,
   ReactFlowProvider,
-  Controls,
-  Background,
-  BackgroundVariant,
   MarkerType,
   useNodesState,
   useEdgesState,
@@ -40,7 +36,7 @@ import { ButtonGroup } from '../../core/molecules/ButtonGroup';
 import { IconButton } from '../../core/molecules/IconButton';
 import { useCompactLayout } from '../../core/organisms/layout/DockLayout';
 import { ElementEditAccessContext, type ElementEditAccessResolver } from '../../../lib/element-edit-access';
-import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, type CanvasStatePicker, type SelectedPattern } from '../molecules/OrbPreviewNode';
+import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, CanvasVerifyContext, type CanvasStatePicker, type CanvasVerify, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { CANVAS_TOOLS, type CanvasTool } from '../../../lib/canvas-tools';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
 import { SystemNode, SystemBandNode, DependencyNode, DependencyColumnNode, SystemMapContext, type SystemMapContextValue } from '../molecules/SystemNode';
@@ -49,8 +45,9 @@ import { flowNeighbors, traitFlowCanvas, traitFlowGraph } from '../../../lib/avl
 import { Input } from '../../core/atoms/Input';
 import type { AvlPlayStep } from '../../../lib/avl-play';
 import { EventFlowEdge } from '../molecules/EventFlowEdge';
-import { canvasViewGraph, stateOptionsOf, initialStateOf, orbitalToTraitGraph, schemaToSystemGraph, LIVE_STATE, canvasViewChanged, type CanvasStateOptions, type CanvasViewport } from '../../../lib/avl-preview-converter';
+import { canvasViewGraph, stateOptionsOf, initialStateOf, optionForPlayedStep, orbitalToTraitGraph, schemaToSystemGraph, LIVE_STATE, canvasViewChanged, type CanvasStateOptions, type CanvasViewport } from '../../../lib/avl-preview-converter';
 import { OrbInspector } from './OrbInspector';
+import { AvlGraphCanvas } from './AvlGraphCanvas';
 import { validateWire } from '../../../lib/wire-validation';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { isEditableTarget } from '../../../lib/keyMapEvent';
@@ -263,6 +260,9 @@ export interface FlowCanvasProps {
    * Default `false` preserves the built-in inline panel.
    */
   externalInspector?: boolean;
+  /** A host that verifies from the canvas: cards show verify controls and the trait's verdict,
+   *  and follow `UI:CANVAS_SHOW_STATE` to the states a run reaches. */
+  verify?: CanvasVerify;
 }
 
 // ---------------------------------------------------------------------------
@@ -292,6 +292,7 @@ function FlowCanvasInner({
   layoutHint,
   onNodeSelect,
   userType = 'builder',
+  verify,
   themeManifest,
   nodePositions,
   onPositionsChange,
@@ -782,6 +783,19 @@ function FlowCanvasInner({
     onPositionsChange?.(placementsOf(nodesRef.current));
   }, [onPositionsChange, placementsOf]);
 
+  // A verification run reached a state: show it on the card, when the card has a screen for it.
+  useEffect(() => eventBus.on('UI:CANVAS_SHOW_STATE', (e) => {
+    const p = e.payload;
+    const orbital = p?.orbital;
+    const trait = p?.trait;
+    const event = p?.event;
+    const from = p?.from;
+    const to = p?.to;
+    if (typeof orbital !== 'string' || typeof trait !== 'string' || typeof event !== 'string' || typeof from !== 'string' || typeof to !== 'string') return;
+    const option = optionForPlayedStep(optionsOf(orbital), { trait, event, from, to });
+    if (option) statePicker.choose(orbital, option);
+  }), [eventBus, optionsOf, statePicker]);
+
   // A card's frame was resized (OrbPreviewNode's right-edge control).
   useEffect(() => eventBus.on('UI:CANVAS_CARD_RESIZED', (e) => {
     const nodeId = e.payload?.nodeId;
@@ -832,6 +846,7 @@ function FlowCanvasInner({
     <ScreenSizeContext.Provider value={screenSize}>
     <CanvasToolsContext.Provider value={tools}>
     <CanvasStatePickerContext.Provider value={traitLevel || systemLevel ? null : statePicker}>
+    <CanvasVerifyContext.Provider value={verify ?? null}>
     <SystemMapContext.Provider value={systemMapValue}>
     <ElementEditAccessContext.Provider value={elementAccess ?? null}>
     <PatternSelectionContext.Provider value={patternSelectionValue}>
@@ -1085,7 +1100,7 @@ function FlowCanvasInner({
         data-testid="flow-canvas"
       >
         <Box className="relative flex-1 min-h-0">
-        <ReactFlow
+        <AvlGraphCanvas
           nodes={nodes}
           edges={visibleEdges}
           nodeTypes={NODE_TYPES}
@@ -1093,37 +1108,14 @@ function FlowCanvasInner({
           defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          zoomOnDoubleClick={false}
           onNodeClick={handleNodeClick}
           onConnect={handleConnect}
           onNodeDragStop={handleNodeDragStop}
-          minZoom={0.1}
-          maxZoom={2.0}
-          fitView
-          fitViewOptions={{ padding: fitPadding }}
+          fitPadding={fitPadding}
+          compact={compact}
           nodesDraggable={scope === 'world'}
           elementsSelectable
-          proOptions={{ hideAttribution: true }}
-          style={{ background: 'var(--color-background)' }}
-        >
-          {/* Compact (phones, tablets): pinch zooms, and the buttons would sit under the tool strip. */}
-          {!compact && (
-            <Controls
-              showInteractive={false}
-              style={{
-                background: 'var(--color-card)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-              }}
-            />
-          )}
-          <Background
-            variant={BackgroundVariant.Dots}
-            gap={20}
-            size={1}
-            color="var(--color-border)"
-          />
-        </ReactFlow>
+        />
         </Box>
 
       </Box>
@@ -1159,6 +1151,7 @@ function FlowCanvasInner({
     </PatternSelectionContext.Provider>
     </ElementEditAccessContext.Provider>
     </SystemMapContext.Provider>
+    </CanvasVerifyContext.Provider>
     </CanvasStatePickerContext.Provider>
     </CanvasToolsContext.Provider>
     </ScreenSizeContext.Provider>

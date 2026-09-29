@@ -150,6 +150,13 @@ const DEPENDENCY_ROLE_CLASS: Record<NonNullable<PreviewNodeData['dependencyRole'
   none: 'border-border bg-card text-foreground',
 };
 
+const UNIT_STATUS_CLASS: Record<NonNullable<PreviewNodeData['unitStatus']>, string> = {
+  ok: 'bg-success',
+  degraded: 'bg-warning',
+  down: 'bg-error',
+  idle: 'bg-muted-foreground',
+};
+
 const DependencyNodeInner: React.FC<NodeProps> = ({ id, data }) => {
   const d = data as PreviewNodeData;
   const { t } = useTranslate();
@@ -180,6 +187,17 @@ const DependencyNodeInner: React.FC<NodeProps> = ({ id, data }) => {
               (d.flowRenderPieces ?? 0) > 0 ? t(d.flowRenderPieces === 1 ? 'avl.flow.piecesCountOne' : 'avl.flow.piecesCount', { count: d.flowRenderPieces ?? 0 }) : null,
             ].filter((part) => part !== null).join(' + ')].join(' · ')}
       </Typography>
+      {d.unitMetric !== undefined ? (
+        <Typography variant="caption" color="muted" className="ml-auto shrink-0 pl-2 font-mono">{d.unitMetric}</Typography>
+      ) : null}
+      {d.unitStatus !== undefined ? (
+        <Box
+          data-testid="avl-unit-status"
+          data-status={d.unitStatus}
+          title={t(`avl.unit.status.${d.unitStatus}`)}
+          className={`${d.unitMetric !== undefined ? 'ml-2' : 'ml-auto'} h-2 w-2 shrink-0 rounded-full ${UNIT_STATUS_CLASS[d.unitStatus]}`}
+        />
+      ) : null}
     </Box>
   );
 };

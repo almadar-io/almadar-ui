@@ -8,10 +8,12 @@ Every open gap this repo owns lives here. This file is the source of truth; the 
 - **Close by deleting.** Remove the entry in the same commit as the fix. There is no "closed" section; git history is the record.
 - **Cross-repo gaps don't go here.** If fixing it needs another repo, describe it in your report or PR body; the monorepo coordinator files it.
 
-Next code: `G-UI-031`
+Next code: `G-UI-033`
 
 ## Open gaps
 
+- **G-UI-032** — `UISlotRenderer`'s `modal` slot (`components/core/organisms/UISlotRenderer.tsx` ~L420–480) draws its own overlay + box + ✕ button instead of the `Modal` molecule, so a slot modal has no `role="dialog"`, no `aria-modal`, no focus trap and none of `Modal`'s mobile sheet behaviour. Found 2026-09-29: std-list's Create form on a published app is not reachable as a dialog (`getByRole('dialog')` finds nothing). Converge the slot onto `Modal`. Prevention rung: none of the three (an accessibility contract; a jsdom a11y assertion on the slot would pin it). `@almadar/ui` [mechanical]
+- **G-UI-031** — `Stack` (and so `VStack`/`HStack`, `components/core/atoms/Stack.tsx`) and `Typography` forward only a fixed prop list, so `data-*` and `aria-*` attributes written on it type-check (JSX allows any `data-*`) yet never reach the DOM. Test ids and ARIA on stacks silently vanish; found 2026-09-29 when the Studio publish panel's `data-testid`s on VStack rows were missing (moved to `Box`, which forwards `...rest`). Fix: forward `data-*`/`aria-*` like `Box` does. Prevention rung: 1 (the props type should declare what is forwarded, so an undeclared attribute is a type error). `@almadar/ui` [mechanical]
 
 ### UI tier (`@almadar/ui`)
 

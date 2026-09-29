@@ -7,6 +7,7 @@
 
 import type { Edge, Node } from '@xyflow/react';
 import type { PreviewNodeData } from './avl-preview-converter';
+import { layeredGraph, type LayeredUnit } from './avl-layered-graph';
 
 export type DependencyLayer = 'io' | 'std' | 'primitive' | 'unknown';
 
@@ -37,37 +38,17 @@ function importEdges(deps: SystemDependencies): Array<[string, string]> {
 }
 
 export function schemaToDependencyGraph(deps: SystemDependencies): { nodes: Node<PreviewNodeData>[]; edges: Edge[] } {
-  const byColumn = new Map<DependencyColumn, Array<{ id: string; label: string }>>(COLUMNS.map((c) => [c, []]));
-  for (const orbital of Object.keys(deps.orbitals)) byColumn.get('app')?.push({ id: orbitalNodeId(orbital), label: orbital });
+  const units: LayeredUnit[] = Object.keys(deps.orbitals).map((orbital) => ({ id: orbitalNodeId(orbital), column: 'app', label: orbital }));
   for (const [name, b] of Object.entries(deps.behaviors).sort(([a], [z]) => a.localeCompare(z))) {
-    byColumn.get(b.layer)?.push({ id: behaviorNodeId(name), label: name });
+    units.push({ id: behaviorNodeId(name), column: b.layer, label: name });
   }
-  const nodes: Node<PreviewNodeData>[] = [];
-  let x = 0;
-  for (const column of COLUMNS) {
-    const items = byColumn.get(column) ?? [];
-    if (items.length === 0) continue;
-    nodes.push({
-      id: `__column_${column}`,
-      type: 'dependencyColumn',
-      position: { x, y: 0 },
-      draggable: false,
-      selectable: false,
-      data: { orbitalName: `__column_${column}`, kind: 'dependency-column', dependencyColumn: column, patterns: [], eventSources: [] },
-    });
-    items.forEach((item, row) => {
-      nodes.push({
-        id: item.id,
-        type: 'dependency',
-        position: { x, y: DEPENDENCY_ROW.headerHeight + row * (DEPENDENCY_ROW.height + DEPENDENCY_ROW.gap) },
-        draggable: false,
-        data: { orbitalName: item.label, kind: 'dependency', dependencyColumn: column, cardWidth: WIDTH[column], patterns: [], eventSources: [] },
-      });
-    });
-    x += WIDTH[column] + DEPENDENCY_ROW.columnGap;
-  }
-  const edges: Edge[] = importEdges(deps).map(([source, target]) => ({ id: `dep-${source}-${target}`, source, target }));
-  return { nodes, edges };
+  return layeredGraph({
+    columns: COLUMNS.map((id) => ({ id, width: WIDTH[id] })),
+    units,
+    edges: importEdges(deps).map(([source, target]) => ({ id: `dep-${source}-${target}`, source, target })),
+    row: DEPENDENCY_ROW,
+    handles: 'default',
+  });
 }
 
 /** What `selected` is built from (upstream, through every import) and what reaches it (downstream). */

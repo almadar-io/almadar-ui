@@ -11,6 +11,7 @@ import type { PreviewNodeData } from './avl-preview-converter';
 import { isInlineTrait } from '@almadar/core';
 import { traitEventWires } from './avl-event-wires';
 import type { DependencyLayer } from './avl-dependency-graph';
+import { layeredGraph } from './avl-layered-graph';
 
 export type FlowColumn = 'own' | DependencyLayer;
 
@@ -89,45 +90,16 @@ const ROW = { height: 28, gap: 12, columnGap: 96, headerHeight: 30 };
 
 /** The flow on the canvas: units as pills in their columns (the dependency graph's nodes), one edge per unit pair. */
 export function traitFlowCanvas(flow: { units: readonly TraitFlowUnit[]; edges: readonly TraitFlowEdge[] }): { nodes: Node<PreviewNodeData>[]; edges: Edge[] } {
-  const nodes: Node<PreviewNodeData>[] = [];
-  let x = 0;
-  for (const column of COLUMNS) {
-    const units = flow.units.filter((u) => u.column === column);
-    if (units.length === 0) continue;
-    nodes.push({
-      id: `__column_${column}`,
-      type: 'dependencyColumn',
-      position: { x, y: 0 },
-      draggable: false,
-      selectable: false,
-      data: { orbitalName: `__column_${column}`, kind: 'dependency-column', dependencyColumn: column, patterns: [], eventSources: [] },
-    });
-    units.forEach((u, row) => {
-      nodes.push({
-        id: u.id,
-        type: 'dependency',
-        position: { x, y: ROW.headerHeight + row * (ROW.height + ROW.gap) },
-        draggable: false,
-        data: {
-          orbitalName: u.name,
-          kind: 'dependency',
-          dependencyColumn: column,
-          cardWidth: WIDTH[column],
-          ...(column === 'own' ? {} : { flowTraits: u.traits.length, flowRenderPieces: u.renderPieces.length }),
-          patterns: [],
-          eventSources: [],
-        },
-      });
-    });
-    x += WIDTH[column] + ROW.columnGap;
-  }
-  // Each wire leaves and arrives on the side facing the other end; within a column it loops out on the right.
-  const xOf = new Map(nodes.map((n) => [n.id, n.position.x]));
-  const edges: Edge[] = flow.edges.map((e) => {
-    const from = xOf.get(e.source) ?? 0;
-    const to = xOf.get(e.target) ?? 0;
-    const handles = to > from ? { sourceHandle: 'out-right', targetHandle: 'in-left' } : to < from ? { sourceHandle: 'out-left', targetHandle: 'in-right' } : { sourceHandle: 'out-right', targetHandle: 'in-right' };
-    return { id: `flow-${e.source}-${e.target}`, source: e.source, target: e.target, ...handles };
+  return layeredGraph({
+    columns: COLUMNS.map((id) => ({ id, width: WIDTH[id] })),
+    units: flow.units.map((u) => ({
+      id: u.id,
+      column: u.column,
+      label: u.name,
+      ...(u.column === 'own' ? {} : { flowTraits: u.traits.length, flowRenderPieces: u.renderPieces.length }),
+    })),
+    edges: flow.edges.map((e) => ({ id: `flow-${e.source}-${e.target}`, source: e.source, target: e.target })),
+    row: ROW,
+    handles: 'facing',
   });
-  return { nodes, edges };
 }

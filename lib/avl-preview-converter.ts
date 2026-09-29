@@ -230,12 +230,15 @@ export interface PreviewNodeData {
   kind?: 'trait-card' | 'system-orbital' | 'system-band' | 'dependency' | 'dependency-column';
 
   /** `dependency` / `dependency-column`: the column the node sits in (the app, or the layer it is imported from). */
-  dependencyColumn?: 'app' | 'own' | 'io' | 'std' | 'primitive' | 'unknown';
+  dependencyColumn?: 'app' | 'own' | 'io' | 'std' | 'primitive' | 'unknown' | 'client' | 'host' | 'service' | 'store' | 'external';
   /** `dependency`: its part in the current selection (`both`: on each side of it). */
   dependencyRole?: 'selected' | 'upstream' | 'downstream' | 'both' | 'dim';
   /** Trait flow: a composed unit's traits and embedded render pieces. */
   flowTraits?: number;
   flowRenderPieces?: number;
+  /** `dependency`: a live unit's health (the infrastructure view), and one metric to show beside it. */
+  unitStatus?: 'ok' | 'degraded' | 'down' | 'idle';
+  unitMetric?: string;
 
   /** `system-band`: which band the label heads, and how many orbitals it holds. */
   bandKind?: 'connected' | 'standalone';
@@ -913,6 +916,26 @@ export function initialStateOf(options: CanvasStateOptions): string {
   const groupOptions = options.groups.flatMap((g) => g.options);
   const pick = options.own.find(isInit) ?? groupOptions.find(isInit) ?? options.own[0] ?? groupOptions[0];
   return pick?.id ?? LIVE_STATE;
+}
+
+/** One transition a verification run played on a card's trait. */
+export interface PlayedStep {
+  trait: string;
+  event: string;
+  from: string;
+  to: string;
+}
+
+/**
+ * The card option showing where a played step landed: the option for exactly that transition,
+ * else the trait's first screen of the state it reached. `undefined` when the state has no
+ * screen of its own (the card then stays as it is).
+ */
+export function optionForPlayedStep(options: CanvasStateOptions, step: PlayedStep): string | undefined {
+  const all = [...options.own, ...options.groups.flatMap((g) => g.options)];
+  const exact = all.find((o) => o.id === `${step.trait}:${step.event}:${step.from}:${step.to}`);
+  if (exact) return exact.id;
+  return all.find((o) => o.data.traitName === step.trait && o.data.toState === step.to)?.id;
 }
 
 /** What the viewport frames: fitting follows this, never the schema's content. */

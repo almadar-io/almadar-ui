@@ -85,8 +85,8 @@ export { computeTraitLayout, edgePath, type LayoutNode, type LayoutEdge, type El
 
 // V3 Revised: UI Projection components
 export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry } from '../lib/avl-preview-converter';
-export { schemaToOverviewGraph, stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, type CanvasStateView, type CanvasStateOption, type CanvasStateGroup, type CanvasStateOptions, type CanvasViewOptions } from '../lib/avl-preview-converter';
-export { OrbPreviewNode, type SelectedPattern } from '../components/avl/molecules/OrbPreviewNode';
+export { schemaToOverviewGraph, stateOptionsOf, canvasViewGraph, initialStateOf, optionForPlayedStep, LIVE_STATE, type PlayedStep, type CanvasStateView, type CanvasStateOption, type CanvasStateGroup, type CanvasStateOptions, type CanvasViewOptions } from '../lib/avl-preview-converter';
+export { OrbPreviewNode, CanvasVerifyContext, type SelectedPattern, type CanvasVerify, type CardVerdict } from '../components/avl/molecules/OrbPreviewNode';
 export { EventFlowEdge } from '../components/avl/molecules/EventFlowEdge';
 
 // DOM → EditFocus (inspect primitive). Reads `data-orb-*` (incl. `data-orb-orbital`
@@ -161,6 +161,7 @@ export {
   type ZoomLevel,
 } from '../components/avl/organisms/index';
 export { AvlTransitionDetail, type AvlTransitionDetailProps } from '../components/avl/organisms/AvlTransitionDetail';
+export { AvlGraphCanvas, AVL_GRAPH_NODE_TYPES, type AvlGraphCanvasProps } from '../components/avl/organisms/AvlGraphCanvas';
 export { traitLevelFromTrait, type TraitTransitionInfo } from '../lib/avl-schema-parser';
 export {
   armsOf,
@@ -174,6 +175,8 @@ export {
   type AvlTransitionPlayback,
 } from '../lib/avl-play';
 export { schemaToDependencyGraph, dependencyReach, type SystemDependencies, type DependencyLayer } from '../lib/avl-dependency-graph';
+export { deploymentGraph, DEPLOYMENT_ROW } from '../lib/avl-deployment-graph';
+export { layeredGraph, type LayeredGraphInput, type LayeredColumn, type LayeredColumnId, type LayeredUnit, type LayeredEdge, type LayeredRow } from '../lib/avl-layered-graph';
 export { traitFlowGraph, flowNeighbors, type TraitFlowUnit, type TraitFlowEdge } from '../lib/avl-trait-flow';
 export { type TraitView } from '../components/avl/organisms/FlowCanvas';
 export { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../lib/canvas-tools';

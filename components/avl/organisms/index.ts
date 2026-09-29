@@ -8,6 +8,7 @@
 
 // Primary V3 organisms
 export { FlowCanvas, type FlowCanvasProps, type CanvasScope, type CanvasFocusChange } from './FlowCanvas';
+export { AvlGraphCanvas, AVL_GRAPH_NODE_TYPES, type AvlGraphCanvasProps } from './AvlGraphCanvas';
 export { OrbInspector, type OrbInspectorProps } from './OrbInspector';
 export {
   LayersPanel,
