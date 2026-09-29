@@ -29,9 +29,10 @@ import {
   type EdgeTypes,
   type Connection,
 } from '@xyflow/react';
-import type { EditFocus, OrbitalSchema, ThemeDefinition, EntityData } from '@almadar/core';
+import type { EditFocus, EventEmit, OrbitalSchema, ThemeDefinition, EntityData } from '@almadar/core';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
+import { HStack } from '../../core/atoms/Stack';
 import { Button } from '../../core/atoms/Button';
 import { Icon } from '../../core/atoms/Icon';
 import { Select } from '../../core/atoms/Select';
@@ -42,9 +43,13 @@ import { ElementEditAccessContext, type ElementEditAccessResolver } from '../../
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, type CanvasStatePicker, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { CANVAS_TOOLS, type CanvasTool } from '../../../lib/canvas-tools';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
+import { SystemNode, SystemBandNode, DependencyNode, DependencyColumnNode, SystemMapContext, type SystemMapContextValue } from '../molecules/SystemNode';
+import { dependencyReach, schemaToDependencyGraph, type SystemDependencies } from '../../../lib/avl-dependency-graph';
+import { flowNeighbors, traitFlowCanvas, traitFlowGraph } from '../../../lib/avl-trait-flow';
+import { Input } from '../../core/atoms/Input';
 import type { AvlPlayStep } from '../../../lib/avl-play';
 import { EventFlowEdge } from '../molecules/EventFlowEdge';
-import { canvasViewGraph, stateOptionsOf, initialStateOf, orbitalToTraitGraph, LIVE_STATE, canvasViewChanged, type CanvasStateOptions, type CanvasViewport } from '../../../lib/avl-preview-converter';
+import { canvasViewGraph, stateOptionsOf, initialStateOf, orbitalToTraitGraph, schemaToSystemGraph, LIVE_STATE, canvasViewChanged, type CanvasStateOptions, type CanvasViewport } from '../../../lib/avl-preview-converter';
 import { OrbInspector } from './OrbInspector';
 import { validateWire } from '../../../lib/wire-validation';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -90,6 +95,15 @@ const DEFAULT_EDGE_OPTIONS = {
 
 type CanvasNode = Node<PreviewNodeData>;
 
+const NO_SYSTEM_MAP: SystemMapContextValue = { openTraits: () => undefined };
+
+/** The trait level's lens, and the unit whose traits the Traits lens is narrowed to. */
+export interface TraitView {
+  lens: 'flow' | 'traits';
+  filter: { unit: string; traits: readonly string[] } | null;
+}
+const DEFAULT_TRAIT_VIEW: TraitView = { lens: 'flow', filter: null };
+
 function isPreviewCard(n: CanvasNode): n is Node<PreviewNodeData> {
   return n.type === 'preview';
 }
@@ -133,6 +147,15 @@ export interface FlowCanvasProps {
     /** With `level: 'transition'`: the clicked transition's index in the trait's state machine. */
     transitionIndex?: number;
   }) => void;
+  /** With `initialLevel="system"`: what an orbital chip does (drill in, hover preview, open code, preview). */
+  systemMap?: SystemMapContextValue;
+  /** With `initialLevel="system"`: the app's imports, for the Dependencies lens (absent: Events only). */
+  systemDependencies?: SystemDependencies;
+  /** Trait level: which lens (and trait filter) shows — pass with `onTraitViewChange` to keep it across remounts. */
+  traitView?: TraitView;
+  onTraitViewChange?: (view: TraitView) => void;
+  /** Dependencies lens: emits UI:{openBehaviorEvent} with { name } to open a selected behavior's source. */
+  openBehaviorEvent?: EventEmit<{ name: string }>;
   /** With `initialLevel="trait-expanded"`: played steps lighting each trait card's state machine. */
   scene?: { steps: readonly AvlPlayStep[]; cursor: number };
   /** Fired when the focused orbital, the scope, or the focused card's state changes. */
@@ -276,6 +299,11 @@ function FlowCanvasInner({
   onSelectedPatternChange,
   externalInspector = false,
   scene,
+  systemMap,
+  systemDependencies,
+  openBehaviorEvent,
+  traitView: traitViewProp,
+  onTraitViewChange,
 }: FlowCanvasProps) {
   const { t } = useTranslate();
   // Render-time NODE_TYPES / EDGE_TYPES — not module-level. When vite's
@@ -291,6 +319,10 @@ function FlowCanvasInner({
   const NODE_TYPES = useMemo<NodeTypes>(() => ({
     preview: OrbPreviewNode,
     traitCard: TraitCardNode,
+    system: SystemNode,
+    systemBand: SystemBandNode,
+    dependency: DependencyNode,
+    dependencyColumn: DependencyColumnNode,
   } as NodeTypes), []);
   const EDGE_TYPES_LOCAL = useMemo<EdgeTypes>(() => ({
     eventFlow: EventFlowEdge,
@@ -308,6 +340,24 @@ function FlowCanvasInner({
   }, [schemaProp]);
 
   const traitLevel = initialLevel === 'trait-expanded';
+  const systemLevel = initialLevel === 'system';
+  const [systemQuery, setSystemQuery] = useState('');
+  const [wiresOnly, setWiresOnly] = useState(false);
+  const [lens, setLens] = useState<'events' | 'dependencies'>('events');
+  const [dependencySelection, setDependencySelection] = useState<string | null>(null);
+  const dependencyLens = systemLevel && lens === 'dependencies' && systemDependencies !== undefined;
+  // Trait level: Flow (the orbital as the units its traits come from) or Traits (every trait's state machine).
+  const [ownTraitView, setOwnTraitView] = useState<TraitView>(DEFAULT_TRAIT_VIEW);
+  const traitView = traitViewProp ?? ownTraitView;
+  const setTraitView = useCallback((next: TraitView) => {
+    setOwnTraitView(next);
+    onTraitViewChange?.(next);
+  }, [onTraitViewChange]);
+  const traitLens = traitView.lens;
+  const traitFilter = useMemo(() => (traitView.filter ? { unit: traitView.filter.unit, traits: new Set(traitView.filter.traits) } : null), [traitView.filter]);
+  const flowLens = traitLevel && traitLens === 'flow';
+  // The system map and the flow frame many small pills; the other levels frame one or a few large cards.
+  const fitPadding = systemLevel || flowLens ? 0.08 : 0.25;
   const compact = useCompactLayout();
   const [scope, setScope] = useState<CanvasScope>('local');
   const scopeRef = React.useRef(scope);
@@ -406,8 +456,107 @@ function FlowCanvasInner({
   const focusedOrbital = canvas.focusedOrbital;
   const orbitalNames = useMemo(() => (parsedSchema.orbitals ?? []).map((o) => o.name), [parsedSchema]);
 
-  const activeNodes: CanvasNode[] = traitLevel ? traitExpandedNodes : canvas.nodes;
-  const activeEdges: Edge<EventEdgeData>[] = traitLevel ? traitExpandedEdges : canvas.edges;
+  const systemGraph = useMemo(() => (systemLevel ? schemaToSystemGraph(parsedSchema) : null), [systemLevel, parsedSchema]);
+  const systemNodes = useMemo<CanvasNode[]>(() => {
+    if (!systemGraph) return [];
+    const q = systemQuery.trim().toLowerCase();
+    const matches = (d: PreviewNodeData): boolean =>
+      [d.orbitalName, d.entityName ?? '', ...(d.wireEvents ?? [])].some((text) => text.toLowerCase().includes(q));
+    return systemGraph.nodes
+      .filter((n) => !wiresOnly || n.data.bandKind === 'connected' || (n.data.kind === 'system-orbital' && (n.data.wireEvents?.length ?? 0) > 0))
+      .map((n) => (q && n.data.kind === 'system-orbital' && !matches(n.data) ? { ...n, style: { opacity: 0.25 } } : n));
+  }, [systemGraph, systemQuery, wiresOnly]);
+  const dependencyGraph = useMemo(() => (dependencyLens && systemDependencies ? schemaToDependencyGraph(systemDependencies) : null), [dependencyLens, systemDependencies]);
+  const reach = useMemo(
+    () => (dependencySelection && systemDependencies ? dependencyReach(systemDependencies, dependencySelection) : null),
+    [dependencySelection, systemDependencies],
+  );
+  const dependencyNodes = useMemo<CanvasNode[]>(() => {
+    if (!dependencyGraph) return [];
+    const q = systemQuery.trim().toLowerCase();
+    return dependencyGraph.nodes.map((n) => {
+      if (n.data.kind !== 'dependency') return n;
+      const role: PreviewNodeData['dependencyRole'] = !reach
+        ? q && !n.data.orbitalName.toLowerCase().includes(q) ? 'dim' : undefined
+        : n.id === dependencySelection ? 'selected' : reach.upstream.has(n.id) ? 'upstream' : reach.downstream.has(n.id) ? 'downstream' : 'dim';
+      return role ? { ...n, data: { ...n.data, dependencyRole: role } } : n;
+    });
+  }, [dependencyGraph, reach, dependencySelection, systemQuery]);
+  const dependencyEdges = useMemo<Edge<EventEdgeData>[]>(() => {
+    if (!dependencyGraph) return [];
+    const inUp = (id: string) => id === dependencySelection || (reach?.upstream.has(id) ?? false);
+    const inDown = (id: string) => id === dependencySelection || (reach?.downstream.has(id) ?? false);
+    return dependencyGraph.edges.map((e) => {
+      const up = reach !== null && inUp(e.source) && reach.upstream.has(e.target);
+      const down = reach !== null && inDown(e.target) && reach.downstream.has(e.source);
+      const stroke = up ? 'var(--color-primary)' : down ? 'var(--color-warning)' : 'var(--color-border)';
+      return {
+        ...e,
+        type: 'default',
+        markerEnd: undefined,
+        selectable: false,
+        style: { stroke, strokeWidth: up || down ? 1.6 : 1, opacity: up || down ? 0.95 : reach ? 0.12 : 0.35 },
+        data: { event: '' },
+      };
+    });
+  }, [dependencyGraph, reach, dependencySelection]);
+  const flow = useMemo(() => {
+    if (!traitLevel || !initialOrbital) return null;
+    const layers = Object.fromEntries(Object.entries(systemDependencies?.behaviors ?? {}).map(([name, b]) => [name, b.layer]));
+    return traitFlowGraph(parsedSchema, initialOrbital, layers);
+  }, [traitLevel, initialOrbital, parsedSchema, systemDependencies]);
+  const flowCanvas = useMemo(() => (flow ? traitFlowCanvas(flow) : null), [flow]);
+  const flowReach = useMemo(() => (flow && dependencySelection && flowLens ? flowNeighbors(flow.edges, dependencySelection) : null), [flow, dependencySelection, flowLens]);
+  const flowNodes = useMemo<CanvasNode[]>(() => {
+    if (!flowCanvas) return [];
+    return flowCanvas.nodes.map((n) => {
+      if (n.data.kind !== 'dependency' || !flowReach) return n;
+      const role: PreviewNodeData['dependencyRole'] =
+        n.id === dependencySelection ? 'selected'
+          : flowReach.triggeredBy.has(n.id) && flowReach.triggers.has(n.id) ? 'both'
+            : flowReach.triggeredBy.has(n.id) ? 'upstream' : flowReach.triggers.has(n.id) ? 'downstream' : 'dim';
+      return { ...n, data: { ...n.data, dependencyRole: role } };
+    });
+  }, [flowCanvas, flowReach, dependencySelection]);
+  const flowEdges = useMemo<Edge<EventEdgeData>[]>(() => {
+    if (!flow) return [];
+    return flow.edges.map((e) => {
+      const into = dependencySelection !== null && e.target === dependencySelection;
+      const out = dependencySelection !== null && e.source === dependencySelection;
+      const stroke = into ? 'var(--color-primary)' : out ? 'var(--color-warning)' : 'var(--color-border)';
+      const drawn = flowCanvas?.edges.find((c) => c.id === `flow-${e.source}-${e.target}`);
+      return {
+        id: `flow-${e.source}-${e.target}`,
+        source: e.source,
+        target: e.target,
+        ...(drawn?.sourceHandle ? { sourceHandle: drawn.sourceHandle } : {}),
+        ...(drawn?.targetHandle ? { targetHandle: drawn.targetHandle } : {}),
+        type: 'default',
+        selectable: false,
+        style: { stroke, strokeWidth: into || out ? 1.8 : 1, opacity: into || out ? 0.95 : dependencySelection ? 0.14 : 0.4 },
+        ...(into || out
+          ? {
+              label: e.events.join(', '),
+              labelStyle: { fill: stroke, fontSize: 10, fontFamily: 'var(--font-mono, monospace)' },
+              labelBgStyle: { fill: 'var(--color-background)', stroke, strokeWidth: 0.8 },
+              labelBgPadding: [6, 3] as [number, number],
+              labelBgBorderRadius: 8,
+            }
+          : {}),
+        data: { event: '' },
+      };
+    });
+  }, [flow, flowCanvas, dependencySelection]);
+  const selectedUnit = flowLens && flow ? flow.units.find((u) => u.id === dependencySelection) : undefined;
+  const systemWireCount = systemGraph?.edges.length ?? 0;
+  const systemOrbitalCount = systemGraph?.nodes.filter((n) => n.data.kind === 'system-orbital').length ?? 0;
+
+  const filteredTraitNodes = useMemo(
+    () => (traitFilter ? traitExpandedNodes.filter((n) => traitFilter.traits.has(n.data.traitName ?? '')) : traitExpandedNodes),
+    [traitExpandedNodes, traitFilter],
+  );
+  const activeNodes: CanvasNode[] = dependencyLens ? dependencyNodes : systemLevel ? systemNodes : flowLens ? flowNodes : traitLevel ? filteredTraitNodes : canvas.nodes;
+  const activeEdges: Edge<EventEdgeData>[] = dependencyLens ? dependencyEdges : systemGraph ? systemGraph.edges : flowLens ? flowEdges : traitLevel ? traitExpandedEdges : canvas.edges;
 
   const [nodes, setNodes, onNodesChange] = useNodesState(activeNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(activeEdges);
@@ -447,21 +596,21 @@ function FlowCanvasInner({
     // Fit once the new cards are measured (fitting before that leaves the card
     // off-centre) — but only when the view changed. A workspace update keeps
     // the user's zoom and pan.
-    const viewport: CanvasViewport = { scope, focusedOrbital, screenSize };
+    const viewport: CanvasViewport = { scope, focusedOrbital, screenSize, ...(systemLevel ? { level: dependencyLens ? 'system-dependencies' : wiresOnly ? 'system-wires' : 'system' } : traitLevel ? { level: flowLens ? 'trait-flow' : traitFilter ? `trait-cards:${traitFilter.unit}` : 'trait-cards' } : {}) };
     if (canvasViewChanged(fittedViewRef.current, viewport)) {
       pendingFitRef.current = { centreOn: fitFocusedRef.current && scope === 'world' ? focusedOrbital : undefined };
       fittedViewRef.current = viewport;
     }
     fitFocusedRef.current = false;
-  }, [activeNodes, activeEdges, setNodes, setEdges, scope, focusedOrbital, screenSize]);
+  }, [activeNodes, activeEdges, setNodes, setEdges, scope, focusedOrbital, screenSize, systemLevel, wiresOnly, dependencyLens, traitLevel, flowLens, traitFilter]);
 
   const nodesInitialized = useNodesInitialized();
   useEffect(() => {
     const pending = pendingFitRef.current;
     if (!nodesInitialized || !pending) return;
     pendingFitRef.current = null;
-    void reactFlow.fitView({ duration: 300, padding: 0.25, ...(pending.centreOn ? { nodes: [{ id: pending.centreOn }] } : {}) });
-  }, [nodesInitialized, nodes, reactFlow]);
+    void reactFlow.fitView({ duration: 300, padding: fitPadding, ...(pending.centreOn ? { nodes: [{ id: pending.centreOn }] } : {}) });
+  }, [nodesInitialized, nodes, reactFlow, fitPadding]);
 
 
   // Defense in depth: never render an edge whose source/target isn't in the
@@ -499,9 +648,9 @@ function FlowCanvasInner({
   }, [stateByOrbital, optionsOf]);
 
   useEffect(() => {
-    if (!focusedOrbital || traitLevel) return;
+    if (!focusedOrbital || traitLevel || systemLevel) return;
     onFocusChange?.({ orbital: focusedOrbital, scope, state: chosenStateOf(focusedOrbital) });
-  }, [focusedOrbital, scope, chosenStateOf, traitLevel, onFocusChange]);
+  }, [focusedOrbital, scope, chosenStateOf, traitLevel, systemLevel, onFocusChange]);
 
   const statePicker = useMemo<CanvasStatePicker>(() => ({
     optionsOf,
@@ -519,7 +668,7 @@ function FlowCanvasInner({
   const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     // COSMIC-1: at `trait-expanded` the meaningful interaction is the
     // transition-arc click inside the trait card (TraitCardSelectionContext).
-    if (traitLevel) return;
+    if (traitLevel || systemLevel) return;
     const nodeData = node.data as PreviewNodeData;
     const orbitalName = nodeData.orbitalName ?? node.id;
     if (scope === 'world' && orbitalName !== focusedOrbital) setFocusRequest(orbitalName);
@@ -535,7 +684,7 @@ function FlowCanvasInner({
     }
     onNodeClick?.({ level: 'overview', orbital: orbitalName });
     onNodeSelect?.(orbitalName);
-  }, [traitLevel, scope, focusedOrbital, onNodeClick, onNodeSelect, setSelectedNode]);
+  }, [traitLevel, systemLevel, scope, focusedOrbital, onNodeClick, onNodeSelect, setSelectedNode]);
 
   // Close transition panel
   const handleClosePanel = useCallback(() => {
@@ -567,14 +716,14 @@ function FlowCanvasInner({
   // Tab / Shift+Tab move between orbitals while the canvas has focus; Escape
   // with nothing selected hands focus back to the page.
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
-    if (traitLevel || isEditableTarget(e.target)) return;
+    if (traitLevel || systemLevel || isEditableTarget(e.target)) return;
     if (e.key === 'Tab' && !e.altKey && !e.ctrlKey && !e.metaKey && orbitalNames.length > 1) {
       e.preventDefault();
       stepFocus(e.shiftKey ? -1 : 1);
     } else if (e.key === 'Escape' && !selectedNode && !selectedPattern) {
       e.currentTarget.blur();
     }
-  }, [traitLevel, orbitalNames.length, stepFocus, selectedNode, selectedPattern]);
+  }, [traitLevel, systemLevel, orbitalNames.length, stepFocus, selectedNode, selectedPattern]);
 
   const eventBus = useEventBus();
 
@@ -670,12 +819,20 @@ function FlowCanvasInner({
     scene,
   }), [onNodeClick, scene]);
 
-  const showOrbitalNav = !traitLevel && orbitalNames.length > 0;
+  const showOrbitalNav = !traitLevel && !systemLevel && orbitalNames.length > 0;
+  const systemMapValue = useMemo<SystemMapContextValue>(() => ({
+    ...(systemMap ?? NO_SYSTEM_MAP),
+    selectDependency: (id: string) => setDependencySelection((current) => (current === id ? null : id)),
+  }), [systemMap]);
+  const selectedDependency = dependencyGraph?.nodes.find((n) => n.id === dependencySelection)?.data;
+  const selectedOrbital = selectedDependency?.dependencyColumn === 'app' ? selectedDependency.orbitalName : null;
+  const selectedBehavior = selectedDependency && selectedDependency.dependencyColumn !== 'app' ? selectedDependency.orbitalName : null;
 
   return (
     <ScreenSizeContext.Provider value={screenSize}>
     <CanvasToolsContext.Provider value={tools}>
-    <CanvasStatePickerContext.Provider value={traitLevel ? null : statePicker}>
+    <CanvasStatePickerContext.Provider value={traitLevel || systemLevel ? null : statePicker}>
+    <SystemMapContext.Provider value={systemMapValue}>
     <ElementEditAccessContext.Provider value={elementAccess ?? null}>
     <PatternSelectionContext.Provider value={patternSelectionValue}>
     <TraitCardSelectionContext.Provider value={traitCardSelectionValue}>
@@ -688,7 +845,85 @@ function FlowCanvasInner({
           className="flex-shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border/40 bg-background"
           data-testid="flow-canvas-toolbar"
         >
-          {showOrbitalNav ? (
+          {systemLevel ? (
+            <>
+              <ButtonGroup variant="segmented">
+                {(['events', 'dependencies'] as const).map((l) => (
+                  <Button
+                    key={l}
+                    variant={lens === l ? 'primary' : 'ghost'}
+                    size="sm"
+                    aria-pressed={lens === l}
+                    disabled={l === 'dependencies' && systemDependencies === undefined}
+                    data-testid={`system-map-lens-${l}`}
+                    onClick={() => setLens(l)}
+                  >
+                    {t(l === 'events' ? 'avl.system.lensEvents' : 'avl.system.lensDependencies')}
+                  </Button>
+                ))}
+              </ButtonGroup>
+              <Box className="w-64 max-w-full">
+                <Input
+                  leftIcon="search"
+                  value={systemQuery}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setSystemQuery(e.target.value)}
+                  placeholder={t(dependencyLens ? 'avl.deps.search' : 'avl.system.search')}
+                  aria-label={t(dependencyLens ? 'avl.deps.search' : 'avl.system.search')}
+                  data-testid="system-map-search"
+                  className="h-10 sm:h-7 py-0 text-sm"
+                />
+              </Box>
+              {dependencyLens ? (
+                <>
+                  <Box className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/80 border border-border/40 min-w-0" data-testid="dependency-summary">
+                    <Typography variant="small" className="truncate">
+                      {selectedDependency
+                        ? t('avl.deps.selected', { name: selectedDependency.orbitalName, upstream: reach?.upstream.size ?? 0, downstream: reach?.downstream.size ?? 0 })
+                        : t('avl.deps.hint')}
+                    </Typography>
+                  </Box>
+                  {selectedOrbital && systemMap ? (
+                    <Button variant="secondary" size="sm" rightIcon="chevron-right" onClick={() => systemMap.openTraits(selectedOrbital)} data-testid="dependency-open-traits">
+                      {t('avl.system.openTraits')}
+                    </Button>
+                  ) : null}
+                  {selectedOrbital && systemMap?.openCodeEvent ? (
+                    <Button variant="secondary" size="sm" leftIcon="code" action={systemMap.openCodeEvent} actionPayload={{ orbital: selectedOrbital }}>
+                      {t('avl.system.openCode')}
+                    </Button>
+                  ) : null}
+                  {selectedBehavior && openBehaviorEvent ? (
+                    <Button variant="secondary" size="sm" leftIcon="code" action={openBehaviorEvent} actionPayload={{ name: selectedBehavior }}>
+                      {t('avl.system.openCode')}
+                    </Button>
+                  ) : null}
+                  <HStack gap="sm" align="center" className="ml-auto" data-testid="dependency-legend">
+                    <Box className="w-2.5 h-2.5 rounded-sm bg-primary" />
+                    <Typography variant="caption" color="muted">{t('avl.deps.legendUpstream')}</Typography>
+                    <Box className="w-2.5 h-2.5 rounded-sm bg-warning" />
+                    <Typography variant="caption" color="muted">{t('avl.deps.legendDownstream')}</Typography>
+                  </HStack>
+                </>
+              ) : null}
+              {!dependencyLens ? (<>
+              <Box className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/80 border border-border/40" data-testid="system-map-summary">
+                <Typography variant="small" className="text-muted-foreground">
+                  {t('avl.system.summary', { orbitals: systemOrbitalCount, wires: systemWireCount })}
+                </Typography>
+              </Box>
+              <Button
+                variant={wiresOnly ? 'primary' : 'ghost'}
+                size="sm"
+                aria-pressed={wiresOnly}
+                disabled={systemWireCount === 0}
+                data-testid="system-map-wires-only"
+                onClick={() => setWiresOnly((w) => !w)}
+              >
+                {t('avl.system.wiresOnly')}
+              </Button>
+              </>) : null}
+            </>
+          ) : showOrbitalNav ? (
             <>
               <Box data-testid="canvas-orbital-nav" className="flex flex-nowrap items-center gap-1 min-w-0">
               <IconButton
@@ -735,6 +970,66 @@ function FlowCanvasInner({
                 ))}
               </ButtonGroup>
             </>
+          ) : traitLevel ? (
+            <>
+              <ButtonGroup variant="segmented">
+                {(['flow', 'traits'] as const).map((l) => (
+                  <Button
+                    key={l}
+                    variant={traitLens === l ? 'primary' : 'ghost'}
+                    size="sm"
+                    aria-pressed={traitLens === l}
+                    data-testid={`trait-lens-${l}`}
+                    onClick={() => setTraitView({ lens: l, filter: l === 'flow' ? null : traitView.filter })}
+                  >
+                    {t(l === 'flow' ? 'avl.flow.lensFlow' : 'avl.flow.lensTraits')}
+                  </Button>
+                ))}
+              </ButtonGroup>
+              {flowLens && flow ? (
+                <>
+                  <Box className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/80 border border-border/40 min-w-0" data-testid="flow-summary">
+                    <Typography variant="small" className="truncate">
+                      {selectedUnit
+                        ? t('avl.flow.selected', { name: selectedUnit.name, into: flowReach?.triggeredBy.size ?? 0, out: flowReach?.triggers.size ?? 0 })
+                        : t('avl.flow.summary', {
+                            traits: flow.units.reduce((n, u) => n + u.traits.length + u.renderPieces.length, 0),
+                            own: flow.units.filter((u) => u.column === 'own').length,
+                            composed: flow.units.filter((u) => u.column !== 'own').length,
+                            pieces: flow.units.reduce((n, u) => n + u.renderPieces.length, 0),
+                          })}
+                    </Typography>
+                  </Box>
+                  {selectedUnit ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      rightIcon="chevron-right"
+                      data-testid="flow-show-traits"
+                      onClick={() => setTraitView({ lens: 'traits', filter: { unit: selectedUnit.name, traits: [...selectedUnit.traits, ...selectedUnit.renderPieces] } })}
+                    >
+                      {t('avl.flow.showTraits')}
+                    </Button>
+                  ) : null}
+                  <HStack gap="sm" align="center" className="ml-auto">
+                    <Box className="w-2.5 h-2.5 rounded-sm bg-primary" />
+                    <Typography variant="caption" color="muted">{t('avl.flow.legendInto')}</Typography>
+                    <Box className="w-2.5 h-2.5 rounded-sm bg-warning" />
+                    <Typography variant="caption" color="muted">{t('avl.flow.legendOut')}</Typography>
+                  </HStack>
+                </>
+              ) : traitFilter ? (
+                <Box className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/80 border border-border/40" data-testid="trait-filter">
+                  <Typography variant="small">{t('avl.flow.showing', { name: traitFilter.unit, count: traitFilter.traits.size })}</Typography>
+                  <Button variant="ghost" size="sm" onClick={() => setTraitView({ lens: 'traits', filter: null })} data-testid="trait-filter-clear">{t('avl.flow.showAll')}</Button>
+                </Box>
+              ) : (
+                <Box className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/80 border border-border/40">
+                  <Typography variant="small" className="font-medium">{initialOrbital ?? t('canvas.overview')}</Typography>
+                  <Typography variant="small" className="text-muted-foreground">{t('canvas.modulesCount', { count: nodes.length })}</Typography>
+                </Box>
+              )}
+            </>
           ) : (
             <Box className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/80 border border-border/40 backdrop-blur-sm">
               <Typography variant="small" className="font-medium">
@@ -747,6 +1042,7 @@ function FlowCanvasInner({
           )}
 
           {/* Screen size: one dropdown on phones, the preset buttons above sm */}
+          {!systemLevel && !flowLens && (<>
           <Box className="sm:hidden ml-auto">
             <Select
               options={screenSizeKeys.map((size) => ({ value: size, label: `${SCREEN_SIZE_PRESETS[size].label} (${SCREEN_SIZE_PRESETS[size].width}px)` }))}
@@ -777,6 +1073,7 @@ function FlowCanvasInner({
               })}
             </ButtonGroup>
           </Box>
+          </>)}
         </Box>
       {/* The canvas and the inline inspector share this row; the toolbar above
           keeps its width when the inspector opens, so the cards never shift. */}
@@ -803,7 +1100,7 @@ function FlowCanvasInner({
           minZoom={0.1}
           maxZoom={2.0}
           fitView
-          fitViewOptions={{ padding: 0.25 }}
+          fitViewOptions={{ padding: fitPadding }}
           nodesDraggable={scope === 'world'}
           elementsSelectable
           proOptions={{ hideAttribution: true }}
@@ -861,6 +1158,7 @@ function FlowCanvasInner({
     </TraitCardSelectionContext.Provider>
     </PatternSelectionContext.Provider>
     </ElementEditAccessContext.Provider>
+    </SystemMapContext.Provider>
     </CanvasStatePickerContext.Provider>
     </CanvasToolsContext.Provider>
     </ScreenSizeContext.Provider>

@@ -19,12 +19,11 @@ export { schemaToFlowGraph } from '../../../lib/avl-flow-converter';
 export { computeTraitLayout, edgePath, stateWidth, STATE_H, type LayoutNode, type LayoutEdge, type ElkLayout } from '../../../lib/avl-elk-layout';
 
 // V3: React Flow node components
-export { SystemNode, type SystemNodeProps } from './SystemNode';
+export { SystemNode, SystemBandNode, DependencyNode, DependencyColumnNode, SystemMapContext, type SystemMapContextValue } from './SystemNode';
 export { MiniStateMachine, type MiniStateMachineProps } from './MiniStateMachine';
 export { ModuleCard, type ModuleCardProps } from './ModuleCard';
 export { BehaviorView, type BehaviorViewProps } from './BehaviorView';
 export { DetailView, type DetailViewProps } from './DetailView';
-export { AvlOrbitalNode } from './AvlOrbitalNode';
 
 // V3: React Flow edge components
 export { AvlTransitionEdge, type AvlTransitionEdgeData, type AvlTransitionFlowEdge } from './AvlTransitionEdge';

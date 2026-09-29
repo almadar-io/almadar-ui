@@ -6,8 +6,7 @@
  * can share the same layout computation.
  */
 
-import ELK from 'elkjs/lib/elk.bundled.js';
-import type { ElkNode, ElkExtendedEdge, ElkEdgeSection, ElkLabel } from 'elkjs/lib/elk-api.js';
+import type { ELK, ElkNode, ElkExtendedEdge, ElkEdgeSection, ElkLabel } from 'elkjs/lib/elk-api.js';
 import type { TraitLevelData } from './avl-schema-parser';
 import { getStateRole, type StateRole } from './avl-theme';
 
@@ -68,7 +67,12 @@ export const STATE_H = 40;
 // ELK layout computation — LEFT-TO-RIGHT
 // ---------------------------------------------------------------------------
 
-const elk = new ELK();
+let elk: Promise<ELK> | undefined;
+// elkjs is large and only diagrams need it, so it loads with the first layout.
+function loadElk(): Promise<ELK> {
+  elk ??= import('elkjs/lib/elk.bundled.js').then(({ default: Elk }) => new Elk());
+  return elk;
+}
 
 /** Measured sizes for a renderer that draws real nodes and label pills. */
 export interface TraitLayoutMetrics {
@@ -158,7 +162,7 @@ export async function computeTraitLayout(data: TraitLevelData, metrics?: TraitLa
     }),
   };
 
-  const layout: ElkNode = await elk.layout(elkGraph);
+  const layout: ElkNode = await (await loadElk()).layout(elkGraph);
   const layoutChildren: ElkNode[] = layout.children ?? [];
   const layoutEdges: ElkExtendedEdge[] = layout.edges ?? [];
 

@@ -28,6 +28,7 @@ import type {
   SExpr,
   SExprObject, EntityPersistence } from '@almadar/core';
 import { renderUiEntriesOf } from '@almadar/core/patterns';
+import { traitEventWires } from './avl-event-wires';
 
 // Internal serialized effect record — all fields are JsonValue-compatible.
 interface SerializedEffect extends JsonObject {
@@ -297,41 +298,20 @@ export function parseApplicationLevel(schema: OrbitalSchema): ApplicationLevelDa
     });
   });
 
-  // Compute cross-orbital links by matching emits to listens
-  const emitMap: Array<{ orbital: string; trait: string; event: string }> = [];
-  const listenMap: Array<{ orbital: string; trait: string; event: string }> = [];
-
-  for (const orbital of schema.orbitals) {
-    for (const traitRef of getTraits(orbital)) {
-      const traitName = traitRef.name ?? '';
-      for (const event of getEmits(traitRef)) {
-        emitMap.push({ orbital: orbital.name, trait: traitName, event });
-      }
-      for (const event of getListens(traitRef)) {
-        listenMap.push({ orbital: orbital.name, trait: traitName, event });
-      }
-    }
-  }
-
-  // Dedupe by (emitter, listener, event). Cosmic-zoom renders one wire per
-  // CrossLink and downstream xyflow edges key on the same triple, so multiple
-  // trait pairs sharing it would stack overlapping wires / collide as duplicate
-  // React keys.
+  // One link per (emitter, listener, event): the deliveries the runtime makes across orbitals.
   const seenLinks = new Set<string>();
-  for (const emit of emitMap) {
-    for (const listen of listenMap) {
-      if (emit.event !== listen.event || emit.orbital === listen.orbital) continue;
-      const key = `${emit.orbital}␟${listen.orbital}␟${emit.event}`;
-      if (seenLinks.has(key)) continue;
-      seenLinks.add(key);
-      crossLinks.push({
-        emitterOrbital: emit.orbital,
-        listenerOrbital: listen.orbital,
-        eventName: emit.event,
-        emitterTrait: emit.trait,
-        listenerTrait: listen.trait,
-      });
-    }
+  for (const w of traitEventWires(schema)) {
+    if (w.emitterOrbital === w.listenerOrbital) continue;
+    const key = `${w.emitterOrbital}\u241f${w.listenerOrbital}\u241f${w.event}`;
+    if (seenLinks.has(key)) continue;
+    seenLinks.add(key);
+    crossLinks.push({
+      emitterOrbital: w.emitterOrbital,
+      listenerOrbital: w.listenerOrbital,
+      eventName: w.event,
+      emitterTrait: w.emitterTrait,
+      listenerTrait: w.listenerTrait,
+    });
   }
 
   return { orbitals, crossLinks };
@@ -373,37 +353,13 @@ export function parseOrbitalLevel(schema: OrbitalSchema, orbitalName: string): O
     route: p.path ?? `/${(p.name ?? '').toLowerCase()}`,
   }));
 
-  // Compute external links
   const externalLinks: ExternalLink[] = [];
-  const thisTraitEmits = traits.flatMap(t => getEmits(t).map(e => ({ trait: t.name ?? '', event: e })));
-  const thisTraitListens = traits.flatMap(t => getListens(t).map(e => ({ trait: t.name ?? '', event: e })));
-
-  for (const other of schema.orbitals) {
-    if (other.name === orbitalName) continue;
-    const otherTraits = getTraits(other);
-    const otherListens = otherTraits.flatMap(t => getListens(t));
-    const otherEmits = otherTraits.flatMap(t => getEmits(t));
-
-    for (const emit of thisTraitEmits) {
-      if (otherListens.includes(emit.event)) {
-        externalLinks.push({
-          targetOrbital: other.name,
-          eventName: emit.event,
-          direction: 'out',
-          traitName: emit.trait,
-        });
-      }
-    }
-
-    for (const listen of thisTraitListens) {
-      if (otherEmits.includes(listen.event)) {
-        externalLinks.push({
-          targetOrbital: other.name,
-          eventName: listen.event,
-          direction: 'in',
-          traitName: listen.trait,
-        });
-      }
+  for (const w of traitEventWires(schema)) {
+    if (w.emitterOrbital === w.listenerOrbital) continue;
+    if (w.emitterOrbital === orbitalName) {
+      externalLinks.push({ targetOrbital: w.listenerOrbital, eventName: w.event, direction: 'out', traitName: w.emitterTrait });
+    } else if (w.listenerOrbital === orbitalName) {
+      externalLinks.push({ targetOrbital: w.emitterOrbital, eventName: w.event, direction: 'in', traitName: w.listenerTrait });
     }
   }
 

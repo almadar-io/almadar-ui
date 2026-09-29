@@ -67,12 +67,11 @@ export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from '../
 export { schemaToFlowGraph } from '../lib/avl-flow-converter';
 
 // V3: React Flow node types
-export { SystemNode } from '../components/avl/molecules/SystemNode';
+export { SystemNode, SystemBandNode, DependencyNode, DependencyColumnNode, SystemMapContext, type SystemMapContextValue } from '../components/avl/molecules/SystemNode';
 export { ModuleCard } from '../components/avl/molecules/ModuleCard';
 export { MiniStateMachine } from '../components/avl/molecules/MiniStateMachine';
 export { BehaviorView } from '../components/avl/molecules/BehaviorView';
 export { DetailView } from '../components/avl/molecules/DetailView';
-export { AvlOrbitalNode } from '../components/avl/molecules/AvlOrbitalNode';
 
 // V3: React Flow edge types
 export { AvlTransitionEdge, type AvlTransitionEdgeData } from '../components/avl/molecules/AvlTransitionEdge';
@@ -174,6 +173,9 @@ export {
   type AvlStateMachinePlayback,
   type AvlTransitionPlayback,
 } from '../lib/avl-play';
+export { schemaToDependencyGraph, dependencyReach, type SystemDependencies, type DependencyLayer } from '../lib/avl-dependency-graph';
+export { traitFlowGraph, flowNeighbors, type TraitFlowUnit, type TraitFlowEdge } from '../lib/avl-trait-flow';
+export { type TraitView } from '../components/avl/organisms/FlowCanvas';
 export { CANVAS_TOOLS, hasCanvasTool, type CanvasTool } from '../lib/canvas-tools';
 export { KnobField, type KnobFieldProps } from '../components/avl/molecules/KnobField';
 export { KnobSettingRow, type KnobSettingRowProps } from '../components/avl/molecules/KnobSettingRow';

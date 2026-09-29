@@ -167,29 +167,61 @@ const externalThreeSubpathPlugin = {
   },
 };
 
+const MAIN_ENTRIES = [
+  'components/index.ts',
+  'hooks/index.ts',
+  'providers/index.ts',
+  'context/index.ts',
+  'renderer/index.ts',
+  'runtime/index.ts',
+  'lib/index.ts',
+  'lib/drawable/three/index.ts',
+  'locales/index.ts',
+];
+const MAIN_EXTERNAL = ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/core', '@almadar/evaluator', '@almadar/core/patterns'];
+const DEDUPE_PLUGINS = [dedupeContextPlugin, dedupeThemePlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin];
+
 export default defineConfig([
-  // Main build: all components (ESM + CJS, no splitting)
+  // ESM: every entry, AVL included, in one build that shares chunks, so a component reached from
+  // several entries ships once instead of once per entry.
   {
-    entry: [
-      'components/index.ts',
-      'hooks/index.ts',
-      'providers/index.ts',
-      'context/index.ts',
-      'renderer/index.ts',
-      'runtime/index.ts',
-      'lib/index.ts',
-      'lib/drawable/three/index.ts',
-      'locales/index.ts',
-    ],
-    format: ['esm', 'cjs'],
+    entry: [...MAIN_ENTRIES, 'avl/index.ts'],
+    format: ['esm'],
     dts: emitDts,
     clean: false, // build script rm -rf's dist upfront; an in-band clean races the sibling configs' output (it wiped dist/avl/*.d.ts)
     sourcemap: false,
+    splitting: true,
+    treeshake: true,
+    external: MAIN_EXTERNAL,
+    banner: { js: '"use client";' },
+    esbuildPlugins: DEDUPE_PLUGINS,
+  },
+  // CJS: one self-contained file per entry
+  {
+    entry: MAIN_ENTRIES,
+    format: ['cjs'],
+    dts: false,
+    clean: false,
+    sourcemap: false,
     splitting: false,
     treeshake: true,
-    external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/core', '@almadar/evaluator', '@almadar/core/patterns'],
+    external: MAIN_EXTERNAL,
     banner: { js: '"use client";' },
-    esbuildPlugins: [dedupeContextPlugin, dedupeThemePlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
+    esbuildPlugins: DEDUPE_PLUGINS,
+  },
+  {
+    entry: { 'avl/index': 'avl/index.ts' },
+    format: ['cjs'],
+    dts: false,
+    outDir: 'dist',
+    clean: false,
+    sourcemap: false,
+    splitting: false,
+    treeshake: true,
+    external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
+    noExternal: ['clsx', 'tailwind-merge'],
+    banner: { js: '"use client";' },
+    esbuildPlugins: DEDUPE_PLUGINS,
   },
   // SSR build: SSR-safe subset for Docusaurus/webpack sites
   // No game engines, no Three.js, no browser globals at module scope
@@ -217,20 +249,5 @@ export default defineConfig([
     sourcemap: false,
     splitting: false,
     treeshake: true,
-  },
-  // AVL build: Almadar Visual Language formal notation
-  {
-    entry: { 'avl/index': 'avl/index.ts' },
-    format: ['esm', 'cjs'],
-    dts: emitDts,
-    outDir: 'dist',
-    clean: false, // shared outDir: cleaned once upfront by the build script
-    sourcemap: false,
-    splitting: false,
-    treeshake: true,
-    external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
-    noExternal: ['clsx', 'tailwind-merge'],
-    banner: { js: '"use client";' },
-    esbuildPlugins: [dedupeContextPlugin, dedupeThemePlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
   },
 ]);

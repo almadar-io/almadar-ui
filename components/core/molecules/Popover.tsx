@@ -74,42 +74,41 @@ const arrowClasses: Record<PopoverPosition, string> = {
 const VIEWPORT_EDGE_PADDING = 8;
 const TRIGGER_GAP = 8;
 
-// Resolve the portaled `fixed` panel to absolute viewport pixel coordinates.
-// All offsets (gap, centering) are baked into `left`/`top` here so the panel
-// needs no positioning utility classes — those resolve against the viewport on
-// a `fixed` element and yank the panel off its trigger.
-function computePopoverStyle(
+interface Box2 { left: number; top: number; right: number; bottom: number; width: number; height: number }
+
+/**
+ * Where the portaled `fixed` panel goes, in viewport pixels: on the asked
+ * side of the trigger, flipped to the opposite side when the asked one has
+ * no room, and clamped so it never leaves the viewport. All offsets are baked
+ * into `left`/`top` so the panel needs no positioning classes (those resolve
+ * against the viewport on a `fixed` element and yank it off its trigger).
+ */
+export function placePopover(
   position: PopoverPosition,
-  triggerRect: DOMRect,
-  popoverWidth: number,
-): React.CSSProperties {
+  trigger: Box2,
+  panel: { width: number; height: number },
+  viewport: { width: number; height: number },
+): { side: PopoverPosition; left: number; top: number } {
+  const clamp = (value: number, size: number, extent: number) =>
+    Math.max(VIEWPORT_EDGE_PADDING, Math.min(value, Math.max(VIEWPORT_EDGE_PADDING, extent - size - VIEWPORT_EDGE_PADDING)));
   if (position === "left" || position === "right") {
-    return {
-      left:
-        position === "left"
-          ? triggerRect.left - popoverWidth - TRIGGER_GAP
-          : triggerRect.right + TRIGGER_GAP,
-      top: triggerRect.top + triggerRect.height / 2,
-      transform: "translateY(-50%)",
-    };
+    const rightLeft = trigger.right + TRIGGER_GAP;
+    const leftLeft = trigger.left - panel.width - TRIGGER_GAP;
+    const fitsRight = rightLeft + panel.width <= viewport.width - VIEWPORT_EDGE_PADDING;
+    const fitsLeft = leftLeft >= VIEWPORT_EDGE_PADDING;
+    const side: PopoverPosition = position === "right" ? (fitsRight || !fitsLeft ? "right" : "left") : fitsLeft || !fitsRight ? "left" : "right";
+    const left = clamp(side === "right" ? rightLeft : leftLeft, panel.width, viewport.width);
+    const top = clamp(trigger.top + trigger.height / 2 - panel.height / 2, panel.height, viewport.height);
+    return { side, left, top };
   }
-  const viewportWidth =
-    typeof window !== "undefined" ? window.innerWidth : 1024;
-  const centered =
-    triggerRect.left + triggerRect.width / 2 - popoverWidth / 2;
-  const maxLeft = viewportWidth - popoverWidth - VIEWPORT_EDGE_PADDING;
-  const clamped = Math.max(
-    VIEWPORT_EDGE_PADDING,
-    Math.min(centered, Math.max(VIEWPORT_EDGE_PADDING, maxLeft)),
-  );
-  return {
-    left: clamped,
-    top:
-      position === "top"
-        ? triggerRect.top - TRIGGER_GAP
-        : triggerRect.bottom + TRIGGER_GAP,
-    transform: position === "top" ? "translateY(-100%)" : undefined,
-  };
+  const aboveTop = trigger.top - TRIGGER_GAP - panel.height;
+  const belowTop = trigger.bottom + TRIGGER_GAP;
+  const fitsAbove = aboveTop >= VIEWPORT_EDGE_PADDING;
+  const fitsBelow = belowTop + panel.height <= viewport.height - VIEWPORT_EDGE_PADDING;
+  const side: PopoverPosition = position === "top" ? (fitsAbove || !fitsBelow ? "top" : "bottom") : fitsBelow || !fitsAbove ? "bottom" : "top";
+  const left = clamp(trigger.left + trigger.width / 2 - panel.width / 2, panel.width, viewport.width);
+  const top = clamp(side === "top" ? aboveTop : belowTop, panel.height, viewport.height);
+  return { side, left, top };
 }
 
 export const Popover: React.FC<PopoverProps> = ({
@@ -129,7 +128,8 @@ export const Popover: React.FC<PopoverProps> = ({
     onOpenChange?.(next);
   };
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
-  const [popoverWidth, setPopoverWidth] = useState(0);
+  const [panelSize, setPanelSize] = useState({ width: 0, height: 0 });
+  const popoverWidth = panelSize.width;
   const triggerRef = useRef<HTMLElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -141,7 +141,7 @@ export const Popover: React.FC<PopoverProps> = ({
       setTriggerRect(triggerRef.current.getBoundingClientRect());
     }
     if (popoverRef.current) {
-      setPopoverWidth(popoverRef.current.offsetWidth);
+      setPanelSize({ width: popoverRef.current.offsetWidth, height: popoverRef.current.offsetHeight });
     }
   };
 
@@ -194,14 +194,15 @@ export const Popover: React.FC<PopoverProps> = ({
   // Reset the measured width only once the panel has fully unmounted (not
   // at the start of the exit animation, which would flash it hidden).
   useEffect(() => {
-    if (!mounted) setPopoverWidth(0);
+    if (!mounted) setPanelSize({ width: 0, height: 0 });
   }, [mounted]);
 
   useLayoutEffect(() => {
     if (isOpen && popoverRef.current) {
-      const measured = popoverRef.current.offsetWidth;
-      if (measured !== popoverWidth) {
-        setPopoverWidth(measured);
+      const width = popoverRef.current.offsetWidth;
+      const height = popoverRef.current.offsetHeight;
+      if (width !== panelSize.width || height !== panelSize.height) {
+        setPanelSize({ width, height });
       }
     }
   });
@@ -280,7 +281,13 @@ export const Popover: React.FC<PopoverProps> = ({
   // `transform` (ReactFlow's `.react-flow__viewport`, PreviewFrame's
   // `translate3d(0,0,0)` chrome-scoping trick, etc.) becomes the
   // containing block for the fixed panel and shifts it off the trigger.
-  const panel = mounted && triggerRect ? (
+  const placement = triggerRect
+    ? placePopover(position, triggerRect, panelSize, {
+        width: typeof window !== "undefined" ? window.innerWidth : 1024,
+        height: typeof window !== "undefined" ? window.innerHeight : 768,
+      })
+    : null;
+  const panel = mounted && placement ? (
     <div
       ref={popoverRef}
       className={cn(
@@ -290,7 +297,8 @@ export const Popover: React.FC<PopoverProps> = ({
         className,
       )}
       style={{
-        ...computePopoverStyle(position, triggerRect, popoverWidth),
+        left: placement.left,
+        top: placement.top,
         ...(popoverWidth === 0 ? { visibility: 'hidden' as const } : undefined),
       }}
       role="dialog"
@@ -307,7 +315,7 @@ export const Popover: React.FC<PopoverProps> = ({
         <div
           className={cn(
             "absolute w-0 h-0 border-4",
-            arrowClasses[position],
+            arrowClasses[placement.side],
           )}
         />
       )}

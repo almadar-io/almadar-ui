@@ -7,10 +7,10 @@
  * consumer rendered from another, BOTH must reference the SAME React
  * `EventBusContext` object — a single module instance shared across chunks.
  *
- * tsup builds each entry (`.`, `./avl`, `./runtime`, `./hooks`, …) with
- * `splitting: false`, so any chunk that imports `EventBusContext` WITHOUT the
- * `dedupe-event-bus-context` / `dedupe-providers` plugins inlines its OWN
- * `createContext(null)` — a second, unrelated context. A Provider from one
+ * Any entry whose code imports `EventBusContext` WITHOUT the
+ * `dedupe-event-bus-context` / `dedupe-providers` plugins bundles its OWN
+ * `createContext(null)` — a second, unrelated context (always so for the CJS
+ * files, which are built one self-contained file per entry). A Provider from one
  * chunk then never reaches a consumer from another: cross-chunk emits land on
  * a dead bus and the runtime logs `emit:no-listeners`. This is invisible to a
  * behavioural `emit → on` test, which runs against SOURCE where only one copy
@@ -23,6 +23,9 @@
  * Entity-list traits emitted `*Loaded` into a bus no host listener was on, so
  * the lists never left `loading` — the canvas showed a perpetual spinner while
  * the Run tab (on `dist/runtime`, correctly deduped) worked.
+ *
+ * The ESM entries share chunks, so each entry is checked with every chunk it
+ * statically imports.
  *
  * Requires `npm run build` first — it reads `dist/`.
  */
@@ -53,12 +56,25 @@ const IMPORTS_SHARED = /@almadar\/ui\/providers/;
 const HOME = './providers';
 const BUS_CONSUMERS = ['.', './avl', './runtime', './hooks'];
 
+const RELATIVE_STATIC_IMPORT = /(?:^|[;\n])\s*(?:import|export)\s*(?:[\w{},*\s$]+from\s*)?['"](\.{1,2}\/[^'"]+\.js)['"]/g;
+
+/** The entry's file plus every chunk it statically imports, transitively. */
 function read(subpath: string): string {
-  const file = distFor(subpath);
-  if (!existsSync(file)) {
-    throw new Error(`${file} missing — run \`npm run build\` before this test`);
+  const pending = [distFor(subpath)];
+  const seen = new Set<string>();
+  const texts: string[] = [];
+  while (pending.length > 0) {
+    const file = pending.pop()!;
+    if (seen.has(file)) continue;
+    seen.add(file);
+    if (!existsSync(file)) {
+      throw new Error(`${file} missing — run \`npm run build\` before this test`);
+    }
+    const text = readFileSync(file, 'utf8');
+    texts.push(text);
+    for (const m of text.matchAll(RELATIVE_STATIC_IMPORT)) pending.push(resolve(dirname(file), m[1]));
   }
-  return readFileSync(file, 'utf8');
+  return texts.join('\n');
 }
 
 describe('EventBusContext is a cross-chunk singleton', () => {
@@ -67,6 +83,10 @@ describe('EventBusContext is a cross-chunk singleton', () => {
     for (const sub of BUS_CONSUMERS) {
       expect(read(sub), `${sub} must not inline its own EventBusContext`).not.toMatch(DEFINES_CONTEXT);
     }
+  });
+
+  it('control: the check reads the chunks an entry imports, not just its own file', () => {
+    expect(read('.').length).toBeGreaterThan(readFileSync(distFor('.'), 'utf8').length);
   });
 
   it.each(BUS_CONSUMERS)('%s imports the shared @almadar/ui/providers chunk', (sub) => {

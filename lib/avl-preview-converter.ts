@@ -31,6 +31,7 @@ import type {
 import { eventKeyPropsOf, eventListPropsOf, renderUiEntriesOf, type AnyPatternConfig } from '@almadar/core/patterns';
 import { getStateRole, type StateRole } from './avl-theme';
 import { collectEmbeddedTraits } from './embedded-traits';
+import { traitEventWires, type TraitEventWire } from './avl-event-wires';
 
 // ---------------------------------------------------------------------------
 // View levels
@@ -41,7 +42,7 @@ import { collectEmbeddedTraits } from './embedded-traits';
  * all of them); `trait-expanded` — one card per trait of a single orbital,
  * wired by intra-orbital `emits → listens` edges (the cosmic tab's circuit).
  */
-export type ViewLevel = 'overview' | 'trait-expanded';
+export type ViewLevel = 'overview' | 'trait-expanded' | 'system';
 
 // ---------------------------------------------------------------------------
 // Screen size presets for preview nodes
@@ -226,7 +227,22 @@ export interface PreviewNodeData {
    * showing a picked state carries `transitionEvent`). Set to `'trait-card'` for nodes
    * produced by `orbitalToTraitGraph` so renderers can branch cleanly.
    */
-  kind?: 'trait-card';
+  kind?: 'trait-card' | 'system-orbital' | 'system-band' | 'dependency' | 'dependency-column';
+
+  /** `dependency` / `dependency-column`: the column the node sits in (the app, or the layer it is imported from). */
+  dependencyColumn?: 'app' | 'own' | 'io' | 'std' | 'primitive' | 'unknown';
+  /** `dependency`: its part in the current selection (`both`: on each side of it). */
+  dependencyRole?: 'selected' | 'upstream' | 'downstream' | 'both' | 'dim';
+  /** Trait flow: a composed unit's traits and embedded render pieces. */
+  flowTraits?: number;
+  flowRenderPieces?: number;
+
+  /** `system-band`: which band the label heads, and how many orbitals it holds. */
+  bandKind?: 'connected' | 'standalone';
+  bandCount?: number;
+
+  /** `system-orbital`: the events this orbital exchanges with others (in and out), for search. */
+  wireEvents?: string[];
 
   /**
    * Trait-card transitions (`kind === 'trait-card'` only). One row per
@@ -541,66 +557,22 @@ function detectStateRole(
 // the SAME orbital or in DIFFERENT orbitals.
 // ---------------------------------------------------------------------------
 
-interface TraitWire {
-  emitterOrbital: string;
-  listenerOrbital: string;
-  event: string;
-  emitterTrait: string;
-  listenerTrait: string;
-}
-
+/** Trait wires the runtime delivers (`traitEventWires`), one per (emitter, listener, event) at the scope's grain. */
 function extractTraitWires(
   orbitals: OrbitalDefinition[],
   scope: 'intra-orbital' | 'cross-orbital',
-): TraitWire[] {
-  const wires: TraitWire[] = [];
-  const emitters: Array<{ orbital: string; trait: string; event: string }> = [];
-  const listeners: Array<{ orbital: string; trait: string; event: string }> = [];
-
-  for (const orb of orbitals) {
-    for (const trait of getTraits(orb)) {
-      for (const e of getEmits(trait)) {
-        emitters.push({ orbital: orb.name, trait: trait.name, event: e });
-      }
-      for (const l of getListens(trait)) {
-        listeners.push({ orbital: orb.name, trait: trait.name, event: l });
-      }
-    }
-  }
-
-  // Dedupe by (emitter-key, listener-key, event). Cross-orbital wires key
-  // on orbital pairs (one edge per orbital-orbital-event triple). Intra-
-  // orbital wires key on trait pairs (one edge per trait-trait-event
-  // triple) since multiple traits inside the same orbital may emit/listen
-  // the same event independently.
+): TraitEventWire[] {
   const seen = new Set<string>();
-  for (const em of emitters) {
-    for (const li of listeners) {
-      if (em.event !== li.event) continue;
-      if (scope === 'cross-orbital' && em.orbital === li.orbital) continue;
-      if (scope === 'intra-orbital' && em.orbital !== li.orbital) continue;
-      if (scope === 'intra-orbital' && em.trait === li.trait) continue;
-      const key = scope === 'cross-orbital'
-        ? `${em.orbital}␟${li.orbital}␟${em.event}`
-        : `${em.orbital}␟${em.trait}␟${li.trait}␟${em.event}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      wires.push({
-        emitterOrbital: em.orbital,
-        listenerOrbital: li.orbital,
-        event: em.event,
-        emitterTrait: em.trait,
-        listenerTrait: li.trait,
-      });
-    }
-  }
-
-  return wires;
-}
-
-// Back-compat alias: the overview path always wanted cross-orbital wires.
-function findCrossLinks(orbitals: OrbitalDefinition[]): TraitWire[] {
-  return extractTraitWires(orbitals, 'cross-orbital');
+  return traitEventWires({ name: '', orbitals }).filter((w) => {
+    const cross = w.emitterOrbital !== w.listenerOrbital;
+    if (cross !== (scope === 'cross-orbital')) return false;
+    const key = cross
+      ? `${w.emitterOrbital}\u241f${w.listenerOrbital}\u241f${w.event}`
+      : `${w.emitterOrbital}\u241f${w.emitterTrait}\u241f${w.listenerTrait}\u241f${w.event}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -721,7 +693,7 @@ export function schemaToOverviewGraph(
   }
 
   // Cross-orbital event wire edges
-  for (const link of findCrossLinks(orbitals)) {
+  for (const link of extractTraitWires(orbitals, 'cross-orbital')) {
     // Try to find the trigger element in the source orbital's patterns
     const sourceNode = nodes.find(n => n.id === link.emitterOrbital);
     const sourceData = sourceNode?.data as PreviewNodeData | undefined;
@@ -948,6 +920,8 @@ export interface CanvasViewport {
   scope: 'local' | 'world';
   focusedOrbital: string | undefined;
   screenSize: ScreenSize;
+  /** Which lens of the system map or trait level is framed (a new lens re-fits); absent on the canvas levels. */
+  level?: string;
 }
 
 /** True when the framed view changed (or there was none yet) — a schema update alone is not a change. */
@@ -956,7 +930,8 @@ export function canvasViewChanged(previous: CanvasViewport | null, next: CanvasV
     previous === null ||
     previous.scope !== next.scope ||
     previous.focusedOrbital !== next.focusedOrbital ||
-    previous.screenSize !== next.screenSize
+    previous.screenSize !== next.screenSize ||
+    previous.level !== next.level
   );
 }
 
@@ -1019,6 +994,114 @@ export function canvasViewGraph(
 
 const TRAIT_CARD_SPACING_X = 480;
 const TRAIT_CARD_SPACING_Y = 380;
+
+/** The system map's chip size and spacing (cosmic L1). */
+export const SYSTEM_CHIP = { width: 280, height: 88, gapX: 160, gapY: 36, bandGap: 72, bandLabel: 36 };
+
+/**
+ * The whole app as a system map (cosmic L1): one chip per orbital, one edge
+ * per orbital pair the runtime delivers events across (`traitEventWires`).
+ * Connected orbitals flow left to right by event direction; orbitals that
+ * exchange nothing sit in a grid band below, so any number of orbitals stays
+ * legible.
+ */
+export function schemaToSystemGraph(schema: OrbitalSchema): { nodes: Node<PreviewNodeData>[]; edges: Edge<EventEdgeData>[] } {
+  const orbitals = getOrbitals(schema);
+  const pairs = new Map<string, { source: string; target: string; events: string[] }>();
+  const eventsOf = new Map<string, Set<string>>();
+  for (const w of extractTraitWires(orbitals, 'cross-orbital')) {
+    const key = `${w.emitterOrbital}\u241f${w.listenerOrbital}`;
+    const pair = pairs.get(key) ?? { source: w.emitterOrbital, target: w.listenerOrbital, events: [] };
+    if (!pair.events.includes(w.event)) pair.events.push(w.event);
+    pairs.set(key, pair);
+    for (const o of [w.emitterOrbital, w.listenerOrbital]) eventsOf.set(o, (eventsOf.get(o) ?? new Set()).add(w.event));
+  }
+
+  // Longest-path layering over the wires; a cycle stops growing after |V| rounds.
+  const connected = orbitals.filter((o) => eventsOf.has(o.name)).map((o) => o.name);
+  const layer = new Map(connected.map((n) => [n, 0]));
+  for (let round = 0; round < connected.length; round++) {
+    let moved = false;
+    for (const { source, target } of pairs.values()) {
+      const next = (layer.get(source) ?? 0) + 1;
+      if (source !== target && next < connected.length && next > (layer.get(target) ?? 0)) {
+        layer.set(target, next);
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+
+  const { width: W, height: H, gapX, gapY, bandGap, bandLabel } = SYSTEM_CHIP;
+  const nodes: Node<PreviewNodeData>[] = [];
+  const band = (bandKind: 'connected' | 'standalone', count: number, y: number): void => {
+    nodes.push({
+      id: `__band_${bandKind}`,
+      type: 'systemBand',
+      position: { x: 0, y },
+      draggable: false,
+      selectable: false,
+      data: { orbitalName: `__band_${bandKind}`, kind: 'system-band', bandKind, bandCount: count, patterns: [], eventSources: [] },
+    });
+  };
+  const chip = (orb: OrbitalDefinition, x: number, y: number): void => {
+    const entity = getEntityInfo(orb);
+    nodes.push({
+      id: orb.name,
+      type: 'system',
+      position: { x, y },
+      data: {
+        orbitalName: orb.name,
+        kind: 'system-orbital',
+        entityName: entity.name,
+        persistence: entity.persistence,
+        fieldCount: entity.fieldCount,
+        traitCount: getTraits(orb).length,
+        pageRoutes: getPages(orb),
+        wireEvents: [...(eventsOf.get(orb.name) ?? [])],
+        patterns: [],
+        eventSources: [],
+      },
+    });
+  };
+
+  let y = 0;
+  if (connected.length > 0) {
+    band('connected', connected.length, y);
+    y += bandLabel;
+    const rows = new Map<number, number>();
+    let bottom = y;
+    for (const name of connected) {
+      const l = layer.get(name) ?? 0;
+      const row = rows.get(l) ?? 0;
+      rows.set(l, row + 1);
+      const orb = orbitals.find((o) => o.name === name);
+      if (!orb) continue;
+      chip(orb, l * (W + gapX), y + row * (H + gapY));
+      bottom = Math.max(bottom, y + row * (H + gapY) + H);
+    }
+    y = bottom + bandGap;
+  }
+  const standalone = orbitals.filter((o) => !eventsOf.has(o.name));
+  if (standalone.length > 0) {
+    band('standalone', standalone.length, y);
+    y += bandLabel;
+    // Columns for a landscape grid (about 1.6 wide per tall) of chip cells.
+    const cellW = W + gapX / 4;
+    const cellH = H + gapY;
+    const cols = Math.max(1, Math.ceil(Math.sqrt((standalone.length * 1.6 * cellH) / cellW)));
+    standalone.forEach((orb, i) => chip(orb, (i % cols) * cellW, y + Math.floor(i / cols) * cellH));
+  }
+
+  const edges: Edge<EventEdgeData>[] = [...pairs.values()].map((p) => ({
+    id: `sys-${p.source}-${p.target}`,
+    source: p.source,
+    target: p.target,
+    type: 'eventFlow',
+    data: { event: p.events.join(', '), isCrossOrbital: true },
+  }));
+  return { nodes, edges };
+}
 
 /**
  * Build a React Flow graph for the `trait-expanded` level: one node per
