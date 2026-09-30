@@ -22,6 +22,8 @@
 import React, { useState, useRef, useCallback } from 'react';
 import type { Asset, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
@@ -143,6 +145,7 @@ export function TraitSlot({
     dropEvent,
 }: TraitSlotProps): React.JSX.Element {
     const { emit } = useEventBus();
+    const { t } = useTranslate();
     const [isHovered, setIsHovered] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
     const slotRef = useRef<HTMLDivElement>(null);
@@ -251,9 +254,9 @@ export function TraitSlot({
                 'items-center justify-center rounded-container transition-all duration-200 bg-card/50',
                 !locked && 'cursor-pointer',
                 locked && 'cursor-not-allowed opacity-50',
-                isEmpty && !locked && 'border-2 border-dashed border-border hover:border-muted-foreground',
-                isEmpty && locked && 'border-2 border-dashed border-border',
-                !isEmpty && 'border-2',
+                isEmpty && !locked && 'border-heavy border-dashed border-border hover:border-muted-foreground',
+                isEmpty && locked && 'border-heavy border-dashed border-border',
+                !isEmpty && 'border-heavy',
                 selected && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
                 isDragOver && 'ring-2 ring-accent ring-offset-1 scale-110 border-accent',
                 !isDragOver && feedback === 'correct' && 'ring-2 ring-success ring-offset-1 ring-offset-background',
@@ -273,7 +276,8 @@ export function TraitSlot({
                             ? 'var(--color-error)'
                             : (catColor?.border || undefined),
             }}
-            onClick={handleClick}
+            {...pressableProps(clickEvent || onClick ? handleClick : undefined, { disabled: locked })}
+            aria-label={equippedItem ? equippedItem.name : undefined}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             draggable={draggable && !isEmpty}
@@ -318,7 +322,8 @@ export function TraitSlot({
                         <Box
                             position="absolute"
                             className="-top-1.5 -right-1.5 w-4 h-4 bg-error rounded-pill flex items-center justify-center cursor-pointer hover:bg-error/80 transition-colors"
-                            onClick={handleRemove}
+                            {...pressableProps(handleRemove)}
+                            aria-label={t('common.remove')}
                         >
                             <Typography variant="caption" className="text-foreground text-xs leading-none">
                                 {'\u00D7'}
@@ -341,7 +346,7 @@ export function TraitSlot({
             {/* Tooltip */}
             {showTooltip && isHovered && itemMachine && !isEmpty && equippedItem && (
                 <Box
-                    className="p-3 bg-background border border-border rounded-container shadow-xl"
+                    className="p-3 bg-background border border-border rounded-container shadow-elevation-popover"
                     style={{
                         ...getTooltipStyle(),
                         minWidth: 200,
@@ -363,7 +368,7 @@ export function TraitSlot({
                     {/* Arrow */}
                     <Box
                         position="absolute"
-                        className="-bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-border"
+                        className="-bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-heavy border-r-heavy border-t-heavy border-transparent border-t-border"
                     />
                 </Box>
             )}

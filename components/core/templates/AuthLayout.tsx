@@ -5,7 +5,7 @@ import { Outlet, Link } from "react-router-dom";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Box } from "../atoms/Box";
-import { VStack, HStack } from "../atoms/Stack";
+import { VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 
 export interface AuthLayoutProps {
@@ -22,13 +22,14 @@ export interface AuthLayoutProps {
 }
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({
-  appName = "My App",
+  appName: appNameProp,
   logo,
   backgroundImage,
   showBranding = true,
   brandingContent,
 }) => {
   const { t } = useTranslate();
+  const appName = appNameProp ?? t("auth.defaultAppName");
 
   return (
     <Box className="min-h-screen flex">
@@ -56,10 +57,10 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <Box className="relative z-10">
             <Link to="/" className="flex items-center gap-3">
               {logo || (
-                <Box className="w-10 h-10 bg-[var(--color-card)]/20 rounded-xl flex items-center justify-center backdrop-blur">
+                <Box className="w-10 h-10 bg-primary-foreground/20 rounded-container flex items-center justify-center backdrop-blur">
                   <Typography
                     variant="body1"
-                    className="text-[var(--color-foreground)] font-bold text-lg"
+                    className="text-primary-foreground font-bold text-lg"
                   >
                     {appName.charAt(0).toUpperCase()}
                   </Typography>
@@ -67,7 +68,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               )}
               <Typography
                 variant="body1"
-                className="text-2xl font-bold text-[var(--color-foreground)]"
+                className="text-2xl font-bold text-primary-foreground"
               >
                 {appName}
               </Typography>
@@ -80,51 +81,23 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               <VStack gap="lg">
                 <Typography
                   variant="h1"
-                  className="text-4xl font-bold text-[var(--color-foreground)] leading-tight"
+                  className="text-4xl text-primary-foreground leading-tight"
                 >
-                  Welcome to {appName}
+                  {t("auth.welcomeTo", { appName })}
                 </Typography>
                 <Typography
                   variant="body1"
-                  className="text-lg text-[var(--color-foreground)]/80 max-w-md"
+                  className="text-lg text-primary-foreground/80 max-w-md"
                 >
-                  Sign in to access your dashboard and manage your account.
+                  {t("auth.brandingSubtitle")}
                 </Typography>
-
-                {/* Testimonial or feature list */}
-                <Box className="mt-12 p-6 bg-[var(--color-card)]/10 rounded-xl backdrop-blur">
-                  <Typography
-                    variant="body1"
-                    className="text-[var(--color-foreground)]/90 italic"
-                  >
-                    &quot;This platform has transformed how we work. Highly
-                    recommended!&quot;
-                  </Typography>
-                  <HStack className="mt-4" gap="sm" align="center">
-                    <Box className="w-10 h-10 bg-[var(--color-card)]/20 rounded-full" />
-                    <VStack gap="none">
-                      <Typography
-                        variant="body1"
-                        className="text-[var(--color-foreground)] font-medium"
-                      >
-                        Jane Doe
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        className="text-[var(--color-foreground)]/60 text-sm"
-                      >
-                        CEO, Example Co.
-                      </Typography>
-                    </VStack>
-                  </HStack>
-                </Box>
               </VStack>
             )}
           </Box>
 
           {/* Decorative elements */}
-          <Box className="absolute -bottom-32 -right-32 w-96 h-96 bg-[var(--color-card)]/5 rounded-full" />
-          <Box className="absolute -top-16 -right-16 w-64 h-64 bg-[var(--color-card)]/5 rounded-full" />
+          <Box className="absolute -bottom-32 -right-32 w-96 h-96 bg-primary-foreground/5 rounded-full" />
+          <Box className="absolute -top-16 -right-16 w-64 h-64 bg-primary-foreground/5 rounded-full" />
         </VStack>
       )}
 
@@ -140,10 +113,10 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <Box className="lg:hidden mb-8 text-center">
             <Link to="/" className="inline-flex items-center gap-3">
               {logo || (
-                <Box className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
+                <Box className="w-12 h-12 bg-primary rounded-container flex items-center justify-center">
                   <Typography
                     variant="body1"
-                    className="text-[var(--color-foreground)] font-bold text-xl"
+                    className="text-primary-foreground font-bold text-xl"
                   >
                     {appName.charAt(0).toUpperCase()}
                   </Typography>

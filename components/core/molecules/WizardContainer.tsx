@@ -8,7 +8,7 @@
  * Uses wireframe theme styling (high contrast, sharp edges).
  */
 import React, { useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { JsonValue, EventKey, EventEmit, ControlValue, FieldValue } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
@@ -20,6 +20,7 @@ import { useTranslate } from "../../../hooks/useTranslate";
 import { useEventBus } from "../../../hooks/useEventBus";
 import type { SExpr } from "@almadar/evaluator";
 import type { UiError } from '../atoms/types';
+import { WizardProgress } from "./WizardProgress";
 
 /** Form field definition for wizard sections */
 export interface WizardField {
@@ -249,77 +250,17 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
 
   return (
     <Box className={cn("flex flex-col h-full", className)}>
-      {/* Progress indicator */}
       {showProgress && (
-        <Box
-          border
-          className={cn(
-            "border-b-2 border-x-0 border-t-0 border-border",
-            compact ? "px-4 py-2" : "px-6 py-4",
-          )}
-        >
-          <HStack gap="sm" align="center" className="flex-wrap">
-            {steps.map((step, index) => {
-              const isActive = index === currentStep;
-              const isCompleted = index < currentStep;
-              // Use id, tabId, or index as key; use title or name for display
-              const stepKey = step.id ?? step.tabId ?? `step-${index}`;
-              const stepTitle = step.title ?? step.name ?? `Step ${index + 1}`;
-
-              return (
-                <React.Fragment key={stepKey}>
-                  {/* Step indicator */}
-                  <Button
-                    onClick={() => isCompleted && allowBack && goToStep(index)}
-                    disabled={!isCompleted || !allowBack}
-                    className={cn(
-                      "w-8 h-8 flex items-center justify-center text-sm font-bold transition-colors",
-                      "border-2 border-border",
-                      isActive &&
-                        "bg-primary text-primary-foreground",
-                      isCompleted &&
-                        "bg-primary text-primary-foreground cursor-pointer hover:bg-primary-hover",
-                      !isActive &&
-                        !isCompleted &&
-                        "bg-card text-foreground",
-                    )}
-                  >
-                    {isCompleted ? <Icon icon={Check} size="sm" /> : index + 1}
-                  </Button>
-
-                  {/* Step title (on desktop) */}
-                  <Box
-                    className={cn(
-                      "hidden md:block",
-                      isActive
-                        ? "text-foreground font-bold"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    <Typography
-                      variant="small"
-                      weight={isActive ? "bold" : "normal"}
-                    >
-                      {stepTitle}
-                    </Typography>
-                  </Box>
-
-                  {/* Connector line */}
-                  {index < totalSteps - 1 && (
-                    <Box
-                      className={cn(
-                        "flex-1 h-0.5",
-                        index < currentStep
-                          ? "bg-primary"
-                          : "bg-border",
-                      )}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </HStack>
-        </Box>
+        <WizardProgress
+          steps={steps.map((step, index) => ({
+            id: step.id ?? step.tabId ?? `step-${index}`,
+            title: step.title ?? step.name ?? t("wizard.stepOf", { current: index + 1, total: totalSteps }),
+          }))}
+          currentStep={currentStep}
+          onStepClick={goToStep}
+          allowNavigation={allowBack}
+          compact={compact}
+        />
       )}
 
       {/* Step header */}
@@ -328,12 +269,12 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
           paddingX="lg"
           paddingY="md"
           border
-          className="border-b-2 border-x-0 border-t-0 border-border"
+          className="border-b-heavy border-x-0 border-t-0 border-border"
         >
           <Typography variant="h4" as="h2">
             {currentStepData.title ??
               currentStepData.name ??
-              `Step ${currentStep + 1}`}
+              t("wizard.stepOf", { current: currentStep + 1, total: totalSteps })}
           </Typography>
           {currentStepData.description && (
             <Typography
@@ -355,7 +296,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
       <Box
         border
         className={cn(
-          "border-t-2 border-x-0 border-b-0 border-border flex justify-between",
+          "border-t-heavy border-x-0 border-b-0 border-border flex justify-between",
           compact ? "px-4 py-2" : "px-6 py-4",
         )}
       >

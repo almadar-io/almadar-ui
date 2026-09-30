@@ -1060,7 +1060,7 @@ function FlowCanvasInner({
           {!systemLevel && !flowLens && (<>
           <Box className="sm:hidden ml-auto">
             <Select
-              options={screenSizeKeys.map((size) => ({ value: size, label: `${SCREEN_SIZE_PRESETS[size].label} (${SCREEN_SIZE_PRESETS[size].width}px)` }))}
+              options={screenSizeKeys.map((size) => ({ value: size, label: t('flowCanvas.presetSize', { label: t(SCREEN_SIZE_PRESETS[size].labelKey), width: SCREEN_SIZE_PRESETS[size].width }) }))}
               value={screenSize}
               onValueChange={(value) => { if (typeof value === 'string' && isScreenSize(value)) applyScreenSize(value); }}
               aria-label={t('canvas.screenSize')}
@@ -1078,11 +1078,11 @@ function FlowCanvasInner({
                     variant={screenSize === size ? 'primary' : 'ghost'}
                     size="sm"
                     onClick={() => applyScreenSize(size)}
-                    title={`${p.label} (${p.width}px)`}
-                    aria-label={t('canvas.switchToView', { label: p.label })}
+                    title={t('flowCanvas.presetSize', { label: t(p.labelKey), width: p.width })}
+                    aria-label={t('canvas.switchToView', { label: t(p.labelKey) })}
                     aria-pressed={screenSize === size}
                   >
-                    {p.label}
+                    {t(p.labelKey)}
                   </Button>
                 );
               })}

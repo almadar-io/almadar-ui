@@ -14,6 +14,7 @@ import { useFrame } from '@react-three/fiber';
 import type { Mesh } from 'three';
 import { AVL_3D_COLORS, persistencePaletteKey } from '../../../lib/avl-3d-layout';
 import { useAvl3DPalette } from '../../../providers/avl-3d-context';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 import { AVL_INK } from '../../../lib/avl-theme';
 
@@ -73,6 +74,7 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
 }) => {
   const coreRef = useRef<Mesh>(null);
   const palette = useAvl3DPalette();
+  const { t } = useTranslate();
 
   // Slow rotation for visual interest
   useFrame((_, delta) => {
@@ -228,7 +230,7 @@ export const Avl3DEntityCore: React.FC<Avl3DEntityCoreProps> = ({
       {/* Field count sublabel */}
       <Avl3DLabel
         position={[0, -2.3, 0]}
-        text={`${fieldCount} fields`}
+        text={t(fieldCount === 1 ? 'avl3d.fieldCountOne' : 'avl3d.fieldCountOther', { count: fieldCount })}
         color={AVL_INK.quiet}
         fontSize={10}
       />

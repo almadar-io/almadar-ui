@@ -27,6 +27,8 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
     },
     ref,
   ) => {
+    const generatedId = React.useId();
+    const switchId = id ?? generatedId;
     const [isChecked, setIsChecked] = React.useState(
       checked !== undefined ? checked : defaultChecked,
     );
@@ -53,8 +55,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
           type="button"
           role="switch"
           aria-checked={isChecked}
-          aria-label={label}
-          id={id}
+          id={switchId}
           name={name}
           disabled={disabled}
           onClick={handleClick}
@@ -63,7 +64,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
             // redefine --space-11 to 68px, which makes w-11 enormous and leaves
             // the thumb stuck near the left edge. The switch geometry must stay
             // proportional regardless of a theme's density scale.
-            "relative inline-flex h-[1.5rem] w-[2.75rem] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-fast",
+            "relative inline-flex h-[1.5rem] w-[2.75rem] shrink-0 cursor-pointer items-center rounded-full border-heavy border-transparent transition-colors duration-fast",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             isChecked ? "bg-primary" : "bg-muted",
             disabled && "cursor-not-allowed opacity-50",
@@ -78,12 +79,11 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         </button>
         {label && (
           <label
-            htmlFor={id}
+            htmlFor={switchId}
             className={cn(
               "text-sm font-medium leading-none cursor-pointer",
               disabled && "cursor-not-allowed opacity-70",
             )}
-            onClick={handleClick}
           >
             {label}
           </label>

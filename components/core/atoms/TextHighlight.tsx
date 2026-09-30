@@ -85,13 +85,13 @@ export const TextHighlight: React.FC<TextHighlightProps> = ({
   const typeStyles = {
     question: cn(
       // Blue border for questions
-      "bg-card border-b-2 border-primary",
+      "bg-card border-b-heavy border-primary",
       "hover:bg-muted",
       isActive && "bg-primary/10 ring-2 ring-primary",
     ),
     note: cn(
       // Yellow border for notes
-      "bg-card border-b-2 border-warning",
+      "bg-card border-b-heavy border-warning",
       "hover:bg-muted",
       isActive && "bg-warning/10 ring-2 ring-warning",
     ),

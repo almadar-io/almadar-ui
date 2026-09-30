@@ -17,7 +17,8 @@ import React from 'react';
 import type { EntityRow, EventKey, EventEmit, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
-import { formatDate, formatValue as libFormatValue, humanizeFieldName, sortRows } from '../../../lib/format';
+import { pressableProps } from '../../../lib/pressable';
+import { formatDate, formatValue as libFormatValue, type FormatContext, sortRows } from '../../../lib/format';
 import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
 import type { RelationOption } from './RelationSelect';
 import { createLogger } from '@almadar/logger';
@@ -27,7 +28,7 @@ import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useRowActions } from '../../../hooks/useRowActions';
 import type { RowActionCondition } from '../../../lib/row-action-when';
-import { useTranslate } from '../../../hooks/useTranslate';
+import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -41,23 +42,13 @@ import { Divider } from '../atoms/Divider';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
-import type { UiError } from '../atoms/types';
+import type { DisplayField, UiError } from '../atoms/types';
+import { badgeVariantFor, titleFieldOf } from '../../../lib/displayField';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
-export interface DataListField {
-  /** Entity field name (dot-notation supported) */
-  name: string;
-  /** Display label (auto-generated from name if omitted) */
-  label?: string;
-  /** Lucide icon name or component to show beside the field */
-  icon?: IconInput;
-  /** Rendering variant: 'h3'/'h4' for title, 'body' for text, 'caption' for small,
-   *  'badge' for status badge, 'progress' for progress bar */
-  variant?: 'h3' | 'h4' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
-  /** Optional format: 'date', 'currency', 'number', 'boolean', 'percent' */
-  format?: 'date' | 'currency' | 'number' | 'boolean' | 'percent';
-}
+/** A DataList field is the shared display-field shape: every slot (title, badge, format, colour) is declared on it. */
+export type DataListField = DisplayField;
 
 // ── Item Action Definition ───────────────────────────────────────────
 
@@ -206,33 +197,20 @@ function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Ico
     : <Icon icon={icon} {...props} />;
 }
 
-const fieldLabel = humanizeFieldName;
-
-function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
-  const v = value.toLowerCase();
-  if (['active', 'completed', 'done', 'approved', 'published', 'resolved', 'open', 'online'].includes(v)) return 'success';
-  if (['pending', 'in_progress', 'in-progress', 'review', 'draft', 'processing', 'warning'].includes(v)) return 'warning';
-  if (['inactive', 'deleted', 'rejected', 'failed', 'error', 'blocked', 'closed', 'offline'].includes(v)) return 'error';
-  if (['new', 'created', 'scheduled', 'queued', 'info'].includes(v)) return 'info';
-  return 'default';
-}
+const fieldLabel = (name: string): string => name;
 
 // Thin wrapper over the shared formatter that keeps DataList's i18n yes/no
 // labels for boolean fields and resolves relation fields to their label
 // (hydrated row, or a bare foreign id via the field's `relationsData` options).
 function formatValue(
   value: FieldValue | undefined,
-  format?: DataListField['format'],
-  boolLabels?: { yes: string; no: string },
+  format: DataListField['format'] | undefined,
+  fmt: FormatContext,
   relationOptions?: readonly RelationOption[],
 ): string {
   const relationDisplay = resolveRelationCellDisplay(value, relationOptions);
   if (relationDisplay !== undefined) return relationDisplay;
-  if (value !== undefined && value !== null && (format === 'boolean' || typeof value === 'boolean')) {
-    const isNo = value === false || value === 0 || String(value) === 'false';
-    return isNo ? (boolLabels?.no ?? 'No') : (boolLabels?.yes ?? 'Yes');
-  }
-  return libFormatValue(value, format);
+  return libFormatValue(value, format, fmt);
 }
 
 function groupData(
@@ -316,6 +294,7 @@ export function DataList({
   const eventBus = useEventBus();
   const rowActions = useRowActions();
   const { t } = useTranslate();
+  const fmt = useFormatContext();
   const [visibleCount, setVisibleCount] = React.useState(pageSize || Infinity);
 
   // Honor the pattern-types alias: compiler emits `columns`, the React API
@@ -385,7 +364,7 @@ export function DataList({
   }, [data, hasRenderProp, schemaRenderItem, children, fieldDefs]);
 
   // Separate fields by role
-  const titleField = fieldDefs.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fieldDefs[0];
+  const titleField = titleFieldOf(fieldDefs);
   const badgeFields = fieldDefs.filter((f) => f.variant === 'badge' && f !== titleField);
   const progressFields = fieldDefs.filter((f) => f.variant === 'progress');
   const bodyFields = fieldDefs.filter(
@@ -417,7 +396,7 @@ export function DataList({
       // stopPropagation at the cluster: the "⋯" trigger opens the overflow
       // menu without also firing the row's default click (inline buttons
       // already stop it in handleActionClick; the Menu panel is portaled).
-      <HStack gap="xs" onClick={rowClickEventFor(itemData) ? (e) => e.stopPropagation() : undefined} className="flex-shrink-0">
+      <HStack gap="xs" onClick={itemClickEvent ? (e) => e.stopPropagation() : undefined} className="flex-shrink-0">
         {inline.map((action, idx) => (
           <Button
             key={idx}
@@ -427,7 +406,7 @@ export function DataList({
             data-testid={`action-${action.event}`}
             data-row-id={String(itemData.id)}
             className={cn(
-              action.variant === 'danger' && 'text-error hover:bg-error/10',
+              action.variant === 'danger' && 'text-foreground hover:bg-error/10',
               // Must sit on the Button itself: the variant's own text colour
               // beats an inherited one from the row wrapper.
               onPrimary && '!text-primary-foreground hover:bg-primary-foreground/15',
@@ -461,22 +440,13 @@ export function DataList({
     );
   };
 
-  // Explicit itemClickEvent wins; otherwise the first non-danger item action
-  // is the row's default click — the same contract TableView rows carry
-  // (declared `variant` is the semantic marker, and a destructive action
-  // never becomes the default; danger-only rows get no row click). The
-  // default is the first action THIS row shows.
-  const rowClickEventFor = (itemData: EntityRow): EventKey | undefined =>
-    itemClickEvent || rowActions(itemActions ?? [], itemData).find((a) => a.variant !== 'danger')?.event;
-
   const handleRowClick = (itemData: EntityRow) => () => {
-    const rowClickEvent = rowClickEventFor(itemData);
-    if (!rowClickEvent) return;
+    if (!itemClickEvent) return;
     const payload: ItemActionPayload = {
       id: itemData.id as string | number,
       row: itemData as ItemActionPayload['row'],
     };
-    eventBus.emit(`UI:${rowClickEvent}`, payload);
+    eventBus.emit(`UI:${itemClickEvent}`, payload);
   };
 
   // Loading state
@@ -533,7 +503,7 @@ export function DataList({
   if (isMessage) {
     const items = [...data];
     const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
-    const contentField = titleField?.name ?? fieldDefs[0]?.name ?? '';
+    const contentField = (fieldDefs.find((f) => f.variant === 'body') ?? titleField)?.name ?? '';
     // The bubble label. Falls back to the raw sender cell so existing callers
     // are unchanged; with `senderLabelField` an id-keyed thread shows the name.
     const senderLabel = (itemData: EntityRow, raw: string): string => {
@@ -567,10 +537,10 @@ export function DataList({
                   key={id}
                   data-entity-row
                   data-entity-id={id}
-                  onClick={rowClickEventFor(itemData) ? handleRowClick(itemData) : undefined}
+                  {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)}
                   className={cn(
                     'flex px-4 group/rowactions',
-                    rowClickEventFor(itemData) && 'cursor-pointer',
+                    itemClickEvent && 'cursor-pointer',
                     isSent ? 'justify-end' : 'justify-start',
                   )}
                 >
@@ -578,8 +548,8 @@ export function DataList({
                     className={cn(
                       'max-w-[75%] px-4 py-2',
                       isSent
-                        ? 'bg-primary text-primary-foreground rounded-2xl rounded-br-sm'
-                        : 'bg-muted text-foreground rounded-2xl rounded-bl-sm',
+                        ? 'bg-primary text-primary-foreground rounded-container rounded-ee-sm'
+                        : 'bg-muted text-foreground rounded-container rounded-es-sm',
                     )}
                   >
                     {!isSent && senderField && (
@@ -598,8 +568,8 @@ export function DataList({
                           return f.variant === 'badge' ? (
                             // `format` applies here too — a boolean field badged
                             // without it renders the raw "false" instead of "No".
-                            <Badge key={f.name} variant={statusVariant(String(v))}>
-                              {formatValue(v as FieldValue, f.format, undefined, relationsData?.[f.name])}
+                            <Badge key={f.name} variant={badgeVariantFor(String(v), f.colorMap)}>
+                              {formatValue(v as FieldValue, f.format, fmt, relationsData?.[f.name])}
                             </Badge>
                           ) : (
                             <Typography
@@ -607,7 +577,7 @@ export function DataList({
                               variant="caption"
                               className={cn('text-xs', isSent ? 'opacity-70' : 'text-muted-foreground')}
                             >
-                              {formatValue(v as FieldValue, f.format, undefined, relationsData?.[f.name])}
+                              {formatValue(v as FieldValue, f.format, fmt, relationsData?.[f.name])}
                             </Typography>
                           );
                         })}
@@ -663,7 +633,7 @@ export function DataList({
       const id = (itemData.id as string) || String(index);
       const actions = renderItemActions(itemData);
       return wrapDnd(
-        <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEventFor(itemData) ? handleRowClick(itemData) : undefined} className={cn('relative group/rowactions', rowClickEventFor(itemData) && 'cursor-pointer')}>
+        <Box key={id} data-entity-row data-entity-id={id} {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)} className={cn('relative group/rowactions', itemClickEvent && 'cursor-pointer')}>
           {itemRenderer!(itemData as EntityRow, index)}
           {actions && (
             <Box className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
@@ -712,7 +682,7 @@ export function DataList({
     ) ?? (titleValue !== undefined && titleValue !== null ? String(titleValue) : undefined);
 
     return wrapDnd(
-      <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEventFor(itemData) ? handleRowClick(itemData) : undefined} className={cn(rowClickEventFor(itemData) && 'cursor-pointer')}>
+      <Box key={id} data-entity-row data-entity-id={id} {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)} className={cn(itemClickEvent && 'cursor-pointer')}>
         <Box
           className={cn(
             // items-start, not items-center: a multi-line row (title + meta +
@@ -745,8 +715,8 @@ export function DataList({
                 return (
                   <HStack key={field.name} gap="xs" className="items-center flex-shrink-0">
                     {field.icon && renderIconInput(field.icon, { size: 'xs' })}
-                    <Badge variant={statusVariant(String(val))}>
-                      {formatValue(val as FieldValue, field.format, undefined, relationsData?.[field.name])}
+                    <Badge variant={badgeVariantFor(String(val), field.colorMap)}>
+                      {formatValue(val as FieldValue, field.format, fmt, relationsData?.[field.name])}
                     </Badge>
                   </HStack>
                 );
@@ -785,7 +755,7 @@ export function DataList({
                         {field.label ?? fieldLabel(field.name)}:
                       </Typography>
                       <Typography variant="small" color="secondary">
-                        {formatValue(value, field.format, { yes: t('common.yes'), no: t('common.no') }, relationsData?.[field.name])}
+                        {formatValue(value, field.format, fmt, relationsData?.[field.name])}
                       </Typography>
                     </HStack>
                   );

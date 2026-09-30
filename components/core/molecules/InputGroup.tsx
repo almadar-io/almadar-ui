@@ -52,8 +52,8 @@ export const InputGroup: React.FC<InputGroupProps> = ({
         <div
           className={cn(
             "flex items-center justify-center px-3",
-            "bg-muted dark:bg-muted",
-            "border border-border dark:border-border",
+            "bg-muted",
+            "border border-border",
             position === "left"
               ? "rounded-l-interactive border-r-0"
               : "rounded-r-interactive border-l-0",
@@ -69,9 +69,9 @@ export const InputGroup: React.FC<InputGroupProps> = ({
       <div
         className={cn(
           "flex items-center justify-center px-3",
-          "bg-muted dark:bg-muted",
-          "border border-border dark:border-border",
-          "text-foreground dark:text-foreground",
+          "bg-muted",
+          "border border-border",
+          "text-foreground",
           position === "left"
             ? "rounded-l-interactive border-r-0"
             : "rounded-r-interactive border-l-0",

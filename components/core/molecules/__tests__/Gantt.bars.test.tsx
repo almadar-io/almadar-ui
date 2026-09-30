@@ -55,3 +55,17 @@ describe('Gantt bars', () => {
     expect(bar(container, 'a')?.getAttribute('data-dates-reversed')).toBeNull();
   });
 });
+
+describe('Gantt bar colours are declared', () => {
+  const task = { id: 'a', title: 'A', start: '2026-10-05', end: '2026-10-07', status: 'blocked' };
+  it('a declared statusColorMap colours the bar', () => {
+    const { container } = render(<Gantt tasks={[task]} statusColorMap={{ blocked: 'danger' }} showToday={false} />);
+    expect(container.innerHTML).toContain('bg-error/80');
+  });
+
+  it('control: an undeclared status word is a primary bar', () => {
+    const { container } = render(<Gantt tasks={[task]} showToday={false} />);
+    expect(container.innerHTML).not.toContain('bg-error/80');
+    expect(container.innerHTML).toContain('bg-primary/80');
+  });
+});

@@ -12,6 +12,7 @@
 import React, { useState } from 'react';
 import { PauseCircle } from 'lucide-react';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 
 export interface ReflectionBlockProps {
@@ -37,6 +38,7 @@ export const ReflectionBlock: React.FC<ReflectionBlockProps> = ({
   const [note, setNote] = useState(savedNote ?? '');
   const [isExpanded, setIsExpanded] = useState(false);
   const { emit } = useEventBus();
+  const { t } = useTranslate();
 
   const handleSave = () => {
     emit(`UI:${saveEvent}`, { index, note });
@@ -46,21 +48,21 @@ export const ReflectionBlock: React.FC<ReflectionBlockProps> = ({
   return (
     <div
       className={cn(
-        'my-6 border-l-4 border-warning bg-warning/10 rounded-r-container p-4',
+        'my-6 border-l-heavy border-warning bg-warning/10 rounded-r-container p-4',
         className,
       )}
     >
       <div className="flex items-start gap-3">
         <PauseCircle className="text-warning flex-shrink-0 mt-1" size={20} />
         <div className="flex-1">
-          <div className="font-medium text-warning mb-2">Pause & Reflect</div>
+          <div className="font-medium text-warning mb-2">{t('reflection.title')}</div>
           <p className="text-foreground text-sm mb-3">{prompt}</p>
 
           {isExpanded ? (
             <>
               <textarea
                 className="w-full p-2 border border-input rounded-interactive text-sm bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
-                placeholder="Your thoughts..."
+                placeholder={t('reflection.placeholder')}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={2}
@@ -69,7 +71,7 @@ export const ReflectionBlock: React.FC<ReflectionBlockProps> = ({
                 onClick={handleSave}
                 className="mt-2 text-sm px-3 py-1 bg-warning text-warning-foreground rounded-interactive hover:opacity-90 transition-colors"
               >
-                Save & Continue
+                {t('reflection.saveContinue')}
               </button>
             </>
           ) : (
@@ -77,7 +79,7 @@ export const ReflectionBlock: React.FC<ReflectionBlockProps> = ({
               onClick={() => setIsExpanded(true)}
               className="text-sm text-warning hover:underline"
             >
-              {savedNote ? '✓ Answered · Edit' : 'Answer this question'}
+              {savedNote ? t('reflection.answeredEdit') : t('reflection.answerQuestion')}
             </button>
           )}
         </div>

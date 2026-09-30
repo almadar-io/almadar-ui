@@ -4,6 +4,7 @@ import { INLINE_TEXT_ATTR } from "../../../lib/inlineText";
 import { cn } from "../../../lib/cn";
 import { Icon, type IconInput } from "./Icon";
 import { AtlasImage } from "./AtlasImage";
+import { useTranslate } from "../../../hooks/useTranslate";
 import type { Asset } from "@almadar/core";
 
 export type BadgeVariant =
@@ -53,23 +54,23 @@ const variantStyles: Record<BadgeVariant, string> = {
   secondary:
     "bg-secondary text-secondary-foreground",
   success: [
-    "bg-surface text-success",
+    "bg-success/10 text-foreground",
     "border-[length:var(--border-width)] border-success",
   ].join(" "),
   warning: [
-    "bg-surface text-warning",
+    "bg-warning/10 text-foreground",
     "border-[length:var(--border-width)] border-warning",
   ].join(" "),
   danger: [
-    "bg-surface text-error",
+    "bg-error/10 text-foreground",
     "border-[length:var(--border-width)] border-error",
   ].join(" "),
   error: [
-    "bg-surface text-error",
+    "bg-error/10 text-foreground",
     "border-[length:var(--border-width)] border-error",
   ].join(" "),
   info: [
-    "bg-surface text-info",
+    "bg-info/10 text-foreground",
     "border-[length:var(--border-width)] border-info",
   ].join(" "),
   neutral: [
@@ -86,6 +87,7 @@ const sizeStyles: Record<BadgeSize, string> = {
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className, variant = "default", size = "sm", amount, label, icon, iconAsset, children, onRemove, removeLabel, ...props }, ref) => {
+    const { t } = useTranslate();
     const iconSizes: Record<BadgeSize, string> = {
       sm: "h-icon-default w-icon-default",
       md: "h-icon-default w-icon-default",
@@ -122,7 +124,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
         {onRemove ? (
           <button
             type="button"
-            aria-label={removeLabel ?? "Remove"}
+            aria-label={removeLabel ?? t("common.remove")}
             onClick={(e) => {
               e.stopPropagation();
               onRemove();

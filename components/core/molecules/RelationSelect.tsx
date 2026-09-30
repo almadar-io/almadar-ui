@@ -10,6 +10,7 @@
 
 import React, {
   useState,
+  useId,
   useCallback,
   useMemo,
   useRef,
@@ -114,6 +115,8 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noOptionsFound');
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const listboxId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -203,17 +206,47 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
     [onChange],
   );
 
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [searchQuery, isOpen]);
+
+  const stepActive = useCallback(
+    (step: 1 | -1) => {
+      const n = filteredOptions.length;
+      for (let i = 1; i <= n; i++) {
+        const next = (((activeIndex === -1 && step === -1 ? 0 : activeIndex) + step * i) % n + n) % n;
+        if (!filteredOptions[next].disabled) {
+          setActiveIndex(next);
+          return;
+        }
+      }
+    },
+    [filteredOptions, activeIndex],
+  );
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsOpen(false);
         setSearchQuery("");
-      } else if (e.key === "Enter" && filteredOptions.length === 1) {
-        handleSelect(filteredOptions[0]);
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        stepActive(e.key === "ArrowDown" ? 1 : -1);
+      } else if (e.key === "Enter") {
+        const active = filteredOptions[activeIndex];
+        if (active) {
+          e.preventDefault();
+          handleSelect(active);
+        } else if (filteredOptions.length === 1) {
+          handleSelect(filteredOptions[0]);
+        }
       }
     },
-    [filteredOptions, handleSelect],
+    [filteredOptions, activeIndex, handleSelect, stepActive],
   );
+
+  const showClear = clearable && !!selectedOption && !disabled;
+  const optionId = (index: number) => `${listboxId}-option-${index}`;
 
   return (
     <Box ref={containerRef} className={cn("relative", className)}>
@@ -230,7 +263,10 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
           "w-full justify-between font-normal",
           error && "border-error/50 focus:border-error focus:ring-error",
           isOpen && "ring-2 ring-primary border-primary",
+          showClear && "pe-12",
         )}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
       >
         <Typography
           variant="body"
@@ -250,15 +286,6 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
           )}
         </Typography>
         <HStack gap="xs" align="center">
-          {clearable && selectedOption && !disabled && (
-            <Box
-              as="button"
-              className="p-0.5 hover:bg-muted rounded-interactive cursor-pointer"
-              onClick={handleClear}
-            >
-              <Icon name="x" className="h-4 w-4 text-muted-foreground" />
-            </Box>
-          )}
           <Icon
             name="chevron-down"
             className={cn(
@@ -268,6 +295,17 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
           />
         </HStack>
       </Button>
+      {showClear && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          icon="x"
+          onClick={handleClear}
+          aria-label={t('common.clear')}
+          className="absolute top-1/2 -translate-y-1/2 end-8 h-6 w-6 p-0 text-muted-foreground"
+        />
+      )}
 
       {/* Dropdown */}
       {isOpen && (
@@ -276,8 +314,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
           bg="surface"
           border
           rounded="md"
-          shadow="lg"
-          className="z-50 w-full mt-1"
+          className="shadow-elevation-popover surface-material z-50 w-full mt-1"
         >
           {/* Search input */}
           <Box padding="sm" className="border-b border-border">
@@ -287,6 +324,12 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
+              role="combobox"
+              aria-expanded={isOpen}
+              aria-controls={listboxId}
+              aria-autocomplete="list"
+              aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+              aria-label={resolvedSearchPlaceholder}
               placeholder={resolvedSearchPlaceholder}
               icon={Search}
               className="text-sm"
@@ -294,7 +337,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
           </Box>
 
           {/* Options list */}
-          <Box overflow="auto" className="max-h-60">
+          <Box overflow="auto" className="max-h-60" id={listboxId} role="listbox">
             {isLoading ? (
               <Box padding="md" display="flex" className="justify-center">
                 <Spinner size="md" color="primary" />
@@ -311,19 +354,24 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
               </Box>
             ) : (
               <VStack gap="none">
-                {filteredOptions.map((option) => (
+                {filteredOptions.map((option, index) => (
                   <Box
                     key={option.value}
-                    as="button"
+                    id={optionId(index)}
+                    role="option"
+                    aria-selected={option.value === value}
+                    aria-disabled={option.disabled || undefined}
                     fullWidth
                     paddingX="sm"
                     paddingY="sm"
                     className={cn(
-                      "text-left text-sm hover:bg-muted focus:outline-none focus:bg-muted",
+                      "text-start text-sm cursor-pointer hover:bg-muted",
+                      index === activeIndex && "bg-muted",
                       option.value === value &&
-                        "bg-primary/10 text-primary",
+                        "bg-primary/10 text-foreground",
                       option.disabled && "opacity-50 cursor-not-allowed",
                     )}
+                    onMouseEnter={() => !option.disabled && setActiveIndex(index)}
                     onClick={() => handleSelect(option)}
                   >
                     <Typography variant="body" className="font-medium">

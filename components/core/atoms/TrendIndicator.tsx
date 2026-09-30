@@ -1,6 +1,7 @@
 import React from "react";
 import { Icon } from "./Icon";
 import { cn } from "../../../lib/cn";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 export type TrendDirection = "up" | "down" | "flat";
 export type TrendIndicatorSize = "sm" | "md" | "lg";
@@ -61,6 +62,7 @@ export const TrendIndicator = React.forwardRef<HTMLSpanElement, TrendIndicatorPr
     },
     ref,
   ) => {
+    const { t, locale } = useTranslate();
     // No trend data and no explicit direction — render nothing rather than
     // a fabricated flat "→" (same contract as Badge's empty render). Unset
     // bindings can arrive as null or "" depending on the path, so only a
@@ -73,10 +75,10 @@ export const TrendIndicator = React.forwardRef<HTMLSpanElement, TrendIndicatorPr
     const styles = sizeStyles[size];
 
     const formattedValue = hasValue
-      ? `${value > 0 ? "+" : ""}${value}%`
+      ? new Intl.NumberFormat(locale, { style: "percent", signDisplay: "exceptZero", maximumFractionDigits: 2 }).format(value / 100)
       : undefined;
 
-    const ariaLabel = label ?? (formattedValue ? `${dir} ${formattedValue}` : dir);
+    const ariaLabel = label ?? (formattedValue ? t("trendIndicator.withValue", { direction: t(`trendIndicator.${dir}`), value: formattedValue }) : t(`trendIndicator.${dir}`));
 
     return (
       <span

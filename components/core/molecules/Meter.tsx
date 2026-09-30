@@ -198,7 +198,6 @@ export const Meter: React.FC<MeterProps> = ({
                             <Box className="absolute inset-0 flex items-center justify-center">
                                 <Typography
                                     variant="h5"
-                                    weight="bold"
                                     className="tabular-nums"
                                     style={{ fontSize: dims.fontSize }}
                                 >

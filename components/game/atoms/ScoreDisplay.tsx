@@ -5,6 +5,7 @@ import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { GameIcon } from '../../core/atoms/GameIcon';
 import type { Asset } from '@almadar/core';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface ScoreDisplayProps {
   /** Sprite asset — takes precedence over icon when provided */
@@ -40,8 +41,10 @@ export function ScoreDisplay({
   icon,
   size = 'md',
   className,
-  locale = 'en-US',
+  locale: localeProp,
 }: ScoreDisplayProps) {
+  const { locale: appLocale } = useTranslate();
+  const locale = localeProp ?? appLocale;
   // Accept "score" as alias for "value" (common schema binding)
   const resolvedValue = typeof value === 'number' && !Number.isNaN(value)
     ? value

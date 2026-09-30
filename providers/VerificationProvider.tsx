@@ -20,6 +20,7 @@
 import React, { useEffect, useRef, type ReactNode } from 'react';
 import type { BusEvent, FieldValue, EventPayload, SExpr } from '@almadar/core';
 import { useEventBus } from '../hooks/useEventBus';
+import { useTranslate } from '../hooks/useTranslate';
 import {
   recordTransition,
   bindEventBus,
@@ -200,6 +201,9 @@ export function VerificationProvider({
     enabled ??
     (verifyFlag || (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production'));
   const eventBus = useEventBus();
+  const { t } = useTranslate();
+  const tRef = useRef(t);
+  tRef.current = t;
   const pendingRef = useRef<Map<string, PendingDispatch>>(new Map());
 
   // ── Compiled app path: intercept lifecycle events via onAny ──
@@ -300,7 +304,7 @@ export function VerificationProvider({
         const pending = pendingRef.current.get(key);
         pendingRef.current.delete(key);
 
-        const errorMsg = (payload['error'] ?? 'Unknown error') as string;
+        const errorMsg = (payload['error'] ?? tRef.current('verification.unknownError')) as string;
 
         const fromState = pending?.from ?? (payload['currentState'] as string | undefined) ?? 'unknown';
         recordTransition({

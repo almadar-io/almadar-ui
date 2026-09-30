@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { pressableProps } from "../../../lib/pressable";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Icon, type IconInput } from "./Icon";
@@ -44,22 +45,22 @@ const variantStyles: Record<FilterPillVariant, string> = {
     "bg-muted text-foreground",
     "border-[length:var(--border-width-thin)] border-border",
   ].join(" "),
-  primary: "bg-primary/10 text-primary border-[length:var(--border-width)] border-primary",
-  secondary: "bg-secondary/10 text-secondary-foreground border-[length:var(--border-width)] border-secondary",
+  primary: "bg-primary/10 text-foreground border-[length:var(--border-width)] border-primary",
+  secondary: "bg-secondary/10 text-foreground border-[length:var(--border-width)] border-secondary",
   success: [
-    "bg-surface text-success",
+    "bg-success/10 text-foreground",
     "border-[length:var(--border-width)] border-success",
   ].join(" "),
   warning: [
-    "bg-surface text-warning",
+    "bg-warning/10 text-foreground",
     "border-[length:var(--border-width)] border-warning",
   ].join(" "),
   danger: [
-    "bg-surface text-error",
+    "bg-error/10 text-foreground",
     "border-[length:var(--border-width)] border-error",
   ].join(" "),
   info: [
-    "bg-surface text-info",
+    "bg-info/10 text-foreground",
     "border-[length:var(--border-width)] border-info",
   ].join(" "),
   neutral: [
@@ -128,7 +129,7 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
           (onClick || clickEvent) && "cursor-pointer",
           className,
         )}
-        onClick={onClick || clickEvent ? handleClick : undefined}
+        {...pressableProps<HTMLSpanElement>(onClick || clickEvent ? handleClick : undefined)}
         {...props}
       >
         {resolvedIcon}

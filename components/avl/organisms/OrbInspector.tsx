@@ -42,6 +42,7 @@ import { getPatternDefinition, isEntityAwarePattern, renderUiEntriesOf } from '@
 
 import { Switch } from '../../core/atoms/Switch';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
 import { findTransition, resolvePatternConfig } from '../../../lib/resolve-pattern-config';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -543,7 +544,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                 <Box className="bg-muted/20 rounded-md p-3 font-mono text-xs leading-relaxed overflow-x-auto">
                   {patterns.map((entry, i) => (
                     <Box key={i}>
-                      <Typography variant="small" className="text-muted-foreground text-xs">slot: {entry.slot}</Typography>
+                      <Typography variant="small" className="text-muted-foreground text-xs">{t('orbInspector.slotLabel', { slot: entry.slot })}</Typography>
                       <OrbPatternTree config={entry.pattern as PatternNode} depth={0} />
                     </Box>
                   ))}
@@ -793,7 +794,7 @@ function AddEffectButton({ onAdd }: { onAdd: (type: string) => void }): React.Re
             <Box
               key={opt.value}
               className="px-3 py-1.5 text-xs cursor-pointer hover:bg-muted/50 flex items-center gap-2"
-              onClick={() => { onAdd(opt.value); setOpen(false); }}
+              {...pressableProps(() => { onAdd(opt.value); setOpen(false); })}
             >
               {effectCategoryOf(opt.value) !== null && (
                 <svg width={14} height={14}><AvlEffect x={7} y={7} effectType={opt.value} size={5} showBackground /></svg>
@@ -894,7 +895,7 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
     );
   }
 
-  const tier = patternDef?.category ?? 'Pattern';
+  const tier = patternDef?.category ?? t('orbInspector.pattern');
   const tokens = PHASE_2_TOKEN_FALLBACK[patternType] ?? [];
 
   const variantEnum = patternDef?.propsSchema?.variant?.enumValues;
@@ -949,6 +950,7 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
                   key={variant}
                   as={editable ? 'button' : 'div'}
                   onClick={editable ? () => onPropChange('variant', variant) : undefined}
+                  aria-pressed={editable ? isActive : undefined}
                   className={`rounded px-2 py-0.5 text-xs font-mono ${editable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
                   style={{
                     backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
@@ -977,6 +979,7 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
                   key={size}
                   as={editable ? 'button' : 'div'}
                   onClick={editable ? () => onPropChange('size', size) : undefined}
+                  aria-pressed={editable ? isActive : undefined}
                   className={`rounded px-2 py-0.5 text-xs font-mono ${editable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
                   style={{
                     backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-muted)',

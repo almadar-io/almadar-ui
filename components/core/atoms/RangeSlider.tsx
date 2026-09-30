@@ -4,6 +4,7 @@ import React, { useCallback, useRef, useState } from "react";
 import type { EventPayload, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 function useSafeEventBus() {
   try {
@@ -81,6 +82,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
     },
     ref,
   ) => {
+    const { t } = useTranslate();
     const [isDragging, setIsDragging] = useState(false);
     const [showTip, setShowTip] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -181,7 +183,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
               "[&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5",
             )}
             style={{ height: "100%", margin: 0 }}
-            aria-label={props["aria-label"] ?? "Range slider"}
+            aria-label={props["aria-label"] ?? t("rangeSlider.ariaLabel")}
             aria-valuemin={min}
             aria-valuemax={max}
             aria-valuenow={value}
@@ -192,7 +194,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
           <div
             className={cn(
               "absolute rounded-full bg-primary-foreground",
-              "border-2 border-primary",
+              "border-heavy border-primary",
               "shadow-elevation-interactive",
               "pointer-events-none",
               "transition-transform duration-instant",

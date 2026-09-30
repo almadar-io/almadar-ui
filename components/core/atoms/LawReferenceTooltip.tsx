@@ -186,7 +186,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
           <Box
             as="span"
             position="absolute"
-            className={cn("w-0 h-0 border-4", arrowStyles[position])}
+            className={cn("w-0 h-0 border-heavy", arrowStyles[position])}
           />
         </Box>
       )}

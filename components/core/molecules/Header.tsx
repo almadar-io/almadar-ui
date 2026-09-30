@@ -19,6 +19,7 @@ import type { IconInput } from "../atoms/index";
 import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
+import { pressableProps } from "../../../lib/pressable";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { TopNavItem } from "./TopNavItem";
 import type { UiError } from '../atoms/types';
@@ -228,7 +229,8 @@ export const Header: React.FC<HeaderProps> = ({
             "gap-2",
             onLogoClick && "cursor-pointer",
           )}
-          onClick={onLogoClick}
+          {...pressableProps(onLogoClick)}
+          aria-label={onLogoClick ? brandName : undefined}
         >
           {logo ? (
             typeof logo === "string" ? (

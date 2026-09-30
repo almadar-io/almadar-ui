@@ -6,7 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useId } from 'react';
 import type { EventKey, Asset, EventEmit } from '@almadar/core';
 import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
@@ -106,6 +106,9 @@ export const Tabs: React.FC<TabsProps> = ({
   );
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalActiveTab;
   const tabRefs = useRef<Record<string, HTMLElement | null>>({});
+  const uid = useId();
+  const tabId = (id: string) => `${uid}-tab-${id}`;
+  const panelId = (id: string) => `${uid}-panel-${id}`;
 
   const handleTabChange = (tabId: string, tabEvent?: string) => {
     if (controlledActiveTab === undefined) {
@@ -121,28 +124,31 @@ export const Tabs: React.FC<TabsProps> = ({
     }
   };
 
+  const focusTab = (target: NormalizedTabItem | undefined) => {
+    if (!target) return;
+    handleTabChange(target.id);
+    tabRefs.current[target.id]?.focus();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     // Vertical tab strips navigate with Up/Down; Left/Right are ignored so
     // they don't fight the page's own horizontal scrolling/focus.
     const prevKey = orientation === 'vertical' ? 'ArrowUp' : 'ArrowLeft';
     const nextKey = orientation === 'vertical' ? 'ArrowDown' : 'ArrowRight';
+    const enabled = safeItems.filter((item) => !item.disabled);
     if (e.key === prevKey || e.key === nextKey) {
       e.preventDefault();
-      const direction = e.key === prevKey ? -1 : 1;
-      const nextIndex = (index + direction + safeItems.length) % safeItems.length;
-      const nextTab = safeItems[nextIndex];
-      if (nextTab && !nextTab.disabled) {
-        handleTabChange(nextTab.id);
-        tabRefs.current[nextTab.id]?.focus();
+      const step = e.key === prevKey ? -1 : 1;
+      for (let i = 1; i <= safeItems.length; i++) {
+        const candidate = safeItems[(index + step * i + safeItems.length * i) % safeItems.length];
+        if (!candidate.disabled) {
+          focusTab(candidate);
+          return;
+        }
       }
     } else if (e.key === 'Home' || e.key === 'End') {
       e.preventDefault();
-      const targetIndex = e.key === 'Home' ? 0 : safeItems.length - 1;
-      const targetTab = safeItems[targetIndex];
-      if (targetTab && !targetTab.disabled) {
-        handleTabChange(targetTab.id);
-        tabRefs.current[targetTab.id]?.focus();
-      }
+      focusTab(e.key === 'Home' ? enabled[0] : enabled[enabled.length - 1]);
     }
   };
 
@@ -178,9 +184,10 @@ export const Tabs: React.FC<TabsProps> = ({
   };
 
   return (
-    <Box className={cn('w-full', className)}>
+    <Box className={cn('w-full', orientation === 'vertical' && 'flex flex-row', className)}>
       <Box
         role="tablist"
+        aria-orientation={orientation}
         className={cn(
           'flex',
           // Horizontal tab strip becomes a horizontally-scrollable lane
@@ -206,23 +213,25 @@ export const Tabs: React.FC<TabsProps> = ({
               ref={(el: HTMLDivElement | null) => {
                 tabRefs.current[item.id] = el;
               }}
+              id={tabId(item.id)}
               role="tab"
               aria-selected={isActive}
-              aria-controls={`tabpanel-${item.id}`}
+              aria-controls={isActive ? panelId(item.id) : undefined}
               aria-disabled={isDisabled}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => !isDisabled && handleTabChange(item.id, item.event)}
               onKeyDown={(e: React.KeyboardEvent) => handleKeyDown(e, index)}
               data-active={isActive}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all whitespace-nowrap',
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap',
                 orientation === 'horizontal' && 'snap-start shrink-0',
                 'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
                 isDisabled && 'opacity-50 cursor-not-allowed',
                 variantClasses[variant],
                 isActive
                   ? variant === 'pills'
-                    ? 'text-primary-foreground font-bold'
-                    : 'text-foreground font-bold'
+                    ? 'text-primary-foreground'
+                    : 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -233,7 +242,7 @@ export const Tabs: React.FC<TabsProps> = ({
                     : <Icon icon={item.icon} size="sm" />
                   )
               }
-              <Typography variant="small" weight={isActive ? 'semibold' : 'normal'} className="!text-inherit">
+              <Typography variant="small" weight="medium" className="!text-inherit">
                 {item.label}
               </Typography>
               {item.badge !== undefined && (
@@ -249,9 +258,10 @@ export const Tabs: React.FC<TabsProps> = ({
       {activeTabContent !== undefined && activeTabContent !== null && (
         <Box
           role="tabpanel"
-          id={`tabpanel-${activeTab}`}
-          aria-labelledby={`tab-${activeTab}`}
-          className="mt-4"
+          id={panelId(activeTab)}
+          aria-labelledby={tabId(activeTab)}
+          tabIndex={0}
+          className={orientation === 'vertical' ? 'flex-1 min-w-0 ps-4' : 'mt-4'}
         >
           {activeTabContent}
         </Box>

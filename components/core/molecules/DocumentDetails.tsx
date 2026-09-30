@@ -17,11 +17,11 @@
 import React, { useState } from 'react';
 import type { EntityRow, EventEmit, FieldValue } from '@almadar/core';
 import { cn } from '../../../lib/cn';
-import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
+import { formatValue } from '../../../lib/format';
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { relationLabel } from '../../../lib/relationLabel';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { useTranslate } from '../../../hooks/useTranslate';
+import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -32,6 +32,7 @@ import { Input } from '../atoms/Input';
 import { Select } from '../atoms/Select';
 import { Switch } from '../atoms/Switch';
 import type { IconInput } from '../atoms/index';
+import { valueLabelFor } from '../../../lib/displayField';
 
 export interface DocumentDetailsField {
   /** Entity field name (dot-notation supported for read-only display) */
@@ -50,6 +51,8 @@ export interface DocumentDetailsField {
   kind?: 'text' | 'boolean' | 'select' | 'readonly' | 'image';
   /** Options for kind: 'select' */
   options?: readonly string[];
+  /** Display text per exact value (select options and value chips); unmapped values show as stored */
+  labels?: Readonly<Record<string, string>>;
   /** Display format for the read value */
   format?: 'date' | 'currency' | 'number' | 'boolean' | 'percent';
   /** Entity-declared field type, injected by the display fields contract —
@@ -118,6 +121,7 @@ export function DocumentDetails({
 }: DocumentDetailsProps): React.ReactElement | null {
   const eventBus = useEventBus();
   const { t } = useTranslate();
+  const fmt = useFormatContext();
   const [fieldDraft, setFieldDraft] = useState<{ name: string; value: string } | null>(null);
 
   const recordId = entity?.id !== undefined && entity?.id !== null ? String(entity.id) : '';
@@ -132,8 +136,8 @@ export function DocumentDetails({
 
   // A relation chip: plain when un-routed, a click-through when the host
   // wires `relationEvent` — the "linked entities are navigable" affordance.
-  const relationChip = (item: FieldValue, name: string, key?: number) => {
-    const label = relationLabel(item) ?? humanizeEnumValue(String(item));
+  const relationChip = (item: FieldValue, name: string, labels: DocumentDetailsField['labels'], key?: number) => {
+    const label = relationLabel(item) ?? valueLabelFor(String(item), labels);
     if (!relationEvent) {
       return <Badge key={key} variant="default">{label}</Badge>;
     }
@@ -145,7 +149,7 @@ export function DocumentDetails({
         variant="default"
         role="button"
         tabIndex={0}
-        className="cursor-pointer transition-colors hover:bg-accent"
+        className="cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground"
         onClick={emitClick}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -164,7 +168,7 @@ export function DocumentDetails({
     const name = fieldName(field);
     const raw = getNestedValue(entity ?? {}, name);
     const kind = fieldKind(field, raw);
-    const label = field.label ?? field.header ?? humanizeFieldName(name);
+    const label = field.label ?? field.header ?? name;
 
     if (kind === 'image') {
       const url = typeof raw === 'string' ? raw : '';
@@ -198,7 +202,7 @@ export function DocumentDetails({
           disabled={!metaCommitEvent}
           aria-label={label}
           className="h-8 w-full"
-          options={(field.options ?? []).map((opt) => ({ value: opt, label: humanizeEnumValue(opt) }))}
+          options={(field.options ?? []).map((opt) => ({ value: opt, label: valueLabelFor(opt, field.labels) }))}
           onChange={(e) => commitField(name, e.target.value, raw)}
         />
       );
@@ -211,16 +215,16 @@ export function DocumentDetails({
         }
         return (
           <HStack gap="xs" className="flex-wrap">
-            {raw.map((item, i) => relationChip(item, name, i))}
+            {raw.map((item, i) => relationChip(item, name, field.labels, i))}
           </HStack>
         );
       }
       if (raw !== undefined && raw !== null && raw !== '' && relationLabel(raw) !== null) {
-        return relationChip(raw, name);
+        return relationChip(raw, name, field.labels);
       }
       const shown = raw === undefined || raw === null || raw === ''
         ? '—'
-        : formatValue(raw, field.format);
+        : formatValue(raw, field.format, fmt);
       return <Typography variant="small" className="break-words">{shown}</Typography>;
     }
 
@@ -249,7 +253,7 @@ export function DocumentDetails({
     }
     const shown = raw === undefined || raw === null || raw === ''
       ? '—'
-      : relationLabel(raw) ?? formatValue(raw, field.format);
+      : relationLabel(raw) ?? formatValue(raw, field.format, fmt);
     return (
       <Box
         role="button"
@@ -276,12 +280,12 @@ export function DocumentDetails({
     <Card variant="bordered" className={cn('w-full', className)}>
       <VStack gap="sm" className="p-4">
         <Typography variant="caption" color="secondary" weight="medium" className="uppercase tracking-wide">
-          {title ?? (t('documentDetails.title') || 'Details')}
+          {title ?? t('documentDetails.title')}
         </Typography>
         <VStack gap="sm">
           {fieldDefs.map((field) => {
             const name = fieldName(field);
-            const label = field.label ?? field.header ?? humanizeFieldName(name);
+            const label = field.label ?? field.header ?? name;
             return (
               <VStack key={name} gap="xs">
                 <HStack gap="xs" className="items-center">

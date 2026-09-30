@@ -12,6 +12,7 @@ import { Container } from "../molecules/Container";
 import { VStack, HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
+import { useTranslate } from "../../../hooks/useTranslate";
 import type { TemplateProps } from "./types";
 
 export type CounterSize = "sm" | "md" | "lg";
@@ -93,7 +94,7 @@ function CounterMinimal({
         variant="h1"
         className={cn(
           sizeStyles[size].display,
-          "font-bold tabular-nums min-w-[3ch] text-center",
+          "tabular-nums min-w-[3ch] text-center",
         )}
       >
         {resolved.count}
@@ -116,7 +117,7 @@ CounterMinimal.displayName = "CounterMinimal";
 function CounterStandard({
   entity,
   size = "md",
-  title = "Counter",
+  title: titleProp,
   showReset = true,
   onDecrement,
   onIncrement,
@@ -126,6 +127,8 @@ function CounterStandard({
   resetEvent,
   className,
 }: CounterTemplateProps): React.JSX.Element | null {
+  const { t } = useTranslate();
+  const title = titleProp ?? t("counter.title");
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
   if (!resolved) return null;
   return (
@@ -141,7 +144,7 @@ function CounterStandard({
           variant="h1"
           className={cn(
             sizeStyles[size].display,
-            "font-bold tabular-nums text-primary",
+            "tabular-nums text-primary",
           )}
         >
           {resolved.count}
@@ -172,7 +175,7 @@ function CounterStandard({
             onClick={onReset}
             icon="rotate-ccw"
           >
-            Reset
+            {t("common.reset")}
           </Button>
         )}
       </VStack>
@@ -184,7 +187,7 @@ CounterStandard.displayName = "CounterStandard";
 function CounterFull({
   entity,
   size = "md",
-  title = "Counter",
+  title: titleProp,
   showReset = true,
   onDecrement,
   onIncrement,
@@ -194,6 +197,8 @@ function CounterFull({
   resetEvent,
   className,
 }: CounterTemplateProps): React.JSX.Element | null {
+  const { t } = useTranslate();
+  const title = titleProp ?? t("counter.title");
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
   if (!resolved) return null;
   return (
@@ -210,7 +215,7 @@ function CounterFull({
             variant="h1"
             className={cn(
               sizeStyles[size].display,
-              "font-bold tabular-nums text-primary",
+              "tabular-nums text-primary",
             )}
           >
             {resolved.count}
@@ -251,7 +256,7 @@ function CounterFull({
             onClick={onReset}
             icon="rotate-ccw"
           >
-            Reset to 0
+            {t("counter.resetToZero")}
           </Button>
         )}
       </VStack>

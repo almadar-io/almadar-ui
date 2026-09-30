@@ -16,6 +16,7 @@
 import React from "react";
 import type { ControlValue, EntityRow, EventEmit, EventKey, EventPayload, FieldValue, FormSubmitPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { toDateInputValue, toDateTimeInputValue } from "../../../lib/format";
 import { Input } from "../atoms/Input";
 import { Button } from "../atoms/Button";
 import { Select, type SelectOption } from "../atoms/Select";
@@ -52,6 +53,9 @@ import {
   type EvaluationContext as SharedEvaluationContext,
 } from "@almadar/evaluator";
 import type { UiError } from '../atoms/types';
+import { FormField } from "../molecules/FormField";
+import { Label } from "../atoms/Label";
+import { pressableProps } from "../../../lib/pressable";
 
 /**
  * S-Expression type for conditional logic (re-export from @almadar/evaluator)
@@ -209,6 +213,8 @@ export interface SchemaField {
   options?: readonly SelectOption[];
   /** Enum values (alternative to options, just strings) - accepts readonly for generated const arrays */
   values?: readonly string[];
+  /** Display text per exact value of `values`; unmapped values show as stored */
+  labels?: Readonly<Record<string, string>>;
   /** Relation configuration for foreign key references */
   relation?: RelationConfig;
   /** Minimum value (for number) or length (for string) */
@@ -385,7 +391,7 @@ function getEnumOptions(field: SchemaField): SelectOption[] {
   if (field.values && field.values.length > 0) {
     return field.values.map((v) => ({
       value: v,
-      label: v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " "),
+      label: field.labels?.[v] ?? v,
     }));
   }
 
@@ -394,7 +400,7 @@ function getEnumOptions(field: SchemaField): SelectOption[] {
   if (validation?.enum && validation.enum.length > 0) {
     return validation.enum.map((v) => ({
       value: v,
-      label: v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " "),
+      label: field.labels?.[v] ?? v,
     }));
   }
 
@@ -606,6 +612,33 @@ export const Form: React.FC<FormProps> = ({
   );
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const formRef = React.useRef<HTMLFormElement | null>(null);
+  const formUid = React.useId();
+  const fieldDomId = (name: string) => `${formUid}-${name}`;
+  const [fieldErrors, setFieldErrors] = React.useState<Readonly<Record<string, string>>>({});
+  const [invalidFields, setInvalidFields] = React.useState<readonly string[]>([]);
+
+  const fieldElement = (name: string) =>
+    formRef.current?.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+      `[data-field-name=${JSON.stringify(name)}]`,
+    ) ?? null;
+
+  // The browser's constraint validation is the one source of field rules;
+  // this only mirrors a field's verdict into its inline error.
+  const validateField = (name: string) => {
+    const el = fieldElement(name);
+    if (!el) return;
+    const message = el.validity.valid ? null : el.validationMessage || t('form.invalidValue');
+    setFieldErrors((prev) => {
+      if (message === null) {
+        if (!(name in prev)) return prev;
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      }
+      return prev[name] === message ? prev : { ...prev, [name]: message };
+    });
+    if (message === null) setInvalidFields((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : prev));
+  };
 
   const formMode = (props as { mode?: string }).mode;
   const mountedRef = React.useRef(false);
@@ -715,6 +748,7 @@ export const Form: React.FC<FormProps> = ({
     const newFormData = { ...formData, [name]: value };
     debug('forms', 'field-change', { mode: formMode, name, value, prevFormData: formData, newFormData });
     setFormData(newFormData);
+    if (fieldErrors[name] !== undefined) queueMicrotask(() => validateField(name));
 
     // Emit field change event
     eventBus.emit("UI:FIELD_CHANGED", {
@@ -778,6 +812,7 @@ export const Form: React.FC<FormProps> = ({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitError(null);
+    setInvalidFields([]);
     debug('forms', 'submit-enter', {
       mode: formMode,
       submitEvent,
@@ -815,44 +850,56 @@ export const Form: React.FC<FormProps> = ({
   // tooltips. Also collects the full set of invalid fields after the
   // current event loop tick so a single Alert can list every offender,
   // not just the first one the browser reaches.
-  const handleInvalid = (e: React.FormEvent<HTMLFormElement>) => {
-    const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-    const fieldName =
-      target.getAttribute('data-field-name') ?? target.name ?? '';
-    const fieldMessage = target.validationMessage || 'Invalid value';
-    debug('forms', 'invalid', { mode: formMode, fieldName, fieldMessage });
-    // Defer one tick so we collect every invalid field, not just the
-    // first one the browser fires for. The browser walks all elements
-    // synchronously when the form fails to validate.
+  const invalidScheduled = React.useRef(false);
+  const handleInvalid = (e: Event) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    debug('forms', 'invalid', { mode: formMode, fieldName: target.getAttribute('data-field-name') ?? '' });
+    // The browser fires one `invalid` per offender synchronously; collect
+    // them all once, after the walk.
+    if (invalidScheduled.current) return;
+    invalidScheduled.current = true;
     queueMicrotask(() => {
+      invalidScheduled.current = false;
       const form = formRef.current;
       if (!form) return;
+      // Read each field's `validity` (event-free) rather than `:invalid`, which
+      // some engines evaluate by re-running validation.
       const invalidEls = Array.from(
-        form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
-          ':invalid',
-        ),
-      );
+        form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('[data-field-name]'),
+      ).filter((el) => el.validity !== undefined && !el.validity.valid);
       if (invalidEls.length === 0) return;
-      const missing = invalidEls.map(
-        (el) => el.getAttribute('data-field-name') ?? el.name ?? '',
-      );
       const messages = invalidEls.map((el) => ({
-        field: el.getAttribute('data-field-name') ?? el.name ?? '',
-        message: el.validationMessage,
+        field: el.getAttribute('data-field-name') ?? '',
+        message: el.validationMessage || t('form.invalidValue'),
       }));
-      const summary =
-        missing.length === 1
-          ? `${missing[0]}: ${messages[0]?.message}`
-          : `Please fix ${missing.length} fields: ${missing.join(', ')}`;
-      setSubmitError(summary);
+      const missing = messages.map((m) => m.field);
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        for (const m of messages) next[m.field] = m.message;
+        return next;
+      });
+      setInvalidFields(missing);
       eventBus.emit('UI:VALIDATION_FAILED', {
         submitEvent,
         missing,
         messages,
-        summary,
+        summary: t('form.fixFields', { count: missing.length }),
       });
     });
   };
+  const handleInvalidRef = React.useRef(handleInvalid);
+  handleInvalidRef.current = handleInvalid;
+  // `invalid` does not bubble; a capture listener on the form sees every field's.
+  React.useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+    const listener = (e: Event) => handleInvalidRef.current(e);
+    form.addEventListener('invalid', listener, true);
+    return () => form.removeEventListener('invalid', listener, true);
+  }, []);
+
+  const focusField = (name: string) => fieldElement(name)?.focus();
 
   const handleCancel = () => {
     // Dispatch cancel event for trait state machine integration
@@ -878,34 +925,42 @@ export const Form: React.FC<FormProps> = ({
       }
 
       const inputType = determineInputType(field);
-      const label =
-        field.label ||
-        fieldName.charAt(0).toUpperCase() +
-          fieldName.slice(1).replace(/([A-Z])/g, " $1");
+      const label = field.label || fieldName;
       const currentValue = formData[fieldName] ?? field.defaultValue ?? "";
 
+      const error = fieldErrors[fieldName];
+      const domId = fieldDomId(fieldName);
+
+      // A checkbox carries its own label; an image field is several controls.
+      if (inputType === "checkbox" || inputType === "image") {
+        return (
+          <VStack key={fieldName} gap="xs" data-field={fieldName}>
+            {inputType === "image" && (
+              <Label htmlFor={domId} required={field.required}>{label}</Label>
+            )}
+            {renderFieldInput(field, fieldName, inputType, currentValue, label)}
+            {error ? (
+              <Typography id={`${domId}-error`} variant="caption" color="error" data-field-error>
+                {error}
+              </Typography>
+            ) : field.hint ? (
+              <Typography id={`${domId}-hint`} variant="caption" color="muted">
+                {field.hint}
+              </Typography>
+            ) : null}
+          </VStack>
+        );
+      }
+
       return (
-        <VStack key={fieldName} gap="xs" data-field={fieldName}>
-          {inputType !== "checkbox" && (
-            <Typography as="label" variant="label" weight="bold">
-              {label}
-              {field.required && (
-                <Typography as="span" color="error" className="ml-1">
-                  *
-                </Typography>
-              )}
-            </Typography>
-          )}
-          {renderFieldInput(field, fieldName, inputType, currentValue, label)}
-          {field.hint && (
-            <Typography variant="caption" color="muted">
-              {field.hint}
-            </Typography>
-          )}
-        </VStack>
+        <Box key={fieldName} data-field={fieldName}>
+          <FormField label={label} required={field.required} hint={field.hint} error={error}>
+            {renderFieldInput(field, fieldName, inputType, currentValue, label)}
+          </FormField>
+        </Box>
       );
     },
-    [formData, isFieldVisible, relationsData, relationsLoading, isLoading],
+    [formData, fieldErrors, isFieldVisible, relationsData, relationsLoading, isLoading],
   );
 
   // Normalize fields - handle both string[] and SchemaField[], with entity-derived fallback
@@ -982,18 +1037,15 @@ export const Form: React.FC<FormProps> = ({
         const isCollapsed = collapsedSections.has(section.id);
 
         return (
-          <Box key={section.id} border rounded="lg" overflow="hidden">
+          <Box key={section.id} as="fieldset" className="m-0 min-w-0 p-0 border border-border rounded-container overflow-hidden">
+            <Box as="legend" className="sr-only">{section.title}</Box>
             <Box
+              {...pressableProps(section.collapsible ? () => toggleSection(section.id) : undefined)}
+              aria-expanded={section.collapsible ? !isCollapsed : undefined}
               className={cn(
                 "px-4 py-3 bg-muted flex items-center justify-between",
-                section.collapsible &&
-                  "cursor-pointer hover:bg-muted/80",
+                section.collapsible && "cursor-pointer hover:bg-muted/80",
               )}
-              onClick={
-                section.collapsible
-                  ? () => toggleSection(section.id)
-                  : undefined
-              }
             >
               <Typography variant="label" weight="semibold">
                 {section.title}
@@ -1036,8 +1088,16 @@ export const Form: React.FC<FormProps> = ({
     // browser can enforce them natively. `min` / `max` apply to numeric
     // and date inputs; for string-type inputs they're surfaced as
     // `minLength` / `maxLength` further down per input case.
+    const domId = fieldDomId(fieldName);
+    const selfDescribed = inputType === "checkbox" || inputType === "image";
     const commonProps = {
-      id: fieldName,
+      id: domId,
+      ...(selfDescribed
+        ? {
+            "aria-invalid": fieldErrors[fieldName] ? true : undefined,
+            "aria-describedby": fieldErrors[fieldName] ? `${domId}-error` : field.hint ? `${domId}-hint` : undefined,
+          }
+        : undefined),
       name: fieldName,
       'data-field-name': fieldName,
       required: field.required,
@@ -1076,7 +1136,7 @@ export const Form: React.FC<FormProps> = ({
             options={options}
             value={String(currentValue)}
             onValueChange={(v) => handleChange(fieldName, v as string)}
-            placeholder={field.placeholder || `Select ${label}...`}
+            placeholder={field.placeholder || t('form.selectPlaceholder', { label })}
           />
         );
       }
@@ -1106,7 +1166,7 @@ export const Form: React.FC<FormProps> = ({
               onValueChange={(value) =>
                 handleChange(fieldName, Array.isArray(value) ? value : [value])
               }
-              placeholder={field.placeholder || `Select ${label}...`}
+              placeholder={field.placeholder || t('form.selectPlaceholder', { label })}
             />
           );
         }
@@ -1118,8 +1178,8 @@ export const Form: React.FC<FormProps> = ({
             onChange={(value) => handleChange(fieldName, value)}
             options={relationOptions}
             isLoading={relationLoading}
-            placeholder={field.placeholder || `Select ${label}...`}
-            searchPlaceholder={`Search ${field.relation?.entity || label}...`}
+            placeholder={field.placeholder || t('form.selectPlaceholder', { label })}
+            searchPlaceholder={t('form.searchPlaceholder', { entity: field.relation?.entity || label })}
             clearable={!field.required}
           />
         );
@@ -1266,7 +1326,7 @@ export const Form: React.FC<FormProps> = ({
           <Input
             {...commonProps}
             type="date"
-            value={formatDateValue(currentValue)}
+            value={toDateInputValue(currentValue)}
             onChange={(e) => handleChange(fieldName, e.target.value)}
           />
         );
@@ -1276,7 +1336,7 @@ export const Form: React.FC<FormProps> = ({
           <Input
             {...commonProps}
             type="datetime-local"
-            value={formatDateTimeValue(currentValue)}
+            value={toDateTimeInputValue(currentValue)}
             onChange={(e) => handleChange(fieldName, e.target.value)}
           />
         );
@@ -1337,15 +1397,33 @@ export const Form: React.FC<FormProps> = ({
     <form
       ref={formRef}
       data-pattern="form-section"
-      className={cn(layoutStyles[layout], gapStyles[gap], className)}
+      className={cn(layoutStyles[layout], gapStyles[gap], layout === "vertical" && "w-full max-w-xl", className)}
       onSubmit={handleSubmit}
-      onInvalid={handleInvalid}
+      onBlur={(e: React.FocusEvent<HTMLFormElement>) => {
+        const name = e.target instanceof HTMLElement ? e.target.getAttribute("data-field-name") : null;
+        if (name) validateField(name);
+      }}
       {...props}
     >
       {/* Required-field validation error from handleSubmit */}
       {submitError && (
         <Alert variant="error" className="mb-4">
           {submitError}
+        </Alert>
+      )}
+      {invalidFields.length > 0 && (
+        <Alert variant="error" title={t("form.fixFields", { count: invalidFields.length })}>
+          <HStack gap="sm" wrap>
+            {invalidFields.map((name) => {
+              const def = normalizedFields.find((f) => (f.name || f.field) === name)
+                ?? sections.flatMap((sec) => sec.fields).find((f) => (f.name || f.field) === name);
+              return (
+                <Button key={name} variant="link" className="h-auto p-0" onClick={() => focusField(name)}>
+                  {def?.label ?? name}
+                </Button>
+              );
+            })}
+          </HStack>
         </Alert>
       )}
       {/* Error state */}
@@ -1371,18 +1449,12 @@ export const Form: React.FC<FormProps> = ({
       {/* Action buttons for schema-based forms */}
       {((schemaFields && schemaFields.length > 0) ||
         (sectionElements && sectionElements.length > 0)) && (showSubmit || shouldShowCancel) && (
-        <HStack gap="sm" className="pt-4">
-          {showSubmit && (
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isLoading}
-              data-event={submitEvent}
-              data-testid={`action-${submitEvent}`}
-            >
-              {isLoading ? t('form.saving') : resolvedSubmitLabel}
-            </Button>
-          )}
+        <HStack
+          gap="sm"
+          justify="end"
+          wrap
+          className="sticky bottom-0 z-10 -mx-1 px-1 pt-4 pb-1 bg-card/95 surface-material"
+        >
           {shouldShowCancel && (
             <Button
               type="button"
@@ -1395,54 +1467,21 @@ export const Form: React.FC<FormProps> = ({
               {resolvedCancelLabel}
             </Button>
           )}
+          {showSubmit && (
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isLoading}
+              data-event={submitEvent}
+              data-testid={`action-${submitEvent}`}
+            >
+              {isLoading ? t('form.saving') : resolvedSubmitLabel}
+            </Button>
+          )}
         </HStack>
       )}
     </form>
   );
 };
-
-/**
- * Format date value for date input
- */
-function formatDateValue(value: FieldValue): string {
-  if (!value) return "";
-
-  if (value instanceof Date) {
-    return value.toISOString().split("T")[0];
-  }
-
-  if (typeof value === "string") {
-    // Try to parse as date
-    const date = new Date(value);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().split("T")[0];
-    }
-    return value;
-  }
-
-  return "";
-}
-
-/**
- * Format datetime value for datetime-local input
- */
-function formatDateTimeValue(value: FieldValue): string {
-  if (!value) return "";
-
-  if (value instanceof Date) {
-    return value.toISOString().slice(0, 16);
-  }
-
-  if (typeof value === "string") {
-    // Try to parse as date
-    const date = new Date(value);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().slice(0, 16);
-    }
-    return value;
-  }
-
-  return "";
-}
 
 Form.displayName = "Form";

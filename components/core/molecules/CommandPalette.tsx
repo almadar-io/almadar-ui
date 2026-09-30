@@ -22,6 +22,7 @@ import { Input } from '../atoms/Input';
 import { Badge } from '../atoms/Badge';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { Modal } from './Modal';
 
 export interface CommandPaletteCommand {
@@ -60,10 +61,9 @@ export interface CommandPaletteProps {
   commands: CommandPaletteCommand[];
   /** Called with the selected command (click, or Enter on the highlighted row) */
   onSelect?: (command: CommandPaletteCommand) => void;
-  /** Search field placeholder. Consumers own i18n — plain string prop, no
-   *  package-internal translation (matches FloatingToolbar's convention). */
+  /** Search field placeholder. Defaults to the translated "Type a command...". */
   placeholder?: string;
-  /** Label shown when no command matches the query */
+  /** Label shown when no command matches the query. Defaults to the translated message. */
   emptyLabel?: string;
   /** Additional CSS classes on the overlay's dialog */
   className?: string;
@@ -114,11 +114,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenChange,
   commands,
   onSelect,
-  placeholder = 'Type a command...',
-  emptyLabel = 'No matching commands',
+  placeholder: placeholderProp,
+  emptyLabel: emptyLabelProp,
   className,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
+  const placeholder = placeholderProp ?? t('commandPalette.placeholder');
+  const emptyLabel = emptyLabelProp ?? t('commandPalette.noMatches');
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(0);
 

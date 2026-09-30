@@ -31,12 +31,13 @@ const STATUS_CONFIG: Record<string, {
 };
 
 export function VerificationTab({ checks, summary }: VerificationTabProps) {
-    const { t } = useTranslate();
+    const { t, locale } = useTranslate();
+    const timeFormat = new Intl.DateTimeFormat(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     if (checks.length === 0) {
         return (
             <EmptyState
                 title={t('debug.noVerificationChecks')}
-                description="Checks will appear as the app executes transitions and effects"
+                description={t('debug.verificationHint')}
                 className="py-8"
             />
         );
@@ -52,18 +53,18 @@ export function VerificationTab({ checks, summary }: VerificationTabProps) {
         <div className="debug-tab debug-tab--verification">
             {/* Summary bar */}
             <div className="flex items-center gap-3 mb-3 p-2 bg-muted rounded">
-                <Badge variant="success" size="sm">{summary.passed} passed</Badge>
+                <Badge variant="success" size="sm">{t('debug.passedCount', { count: summary.passed })}</Badge>
                 {summary.failed > 0 && (
-                    <Badge variant="danger" size="sm">{summary.failed} failed</Badge>
+                    <Badge variant="danger" size="sm">{t('debug.failedCount', { count: summary.failed })}</Badge>
                 )}
                 {summary.warnings > 0 && (
-                    <Badge variant="warning" size="sm">{summary.warnings} warnings</Badge>
+                    <Badge variant="warning" size="sm">{t('debug.warningsCount', { count: summary.warnings })}</Badge>
                 )}
                 {summary.pending > 0 && (
-                    <Badge variant="default" size="sm">{summary.pending} pending</Badge>
+                    <Badge variant="default" size="sm">{t('debug.pendingCount', { count: summary.pending })}</Badge>
                 )}
                 <Typography variant="small" className="text-muted-foreground ml-auto">
-                    {summary.totalChecks} total checks
+                    {t('debug.totalChecksCount', { count: summary.totalChecks })}
                 </Typography>
             </div>
 
@@ -91,12 +92,7 @@ export function VerificationTab({ checks, summary }: VerificationTabProps) {
                                     )}
                                 </div>
                                 <Typography variant="small" className="text-muted-foreground font-mono text-xs shrink-0">
-                                    {new Date(check.updatedAt).toLocaleTimeString('en-US', {
-                                        hour12: false,
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        second: '2-digit',
-                                    })}
+                                    {timeFormat.format(new Date(check.updatedAt))}
                                 </Typography>
                             </div>
                         );

@@ -63,7 +63,7 @@ export function TopNavItem({ item, activeHref, tone = 'solid', className }: TopN
   const triggerClass = cn(
     'flex items-center gap-1.5 px-3 py-1.5 rounded-interactive text-sm font-medium transition-colors whitespace-nowrap',
     isActive
-      ? tone === 'solid' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-primary/10 text-primary'
+      ? tone === 'solid' ? 'bg-primary text-primary-foreground shadow-elevation-interactive' : 'bg-primary/10 text-foreground'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
     className,
   );

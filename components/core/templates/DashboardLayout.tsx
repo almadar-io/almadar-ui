@@ -15,6 +15,7 @@ import { useTranslate } from "../../../hooks/useTranslate";
 import { useCurrentPagePath } from "../../../providers/CurrentPagePathContext";
 import { PageTransition } from "../molecules/PageTransition";
 import type { AssetUrl, EventEmit, EventKey } from "@almadar/core";
+import { Menu } from "../molecules/Menu";
 
 export interface NavItem {
   label: string;
@@ -169,7 +170,7 @@ export interface DashboardLayoutProps {
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
-  appName = "{{APP_TITLE}}",
+  appName: appNameProp,
   logo,
   navItems = [],
   user: userProp,
@@ -190,6 +191,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
+  const appName = appNameProp ?? t("dashboard.defaultAppName");
   // Search is shown when explicitly toggled OR a searchEvent is wired.
   const searchEnabled = showSearch || Boolean(searchEvent) || Boolean(onSearchSubmit);
   // Bell is shown when notifications array is provided (even empty []).
@@ -213,7 +216,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (action.navigatesTo) eventBus.emit('UI:NAVIGATE', { url: action.navigatesTo });
   };
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Responsive sidebar is driven by a JS-measured container width (ResizeObserver
   // on the layout root) rather than Tailwind container-query classes. The
@@ -260,13 +263,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     userProp ||
     (authUser
       ? {
-          name: authUser.displayName || authUser.email?.split("@")[0] || "User",
+          name: authUser.displayName || authUser.email?.split("@")[0] || t("dashboard.defaultUserName"),
           email: authUser.email || "",
           avatar: authUser.photoURL || undefined,
         }
       : null);
-
-  const { t } = useTranslate();
 
   const handleSignOut = onSignOutProp || authSignOut;
 
@@ -281,11 +282,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       // `@container/dashboard` is kept for descendant grid components that opt
       // into container queries; the sidebar's own responsiveness is JS-driven
       // (see isMobile above) so it never depends on those classes being emitted.
-      className="@container/dashboard min-h-screen w-full bg-background dark:bg-background surface-page flex flex-row items-stretch"
+      className="@container/dashboard min-h-screen w-full bg-background surface-page flex flex-row items-stretch"
     >
       {showSidebar && isMobile && sidebarOpen && (
         <Box
-          className="fixed inset-0 bg-foreground/50 dark:bg-foreground/70 z-20"
+          className="fixed inset-0 bg-foreground/50 z-20"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -295,7 +296,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <Box
           as="aside"
           className={cn(
-            "z-30 flex-shrink-0 bg-card dark:bg-card border-r border-border dark:border-border",
+            "z-30 flex-shrink-0 bg-card surface-material border-e-[length:var(--border-width)] border-border",
             isRail ? "w-16" : "w-64",
             "flex flex-col",
           )}
@@ -319,11 +320,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <HStack
             align="center"
             justify={isRail ? "center" : "between"}
-            className={cn("h-16 border-b border-border dark:border-border", isRail ? "px-2" : "px-4")}
+            className={cn("h-16 border-b-[length:var(--border-width)] border-border", isRail ? "px-2" : "px-4")}
           >
             <Link to="/" className="flex items-center gap-2" title={isRail ? appName : undefined}>
               {logo || (
-                <Box className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Box className="w-8 h-8 bg-primary rounded-interactive flex items-center justify-center">
                   <Typography
                     variant="small"
                     className="text-primary-foreground font-bold text-sm"
@@ -336,7 +337,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {!isRail && (
                 <Typography
                   variant="label"
-                  className="font-semibold text-foreground dark:text-foreground"
+                  className="heading-voice text-foreground"
                   as="span"
                 >
                   {appName}
@@ -346,8 +347,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {isMobile && (
               <Button
                 variant="ghost"
-                className="p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"
+                className="p-2"
                 onClick={() => setSidebarOpen(false)}
+                aria-label={t('aria.closePanel')}
               >
                 <AlmadarIcon name="x" className="h-5 w-5" />
               </Button>
@@ -378,14 +380,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               consumer-provided navigation surface; takes the remaining height
               with its own scroll. Hidden in the collapsed rail (no room). */}
           {sidebarContent && !isRail && (
-            <Box className="flex-1 overflow-y-auto border-t border-border dark:border-border px-2 py-3">
+            <Box className="flex-1 overflow-y-auto border-t-[length:var(--border-width)] border-border px-2 py-3">
               {sidebarContent}
             </Box>
           )}
 
           {/* Sidebar footer — opt-in only. */}
           {sidebarFooter && (
-            <Box className="p-4 border-t border-border dark:border-border">
+            <Box className="p-4 border-t-[length:var(--border-width)] border-border">
               {sidebarFooter}
             </Box>
           )}
@@ -398,23 +400,30 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {showHeader && (
           <Box
             as="header"
-            className="sticky top-0 z-20 h-16 bg-card dark:bg-card border-b border-border dark:border-border"
+            className="sticky top-0 z-20 pt-[env(safe-area-inset-top)] bg-card surface-material border-b-[length:var(--border-width)] border-border"
           >
             <HStack
               align="center"
               justify="between"
-              className="h-full px-3 @sm/dashboard:px-4 gap-2 @sm/dashboard:gap-4"
+              className="h-16 px-3 @sm/dashboard:px-4 gap-2 @sm/dashboard:gap-4"
             >
               {/* Mobile menu button — only in sidebar mode. */}
               {showSidebar && isMobile && (
                 <Button
                   variant="ghost"
-                  className="p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="p-2 rounded-interactive hover:bg-muted text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
                   onClick={() => setSidebarOpen(true)}
                   aria-label={t('aria.openSidebar')}
                 >
                   <AlmadarIcon name="menu" className="h-5 w-5" />
                 </Button>
+              )}
+
+              {/* Phone app bar names the app; it gives way to an open search. */}
+              {isMobile && !isTopNav && !searchOpen && (
+                <Typography variant="label" weight="medium" truncate className="flex-1 min-w-0 text-foreground">
+                  {appName}
+                </Typography>
               )}
 
               {/* Topnav horizontal nav — replaces sidebar. */}
@@ -427,7 +436,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 >
                   <Link to="/" className="flex items-center gap-2 mr-3 shrink-0">
                     {logo || (
-                      <Box className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
+                      <Box className="w-7 h-7 bg-primary rounded-interactive flex items-center justify-center">
                         <Typography
                           variant="small"
                           className="text-primary-foreground font-bold text-xs"
@@ -439,7 +448,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     )}
                     <Typography
                       variant="label"
-                      className="font-semibold text-foreground dark:text-foreground"
+                      className="heading-voice text-foreground"
                       as="span"
                     >
                       {appName}
@@ -456,21 +465,40 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </HStack>
               )}
 
-              {/* Search hidden on phones; capped width on `xl+`. */}
+              {/* On phones search collapses to an icon that expands the field; capped width on `xl+`. */}
               {searchEnabled && (
-                <Box className="hidden @sm/dashboard:block flex-1 min-w-0 @xl/dashboard:max-w-md">
+                <Box
+                  data-dashboard-search
+                  className={cn(
+                    "flex-1 min-w-0 @xl/dashboard:max-w-md",
+                    isMobile && !searchOpen ? "hidden" : "block",
+                  )}
+                >
                   <Input
                     type="search"
                     icon="search"
                     placeholder={t('common.search')}
                     className="w-full"
+                    autoFocus={isMobile && searchOpen}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         handleSearchSubmit((e.target as HTMLInputElement).value);
+                      } else if (e.key === 'Escape' && isMobile) {
+                        setSearchOpen(false);
                       }
                     }}
                   />
                 </Box>
+              )}
+              {searchEnabled && isMobile && (
+                <Button
+                  variant="ghost"
+                  icon={searchOpen ? "x" : "search"}
+                  onClick={() => setSearchOpen((open) => !open)}
+                  aria-label={t('aria.search')}
+                  aria-expanded={searchOpen}
+                  className="shrink-0 min-h-[44px] min-w-[44px]"
+                />
               )}
               {!searchEnabled && <Box className="flex-1" />}
 
@@ -486,11 +514,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <Button
                     key={`${action.event ?? action.navigatesTo ?? 'action'}-${idx}`}
                     variant="ghost"
-                    className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
+                    className="relative p-2"
                     onClick={() => handleTopBarActionClick(action)}
                     aria-label={action.label ?? (typeof action.icon === 'string' ? action.icon : undefined)}
                   >
-                    <AlmadarIcon icon={action.icon} className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+                    <AlmadarIcon icon={action.icon} className="h-5 w-5 text-muted-foreground" />
                     {action.badge !== undefined && action.badge !== null && action.badge !== 0 && action.badge !== '' && (
                       <Box
                         as="span"
@@ -509,11 +537,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {notificationsEnabled && (
                   <Button
                     variant="ghost"
-                    className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
+                    className="relative p-2"
                     onClick={handleNotificationClick}
                     aria-label={t('common.notifications')}
                   >
-                    <AlmadarIcon name="bell" className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+                    <AlmadarIcon name="bell" className="h-5 w-5 text-muted-foreground" />
                     {unreadCount > 0 && (
                       <Box
                         as="span"
@@ -528,70 +556,34 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {/* User menu — `user.name` is read unguarded below, so a
                     partial user object must not open this branch. */}
                 {user?.name && (
-                  <Box className="relative">
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted dark:hover:bg-muted"
-                      onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    >
-                      <Avatar
-                        src={user.avatar}
-                        alt={user.name}
-                        initials={user.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .substring(0, 2)}
-                        size="sm"
-                      />
-                      <Typography
-                        variant="small"
-                        className="hidden @sm/dashboard:block text-sm font-medium text-foreground dark:text-foreground"
-                        as="span"
-                      >
-                        {user.name}
-                      </Typography>
-                      <AlmadarIcon name="chevron-down" className="hidden @sm/dashboard:block h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
-                    </Button>
-
-                    {userMenuOpen && (
-                      <>
-                        <Box
-                          className="fixed inset-0 z-20"
-                          onClick={() => setUserMenuOpen(false)}
+                  <Menu
+                    position="bottom-end"
+                    header={
+                      <VStack gap="none">
+                        <Typography variant="small" weight="medium" as="p">{user.name}</Typography>
+                        {user.email && <Typography variant="caption" color="muted" as="p">{user.email}</Typography>}
+                      </VStack>
+                    }
+                    trigger={
+                      <Button variant="ghost" className="flex items-center gap-2 p-2">
+                        <Avatar
+                          src={user.avatar}
+                          alt={user.name}
+                          initials={user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .substring(0, 2)}
+                          size="sm"
                         />
-                        <Box className="absolute right-0 mt-2 w-48 bg-card dark:bg-card rounded-lg shadow-lg border border-border dark:border-border py-1 z-30">
-                          <Box className="px-4 py-2 border-b border-border dark:border-border">
-                            <Typography
-                              variant="small"
-                              className="text-sm font-medium text-foreground dark:text-foreground"
-                              as="p"
-                            >
-                              {user.name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              className="text-xs text-muted-foreground dark:text-muted-foreground"
-                              as="p"
-                            >
-                              {user.email}
-                            </Typography>
-                          </Box>
-                          <Button
-                            variant="ghost"
-                            onClick={() => {
-                              setUserMenuOpen(false);
-                              handleSignOut?.();
-                            }}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-error dark:text-error hover:bg-error/10 dark:hover:bg-error/20"
-                          >
-                            <AlmadarIcon name="log-out" className="h-4 w-4" />
-                            {t('auth.signOut')}
-                          </Button>
-                        </Box>
-                      </>
-                    )}
-                  </Box>
+                        <Typography variant="small" weight="medium" as="span" className="hidden @sm/dashboard:block text-foreground">
+                          {user.name}
+                        </Typography>
+                        <AlmadarIcon name="chevron-down" className="hidden @sm/dashboard:block h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    }
+                    items={[{ id: 'sign-out', label: t('auth.signOut'), icon: 'log-out', variant: 'danger', onClick: () => handleSignOut?.() }]}
+                  />
                 )}
               </HStack>
             </HStack>
@@ -604,10 +596,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             "flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6",
             // Reserve space for the fixed bottom nav so content isn't
             // hidden under the tab bar.
-            showBottomNav && "pb-20",
+            showBottomNav && "pb-[calc(5rem+env(safe-area-inset-bottom))]",
           )}
         >
-          <PageTransition locationKey={activePath}>{children}</PageTransition>
+          <PageTransition locationKey={activePath} className="mx-auto w-full max-w-[1440px]">{children}</PageTransition>
         </Box>
 
         {/* Bottom nav — only in bottomnav mode. Fixed to viewport bottom
@@ -618,9 +610,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {showBottomNav && (
           <Box
             as="nav"
-            className="fixed bottom-0 inset-x-0 z-20 h-16 bg-card dark:bg-card border-t border-border dark:border-border"
+            className="fixed bottom-0 inset-x-0 z-20 pb-[env(safe-area-inset-bottom)] bg-card surface-material border-t-[length:var(--border-width)] border-border"
           >
-            <HStack align="center" justify="around" className="h-full px-2">
+            <HStack align="center" justify="around" className="h-16 px-2">
               {navItems.map((item) => (
                 <NavLinkBottom
                   key={item.href}
@@ -671,9 +663,9 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
             aria-label={item.label}
             aria-expanded={open}
             className={cn(
-              "flex items-center justify-center w-full px-2 py-2 rounded-lg transition-colors",
+              "flex items-center justify-center w-full px-2 py-2 rounded-interactive transition-colors",
               isActive
-                ? "bg-primary text-primary-foreground shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-elevation-interactive"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
             onClick={() => setOpen(!open)}
@@ -703,7 +695,7 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
           {open && (
             <>
               <Box className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-              <Box className="absolute left-full top-0 ml-2 w-48 bg-card dark:bg-card rounded-lg shadow-lg border border-border dark:border-border py-1 z-30">
+              <Box className="absolute left-full top-0 ml-2 w-48 bg-card surface-material rounded-container shadow-elevation-popover border border-border py-1 z-30">
                 {item.children!.map((child) => {
                   const childIsActive = child.href === activeHref;
                   return (
@@ -747,9 +739,9 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
         title={item.label}
         aria-label={item.label}
         className={cn(
-          "flex items-center justify-center px-2 py-2 rounded-lg transition-colors",
+          "flex items-center justify-center px-2 py-2 rounded-interactive transition-colors",
           isActive
-            ? "bg-primary text-primary-foreground shadow-sm"
+            ? "bg-primary text-primary-foreground shadow-elevation-interactive"
             : "text-muted-foreground hover:bg-muted hover:text-foreground",
         )}
       >
@@ -784,9 +776,9 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
           variant="ghost"
           aria-expanded={open}
           className={cn(
-            "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+            "flex items-center gap-3 w-full px-3 py-2 rounded-interactive text-sm font-medium transition-colors",
             isActive
-              ? "bg-primary text-primary-foreground shadow-sm"
+              ? "bg-primary text-primary-foreground shadow-elevation-interactive"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
           onClick={() => setOpen(!open)}
@@ -818,7 +810,7 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
         {open && (
           <VStack
             gap="none"
-            className="mt-1 ml-4 pl-4 border-l border-border dark:border-border space-y-1"
+            className="mt-1 ml-4 pl-4 border-s-[length:var(--border-width)] border-border space-y-1"
           >
             {item.children!.map((child) => {
               const childIsActive = child.href === activeHref;
@@ -827,9 +819,9 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
                   key={child.href}
                   to={child.href}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+                    "flex items-center gap-2 px-3 py-1.5 rounded-interactive text-sm transition-colors",
                     childIsActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
+                      ? "bg-primary text-primary-foreground shadow-elevation-interactive"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
@@ -864,9 +856,9 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
     <Link
       to={item.href}
       className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+        "flex items-center gap-3 px-3 py-2 rounded-interactive text-sm font-medium transition-colors",
         isActive
-          ? "bg-primary text-primary-foreground shadow-sm"
+          ? "bg-primary text-primary-foreground shadow-elevation-interactive"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
@@ -914,7 +906,7 @@ const NavLinkBottom: React.FC<{ item: NavItem; activeHref?: string }> = ({
   return (
     <Link
       to={item.href}
-      className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg transition-colors flex-1 min-w-0"
+      className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-interactive transition-colors flex-1 min-w-0"
     >
       {item.icon && (
         typeof item.icon === 'string'

@@ -1,9 +1,13 @@
 /**
- * Shared field-name + value formatting — the single owner of the humanize and
- * format vocabulary previously duplicated across DataTable, DataGrid, CardGrid,
- * DataList, TableView, DetailPanel, List, and UISlotRenderer.
+ * Shared value formatting — the single owner of the locale-aware format
+ * vocabulary used by every data display. Labels are never derived from names:
+ * a display shows the declared label, or the name/value as stored.
  */
 import type { FieldValue } from '@almadar/core';
+import coreLocaleRaw from '../locales/en.json';
+
+const { $meta: _meta, ...coreMessages } = coreLocaleRaw;
+const coreLocale: Record<string, string> = coreMessages;
 
 export type ValueFormat =
   | 'none'
@@ -15,71 +19,111 @@ export type ValueFormat =
   | 'percent'
   | 'boolean';
 
-/**
- * Convert a camelCase, PascalCase, ALLCAPS, snake_case, or kebab-case field
- * name to a human-readable header: "estimatedDelivery" → "Estimated Delivery",
- * "PURCHASEPRICE" → "Purchase Price", "is_active" → "Is Active".
- */
-export function humanizeFieldName(name: string): string {
-  return name
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
-    .replace(/[_-]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\b([A-Z])([A-Z]+)\b/g, (_, first: string, rest: string) => first + rest.toLowerCase())
-    .trim();
-}
+const CALENDAR_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const LOCAL_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;
+
+const pad2 = (n: number): string => String(n).padStart(2, '0');
 
 /**
- * Badge/label-position enum values: a lowercase token chain joined by `_` or
- * `-` renders as spaced Title Case ("checked_in" → "Checked In"). Any other
- * shape (ids, emails, mixed case, single words) passes through unchanged —
- * a stated formatting contract, applied only where call sites opt in.
+ * A `YYYY-MM-DD` value is a calendar day with no time zone. `new Date(s)`
+ * reads it as UTC midnight, which shows the previous day west of UTC; this
+ * parses it as local midnight instead. Returns null for any other shape.
  */
-export function humanizeEnumValue(value: string): string {
-  return /^[a-z0-9]+(?:[_-][a-z0-9]+)+$/.test(value) ? humanizeFieldName(value) : value;
+export function parseCalendarDate(value: string): Date | null {
+  const m = CALENDAR_DATE.exec(value);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return d.getMonth() === Number(m[2]) - 1 && d.getDate() === Number(m[3]) ? d : null;
 }
 
-export function formatDate(value: FieldValue | undefined): string {
+function toDate(value: FieldValue | undefined): Date | null {
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+  if (typeof value !== 'string' && typeof value !== 'number') return null;
+  const s = String(value);
+  const d = parseCalendarDate(s) ?? new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/** Value for an `<input type="date">`: the LOCAL calendar day. */
+export function toDateInputValue(value: FieldValue | undefined): string {
+  if (!value) return '';
+  if (typeof value === 'string' && CALENDAR_DATE.test(value)) return value;
+  const d = toDate(value);
+  if (!d) return typeof value === 'string' ? value : '';
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/** Value for an `<input type="datetime-local">`: LOCAL wall-clock time. */
+export function toDateTimeInputValue(value: FieldValue | undefined): string {
+  if (!value) return '';
+  if (typeof value === 'string' && LOCAL_DATETIME.test(value)) return value;
+  const d = toDate(value);
+  if (!d) return typeof value === 'string' ? value : '';
+  return `${toDateInputValue(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+export function formatDate(value: FieldValue | undefined, locale?: string): string {
+  if (!value) return '';
+  const d = parseCalendarDate(String(value)) ?? new Date(String(value));
+  if (isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+export function formatTime(value: FieldValue | undefined, locale?: string): string {
   if (!value) return '';
   const d = new Date(String(value));
   if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
 }
 
-export function formatTime(value: FieldValue | undefined): string {
+export function formatDateTime(value: FieldValue | undefined, locale?: string): string {
   if (!value) return '';
   const d = new Date(String(value));
   if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `${formatDate(value, locale)} ${formatTime(value, locale)}`;
 }
 
-export function formatDateTime(value: FieldValue | undefined): string {
-  if (!value) return '';
-  const d = new Date(String(value));
-  if (isNaN(d.getTime())) return String(value);
-  return `${formatDate(value)} ${formatTime(value)}`;
+/** Translated boolean words, resolved by the caller (`t('common.yes')` / `t('common.no')`). */
+export interface BooleanLabels {
+  yes: string;
+  no: string;
 }
 
-function asYesNo(value: FieldValue): string {
-  return value === false || value === 0 || String(value) === 'false' ? 'No' : 'Yes';
+const DEFAULT_BOOLEAN_LABELS: BooleanLabels = { yes: coreLocale['common.yes'], no: coreLocale['common.no'] };
+
+function asYesNo(value: FieldValue, labels: BooleanLabels): string {
+  return value === false || value === 0 || String(value) === 'false' ? labels.no : labels.yes;
 }
+
+/** The app's formatting settings (see `useFormatContext`). */
+export interface FormatContext {
+  /** BCP 47 locale; omitted, the runtime default */
+  locale?: string;
+  /** ISO 4217 currency for `currency` values */
+  currency?: string;
+  /** Translated Yes/No */
+  booleanLabels?: BooleanLabels;
+}
+
+/** Money is USD unless the host declares the app's currency (I18nContext `currency`). */
+export const DEFAULT_CURRENCY = 'USD';
 
 /**
  * Format a field value for display. Booleans always render Yes/No regardless
  * of the declared format (a raw `true`/`false` cell is never intended output).
  */
-export function formatValue(value: FieldValue | undefined, format?: string): string {
+export function formatValue(value: FieldValue | undefined, format?: string, fmt: FormatContext = {}): string {
   if (value === undefined || value === null) return '';
-  if (typeof value === 'boolean') return asYesNo(value);
+  const { locale, currency = DEFAULT_CURRENCY, booleanLabels = DEFAULT_BOOLEAN_LABELS } = fmt;
+  if (typeof value === 'boolean') return asYesNo(value, booleanLabels);
   switch (format) {
-    case 'date': return formatDate(value);
-    case 'time': return formatTime(value);
-    case 'datetime': return formatDateTime(value);
-    case 'currency': return typeof value === 'number' ? `$${value.toFixed(2)}` : String(value);
-    case 'number': return typeof value === 'number' ? value.toLocaleString() : String(value);
-    case 'percent': return typeof value === 'number' ? `${Math.round(value)}%` : String(value);
-    case 'boolean': return asYesNo(value);
+    case 'date': return formatDate(value, locale);
+    case 'time': return formatTime(value, locale);
+    case 'datetime': return formatDateTime(value, locale);
+    case 'currency': return typeof value === 'number' ? new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value) : String(value);
+    case 'number': return typeof value === 'number' ? new Intl.NumberFormat(locale).format(value) : String(value);
+    case 'percent': return typeof value === 'number' ? new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format(value / 100) : String(value);
+    case 'boolean': return asYesNo(value, booleanLabels);
     default: return String(value);
   }
 }

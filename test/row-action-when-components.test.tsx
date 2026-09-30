@@ -75,12 +75,19 @@ describe('DataList', () => {
     expect(editIds()).toEqual(['r1', 'r2']);
   });
 
-  it('a hidden action is not the row click either (the default click is the first action the row shows)', () => {
+  it('an action is never the row click: without itemClickEvent no row is clickable', () => {
     const only: readonly { event: string; label: string; when?: SExpr }[] = [{ event: 'EDIT', label: 'Edit', when: ownerOnly }];
     const { container } = as(alice, <DataList entity={rows} fields={fields} itemActions={only} />);
     const rowEls = container.querySelectorAll('[data-entity-row]');
-    expect(rowEls[0].className).toContain('cursor-pointer');
+    expect(rowEls[0].className).not.toContain('cursor-pointer');
     expect(rowEls[1].className).not.toContain('cursor-pointer');
+  });
+
+  it('control: a declared itemClickEvent makes every row clickable', () => {
+    const { container } = as(alice, <DataList entity={rows} fields={fields} itemClickEvent="OPEN_ROW" />);
+    const rowEls = container.querySelectorAll('[data-entity-row]');
+    expect(rowEls[0].className).toContain('cursor-pointer');
+    expect(rowEls[1].className).toContain('cursor-pointer');
   });
 });
 
@@ -198,7 +205,7 @@ describe('DataTable', () => {
 });
 
 describe('List', () => {
-  const actions = [{ event: 'EDIT', label: 'Edit', when: ownerOnly }];
+  const actions = [{ event: 'EDIT', label: 'Edit', icon: 'pencil', when: ownerOnly }];
 
   it('draws the Edit button for one row of the two, for the owner', () => {
     as(alice, <List entity={rows} fields={['title']} itemActions={actions} />);
@@ -206,7 +213,7 @@ describe('List', () => {
   });
 
   it('control: without `when` both rows draw Edit', () => {
-    as(alice, <List entity={rows} fields={['title']} itemActions={[{ event: 'EDIT', label: 'Edit' }]} />);
+    as(alice, <List entity={rows} fields={['title']} itemActions={[{ event: 'EDIT', label: 'Edit', icon: 'pencil' }]} />);
     expect(screen.queryAllByTestId('action-EDIT')).toHaveLength(2);
   });
 });

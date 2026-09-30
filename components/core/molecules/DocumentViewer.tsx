@@ -169,7 +169,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             <EmptyState
                 icon={FileText}
                 title={t('display.noDocument')}
-                description="No document to display."
+                description={t('documentViewer.noDocumentDescription')}
                 className={className}
             />
         );
@@ -188,7 +188,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             return (
                 <iframe
                     src={activeSrc}
-                    title={title || "Document"}
+                    title={title || t('documentViewer.iframeTitle')}
                     className="w-full border-0"
                     style={{
                         height: typeof height === "number" ? height : height,

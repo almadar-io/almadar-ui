@@ -6,12 +6,13 @@
  * Uses Button, Typography, and Icon atoms.
  */
 
-import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useId } from "react";
 import { Typography } from "../atoms/Typography";
 import { usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
+import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 
 export type PopoverPosition = "top" | "bottom" | "left" | "right";
 export type PopoverTrigger = "click" | "hover";
@@ -154,6 +155,9 @@ export const Popover: React.FC<PopoverProps> = ({
     setIsOpen(false);
   };
 
+  const panelId = useId();
+  useDialogBehavior({ open: isOpen, containerRef: popoverRef, onEscape: handleClose, modal: false, returnFocusRef: triggerRef });
+
   const handleToggle = () => {
     if (isOpen) {
       handleClose();
@@ -265,6 +269,9 @@ export const Popover: React.FC<PopoverProps> = ({
     {
       ref: triggerRef,
       ...handlerProps,
+      "aria-expanded": isOpen,
+      "aria-haspopup": "dialog",
+      ...(mounted ? { "aria-controls": panelId } : undefined),
       ...(trigger === "hover"
         ? {
             onPointerDown: (e: React.PointerEvent) => {
@@ -292,7 +299,7 @@ export const Popover: React.FC<PopoverProps> = ({
       ref={popoverRef}
       className={cn(
         "fixed z-50 p-4",
-        "bg-card surface-material rounded-container border-2 border-border shadow-elevation-popover",
+        "bg-card surface-material rounded-container border-heavy border-border shadow-elevation-popover",
         panelAnim,
         className,
       )}
@@ -301,7 +308,9 @@ export const Popover: React.FC<PopoverProps> = ({
         top: placement.top,
         ...(popoverWidth === 0 ? { visibility: 'hidden' as const } : undefined),
       }}
+      id={panelId}
       role="dialog"
+      aria-label={typeof content === "string" ? content : undefined}
       onAnimationEnd={onAnimationEnd}
       onMouseEnter={trigger === "hover" ? handleOpen : undefined}
       onMouseLeave={trigger === "hover" ? handleClose : undefined}
@@ -314,7 +323,7 @@ export const Popover: React.FC<PopoverProps> = ({
       {showArrow && (
         <div
           className={cn(
-            "absolute w-0 h-0 border-4",
+            "absolute w-0 h-0 border-heavy",
             arrowClasses[placement.side],
           )}
         />

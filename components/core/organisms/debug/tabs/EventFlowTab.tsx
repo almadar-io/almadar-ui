@@ -28,7 +28,7 @@ const TYPE_BADGES: Record<string, { variant: 'default' | 'primary' | 'success' |
 };
 
 export function EventFlowTab({ events }: EventFlowTabProps) {
-    const { t } = useTranslate();
+    const { t, locale } = useTranslate();
     const [filter, setFilter] = React.useState<string>('all');
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [autoScroll, setAutoScroll] = React.useState(true);
@@ -47,7 +47,7 @@ export function EventFlowTab({ events }: EventFlowTabProps) {
 
     const formatTime = (timestamp: number) => {
         const date = new Date(timestamp);
-        return date.toLocaleTimeString('en-US', {
+        return date.toLocaleTimeString(locale, {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',

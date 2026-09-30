@@ -200,7 +200,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {showArrow && (
         <div
           className={cn(
-            'absolute w-0 h-0 border-4',
+            'absolute w-0 h-0 border-heavy',
             arrowClasses[position]
           )}
         />

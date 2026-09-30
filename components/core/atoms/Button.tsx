@@ -9,6 +9,7 @@ import { AtlasImage } from "./AtlasImage";
 import { INLINE_TEXT_ATTR } from "../../../lib/inlineText";
 import { followHref } from "../../../lib/followHref";
 import { useNavStack, isInertNavStack } from "../../../providers/NavStackContext";
+import { domPassthrough } from "../../../lib/domPassthrough";
 
 export type ButtonVariant =
   | "primary"
@@ -62,7 +63,7 @@ const variantStyles = {
     "bg-primary text-primary-foreground",
     "border-none",
     "shadow-elevation-interactive",
-    "hover:bg-primary-hover hover:shadow-lg",
+    "hover:bg-primary-hover hover:shadow-elevation-popover",
     "active:scale-[var(--active-scale)] active:shadow-elevation-pressed",
   ].join(" "),
   secondary: [
@@ -78,24 +79,24 @@ const variantStyles = {
     "active:scale-[var(--active-scale)]",
   ].join(" "),
   danger: [
-    "bg-surface text-error",
+    "bg-surface text-foreground",
     "border-[length:var(--border-width)] border-error",
     "shadow-elevation-interactive",
-    "hover:bg-error hover:text-error-foreground hover:shadow-lg",
+    "hover:bg-error hover:text-error-foreground hover:shadow-elevation-popover",
     "active:scale-[var(--active-scale)] active:shadow-elevation-pressed",
   ].join(" "),
   success: [
-    "bg-surface text-success",
+    "bg-surface text-foreground",
     "border-[length:var(--border-width)] border-success",
     "shadow-elevation-interactive",
-    "hover:bg-success hover:text-success-foreground hover:shadow-lg",
+    "hover:bg-success hover:text-success-foreground hover:shadow-elevation-popover",
     "active:scale-[var(--active-scale)] active:shadow-elevation-pressed",
   ].join(" "),
   warning: [
-    "bg-surface text-warning",
+    "bg-surface text-foreground",
     "border-[length:var(--border-width)] border-warning",
     "shadow-elevation-interactive",
-    "hover:bg-warning hover:text-warning-foreground hover:shadow-lg",
+    "hover:bg-warning hover:text-warning-foreground hover:shadow-elevation-popover",
     "active:scale-[var(--active-scale)] active:shadow-elevation-pressed",
   ].join(" "),
   // "default" is an alias for secondary
@@ -258,6 +259,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       };
       return (
         <a
+          {...domPassthrough(props)}
           href={href}
           id={props.id}
           title={props.title}

@@ -18,6 +18,7 @@ import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../../../lib/cn';
 import { perfEnd, perfStart } from '../../../lib/perf';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import type { UiError } from '../../core/atoms/types';
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
@@ -603,6 +604,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const animRef = useRef<number>(0);
   const hoverIndexRef = useRef<number>(-1);
   const [drawVersion, setDrawVersion] = useState(0);
@@ -730,7 +732,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
         {error ? (
           <span className="text-sm text-destructive">{error.message}</span>
         ) : (
-          <span className="text-sm text-muted-foreground">Loading canvas…</span>
+          <span className="text-sm text-muted-foreground">{t('learningCanvas.loading')}</span>
         )}
       </div>
     );

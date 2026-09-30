@@ -13,6 +13,7 @@
 
 import React from 'react';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
@@ -104,10 +105,10 @@ function LinearView({
                             <Box
                                 display="inline-flex"
                                 className={cn(
-                                    'items-center justify-center rounded-pill px-3 py-1 border-2 transition-all',
+                                    'items-center justify-center rounded-pill px-3 py-1 border-heavy transition-all',
                                     SIZE_CONFIG[size || 'md'].fontSize,
-                                    isDone && 'bg-success/20 border-success text-success',
-                                    isCurrent && 'bg-primary/20 border-primary text-primary font-bold shadow-elevation-card shadow-primary/20',
+                                    isDone && 'bg-success/20 border-success text-foreground',
+                                    isCurrent && 'bg-primary/20 border-primary text-foreground font-bold shadow-elevation-card shadow-primary/20',
                                     !isDone && !isCurrent && 'bg-muted border-border text-muted-foreground',
                                 )}
                             >
@@ -227,14 +228,14 @@ function FullView({
                             key={state}
                             display="flex"
                             className={cn(
-                                'items-center justify-center rounded-container border-2 transition-all px-2',
+                                'items-center justify-center rounded-container border-heavy transition-all px-2',
                                 config.nodeSize,
                                 isCurrent && 'bg-primary/20 border-primary shadow-elevation-card shadow-primary/20',
                                 !isCurrent && hasOutgoing && 'bg-muted border-border hover:border-muted-foreground',
                                 !isCurrent && !hasOutgoing && 'bg-background border-border opacity-60',
                                 onStateClick && 'cursor-pointer',
                             )}
-                            onClick={() => onStateClick?.(state)}
+                            {...pressableProps(onStateClick ? () => onStateClick(state) : undefined)}
                         >
                             <Typography
                                 variant="caption"

@@ -100,7 +100,7 @@ const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
 
       <VStack gap="sm">
         <HStack gap="xs" justify="between" align="center">
-          <Typography variant="h6" weight="semibold">{traitName}</Typography>
+          <Typography variant="h6">{traitName}</Typography>
           {linkedEntity ? <Badge variant="secondary">{linkedEntity}</Badge> : null}
         </HStack>
 

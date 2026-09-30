@@ -921,7 +921,7 @@ export function Canvas2D({
                 <Stack direction="vertical" gap="md" align="center">
                     <Icon name="loader" size="xl" className="animate-spin" />
                     <Typography variant="body" className="text-muted-foreground">
-                        {t('canvas.loadingMessage') || 'Loading…'}
+                        {t('canvas.loadingMessage')}
                     </Typography>
                 </Stack>
             </Box>
@@ -939,7 +939,7 @@ export function Canvas2D({
                     <Stack direction="vertical" gap="md" align="center">
                         <Icon name="map" size="xl" />
                         <Typography variant="body" className="text-muted-foreground">
-                            {t('canvas.emptyMessage') || 'No map data loaded'}
+                            {t('canvas.emptyMessage')}
                         </Typography>
                     </Stack>
                 </Box>

@@ -9,6 +9,7 @@ import React from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { domPassthrough } from "../../../lib/domPassthrough";
 
 export type StackDirection = "horizontal" | "vertical";
 export type StackGap = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
@@ -21,7 +22,7 @@ export type StackJustify =
   | "around"
   | "evenly";
 
-export interface StackProps {
+export interface StackProps extends React.AriaAttributes {
   /** Stack direction */
   direction?: StackDirection;
   /** Gap between children */
@@ -50,6 +51,8 @@ export interface StackProps {
   onKeyDown?: (e: React.KeyboardEvent) => void;
   /** Role for accessibility */
   role?: string;
+  /** Element id */
+  id?: string;
   /** Tab index for focus management */
   tabIndex?: number;
   /** Declarative event name — emits UI:{action} via eventBus on click */
@@ -111,6 +114,7 @@ export const Stack: React.FC<StackProps> = ({
   action,
   actionPayload,
   responsive = false,
+  ...rest
 }) => {
   const eventBus = useEventBus();
 
@@ -138,6 +142,7 @@ export const Stack: React.FC<StackProps> = ({
   return React.createElement(
     Component,
     {
+      ...domPassthrough(rest),
       className: cn(
         "flex",
         directionClass,

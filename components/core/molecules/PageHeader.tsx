@@ -7,11 +7,13 @@ import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/index";
 import { Typography } from "../atoms/Typography";
-import { ArrowLeft } from "lucide-react";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Menu } from "./Menu";
 import type { UiError } from '../atoms/types';
+import { Breadcrumb } from "./Breadcrumb";
+import { Tabs } from "./Tabs";
+import { Badge } from "../atoms/Badge";
 
 export interface PageBreadcrumb {
   label: string;
@@ -119,44 +121,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     }
   };
 
-  const statusColors = {
-    default: "bg-muted text-foreground",
-    success: "bg-success/10 text-success",
-    warning: "bg-warning/10 text-warning",
-    danger: "bg-error/10 text-error",
-    info: "bg-info/10 text-info",
-  };
-
   return (
     <Box className={cn("w-full min-w-0", className)}>
-      {/* Breadcrumbs */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <Box as="nav" className="mb-4">
-          <Box as="ol" className="flex items-center gap-2 text-sm">
-            {breadcrumbs.map((crumb, idx) => (
-              <React.Fragment key={idx}>
-                {idx > 0 && (
-                  <Typography variant="small" color="muted">
-                    /
-                  </Typography>
-                )}
-                {crumb.href ? (
-                   
-                  <a
-                    href={crumb.href}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {crumb.label}
-                  </a>
-                ) : (
-                  <Typography variant="small" className="text-foreground font-medium">
-                    {crumb.label}
-                  </Typography>
-                )}
-              </React.Fragment>
-            ))}
-          </Box>
-        </Box>
+        <Breadcrumb items={breadcrumbs.map((crumb) => ({ label: crumb.label, href: crumb.href }))} className="mb-4" />
       )}
 
       {/* Main header row */}
@@ -166,10 +134,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             <Button
               variant="ghost"
               onClick={handleBack}
-              className="mt-1 p-2 rounded-container"
-            >
-              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-            </Button>
+              icon="arrow-left"
+              aria-label={t('common.back')}
+              className="mt-1 p-2 rtl:-scale-x-100"
+            />
           )}
           <Box className="min-w-0">
             <Box className="flex items-center gap-3">
@@ -182,15 +150,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 {title != null ? String(title) : ""}
               </Typography>
               {statusBadge && (
-                <Typography
-                  variant="small"
-                  className={cn(
-                    "px-2.5 py-1 rounded-full text-xs font-medium",
-                    statusColors[statusBadge.variant || "default"],
-                  )}
-                >
+                <Badge variant={statusBadge.variant || "default"} size="sm">
                   {statusBadge.label}
-                </Typography>
+                </Badge>
               )}
             </Box>
             {subtitle != null && subtitle !== "" && (
@@ -262,40 +224,14 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         )}
       </Box>
 
-      {/* Tabs */}
       {tabs && tabs.length > 0 && (
-        <Box className="mt-6 border-b border-border">
-          <Box as="nav" className="flex gap-6">
-            {tabs.map((tab) => (
-              <Button
-                key={tab.value}
-                variant="ghost"
-                onClick={() => onTabChange?.(tab.value)}
-                className={cn(
-                  "pb-3 text-sm font-bold border-b-2 transition-colors rounded-none",
-                  activeTab === tab.value
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
-                )}
-              >
-                {tab.label}
-                {tab.count !== undefined && (
-                  <Typography
-                    variant="small"
-                    className={cn(
-                      "ml-2 px-2 py-0.5 rounded-full text-xs",
-                      activeTab === tab.value
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {tab.count}
-                  </Typography>
-                )}
-              </Button>
-            ))}
-          </Box>
-        </Box>
+        <Tabs
+          items={tabs.map((tab) => ({ id: tab.value, label: tab.label, badge: tab.count }))}
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          variant="underline"
+          className="mt-6"
+        />
       )}
 
       {/* Custom content */}

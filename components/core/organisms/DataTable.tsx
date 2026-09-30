@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { humanizeFieldName } from "../../../lib/format";
+import { formatValue } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { resolveRelationCellDisplay } from "../../../lib/relationLabel";
 import type { RelationOption } from "../molecules/RelationSelect";
@@ -18,7 +18,7 @@ import type { IconInput } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useRowActions } from "../../../hooks/useRowActions";
 import type { RowActionCondition } from "../../../lib/row-action-when";
-import { useTranslate } from "../../../hooks/useTranslate";
+import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
 import {
   ChevronUp,
   ChevronDown,
@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { DisplayStateProps, EntityDisplayEvents } from "./types";
 import type { EntityRow, FieldValue } from "@almadar/core";
+import { pressableProps, rowActivationProps } from "../../../lib/pressable";
+import type { DisplayFieldFormat } from "../atoms/types";
 
 export type EntityTableLook =
   | "dense"
@@ -49,6 +51,10 @@ export interface Column<T> {
   label?: string;
   width?: string;
   sortable?: boolean;
+  /** Horizontal alignment of the column's header and cells */
+  align?: "left" | "center" | "right";
+  /** Value format (locale-aware) */
+  format?: DisplayFieldFormat;
   render?: (value: FieldValue | undefined, row: T, index: number) => React.ReactNode;
 }
 
@@ -62,12 +68,12 @@ function normalizeColumns<T>(
 ): Column<T>[] {
   return columns.map((col) => {
     if (typeof col === "string") {
-      const header = humanizeFieldName(col);
+      const header = col;
       return { key: col, header } as Column<T>;
     }
     // Normalize name→key and label→header aliases from compiler output
     const key = col.key ?? (col.name as keyof T | string) ?? '';
-    const header = col.header ?? col.label ?? humanizeFieldName(String(key));
+    const header = col.header ?? col.label ?? String(key);
     return { ...col, key, header } as Column<T>;
   });
 }
@@ -76,12 +82,8 @@ function normalizeColumns<T>(
  * Detect boolean values (actual booleans or "true"/"false" strings)
  * and return the boolean, or null if the value is not boolean-like.
  */
-function asBooleanValue(value: FieldValue | undefined): boolean | null {
-  if (typeof value === "boolean") return value;
-  if (value === "true") return true;
-  if (value === "false") return false;
-  return null;
-}
+const ALIGN_CLASS = { left: "text-start", center: "text-center", right: "text-end" } as const;
+const ALIGN_JUSTIFY = { left: "justify-start", center: "justify-center", right: "justify-end" } as const;
 
 export interface RowAction<T> {
   label: string;
@@ -108,6 +110,8 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
   fields: readonly Column<T>[] | readonly string[];
   /** Columns can be Column objects or simple string field names */
   columns?: readonly Column<T>[] | readonly string[];
+  /** When set, rows are activatable and emit UI:{itemClickEvent} with { id, row } */
+  itemClickEvent?: EventKey;
   /** Item actions from generated code - maps to rowActions */
   itemActions?: readonly {
     label: string;
@@ -179,6 +183,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
   columns,
   entity,
   itemActions,
+  itemClickEvent,
   isLoading = false,
   error,
   emptyIcon,
@@ -209,6 +214,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
   const eventBus = useEventBus();
   const viewerRowActions = useRowActions();
   const { t } = useTranslate();
+  const fmt = useFormatContext();
 
   const resolvedEmptyTitle = emptyTitle ?? t("table.empty.title");
   const resolvedEmptyDescription =
@@ -282,31 +288,15 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
     };
   });
 
-  // Find VIEW action or navigatesTo action from itemActions for row click behavior
-  const viewAction = itemActions?.find(
-    (a) => a.event === "VIEW" || a.navigatesTo,
-  );
-
   const handleRowClick = useCallback(
     (row: T) => {
-      if (viewAction) {
-        if (viewAction.navigatesTo) {
-          const url = viewAction.navigatesTo
-            .replace(/:id\b/g, String((row as { id: string | number }).id))
-            .replace(
-              /\{\{id\}\}/g,
-              String((row as { id: string | number }).id),
-            );
-          eventBus.emit('UI:NAVIGATE', { url, row, entity });
-          return;
-        }
-        eventBus.emit("UI:VIEW", { row });
-      }
+      if (!itemClickEvent) return;
+      eventBus.emit(`UI:${itemClickEvent}`, { id: row.id, row });
     },
-    [viewAction, eventBus],
+    [itemClickEvent, eventBus],
   );
 
-  const isRowClickable = !!viewAction;
+  const isRowClickable = Boolean(itemClickEvent);
 
   // Support fields and columns (alias) - normalize to Column objects
   const effectiveColumns = fields ?? columns ?? [];
@@ -314,7 +304,6 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
     () => normalizeColumns<T>(effectiveColumns),
     [effectiveColumns],
   );
-
   const allSelected = items.length > 0 && selectedIds.length === items.length;
   const someSelected = selectedIds.length > 0 && !allSelected;
 
@@ -384,14 +373,14 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
   return (
     <Box
       className={cn(
-        "bg-card border-2 border-border rounded-none overflow-hidden",
+        "bg-card border-heavy border-border rounded-none overflow-hidden",
         lookStyles[look],
         className,
       )}
     >
       {/* Header */}
       {(searchable || bulkActions || headerActions) && (
-        <HStack className="px-4 py-3 border-b-2 border-border flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <HStack className="px-4 py-3 border-b-heavy border-border flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <HStack className="flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {searchable && (
               <Input
@@ -443,7 +432,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
         { }
         <table className="w-full">
           { }
-          <thead className="bg-[var(--color-table-header)] border-b-2 border-border">
+          <thead className="sticky top-0 z-10 bg-[var(--color-table-header)] border-b-heavy border-border">
             { }
             <tr>
               {selectable && (
@@ -462,14 +451,24 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                   key={String(col.key)}
                   data-column={String(col.key)}
                   className={cn(
-                    "px-4 py-3 text-left text-xs font-bold text-foreground uppercase tracking-wider whitespace-nowrap",
+                    "px-4 py-3 text-start text-xs font-bold text-foreground uppercase tracking-wider whitespace-nowrap",
+                    col.align && ALIGN_CLASS[col.align],
                     col.sortable &&
                       "cursor-pointer select-none hover:bg-[var(--color-table-row-hover)]",
                   )}
                   style={{ width: col.width }}
-                  onClick={() => col.sortable && handleSort(String(col.key))}
+                  aria-sort={
+                    col.sortable
+                      ? sortBy === col.key
+                        ? sortDirection === "asc" ? "ascending" : "descending"
+                        : "none"
+                      : undefined
+                  }
                 >
-                  <HStack className="items-center gap-1">
+                  <HStack
+                    className={cn("items-center gap-1", col.align && ALIGN_JUSTIFY[col.align])}
+                    {...pressableProps(col.sortable ? () => handleSort(String(col.key)) : undefined)}
+                  >
                     {col.header}
                     {col.sortable &&
                       sortBy === col.key &&
@@ -559,7 +558,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                       "bg-primary/10 font-medium",
                     isRowClickable && "cursor-pointer",
                   )}
-                  onClick={() => isRowClickable && handleRowClick(row)}
+                  {...rowActivationProps(isRowClickable ? () => handleRowClick(row) : undefined)}
                 >
                   {selectable && (
                      
@@ -580,7 +579,11 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                       <td
                         key={String(col.key)}
                         data-column={String(col.key)}
-                        className="px-4 py-3 text-sm text-foreground whitespace-nowrap sm:whitespace-normal"
+                        className={cn(
+                          "px-4 py-3 text-sm text-foreground whitespace-nowrap sm:whitespace-normal",
+                          col.align && ALIGN_CLASS[col.align],
+                          (col.format === "number" || col.format === "currency" || col.format === "percent") && "tabular-nums",
+                        )}
                       >
                         {col.render
                           ? col.render(cellValue, row, rowIndex)
@@ -590,7 +593,11 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                                 relationsData?.[String(col.key)],
                               );
                               if (relationDisplay !== undefined) return relationDisplay;
-                              const boolVal = asBooleanValue(cellValue);
+                              const boolVal = typeof cellValue === "boolean"
+                                ? cellValue
+                                : col.format === "boolean" && (cellValue === "true" || cellValue === "false")
+                                  ? cellValue === "true"
+                                  : null;
                               if (boolVal !== null) {
                                 return boolVal ? (
                                   <Badge variant="success">{t("common.yes")}</Badge>
@@ -598,6 +605,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                                   <Badge variant="neutral">{t("common.no")}</Badge>
                                 );
                               }
+                              if (col.format) return formatValue(cellValue, col.format, fmt);
                               return String(cellValue ?? "");
                             })()}
                       </td>
@@ -645,7 +653,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                                   className={cn(
                                     "w-full flex items-center gap-2 px-4 py-2 text-sm",
                                     action.variant === "danger"
-                                      ? "text-error hover:bg-error/10"
+                                      ? "text-foreground hover:bg-error/10"
                                       : "text-foreground hover:bg-muted",
                                   )}
                                   onClick={(e) => {
@@ -676,7 +684,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
 
       {/* Pagination (display-only — trait controls the state) */}
       {totalCount !== undefined && totalPages > 1 && (
-        <Box className="px-4 py-3 border-t-2 border-border">
+        <Box className="px-4 py-3 border-t-heavy border-border">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

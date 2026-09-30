@@ -26,6 +26,7 @@ import React, { useCallback, useState } from 'react';
 import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { Input } from '../atoms/Input';
 import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { HStack, VStack } from '../atoms/Stack';
@@ -71,6 +72,7 @@ export const TagInput: React.FC<TagInputProps> = ({
   removeEvent,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const [draft, setDraft] = useState('');
 
   const commit = useCallback(() => {
@@ -130,7 +132,7 @@ export const TagInput: React.FC<TagInputProps> = ({
               variant={variant}
               size="sm"
               onRemove={disabled ? undefined : () => removeAt(index)}
-              removeLabel={`Remove ${tag}`}
+              removeLabel={t('tagInput.removeTag', { tag })}
             >
               {tag}
             </Badge>
@@ -139,7 +141,7 @@ export const TagInput: React.FC<TagInputProps> = ({
       ) : null}
       <Input
         value={draft}
-        placeholder={placeholder ?? 'Type and press Enter…'}
+        placeholder={placeholder ?? t('tagInput.placeholder')}
         disabled={disabled}
         onChange={(e) =>
           setDraft((e.target as HTMLInputElement).value)

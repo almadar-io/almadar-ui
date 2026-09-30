@@ -8,6 +8,8 @@ import React from "react";
 import { cn } from "../../../lib/cn";
 import { formatValue } from "../../../lib/format";
 import { INLINE_TEXT_ATTR } from "../../../lib/inlineText";
+import { domPassthrough } from "../../../lib/domPassthrough";
+import { useFormatContext } from "../../../hooks/useTranslate";
 
 export type TypographyVariant =
   | "h1"
@@ -30,7 +32,7 @@ export type TypographyVariant =
 /** `none` = no size override — the variant's baked size applies. */
 export type TypographySize = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
 
-export interface TypographyProps {
+export interface TypographyProps extends React.AriaAttributes {
   /** Typography variant */
   variant?: TypographyVariant;
   /** Heading level (1-6) - alternative to variant for headings */
@@ -62,6 +64,8 @@ export interface TypographyProps {
   className?: string;
   /** Inline style */
   style?: React.CSSProperties;
+  /** Accessibility role */
+  role?: string;
   /**
    * Value formatting applied to string/number/Date content — `none` (the
    * default) renders content as-is. Covers the raw-ISO-date class: a bound
@@ -173,8 +177,10 @@ export const Typography: React.FC<TypographyProps> = ({
   format,
   content,
   children,
+  ...rest
 }) => {
   // Determine variant: explicit variant takes precedence, then level, then default
+  const fmt = useFormatContext();
   const variant: TypographyVariant =
     variantProp ?? (level ? (`h${level}` as TypographyVariant) : "body1");
   const Component = as || defaultElements[variant];
@@ -182,12 +188,13 @@ export const Typography: React.FC<TypographyProps> = ({
   // Formatting applies only to formattable scalars; element children pass through.
   let body = children ?? content;
   if (format !== undefined && format !== "none" && (typeof body === "string" || typeof body === "number" || body instanceof Date)) {
-    body = formatValue(body, format);
+    body = formatValue(body, format, fmt);
   }
 
   return React.createElement(
     Component,
     {
+      ...domPassthrough(rest),
       id,
       className: cn(
         variantStyles[variant],

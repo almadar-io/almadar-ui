@@ -7,6 +7,7 @@
  */
 import React from 'react';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
 import { Box } from './Box';
 
 export interface FlipContainerProps {
@@ -30,7 +31,7 @@ export const FlipContainer = ({
     <Box
       className={cn('relative w-full cursor-pointer', className)}
       style={{ perspective: '1000px' }}
-      onClick={onClick}
+      {...pressableProps(onClick)}
     >
       <Box
         className="relative w-full h-full transition-transform duration-slow"

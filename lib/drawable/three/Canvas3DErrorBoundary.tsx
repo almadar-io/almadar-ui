@@ -9,6 +9,7 @@
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { createLogger } from '@almadar/logger';
+import { useTranslate } from '../../../hooks/useTranslate';
 import './Canvas3DErrorBoundary.css';
 
 const log = createLogger('almadar:ui:game:canvas3d:error-boundary');
@@ -31,6 +32,57 @@ export interface Canvas3DErrorBoundaryState {
     error: Error | null;
     /** Error info from React */
     errorInfo: ErrorInfo | null;
+}
+
+interface Canvas3DErrorFallbackProps {
+    error: Error | null;
+    errorInfo: ErrorInfo | null;
+    onReset: () => void;
+}
+
+/** Function child so the class boundary can reach the translation hook. */
+function Canvas3DErrorFallback({ error, errorInfo, onReset }: Canvas3DErrorFallbackProps): React.JSX.Element {
+    const { t } = useTranslate();
+    return (
+        <div className="canvas-3d-error">
+            <div className="canvas-3d-error__content">
+                <div className="canvas-3d-error__icon">⚠️</div>
+                <h2 className="canvas-3d-error__title">{t('canvas3d.errorTitle')}</h2>
+                <p className="canvas-3d-error__message">{t('canvas3d.errorMessage')}</p>
+
+                {error && (
+                    <details className="canvas-3d-error__details">
+                        <summary>{t('canvas3d.errorDetails')}</summary>
+                        <pre className="error__stack">
+                            {error.message}
+                            {'\n'}
+                            {error.stack}
+                        </pre>
+                        {errorInfo && (
+                            <pre className="error__component-stack">
+                                {errorInfo.componentStack}
+                            </pre>
+                        )}
+                    </details>
+                )}
+
+                <div className="canvas-3d-error__actions">
+                    <button
+                        className="error__button error__button--primary"
+                        onClick={onReset}
+                    >
+                        {t('common.retry')}
+                    </button>
+                    <button
+                        className="error__button error__button--secondary"
+                        onClick={() => window.location.reload()}
+                    >
+                        {t('canvas3d.reloadPage')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 /**
@@ -93,48 +145,12 @@ export class Canvas3DErrorBoundary extends Component<
                 return this.props.fallback;
             }
 
-            // Default error UI
             return (
-                <div className="canvas-3d-error">
-                    <div className="canvas-3d-error__content">
-                        <div className="canvas-3d-error__icon">⚠️</div>
-                        <h2 className="canvas-3d-error__title">3D Scene Error</h2>
-                        <p className="canvas-3d-error__message">
-                            Something went wrong while rendering the 3D scene.
-                        </p>
-
-                        {this.state.error && (
-                            <details className="canvas-3d-error__details">
-                                <summary>Error Details</summary>
-                                <pre className="error__stack">
-                                    {this.state.error.message}
-                                    {'\n'}
-                                    {this.state.error.stack}
-                                </pre>
-                                {this.state.errorInfo && (
-                                    <pre className="error__component-stack">
-                                        {this.state.errorInfo.componentStack}
-                                    </pre>
-                                )}
-                            </details>
-                        )}
-
-                        <div className="canvas-3d-error__actions">
-                            <button
-                                className="error__button error__button--primary"
-                                onClick={this.handleReset}
-                            >
-                                Try Again
-                            </button>
-                            <button
-                                className="error__button error__button--secondary"
-                                onClick={() => window.location.reload()}
-                            >
-                                Reload Page
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <Canvas3DErrorFallback
+                    error={this.state.error}
+                    errorInfo={this.state.errorInfo}
+                    onReset={this.handleReset}
+                />
             );
         }
 

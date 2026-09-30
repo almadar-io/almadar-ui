@@ -41,7 +41,6 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { slotLog, refId } from "../../../types/slot-types";
 import { cn } from "../../../lib/cn";
-import { humanizeFieldName } from "../../../lib/format";
 import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { SlotContainedContext } from "../../../lib/slotContained";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
@@ -189,7 +188,7 @@ function enrichFormFields(
       if (entityField) {
         const enriched: SlotProps = {
           name: field,
-          label: humanizeFieldName(field),
+          label: field,
           type: entityField.type,
           required: entityField.required ?? false,
         };
@@ -210,7 +209,7 @@ function enrichFormFields(
         }
         return enriched;
       }
-      return { name: field, label: humanizeFieldName(field) };
+      return { name: field, label: field };
     }
 
     if (field && typeof field === 'object' && !Array.isArray(field) && !React.isValidElement(field) && !(field instanceof Date)) {
@@ -1393,6 +1392,12 @@ function isPatternConfig(
   return "type" in record && typeof record.type === "string" && getComponentName(record.type) !== null;
 }
 
+/** A Date rendered in the app's locale (a component, so it can read it). */
+function PatternDate({ value }: { value: Date }): React.ReactElement {
+  const { locale } = useTranslate();
+  return <>{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(value)}</>;
+}
+
 /**
  * PatternValue → ReactNode boundary for the COMPILED path. Generated Views
  * forward node-typed config knobs straight into JSX slots
@@ -1410,7 +1415,7 @@ export function renderPatternValue(value: SlotPropValue): React.ReactNode {
   if (typeof value === "boolean" || typeof value === "function") return null;
   if (typeof value === "number") return value;
   if (typeof value === "string") return renderPatternChildren(value, () => {});
-  if (value instanceof Date) return value.toLocaleString();
+  if (value instanceof Date) return <PatternDate value={value} />;
   if (React.isValidElement(value)) return value;
   if (Array.isArray(value)) {
     return (value as ReadonlyArray<SlotPropValue>).map((item, index) => (

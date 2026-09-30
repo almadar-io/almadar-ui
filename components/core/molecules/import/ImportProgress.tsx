@@ -14,6 +14,7 @@ import { Badge } from '../../atoms/Badge';
 import { Icon } from '../../atoms/Icon';
 import { Typography } from '../../atoms/Typography';
 import { cn } from '../../../../lib/cn';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 export type ImportProgressStep =
   | 'fetching'
@@ -47,13 +48,13 @@ const PIPELINE: Exclude<ImportProgressStep, 'done' | 'failed'>[] = [
   'committing',
 ];
 
-const DEFAULT_LABELS: Record<ImportProgressStep, string> = {
-  fetching: 'Fetching',
-  mapping: 'Mapping',
-  reviewing: 'Reviewing',
-  committing: 'Committing',
-  done: 'Done',
-  failed: 'Failed',
+const DEFAULT_LABEL_KEYS: Record<ImportProgressStep, string> = {
+  fetching: 'import.phase.fetching',
+  mapping: 'import.phase.mapping',
+  reviewing: 'import.phase.reviewing',
+  committing: 'import.phase.committing',
+  done: 'import.phase.done',
+  failed: 'import.phase.failed',
 };
 
 export const ImportProgress: React.FC<ImportProgressProps> = ({
@@ -62,7 +63,8 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({
   labels,
   className,
 }) => {
-  const label = (key: ImportProgressStep) => labels?.[key] ?? DEFAULT_LABELS[key];
+  const { t } = useTranslate();
+  const label = (key: ImportProgressStep) => labels?.[key] ?? t(DEFAULT_LABEL_KEYS[key]);
   const currentIndex = step === 'done' || step === 'failed' ? PIPELINE.length : PIPELINE.indexOf(step);
 
   return (
@@ -114,13 +116,13 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({
       {counts ? (
         <Box className="flex items-center gap-2">
           {counts.staged !== undefined ? (
-            <Badge label={`Staged ${counts.staged}`} />
+            <Badge label={t('import.staged', { count: counts.staged })} />
           ) : null}
           {counts.committed !== undefined ? (
-            <Badge variant="success" label={`Committed ${counts.committed}`} />
+            <Badge variant="success" label={t('import.committed', { count: counts.committed })} />
           ) : null}
           {counts.failed !== undefined ? (
-            <Badge variant="danger" label={`Failed ${counts.failed}`} />
+            <Badge variant="danger" label={t('import.failedCount', { count: counts.failed })} />
           ) : null}
         </Box>
       ) : null}

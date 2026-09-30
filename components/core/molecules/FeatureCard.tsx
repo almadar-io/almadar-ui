@@ -8,6 +8,8 @@
 
 import React from 'react';
 import { cn } from '../../../lib/cn';
+import { useTranslate } from '../../../hooks/useTranslate';
+import { pressableProps } from '../../../lib/pressable';
 import { Card } from '../atoms/Card';
 import { VStack } from '../atoms/Stack';
 import { Icon, type IconInput } from '../atoms/Icon';
@@ -55,11 +57,12 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   title,
   description,
   href,
-  linkLabel = 'Learn more',
+  linkLabel,
   variant = 'bordered',
   size = 'md',
   className,
 }) => {
+  const { t } = useTranslate();
   const renderIcon = () => {
     if (!icon) return null;
     return (
@@ -86,7 +89,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         variant === 'interactive' && 'hover:border-primary',
         className,
       )}
-      onClick={variant === 'interactive' && href ? handleLinkClick : undefined}
+      {...pressableProps(variant === 'interactive' && href ? handleLinkClick : undefined)}
     >
       <VStack gap={gapMap[size]} align="start">
         {renderIcon()}
@@ -103,7 +106,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             onClick={handleLinkClick}
             className="text-primary -ml-2"
           >
-            {linkLabel}
+            {linkLabel ?? t('featureCard.learnMore')}
           </Button>
         )}
       </VStack>

@@ -3,6 +3,8 @@
  */
 
 import type { AssetUrl } from "@almadar/core";
+import type { IconInput } from "./Icon";
+import type { BadgeVariant } from "./Badge";
 
 /**
  * Canonical semantic color palette.  Values are the Tailwind / CSS-var token
@@ -58,3 +60,35 @@ export type Rect = {
   w: number;
   h: number;
 };
+
+/** A badge colour a field's `colorMap` may name (`destructive` is the shadcn alias of `danger`). */
+export type BadgeColor = BadgeVariant | 'destructive';
+
+/** How a display field renders: `h3`/`h4` is the record's title, `badge` a
+ *  status pill, `progress` a progress bar, `body` a prose block. */
+export type DisplayFieldVariant = 'h3' | 'h4' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
+
+/** How a display field's value is formatted. */
+export type DisplayFieldFormat = 'date' | 'currency' | 'number' | 'boolean' | 'percent';
+
+/**
+ * One field of a record shown by a data display (DataGrid, DataList, List,
+ * CardGrid, DetailPanel, Timeline). Every slot a field fills — title, badge,
+ * progress, date — is declared here; nothing is inferred from its name or value.
+ */
+export interface DisplayField {
+  /** Entity field name (dot-notation supported) */
+  name: string;
+  /** Display label (the `name` as written if omitted) */
+  label?: string;
+  /** Icon shown beside the field */
+  icon?: IconInput;
+  /** Rendering variant */
+  variant?: DisplayFieldVariant;
+  /** Value format */
+  format?: DisplayFieldFormat;
+  /** Badge colour per exact value (for `variant: 'badge'`); unmapped values are neutral */
+  colorMap?: Readonly<Record<string, BadgeColor>>;
+  /** Display text per exact value (e.g. `in_progress` → "In progress"); unmapped values show as stored */
+  labels?: Readonly<Record<string, string>>;
+}

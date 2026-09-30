@@ -11,6 +11,8 @@ import type { EventKey, EventEmit } from "@almadar/core";
 import { Icon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/index";
 import { Typography } from "../atoms/Typography";
+import { Box } from "../atoms/Box";
+import { Button } from "../atoms/Button";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -117,100 +119,78 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
 
   if (fromNavStack && sourceItems.length === 0) return null;
 
-  const displayItems =
+  type Crumb = { kind: "item"; item: BreadcrumbItem; index: number } | { kind: "collapsed" };
+  const allCrumbs: Crumb[] = sourceItems.map((item, index) => ({ kind: "item", item, index }));
+  const crumbs: Crumb[] =
     maxItems && sourceItems.length > maxItems
-      ? [
-          ...sourceItems.slice(0, 1),
-          { label: "...", isCurrent: false } as BreadcrumbItem,
-          ...sourceItems.slice(-maxItems + 1),
-        ]
-      : sourceItems;
+      ? [allCrumbs[0], { kind: "collapsed" }, ...allCrumbs.slice(-maxItems + 1)]
+      : allCrumbs;
+
+  const activate = (item: BreadcrumbItem, index: number) => {
+    const href = item.path ?? item.href;
+    if (item.event) {
+      eventBus.emit(`UI:${item.event}`, { label: item.label, href, index });
+    } else if (fromNavStack && href) {
+      // Stack crumbs without an event navigate directly through the provider.
+      navStack.goTo(href);
+    }
+    item.onClick?.();
+  };
+
+  const separatorIcon = (
+    <Box as="span" aria-hidden="true" data-breadcrumb-separator className="inline-flex text-muted-foreground rtl:-scale-x-100">
+      {typeof separator === "string" ? <Icon name={separator} size="sm" /> : <Icon icon={separator} size="sm" />}
+    </Box>
+  );
 
   return (
-    <nav
-      aria-label={t('aria.breadcrumb')}
-      className={cn("flex items-center gap-2", className)}
-    >
-      <ol className="flex items-center gap-2">
-        {displayItems.map((item, index) => {
-          const isLast = index === displayItems.length - 1;
-          const isEllipsis = item.label === "...";
-
+    <Box as="nav" aria-label={t('aria.breadcrumb')} className={cn("min-w-0", className)}>
+      <Box as="ol" className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+        {crumbs.map((crumb, position) => {
+          const isLast = position === crumbs.length - 1;
+          if (crumb.kind === "collapsed") {
+            return (
+              <Box as="li" key="collapsed" className="flex items-center gap-2">
+                <Typography variant="small" color="muted" aria-hidden="true">…</Typography>
+                {separatorIcon}
+              </Box>
+            );
+          }
+          const { item, index } = crumb;
+          const href = item.href || item.path;
+          const icon = item.icon
+            ? typeof item.icon === "string" ? <Icon name={item.icon} size="sm" /> : <Icon icon={item.icon} size="sm" />
+            : null;
+          const label = (
+            <Typography variant="small" weight="medium" truncate className="max-w-[16rem]">
+              {item.label}
+            </Typography>
+          );
+          const tone = isLast ? "text-foreground" : "text-muted-foreground hover:text-foreground";
           return (
-            <li key={index} className="flex items-center gap-2">
-              {isEllipsis ? (
-                <Typography variant="small" color="muted">
-                  {item.label}
-                </Typography>
-              ) : (item.href || item.path) && !item.event && !fromNavStack ? (
-                <a
-                  href={item.href || item.path}
-                  className={cn(
-                    "flex items-center gap-1.5 transition-colors",
-                    isLast
-                      ? "text-foreground font-bold"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  aria-current={isLast ? "page" : undefined}
-                >
-                  {item.icon && (typeof item.icon === "string"
-                    ? <Icon name={item.icon} size="sm" />
-                    : <Icon icon={item.icon} size="sm" />
-                  )}
-                  <Typography
-                    variant="small"
-                    weight={isLast ? "medium" : "normal"}
-                  >
-                    {item.label}
-                  </Typography>
-                </a>
+            <Box as="li" key={index} className="flex items-center gap-2 min-w-0">
+              {isLast ? (
+                <Box as="span" aria-current="page" className={cn("flex items-center gap-1.5 min-w-0", tone)}>
+                  {icon}
+                  {label}
+                </Box>
+              ) : href && !item.event && !fromNavStack ? (
+                <Button variant="link" href={href} className={cn("h-auto gap-1.5 min-w-0 no-underline", tone)}>
+                  {icon}
+                  {label}
+                </Button>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const href = item.path ?? item.href;
-                    if (item.event) {
-                      eventBus.emit(`UI:${item.event}`, { label: item.label, href, index });
-                    } else if (fromNavStack && href) {
-                      // Stack crumbs without an event navigate directly
-                      // through the provider (SPA in both paths).
-                      navStack.goTo(href);
-                    }
-                    item.onClick?.();
-                  }}
-                  className={cn(
-                    "flex items-center gap-1.5 transition-colors",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                    isLast
-                      ? "text-foreground font-bold cursor-default"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  aria-current={isLast ? "page" : undefined}
-                  disabled={isLast}
-                >
-                  {item.icon && (typeof item.icon === "string"
-                    ? <Icon name={item.icon} size="sm" />
-                    : <Icon icon={item.icon} size="sm" />
-                  )}
-                  <Typography
-                    variant="small"
-                    weight={isLast ? "medium" : "normal"}
-                  >
-                    {item.label}
-                  </Typography>
-                </button>
+                <Button variant="link" onClick={() => activate(item, index)} className={cn("h-auto gap-1.5 min-w-0 no-underline", tone)}>
+                  {icon}
+                  {label}
+                </Button>
               )}
-
-              {!isLast && (
-                typeof separator === "string"
-                  ? <Icon name={separator} size="sm" className="text-muted-foreground" />
-                  : <Icon icon={separator} size="sm" className="text-muted-foreground" />
-              )}
-            </li>
+              {!isLast && separatorIcon}
+            </Box>
           );
         })}
-      </ol>
-    </nav>
+      </Box>
+    </Box>
   );
 };
 

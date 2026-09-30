@@ -14,6 +14,10 @@ import React from 'react';
 import { Link2 } from 'lucide-react';
 import { MarkdownContent } from './markdown/MarkdownContent';
 import { cn } from '../../../lib/cn';
+import { Box } from '../atoms/Box';
+import { HStack } from '../atoms/Stack';
+import { Typography } from '../atoms/Typography';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface ConnectionBlockProps {
   /** Markdown content summarising what the learner already knows */
@@ -22,25 +26,21 @@ export interface ConnectionBlockProps {
   className?: string;
 }
 
-export const ConnectionBlock: React.FC<ConnectionBlockProps> = ({ content, className }) => (
-  <div
-    className={cn(
-      'bg-success/10 border-l-4 border-success rounded-r-container p-5 mb-6',
-      className,
-    )}
-  >
-    <div className="flex items-start gap-3">
-      <Link2 className="text-success flex-shrink-0 mt-1" size={20} />
-      <div className="flex-1">
-        <h4 className="heading-voice text-success mb-2">
-          Building On What You Know
-        </h4>
-        <div className="prose dark:prose-invert prose-sm max-w-none text-foreground">
-          <MarkdownContent content={content} />
-        </div>
-      </div>
-    </div>
-  </div>
-);
+export const ConnectionBlock: React.FC<ConnectionBlockProps> = ({ content, className }) => {
+  const { t } = useTranslate();
+  return (
+    <Box className={cn('bg-success/10 border-s-heavy border-success rounded-e-container p-5 mb-6', className)}>
+      <HStack gap="sm" align="start">
+        <Link2 className="text-success flex-shrink-0 mt-1" size={20} />
+        <Box className="flex-1">
+          <Typography variant="h6" as="h4" className="mb-2">
+            {t('connection.title')}
+          </Typography>
+          <MarkdownContent content={content} className="text-sm" />
+        </Box>
+      </HStack>
+    </Box>
+  );
+};
 
 ConnectionBlock.displayName = 'ConnectionBlock';

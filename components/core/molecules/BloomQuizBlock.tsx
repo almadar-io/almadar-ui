@@ -15,18 +15,19 @@ import { MarkdownContent } from './markdown/MarkdownContent';
 import { CodeBlock } from './markdown/CodeBlock';
 import { parseMarkdownWithCodeBlocks } from '../../../lib/lessonSegmentUtils';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 import type { CodeLanguage } from './markdown/CodeBlock';
 
 export type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
 
-const BLOOM_CONFIG: Record<BloomLevel, { color: string; bgColor: string; label: string }> = {
-  remember:   { color: 'bg-secondary text-secondary-foreground', bgColor: 'bg-muted',     label: 'Remember'   },
-  understand: { color: 'bg-info text-info-foreground',           bgColor: 'bg-info/10',   label: 'Understand' },
-  apply:      { color: 'bg-success text-success-foreground',     bgColor: 'bg-success/10', label: 'Apply'     },
-  analyze:    { color: 'bg-warning text-warning-foreground',     bgColor: 'bg-warning/10', label: 'Analyze'   },
-  evaluate:   { color: 'bg-accent text-accent-foreground',       bgColor: 'bg-accent/10', label: 'Evaluate'   },
-  create:     { color: 'bg-primary text-primary-foreground',     bgColor: 'bg-primary/10', label: 'Create'    },
+const BLOOM_CONFIG: Record<BloomLevel, { color: string; bgColor: string; labelKey: string }> = {
+  remember:   { color: 'bg-secondary text-secondary-foreground', bgColor: 'bg-muted',     labelKey: 'bloomQuiz.level.remember' },
+  understand: { color: 'bg-info text-info-foreground',           bgColor: 'bg-info/10',   labelKey: 'bloomQuiz.level.understand' },
+  apply:      { color: 'bg-success text-success-foreground',     bgColor: 'bg-success/10', labelKey: 'bloomQuiz.level.apply' },
+  analyze:    { color: 'bg-warning text-warning-foreground',     bgColor: 'bg-warning/10', labelKey: 'bloomQuiz.level.analyze' },
+  evaluate:   { color: 'bg-accent text-accent-foreground',       bgColor: 'bg-accent/10', labelKey: 'bloomQuiz.level.evaluate' },
+  create:     { color: 'bg-primary text-primary-foreground',     bgColor: 'bg-primary/10', labelKey: 'bloomQuiz.level.create' },
 };
 
 export interface BloomQuizBlockProps {
@@ -55,6 +56,7 @@ export const BloomQuizBlock: React.FC<BloomQuizBlockProps> = ({
   const [revealed, setRevealed] = useState(false);
   const config = BLOOM_CONFIG[level];
   const { emit } = useEventBus();
+  const { t } = useTranslate();
 
   const questionSegments = useMemo(() => parseMarkdownWithCodeBlocks(question), [question]);
   const answerSegments = useMemo(() => parseMarkdownWithCodeBlocks(answer), [answer]);
@@ -78,11 +80,11 @@ export const BloomQuizBlock: React.FC<BloomQuizBlockProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           {index !== undefined && (
             <span className="text-muted-foreground font-medium text-sm">
-              Question {index + 1}
+              {t('bloomQuiz.question', { number: index + 1 })}
             </span>
           )}
           <span className={cn(config.color, 'text-xs px-2 py-1 rounded-full font-medium')}>
-            {config.label}
+            {t(config.labelKey)}
           </span>
         </div>
         {isAnswered && (
@@ -109,13 +111,13 @@ export const BloomQuizBlock: React.FC<BloomQuizBlockProps> = ({
         className="inline-flex items-center rounded-interactive bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
         onClick={handleReveal}
       >
-        {revealed ? 'Hide Answer' : 'Reveal Answer'}
+        {revealed ? t('bloomQuiz.hideAnswer') : t('bloomQuiz.revealAnswer')}
       </button>
 
       {revealed && (
         <div className="rounded-container bg-card/80 p-3 text-sm text-foreground shadow-elevation-card surface-material border border-primary mt-3 space-y-2">
           <div className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">
-            Answer:
+            {t('bloomQuiz.answer')}
           </div>
           {answerSegments.map((segment, idx) =>
             segment.type === 'markdown' ? (

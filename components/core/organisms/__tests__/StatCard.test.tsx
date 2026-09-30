@@ -3,7 +3,7 @@
  *
  * Ensures StatCard correctly:
  * - Renders all metrics (not just the first one)
- * - Auto-detects status-based field names and counts correctly
+ * - Counts rows through a declared aggregate + filter
  * - Handles explicit field:value format
  */
 
@@ -62,7 +62,7 @@ describe('StatCard', () => {
 
       renderWithProviders(
         <StatCard
-          metrics={[{ field: 'count', label: 'Total' }]}
+          metrics={[{ aggregate: 'count', label: 'Total' }]}
           entity={data}
         />
       );
@@ -90,7 +90,7 @@ describe('StatCard', () => {
     });
   });
 
-  describe('explicit field:value format', () => {
+  describe('declared filter', () => {
     it('counts items matching field:value pattern', () => {
       const data = [
         { id: '1', status: 'active' },
@@ -100,7 +100,7 @@ describe('StatCard', () => {
 
       renderWithProviders(
         <StatCard
-          metrics={[{ field: 'status:active', label: 'Active' }]}
+          metrics={[{ aggregate: 'count', filter: { field: 'status', equals: 'active' }, label: 'Active' }]}
           entity={data}
         />
       );
@@ -110,7 +110,7 @@ describe('StatCard', () => {
     });
   });
 
-  describe('auto-detect status-based field names', () => {
+  describe('declared status counts', () => {
     it('counts items where status field matches metric field name', () => {
       const data = [
         { id: '1', status: 'pending' },
@@ -121,7 +121,7 @@ describe('StatCard', () => {
 
       renderWithProviders(
         <StatCard
-          metrics={[{ field: 'pending', label: 'Pending Orders' }]}
+          metrics={[{ aggregate: 'count', filter: { field: 'status', equals: 'pending' }, label: 'Pending Orders' }]}
           entity={data}
         />
       );
@@ -139,7 +139,7 @@ describe('StatCard', () => {
 
       renderWithProviders(
         <StatCard
-          metrics={[{ field: 'open', label: 'Open Items' }]}
+          metrics={[{ aggregate: 'count', filter: { field: 'state', equals: 'open' }, label: 'Open Items' }]}
           entity={data}
         />
       );
@@ -157,7 +157,7 @@ describe('StatCard', () => {
 
       renderWithProviders(
         <StatCard
-          metrics={[{ field: 'planning', label: 'Planning Phase' }]}
+          metrics={[{ aggregate: 'count', filter: { field: 'phase', equals: 'planning' }, label: 'Planning Phase' }]}
           entity={data}
         />
       );
@@ -174,7 +174,7 @@ describe('StatCard', () => {
 
       renderWithProviders(
         <StatCard
-          metrics={[{ field: 'shipped', label: 'Shipped' }]}
+          metrics={[{ aggregate: 'count', filter: { field: 'status', equals: 'shipped' }, label: 'Shipped' }]}
           entity={data}
         />
       );
@@ -196,9 +196,9 @@ describe('StatCard', () => {
       renderWithProviders(
         <StatCard
           metrics={[
-            { field: 'pending', label: 'Pending' },
-            { field: 'processing', label: 'Processing' },
-            { field: 'shipped', label: 'Shipped' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'pending' }, label: 'Pending' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'processing' }, label: 'Processing' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'shipped' }, label: 'Shipped' },
           ]}
           entity={data}
         />
@@ -225,8 +225,8 @@ describe('StatCard', () => {
       const { container } = renderWithProviders(
         <StatCard
           metrics={[
-            { field: 'active', label: 'Active' },
-            { field: 'inactive', label: 'Inactive' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'active' }, label: 'Active' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'inactive' }, label: 'Inactive' },
           ]}
           entity={data}
         />
@@ -243,8 +243,8 @@ describe('StatCard', () => {
       renderWithProviders(
         <StatCard
           metrics={[
-            { field: 'pending', label: 'Pending' },
-            { field: 'processing', label: 'Processing' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'pending' }, label: 'Pending' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'processing' }, label: 'Processing' },
           ]}
           entity={[]}
         />
@@ -274,8 +274,8 @@ describe('StatCard', () => {
       const { container } = renderWithProviders(
         <StatCard
           metrics={[
-            { field: 'pending', label: 'Pending' },
-            { field: 'processing', label: 'Processing' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'pending' }, label: 'Pending' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'processing' }, label: 'Processing' },
           ]}
           entity={[]}
           isLoading={true}
@@ -305,9 +305,9 @@ describe('StatCard', () => {
         <StatCard
           entity={orderData}
           metrics={[
-            { field: 'pending', label: 'Pending', format: 'number' },
-            { field: 'processing', label: 'Processing', format: 'number' },
-            { field: 'shipped', label: 'Shipped', format: 'number' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'pending' }, label: 'Pending', format: 'number' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'processing' }, label: 'Processing', format: 'number' },
+            { aggregate: 'count', filter: { field: 'status', equals: 'shipped' }, label: 'Shipped', format: 'number' },
           ]}
         />
       );

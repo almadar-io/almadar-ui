@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 import type { TransitionLevelData } from '../../../lib/avl-schema-parser';
 import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DStateNode } from '../molecules/Avl3DStateNode';
@@ -36,6 +37,7 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
   data,
 }) => {
   const palette = useAvl3DPalette();
+  const { t, locale } = useTranslate();
   if (!palette) return null;
 
   return (
@@ -99,7 +101,7 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
           {/* Label linking guard to tree */}
           <Avl3DLabel
             position={[1.5, 0.3, 0]}
-            text="guard"
+            text={t('avl.guard').toLocaleLowerCase(locale)}
             color={palette.guardPass}
             fontSize={9}
           />
@@ -111,7 +113,7 @@ export const Avl3DTransitionScene: React.FC<Avl3DTransitionSceneProps> = ({
         <group position={[0, data.guard ? -0.5 : 0.5, 0]}>
           <Avl3DLabel
             position={[0, 0.4, 0]}
-            text={`${data.effects.length} effect${data.effects.length > 1 ? 's' : ''}`}
+            text={t(data.effects.length === 1 ? 'avl3d.effectCountOne' : 'avl3d.effectCountOther', { count: data.effects.length })}
             color={AVL_INK.caution}
             fontSize={10}
           />

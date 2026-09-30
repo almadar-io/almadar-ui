@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { type ZoomBand } from '../../../lib/avl-zoom-band';
 
 export interface ZoomBreadcrumbProps {
@@ -18,11 +19,11 @@ export interface ZoomBreadcrumbProps {
   eventName?: string;
 }
 
-const BAND_LABELS: Record<ZoomBand, string> = {
-  system: 'System',
-  module: 'Module',
-  behavior: 'Behavior',
-  detail: 'Detail',
+const BAND_LABEL_KEYS: Record<ZoomBand, string> = {
+  system: 'zoomBreadcrumb.system',
+  module: 'zoomBreadcrumb.module',
+  behavior: 'zoomBreadcrumb.behavior',
+  detail: 'zoomBreadcrumb.detail',
 };
 
 const BAND_ICONS: Record<ZoomBand, string> = {
@@ -39,13 +40,14 @@ export const ZoomBreadcrumb: React.FC<ZoomBreadcrumbProps> = ({
   traitName,
   eventName,
 }) => {
+  const { t } = useTranslate();
   const segments: Array<{ icon: string; label: string }> = [];
 
   if (applicationName) {
     segments.push({ icon: '\u25C9', label: applicationName });
   }
 
-  segments.push({ icon: BAND_ICONS[band], label: BAND_LABELS[band] });
+  segments.push({ icon: BAND_ICONS[band], label: t(BAND_LABEL_KEYS[band]) });
 
   if (orbitalName && (band === 'module' || band === 'behavior' || band === 'detail')) {
     segments.push({ icon: '\u25C9', label: orbitalName });

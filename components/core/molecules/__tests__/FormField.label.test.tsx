@@ -25,3 +25,24 @@ describe('FormField label', () => {
         expect(container.querySelector('label')?.getAttribute('for')).toBeNull();
     });
 });
+
+describe('FormField hint and error', () => {
+    it('links the hint to the field', () => {
+        const { getByLabelText, getByText } = wrap(<FormField label="Seats" hint="Whole numbers only"><Input name="seats" /></FormField>);
+        const ids = (getByLabelText('Seats').getAttribute('aria-describedby') ?? '').split(' ');
+        expect(ids).toContain(getByText('Whole numbers only').id);
+    });
+
+    it('an error flags the field and is linked to it', () => {
+        const { getByLabelText, getByText } = wrap(<FormField label="Seats" error="Enter a number"><Input name="seats" /></FormField>);
+        const input = getByLabelText('Seats');
+        expect(input.getAttribute('aria-invalid')).toBe('true');
+        expect((input.getAttribute('aria-describedby') ?? '').split(' ')).toContain(getByText('Enter a number').id);
+    });
+
+    it('control: no hint and no error, no description and not invalid', () => {
+        const { getByLabelText } = wrap(<FormField label="Seats"><Input name="seats" /></FormField>);
+        expect(getByLabelText('Seats').getAttribute('aria-describedby')).toBeNull();
+        expect(getByLabelText('Seats').getAttribute('aria-invalid')).toBeNull();
+    });
+});

@@ -211,12 +211,14 @@ export function zoomReducer(state: ZoomState, action: ZoomAction): ZoomState {
 // ---------------------------------------------------------------------------
 
 export interface BreadcrumbSegment {
-  label: string;
+  label?: string;
+  labelKey?: string;
+  labelParams?: Record<string, string | number>;
   level: ZoomLevel;
 }
 
 export function getBreadcrumbs(state: ZoomState): BreadcrumbSegment[] {
-  const crumbs: BreadcrumbSegment[] = [{ label: 'Application', level: 'application' }];
+  const crumbs: BreadcrumbSegment[] = [{ labelKey: 'avl.glyph.application', level: 'application' }];
 
   if (state.selectedOrbital) {
     crumbs.push({ label: state.selectedOrbital, level: 'orbital' });
@@ -225,7 +227,7 @@ export function getBreadcrumbs(state: ZoomState): BreadcrumbSegment[] {
     crumbs.push({ label: state.selectedTrait, level: 'trait' });
   }
   if (state.selectedTransition !== null) {
-    crumbs.push({ label: `Transition #${state.selectedTransition}`, level: 'transition' });
+    crumbs.push({ labelKey: 'avl.breadcrumb.transitionNumber', labelParams: { n: state.selectedTransition }, level: 'transition' });
   }
 
   return crumbs;

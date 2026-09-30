@@ -17,12 +17,21 @@ import { Button } from '../components/core/atoms/Button';
 import { Badge } from '../components/core/atoms/Badge';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { GameIcon } from '../components/core/atoms/GameIcon';
+import { useTranslate } from '../hooks/useTranslate';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 export type EditorMode = 'select' | 'paint' | 'unit' | 'feature' | 'erase';
+
+const MODE_LABEL_KEYS: Record<EditorMode, string> = {
+    select: 'editor.modeSelect',
+    paint: 'editor.modePaint',
+    unit: 'editor.modeUnit',
+    feature: 'editor.modeFeature',
+    erase: 'editor.modeErase',
+};
 
 // =============================================================================
 // Constants
@@ -106,6 +115,7 @@ export interface EditorSliderProps {
 }
 
 export function EditorSlider({ label, value, min, max, step = 0.1, onChange, className }: EditorSliderProps) {
+    const { locale } = useTranslate();
     return (
         <HStack gap="sm" align="center" className={className}>
             <Typography variant="caption" className="min-w-[80px] text-muted-foreground">{label}</Typography>
@@ -121,7 +131,9 @@ export function EditorSlider({ label, value, min, max, step = 0.1, onChange, cla
                 />
             </Box>
             <Typography variant="caption" className="min-w-[40px] text-right text-muted-foreground">
-                {typeof step === 'number' && step < 1 ? value.toFixed(1) : value}
+                {typeof step === 'number' && step < 1
+                    ? new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value)
+                    : new Intl.NumberFormat(locale).format(value)}
             </Typography>
         </HStack>
     );
@@ -232,25 +244,26 @@ export interface StatusBarProps {
 }
 
 export function StatusBar({ hoveredTile, mode, gridSize, unitCount, featureCount, className }: StatusBarProps) {
+    const { t } = useTranslate();
     return (
         <HStack gap="sm" align="center" className={`px-3 py-1.5 bg-background border-t border-border ${className ?? ''}`}>
-            <Badge variant="info" size="sm">{mode}</Badge>
+            <Badge variant="info" size="sm">{t(MODE_LABEL_KEYS[mode])}</Badge>
             <Typography variant="caption" className="text-muted-foreground">
-                Tile: {hoveredTile ? `(${hoveredTile.x}, ${hoveredTile.y})` : '—'}
+                {t('editor.tile', { position: hoveredTile ? `(${hoveredTile.x}, ${hoveredTile.y})` : '—' })}
             </Typography>
             {gridSize && (
                 <Typography variant="caption" className="text-muted-foreground">
-                    Grid: {gridSize.width}x{gridSize.height}
+                    {t('editor.grid', { width: gridSize.width, height: gridSize.height })}
                 </Typography>
             )}
             {unitCount !== undefined && (
                 <Typography variant="caption" className="text-muted-foreground">
-                    Units: {unitCount}
+                    {t('editor.units', { count: unitCount })}
                 </Typography>
             )}
             {featureCount !== undefined && (
                 <Typography variant="caption" className="text-muted-foreground">
-                    Features: {featureCount}
+                    {t('editor.features', { count: featureCount })}
                 </Typography>
             )}
         </HStack>
@@ -294,13 +307,6 @@ TerrainPalette.displayName = 'TerrainPalette';
 // EditorToolbar
 // =============================================================================
 
-const MODE_LABELS: Record<EditorMode, string> = {
-    select: 'Select',
-    paint: 'Paint',
-    unit: 'Unit',
-    feature: 'Feature',
-    erase: 'Erase',
-};
 
 export interface EditorToolbarProps {
     mode: EditorMode;
@@ -309,6 +315,7 @@ export interface EditorToolbarProps {
 }
 
 export function EditorToolbar({ mode, onModeChange, className }: EditorToolbarProps) {
+    const { t } = useTranslate();
     const modes: EditorMode[] = ['select', 'paint', 'unit', 'feature', 'erase'];
     return (
         <HStack gap="xs" wrap className={className}>
@@ -319,7 +326,7 @@ export function EditorToolbar({ mode, onModeChange, className }: EditorToolbarPr
                     size="sm"
                     onClick={() => onModeChange(m)}
                 >
-                    {MODE_LABELS[m]}
+                    {t(MODE_LABEL_KEYS[m])}
                 </Button>
             ))}
         </HStack>

@@ -61,13 +61,13 @@ const variantConfig = {
     icon: Trash2,
     iconBg: "bg-error",
     iconColor: "text-error-foreground",
-    confirmVariant: "primary" as const,
+    confirmVariant: "danger" as const,
   },
   warning: {
     icon: AlertTriangle,
     iconBg: "bg-warning",
     iconColor: "text-warning-foreground",
-    confirmVariant: "primary" as const,
+    confirmVariant: "warning" as const,
   },
   info: {
     icon: Check,
@@ -101,7 +101,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   variant = "danger",
   size = "sm",
   isLoading = false,
-  error: _error,
+  error,
   className,
 }) => {
   const config = variantConfig[variant];
@@ -166,6 +166,11 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             </Typography>
           ) : (
             resolvedMessage
+          )}
+          {error && (
+            <Typography variant="body2" color="error" role="alert" className="mt-2">
+              {error.message}
+            </Typography>
           )}
         </Box>
       </HStack>

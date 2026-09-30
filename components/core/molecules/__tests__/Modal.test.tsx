@@ -71,4 +71,31 @@ describe('Modal', () => {
     const dialog = screen.getByRole('dialog', { hidden: true });
     expect(dialog.closest('[aria-hidden="true"]')).toBeNull();
   });
+
+  it('its width floor never exceeds the container (contained previews narrower than the floor)', () => {
+    render(
+      <TestWrapper>
+        <Modal isOpen contained size="sm" title="Narrow">
+          <p>Body</p>
+        </Modal>
+      </TestWrapper>
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.className).toContain('min-w-[min(400px,100%)]');
+    expect(dialog.className).not.toMatch(/min-w-\[\d+px\]/);
+  });
+
+  it('on phones it is a bottom sheet capped below full height, so its drag handle means something', () => {
+    render(
+      <TestWrapper>
+        <Modal isOpen title="Sheet">
+          <p>Body</p>
+        </Modal>
+      </TestWrapper>
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.className).toContain('max-sm:max-h-[90vh]');
+    expect(dialog.className).not.toContain('max-sm:h-full');
+    expect(dialog.parentElement?.className).toContain('max-sm:items-end');
+  });
 });

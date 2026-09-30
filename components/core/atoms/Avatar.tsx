@@ -10,6 +10,8 @@ import type { AssetUrl, EventKey, EventPayload } from "@almadar/core";
 import { Icon, resolveIcon, type IconInput } from "./Icon";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { pressableProps } from "../../../lib/pressable";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 export type AvatarStatus = "online" | "offline" | "away" | "busy";
@@ -143,6 +145,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   actionPayload,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   // A broken `src` (onError) falls through to the initials → icon → default ladder.
   const [imgFailed, setImgFailed] = React.useState(false);
   React.useEffect(() => {
@@ -174,6 +177,7 @@ export const Avatar: React.FC<AvatarProps> = ({
     }
     onClick?.();
   };
+  const press = pressableProps(isClickable ? handleClick : undefined);
 
   return (
     <div className="relative inline-block">
@@ -187,14 +191,13 @@ export const Avatar: React.FC<AvatarProps> = ({
             "cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors",
           className,
         )}
-        onClick={isClickable ? handleClick : undefined}
-        role={isClickable ? "button" : undefined}
-        tabIndex={isClickable ? 0 : undefined}
+        {...press}
+        aria-label={isClickable ? alt || name || initials : undefined}
       >
         {src && !imgFailed ? (
           <img
             src={src}
-            alt={alt || "Avatar"}
+            alt={alt || t("avatar.alt")}
             className="w-full h-full object-cover"
             onError={() => setImgFailed(true)}
           />
@@ -229,11 +232,11 @@ export const Avatar: React.FC<AvatarProps> = ({
       {status && (
         <div
           className={cn(
-            "absolute bottom-0 right-0 border-2 border-card",
+            "absolute bottom-0 right-0 border-heavy border-card",
             statusClasses[status],
             statusSizeClasses[size],
           )}
-          aria-label={`Status: ${status}`}
+          aria-label={t("avatar.status", { status: t(`avatar.status.${status}`) })}
         />
       )}
 
@@ -243,10 +246,10 @@ export const Avatar: React.FC<AvatarProps> = ({
           className={cn(
             "absolute -top-1 -right-1 flex items-center justify-center",
             "bg-primary text-primary-foreground font-bold",
-            "border-2 border-card",
+            "border-heavy border-card",
             badgeSizeClasses[size],
           )}
-          aria-label={`Badge: ${badge}`}
+          aria-label={t("avatar.badge", { badge })}
         >
           {typeof badge === "number" && badge > 99 ? "99+" : badge}
         </div>

@@ -3,6 +3,7 @@ import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "./Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 export interface SelectOption {
   value: string;
@@ -165,6 +166,7 @@ function RichSelect({
   disabled,
 }: SelectProps) {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -224,7 +226,7 @@ function RichSelect({
   const displayLabel = selected.length === 0
     ? (placeholder ?? "")
     : multiple
-      ? `${selected.length} selected`
+      ? t("select.nSelected", { count: selected.length })
       : (all.find((o) => o.value === selected[0])?.label ?? selected[0]);
 
   const hasValue = selected.length > 0;
@@ -304,7 +306,7 @@ function RichSelect({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search…"
+                placeholder={t("select.searchPlaceholder")}
                 className={cn(
                   "w-full px-2 py-1 text-sm bg-transparent",
                   "focus:outline-none text-foreground placeholder:text-muted-foreground",

@@ -59,7 +59,7 @@ export function StateJsonView({
     );
 
     return (
-        <VStack className={cn('rounded-lg border border-border overflow-hidden', className)} gap="none">
+        <VStack className={cn('rounded-container border border-border overflow-hidden', className)} gap="none">
             <HStack className="items-center justify-between p-2 bg-muted" gap="sm">
                 <Typography variant="caption" className="text-muted-foreground font-medium">
                     {label ?? t('stateArchitect.viewCode')}

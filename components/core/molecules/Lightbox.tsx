@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { AssetUrl } from "@almadar/core";
-import { Icon } from "../atoms/Icon";
+import { Box } from "../atoms/Box";
+import { Button } from "../atoms/Button";
+import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
+import { ThemedPortal } from "../../../lib/ThemedPortal";
 
 function useSafeEventBus() {
   try {
@@ -55,7 +59,8 @@ export const Lightbox: React.FC<LightboxProps> = ({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   const eventBus = useSafeEventBus();
-  const { t } = useTranslate();
+  const { t, direction } = useTranslate();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   // Sync external index changes
   useEffect(() => {
@@ -82,27 +87,20 @@ export const Lightbox: React.FC<LightboxProps> = ({
   const goPrev = useCallback(() => goTo(index - 1), [goTo, index]);
   const goNext = useCallback(() => goTo(index + 1), [goTo, index]);
 
-  // Keyboard navigation
+  useDialogBehavior({ open: isOpen && safeImages.length > 0, containerRef: dialogRef, onEscape: handleClose });
+
+  // Paging keys follow reading direction: "next" is ArrowLeft in RTL.
   useEffect(() => {
     if (!isOpen) return;
-
+    const nextKey = direction === "rtl" ? "ArrowLeft" : "ArrowRight";
+    const prevKey = direction === "rtl" ? "ArrowRight" : "ArrowLeft";
     const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case "Escape":
-          handleClose();
-          break;
-        case "ArrowLeft":
-          goPrev();
-          break;
-        case "ArrowRight":
-          goNext();
-          break;
-      }
+      if (e.key === nextKey) goNext();
+      else if (e.key === prevKey) goPrev();
     };
-
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, handleClose, goPrev, goNext]);
+  }, [isOpen, direction, goPrev, goNext]);
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -133,110 +131,93 @@ export const Lightbox: React.FC<LightboxProps> = ({
     setTouchStartX(null);
   };
 
+  const overlayButton = "absolute z-10 rounded-full bg-card text-foreground hover:bg-muted";
+
   return (
-    <div
-      className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center",
-        // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: lightbox scrim behind images
-        "bg-black bg-opacity-90",
-        className,
-      )}
-      onClick={handleClose}
-      role="dialog"
-      data-pattern="lightbox"
-      aria-modal="true"
-      aria-label={currentImage?.alt ?? "Image viewer"}
-    >
-      {/* Close button */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleClose();
-        }}
+    <ThemedPortal>
+      <Box
+        ref={dialogRef}
         className={cn(
-          "absolute top-4 right-4 z-10",
-          "p-2 rounded-full",
-          "text-[var(--color-foreground)] bg-[var(--color-card)]",
-          "hover:bg-opacity-70 transition-opacity",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "fixed inset-0 z-[1000] flex items-center justify-center",
+          // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: lightbox scrim behind images
+          "bg-black/90",
+          className,
         )}
-        aria-label={t('aria.closeModal')}
+        onClick={handleClose}
+        role="dialog"
+        data-pattern="lightbox"
+        aria-modal="true"
+        aria-label={currentImage?.alt || t("aria.imageViewer")}
       >
-        <Icon name="x" className="w-6 h-6" />
-      </button>
-
-      {/* Previous button */}
-      {hasPrev && safeImages.length > 1 && (
-        <button
-          type="button"
-          onClick={(e) => {
+        <Button
+          variant="ghost"
+          icon="x"
+          onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
-            goPrev();
+            handleClose();
           }}
-          className={cn(
-            "absolute left-4 z-10",
-            "p-2 rounded-full",
-            "text-[var(--color-foreground)] bg-[var(--color-card)]",
-            "hover:bg-opacity-70 transition-opacity",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          )}
-          aria-label={t('aria.previousImage')}
-        >
-          <Icon name="chevron-left" className="w-8 h-8" />
-        </button>
-      )}
+          className={cn(overlayButton, "top-4 end-4")}
+          aria-label={t("aria.closeModal")}
+        />
 
-      {/* Image */}
-      <div
-        className="flex items-center justify-center w-full h-full p-12"
-        onClick={(e) => e.stopPropagation()}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {currentImage && (
-          <img
-            src={currentImage.src}
-            alt={currentImage.alt ?? ""}
-            className="max-w-full max-h-full object-contain select-none"
-            draggable={false}
+        {hasPrev && (
+          <Button
+            variant="ghost"
+            icon={direction === "rtl" ? "chevron-right" : "chevron-left"}
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              goPrev();
+            }}
+            className={cn(overlayButton, "start-4")}
+            aria-label={t("aria.previousImage")}
           />
         )}
-      </div>
 
-      {/* Next button */}
-      {hasNext && safeImages.length > 1 && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            goNext();
-          }}
-          className={cn(
-            "absolute right-4 z-10",
-            "p-2 rounded-full",
-            "text-[var(--color-foreground)] bg-[var(--color-card)]",
-            "hover:bg-opacity-70 transition-opacity",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          )}
-          aria-label={t('aria.nextImage')}
+        <Box
+          className="flex items-center justify-center w-full h-full p-12"
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
-          <Icon name="chevron-right" className="w-8 h-8" />
-        </button>
-      )}
+          {currentImage && (
+            <img
+              src={currentImage.src}
+              alt={currentImage.alt ?? ""}
+              className="max-w-full max-h-full object-contain select-none"
+              draggable={false}
+            />
+          )}
+        </Box>
 
-      {/* Counter + caption */}
-      <div className="absolute bottom-4 left-0 right-0 text-center">
-        {showCounter && safeImages.length > 1 && (
-          <div className="text-[var(--color-foreground)] text-sm mb-1">
-            {index + 1} of {safeImages.length}
-          </div>
+        {hasNext && (
+          <Button
+            variant="ghost"
+            icon={direction === "rtl" ? "chevron-left" : "chevron-right"}
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              goNext();
+            }}
+            className={cn(overlayButton, "end-4")}
+            aria-label={t("aria.nextImage")}
+          />
         )}
-        {currentImage?.caption && (
-          <div className="text-[var(--color-foreground)] text-sm opacity-80 px-8">{currentImage.caption}</div>
-        )}
-      </div>
-    </div>
+
+        <Box className="absolute bottom-4 inset-x-0 text-center">
+          {showCounter && safeImages.length > 1 && (
+            // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: text over the dark scrim
+            <Typography variant="small" className="text-white mb-1">
+              {t("lightbox.counter", { current: index + 1, total: safeImages.length })}
+            </Typography>
+          )}
+          {currentImage?.caption && (
+            // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: text over the dark scrim
+            <Typography variant="small" className="text-white/80 px-8">
+              {currentImage.caption}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+    </ThemedPortal>
   );
 };
 

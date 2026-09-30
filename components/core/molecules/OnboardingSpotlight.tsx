@@ -10,6 +10,7 @@
 import React from "react";
 import { Coachmark, useAnchorRect, type CoachmarkAnchor, type CoachmarkPlacement } from "./Coachmark";
 import { cn } from "../../../lib/cn";
+import { useTranslate } from "../../../hooks/useTranslate";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 
 export interface SpotlightStep {
@@ -40,6 +41,7 @@ export const OnboardingSpotlight: React.FC<OnboardingSpotlightProps> = ({
   onFinish,
   cutoutPadding = 6,
 }) => {
+  const { t } = useTranslate();
   const step = steps[stepIndex];
   const rect = useAnchorRect(step?.anchor ?? "", Boolean(step));
 
@@ -80,9 +82,9 @@ export const OnboardingSpotlight: React.FC<OnboardingSpotlightProps> = ({
         title={step.title}
         onDismiss={onSkip}
         onSecondary={onSkip}
-        secondaryLabel="Skip"
+        secondaryLabel={t('coachmark.skip')}
         onPrimary={isLast ? onFinish : onNext}
-        primaryLabel={isLast ? "Done" : "Next"}
+        primaryLabel={isLast ? t('common.done') : t('nav.next')}
       >
         <span>{step.body}</span>
         <span className="mt-3 flex items-center gap-1.5">

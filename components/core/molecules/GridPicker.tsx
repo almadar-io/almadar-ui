@@ -13,6 +13,7 @@ import { cn } from '../../../lib/cn';
 import { Input } from '../atoms/Input';
 import { Badge } from '../atoms/Badge';
 import { VStack, HStack } from '../atoms/Stack';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 /**
  * Presentational item shape for a single grid cell. This is a UI-presentation
@@ -40,7 +41,7 @@ export interface GridPickerProps {
   onChange: (value: string) => void;
   /**
    * Category keys for the filter chip row. When omitted, the categories are
-   * derived from the items. An "All" chip is always prepended.
+   * derived from the items. A translated "All" chip is always prepended.
    */
   categories?: string[];
   /** Placeholder for the search input. */
@@ -68,6 +69,7 @@ export const GridPicker: React.FC<GridPickerProps> = ({
   cellSize = 32,
   className,
 }) => {
+  const { t } = useTranslate();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -174,7 +176,7 @@ export const GridPicker: React.FC<GridPickerProps> = ({
               }
             }}
           >
-            All
+            {t('gridPicker.all')}
           </Badge>
           {categoryChips.map((category) => (
             <Badge
@@ -237,7 +239,7 @@ export const GridPicker: React.FC<GridPickerProps> = ({
 
       {truncated > 0 && (
         <div className="px-1 text-xs text-muted-foreground">
-          {`+${truncated} more — refine your search`}
+          {t('gridPicker.moreRefine', { count: truncated })}
         </div>
       )}
     </VStack>

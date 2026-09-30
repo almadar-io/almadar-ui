@@ -79,7 +79,7 @@ describe('DrawerSlot', () => {
       );
 
       // Title should appear in the drawer header (h2)
-      const drawerTitle = document.getElementById('drawer-title');
+      const drawerTitle = document.getElementById(screen.getByRole('dialog').getAttribute('aria-labelledby') ?? '');
       expect(drawerTitle).toBeInTheDocument();
       expect(drawerTitle?.textContent).toBe('Extracted Title');
     });
@@ -98,7 +98,7 @@ describe('DrawerSlot', () => {
       );
 
       // The header should show "Override Title", not "Child Title"
-      const drawerTitle = document.getElementById('drawer-title');
+      const drawerTitle = document.getElementById(screen.getByRole('dialog').getAttribute('aria-labelledby') ?? '');
       expect(drawerTitle).toBeInTheDocument();
       expect(drawerTitle?.textContent).toBe('Override Title');
     });

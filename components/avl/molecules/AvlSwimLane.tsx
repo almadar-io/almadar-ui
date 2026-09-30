@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { CONNECTION_COLORS } from '../../../lib/avl-theme';
 
 export interface AvlSwimLaneProps {
@@ -25,6 +26,7 @@ export const AvlSwimLane: React.FC<AvlSwimLaneProps> = ({
   color = 'var(--color-primary)',
   children,
 }) => {
+  const { t, locale } = useTranslate();
   const rightX = GUTTER_WIDTH + centerWidth;
   const totalWidth = rightX + GUTTER_WIDTH;
   const emitColor = CONNECTION_COLORS.emitListen.color;
@@ -43,7 +45,7 @@ export const AvlSwimLane: React.FC<AvlSwimLaneProps> = ({
             opacity={0.4}
             fontFamily="inherit"
           >
-            LISTENS
+            {t('avlSwimLane.listens').toLocaleUpperCase(locale)}
           </text>
           {listenedEvents.map((evt, i) => {
             const ey = EVENT_START_Y + i * EVENT_SPACING;
@@ -124,7 +126,7 @@ export const AvlSwimLane: React.FC<AvlSwimLaneProps> = ({
             opacity={0.4}
             fontFamily="inherit"
           >
-            EMITS
+            {t('avlSwimLane.emits').toLocaleUpperCase(locale)}
           </text>
           {emittedEvents.map((evt, i) => {
             const ey = EVENT_START_Y + i * EVENT_SPACING;

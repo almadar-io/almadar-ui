@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "../../../lib/cn";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 export type StatusDotStatus = "online" | "offline" | "away" | "busy" | "warning" | "critical";
 export type StatusDotSize = "sm" | "md" | "lg";
@@ -43,6 +44,7 @@ const sizeStyles: Record<StatusDotSize, string> = {
 
 export const StatusDot = React.forwardRef<HTMLSpanElement, StatusDotProps>(
   ({ className, status = "offline", pulse = false, size = "md", label, ...props }, ref) => {
+    const { t } = useTranslate();
     return (
       <span
         ref={ref}
@@ -59,7 +61,7 @@ export const StatusDot = React.forwardRef<HTMLSpanElement, StatusDotProps>(
           className,
         )}
         role="status"
-        aria-label={label ?? status}
+        aria-label={label ?? t(`statusDot.${status}`)}
         {...props}
       />
     );

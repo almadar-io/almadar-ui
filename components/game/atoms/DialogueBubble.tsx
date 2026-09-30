@@ -4,6 +4,7 @@ import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { GameIcon } from '../../core/atoms/GameIcon';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 const DEFAULT_PORTRAIT: Asset = {
   url: 'https://almadar-kflow-assets.web.app/shared/ui-winter-ski-board/default/units/hero/hero.png',
@@ -41,14 +42,17 @@ export interface DialogueBubbleProps {
 }
 
 export function DialogueBubble({
-  speaker = 'Hero',
-  text = 'The dungeon awaits. Choose your path wisely.',
+  speaker: speakerProp,
+  text: textProp,
   portrait = DEFAULT_PORTRAIT,
   position = 'bottom',
   mood = 'neutral',
   revealedChars,
   className,
 }: DialogueBubbleProps) {
+  const { t } = useTranslate();
+  const speaker = speakerProp ?? t('dialogueBubble.defaultSpeaker');
+  const text = textProp ?? t('dialogueBubble.defaultText');
   const visibleText = revealedChars === undefined ? text : text.slice(0, revealedChars);
 
   return (
@@ -60,8 +64,8 @@ export function DialogueBubble({
       )}
     >
       {portrait && (
-        <Box className={cn('flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 transition-colors duration-300', MOOD_RING_CLASS[mood])}>
-          <GameIcon assetUrl={portrait} icon="image" size={48} alt={speaker ?? 'speaker'} className="w-full h-full object-cover" />
+        <Box className={cn('flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-heavy transition-colors duration-300', MOOD_RING_CLASS[mood])}>
+          <GameIcon assetUrl={portrait} icon="image" size={48} alt={speaker} className="w-full h-full object-cover" />
         </Box>
       )}
       <Box className="flex flex-col gap-1 min-w-0">

@@ -10,6 +10,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
+import { useFormatContext } from '../../../hooks/useTranslate';
+import { formatValue, type FormatContext } from '../../../lib/format';
 
 export interface AnimatedCounterProps {
   /** Target value. Strings may carry display affixes (e.g. "500+", "99.9%", "$1.2M"). */
@@ -22,7 +24,7 @@ export interface AnimatedCounterProps {
   prefix?: string;
   /** Text displayed after the number */
   suffix?: string;
-  /** "number" (locale grouping), "currency" ($x.xx), "percent" (rounded %). Unset keeps the value's own decimals. */
+  /** "number" (locale grouping), "currency" (locale currency), "percent" (rounded %). Unset keeps the value's own decimals. */
   format?: string;
   /** Additional class names */
   className?: string;
@@ -52,16 +54,20 @@ function parseValue(value: string | number): ParsedValue {
   };
 }
 
-function formatNumber(value: number, format: string | undefined, decimals: number): string {
+function formatNumber(value: number, format: string | undefined, decimals: number, fmt: FormatContext): string {
   switch (format) {
     case 'currency':
-      return `$${value.toFixed(2)}`;
+      return formatValue(value, 'currency', fmt);
     case 'percent':
-      return `${Math.round(value)}%`;
+      return formatValue(Math.round(value), 'percent', fmt);
     case 'number':
-      return Math.round(value).toLocaleString();
+      return formatValue(Math.round(value), 'number', fmt);
     default:
-      return value.toFixed(decimals);
+      return new Intl.NumberFormat(fmt.locale, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+        useGrouping: false,
+      }).format(value);
   }
 }
 
@@ -78,6 +84,7 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   format,
   className,
 }) => {
+  const fmt = useFormatContext();
   const ref = useRef<HTMLDivElement>(null);
   const parsed = parseValue(value);
   const target = parsed.num ?? 0;
@@ -132,11 +139,11 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   const text =
     parsed.num === null
       ? parsed.suffix
-      : `${prefix ?? ''}${parsed.prefix}${formatNumber(display, format, parsed.decimals)}${parsed.suffix}${suffix ?? ''}`;
+      : `${prefix ?? ''}${parsed.prefix}${formatNumber(display, format, parsed.decimals, fmt)}${parsed.suffix}${suffix ?? ''}`;
 
   return (
     <Box ref={ref} className={cn('flex flex-col items-center gap-1', className)}>
-      <Typography variant="h2" className="text-primary font-bold tabular-nums">
+      <Typography variant="h2" className="text-primary tabular-nums">
         {text}
       </Typography>
       {label ? (

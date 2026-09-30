@@ -90,7 +90,7 @@ export function StateIndicator({
         : DEFAULT_STATE_STYLES;
     const knownState = isKnownState(state) ? state : null;
     const config = knownState !== null ? (mergedStyles[knownState] ?? DEFAULT_STYLE) : DEFAULT_STYLE;
-    const displayLabel = label ?? (state.charAt(0).toUpperCase() + state.slice(1));
+    const displayLabel = label ?? state;
 
     return (
         <Box

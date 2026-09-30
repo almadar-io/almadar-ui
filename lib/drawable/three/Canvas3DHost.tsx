@@ -38,6 +38,7 @@ import React, {
 import type { ThreeEvent } from '@react-three/fiber';
 import type { EventEmit, EventKey, Asset, ScenePos } from '@almadar/core';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { keyMapCode, resolveKeyMapEvent } from '../../keyMapEvent';
 import { collectDrawnItems, buildHitIndex, withPreviewPosition } from '../hitTest';
 import { Canvas, useThree } from '@react-three/fiber';
@@ -362,7 +363,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             tileLeaveEvent,
             unitAnimationEvent,
             cameraChangeEvent,
-            loadingMessage = 'Loading 3D Scene...',
+            loadingMessage: loadingMessageProp,
             keyMap,
             keyUpMap,
             pixelsPerUnit,
@@ -388,6 +389,8 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
         const controlsRef = useRef<OrbitControlsImpl | null>(null);
         const [internalError, setInternalError] = useState<string | null>(null);
         const eventBus = useEventBus();
+        const { t } = useTranslate();
+        const loadingMessage = loadingMessageProp ?? t('canvas3d.loadingScene');
         const keysRef = useRef<Set<string>>(new Set());
 
         // JSX drawable children are collected by the UNIFIED Canvas (main chunk) and
@@ -751,7 +754,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             return (
                 <Canvas3DErrorBoundary>
                     <div className="game-canvas-3d game-canvas-3d--error">
-                        <div className="game-canvas-3d__error">Error: {displayError}</div>
+                        <div className="game-canvas-3d__error">{t('canvas3d.errorWithMessage', { message: displayError })}</div>
                     </div>
                 </Canvas3DErrorBoundary>
             );

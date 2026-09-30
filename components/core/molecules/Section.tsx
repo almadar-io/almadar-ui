@@ -107,7 +107,7 @@ export const Section: React.FC<SectionProps> = ({
           {title && (
             <Typography
               variant="h4"
-              className="text-foreground font-semibold"
+              className="text-foreground"
             >
               {title}
             </Typography>

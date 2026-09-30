@@ -7,6 +7,7 @@ import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
 import { Radio } from "../atoms/Radio";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 export interface MatrixRow {
   id: string;
@@ -39,12 +40,12 @@ export interface MatrixQuestionProps {
   className?: string;
 }
 
-export const DEFAULT_MATRIX_COLUMNS: MatrixColumn[] = [
-  { value: 1, label: "Strongly Disagree" },
-  { value: 2, label: "Disagree" },
-  { value: 3, label: "Neutral" },
-  { value: 4, label: "Agree" },
-  { value: 5, label: "Strongly Agree" },
+export const DEFAULT_MATRIX_COLUMN_KEYS: ReadonlyArray<{ value: number | string; labelKey: string }> = [
+  { value: 1, labelKey: "likert.stronglyDisagree" },
+  { value: 2, labelKey: "likert.disagree" },
+  { value: 3, labelKey: "likert.neutral" },
+  { value: 4, labelKey: "likert.agree" },
+  { value: 5, labelKey: "likert.stronglyAgree" },
 ];
 
 const sizeStyles = {
@@ -63,7 +64,7 @@ const sizeStyles = {
 export const MatrixQuestion: React.FC<MatrixQuestionProps> = ({
   title,
   rows,
-  columns = DEFAULT_MATRIX_COLUMNS,
+  columns: columnsProp,
   values,
   onChange,
   changeEvent,
@@ -75,6 +76,9 @@ export const MatrixQuestion: React.FC<MatrixQuestionProps> = ({
   const safeRows = rows ?? [];
   const safeValues = values ?? {};
   const eventBus = useEventBus();
+  const { t } = useTranslate();
+  const columns: MatrixColumn[] =
+    columnsProp ?? DEFAULT_MATRIX_COLUMN_KEYS.map((c) => ({ value: c.value, label: t(c.labelKey) }));
 
   const handleChange = useCallback(
     (rowId: string, value: number | string) => {

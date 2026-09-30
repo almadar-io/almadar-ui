@@ -14,6 +14,8 @@ import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
+import { Button } from "../atoms/Button";
 
 /**
  * Step info needed by WizardProgress.
@@ -63,6 +65,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
   stepClickEvent,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const normalizedSteps: WizardProgressStep[] = (steps ?? []).map((s, i) =>
     typeof s === "string" ? { id: `step-${i}`, title: s } : s,
   );
@@ -80,72 +83,58 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
     <Box
       border
       className={cn(
-        "border-b-2 border-x-0 border-t-0 border-border",
+        "@container border-b-heavy border-x-0 border-t-0 border-border",
         compact ? "px-4 py-2" : "px-6 py-4",
         className,
       )}
     >
-      <div className="flex items-center gap-2">
+      <Box className="flex items-center gap-2">
         {normalizedSteps.map((step, index) => {
           const isActive = index === currentStep;
           const isCompleted = index < currentStep;
+          const canNavigate = isCompleted && allowNavigation;
 
           return (
             <React.Fragment key={step.id || `step-${index}`}>
-              {/* Step indicator */}
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => handleStepClick(index)}
-                disabled={!isCompleted || !allowNavigation}
+                disabled={!canNavigate}
+                aria-current={isActive ? "step" : undefined}
+                aria-label={`${t("wizard.stepOf", { current: index + 1, total: totalSteps })}: ${step.title}`}
                 className={cn(
-                  "flex items-center justify-center text-sm font-bold transition-colors",
-                  "border-2 border-border",
+                  "flex-shrink-0 p-0 rounded-full text-sm tabular-nums border-heavy disabled:opacity-100",
                   compact ? "w-6 h-6" : "w-8 h-8",
-                  isActive &&
-                    "bg-foreground text-background",
-                  isCompleted &&
-                    "bg-foreground text-background cursor-pointer hover:bg-muted-foreground",
-                  !isActive &&
-                    !isCompleted &&
-                    "bg-card text-foreground",
+                  isActive || isCompleted
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-muted-foreground border-border",
+                  canNavigate && "hover:bg-primary-hover",
                 )}
               >
                 {isCompleted ? <Icon name="check" size="sm" /> : index + 1}
-              </button>
+              </Button>
 
-              {/* Step title (on desktop, not in compact mode) */}
               {!compact && (
-                <div
-                  className={cn(
-                    "hidden md:block",
-                    isActive
-                      ? "text-foreground font-bold"
-                      : "text-muted-foreground",
-                  )}
+                <Box
+                  data-step-title
+                  className={cn("min-w-0", !isActive && "hidden @md:block", isActive ? "text-foreground" : "text-muted-foreground")}
                 >
-                  <Typography
-                    variant="small"
-                    weight={isActive ? "bold" : "normal"}
-                  >
+                  <Typography variant="small" weight="medium" truncate>
                     {step.title}
                   </Typography>
-                </div>
+                </Box>
               )}
 
-              {/* Connector line */}
               {index < totalSteps - 1 && (
-                <div
-                  className={cn(
-                    "flex-1 h-0.5",
-                    index < currentStep
-                      ? "bg-foreground"
-                      : "bg-muted",
-                  )}
+                <Box
+                  aria-hidden="true"
+                  className={cn("flex-1 min-w-4 h-0.5", index < currentStep ? "bg-primary" : "bg-border")}
                 />
               )}
             </React.Fragment>
           );
         })}
-      </div>
+      </Box>
     </Box>
   );
 };

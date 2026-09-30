@@ -149,7 +149,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         className,
       )}
       role="group"
-      aria-label={label ?? "Number stepper"}
+      aria-label={label ?? t('numberStepper.ariaLabel')}
     >
       {/* Decrement button */}
       <button

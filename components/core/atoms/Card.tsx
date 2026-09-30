@@ -3,6 +3,7 @@ import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { Spinner } from "./Spinner";
+import { pressableProps } from "../../../lib/pressable";
 
 export type CardShadow = "none" | "sm" | "md" | "lg";
 
@@ -132,6 +133,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
           onClick?.(e);
         }
       : onClick;
+    const press = pressableProps(handleClick);
 
     return (
       <div
@@ -146,14 +148,14 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
           shadow && shadowStyles[shadow],
           className,
         )}
-        onClick={handleClick}
+        {...press}
         {...props}
       >
         {loading && <Spinner overlay size="md" />}
         {(title || subtitle) && (
           <div className="mb-4">
             {title && (
-              <h3 className="text-lg text-card-foreground font-bold">
+              <h3 className="text-lg text-card-foreground heading-voice">
                 {title}
               </h3>
             )}
@@ -189,7 +191,7 @@ export const CardTitle = React.forwardRef<
     ref={ref}
     className={cn(
       "text-lg text-card-foreground",
-      "font-bold",
+      "heading-voice",
       className,
     )}
     {...props}

@@ -3,6 +3,7 @@ import type { Asset } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { GameIcon } from '../../core/atoms/GameIcon';
+import { useTranslate, type TranslateFunction } from '../../../hooks/useTranslate';
 
 export interface TimerDisplayProps {
   /** Time in seconds */
@@ -27,11 +28,11 @@ const sizeMap = {
   lg: 'text-2xl px-4 py-1.5',
 };
 
-function formatTime(seconds: number, format: 'mm:ss' | 'ss' | 'countdown'): string {
+function formatTime(seconds: number, format: 'mm:ss' | 'ss' | 'countdown', t: TranslateFunction): string {
   const clamped = Math.max(0, Math.floor(seconds));
 
   if (format === 'ss') {
-    return `${clamped}s`;
+    return t('timerDisplay.seconds', { count: clamped });
   }
 
   const mins = Math.floor(clamped / 60);
@@ -55,6 +56,7 @@ export function TimerDisplay({
   lowThreshold,
   iconAsset,
 }: TimerDisplayProps) {
+  const { t } = useTranslate();
   const isLow = lowThreshold != null && seconds <= lowThreshold && seconds > 0;
 
   return (
@@ -72,7 +74,7 @@ export function TimerDisplay({
       {iconAsset && (
         <GameIcon assetUrl={iconAsset} icon="image" size={16} className="w-4 h-4 object-contain flex-shrink-0" />
       )}
-      {formatTime(seconds, format)}
+      {formatTime(seconds, format, t)}
     </Box>
   );
 }

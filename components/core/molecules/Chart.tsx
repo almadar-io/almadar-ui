@@ -18,6 +18,7 @@
 
 import React, { useMemo, useCallback } from "react";
 import { cn } from "../../../lib/cn";
+import { pressableProps } from "../../../lib/pressable";
 import { formatValue } from "../../../lib/format";
 import { Card, Typography, Badge, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
@@ -25,7 +26,7 @@ import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { EmptyState } from "./EmptyState";
 import { useEventBus } from "../../../hooks/useEventBus";
-import { useTranslate } from "../../../hooks/useTranslate";
+import { useTranslate, type TranslateFunction } from "../../../hooks/useTranslate";
 import type { UiError } from '../atoms/types';
 import type { EventKey } from "@almadar/core";
 
@@ -170,25 +171,33 @@ export type ChartTimePeriod = "day" | "week" | "month" | "quarter" | "year";
 
 // Buckets start at 00:00 UTC, so labels read in UTC: a local-time reading
 // west of UTC would name the previous day or month.
-const dayFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-const monthFormatter = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+const dayFormatter = (locale: string) => new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", timeZone: "UTC" });
+const monthFormatter = (locale: string) => new Intl.DateTimeFormat(locale, { month: "short", year: "numeric", timeZone: "UTC" });
 
 /** A time-axis label at the granularity of its bucket (an ISO date, or an epoch-ms key when `period` is set); a non-date label passes through. */
-export const formatTimeLabel = (raw: string, period: ChartTimePeriod | undefined): string => {
+export const formatTimeLabel = (
+    raw: string,
+    period: ChartTimePeriod | undefined,
+    i18n: { t: TranslateFunction; locale: string },
+): string => {
+    const { t, locale } = i18n;
     // A bucketing atom (it declares `period`) keys buckets by their epoch-ms start.
     const parsed = new Date(period !== undefined && /^-?\d+$/.test(raw) ? Number(raw) : raw);
     if (Number.isNaN(parsed.getTime())) return raw;
     switch (period) {
         case "day":
-            return dayFormatter.format(parsed);
+            return dayFormatter(locale).format(parsed);
         case "week":
-            return `Week of ${dayFormatter.format(parsed)}`;
+            return t("chart.weekOf", { date: dayFormatter(locale).format(parsed) });
         case "quarter":
-            return `Q${Math.floor(parsed.getUTCMonth() / 3) + 1} ${parsed.getUTCFullYear()}`;
+            return t("chart.quarterOf", {
+                quarter: new Intl.NumberFormat(locale).format(Math.floor(parsed.getUTCMonth() / 3) + 1),
+                year: new Intl.NumberFormat(locale, { useGrouping: false }).format(parsed.getUTCFullYear()),
+            });
         case "year":
-            return String(parsed.getUTCFullYear());
+            return new Intl.NumberFormat(locale, { useGrouping: false }).format(parsed.getUTCFullYear());
         default:
-            return monthFormatter.format(parsed);
+            return monthFormatter(locale).format(parsed);
     }
 };
 
@@ -204,6 +213,7 @@ const BarChart: React.FC<{
     horizontal?: boolean;
     onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
 }> = ({ series, height, showValues, stack, timeAxis, period, histogram = false, horizontal = false, onPointClick }) => {
+    const i18n = useTranslate();
     const categories = useMemo(() => {
         const set: string[] = [];
         const seen = new Set<string>();
@@ -249,7 +259,7 @@ const BarChart: React.FC<{
         return (
             <VStack gap="xs" align="stretch" className="w-full" style={{ minHeight: height }}>
                 {categories.map((label, catIdx) => {
-                    const displayLabel = timeAxis ? formatTimeLabel(label, period) : label;
+                    const displayLabel = timeAxis ? formatTimeLabel(label, period, i18n) : label;
                     const total = columnTotals?.[catIdx] ?? 1;
                     return (
                         <HStack key={label} gap="sm" align="center" className="w-full">
@@ -284,12 +294,12 @@ const BarChart: React.FC<{
                                                 width: `${ratio}%`,
                                                 backgroundColor: color,
                                             }}
-                                            onClick={() =>
-                                                onPointClick?.(
-                                                    { label, value, color },
-                                                    s.name,
-                                                )
-                                            }
+                                            {...pressableProps(
+                                                onPointClick
+                                                    ? () => onPointClick({ label, value, color }, s.name)
+                                                    : undefined,
+                                            )}
+                                            aria-label={`${s.name}: ${value}`}
                                             title={`${s.name}: ${value}`}
                                         />
                                     );
@@ -320,7 +330,7 @@ const BarChart: React.FC<{
             style={{ height }}
         >
             {categories.map((label, catIdx) => {
-                const displayLabel = timeAxis ? formatTimeLabel(label, period) : label;
+                const displayLabel = timeAxis ? formatTimeLabel(label, period, i18n) : label;
                 if (stack === "none") {
                     return (
                         <VStack
@@ -349,12 +359,12 @@ const BarChart: React.FC<{
                                                 ...(!histogram && { maxWidth: 72 }),
                                                 backgroundColor: color,
                                             }}
-                                            onClick={() =>
-                                                onPointClick?.(
-                                                    { label, value, color },
-                                                    s.name,
-                                                )
-                                            }
+                                            {...pressableProps(
+                                                onPointClick
+                                                    ? () => onPointClick({ label, value, color }, s.name)
+                                                    : undefined,
+                                            )}
+                                            aria-label={`${s.name}: ${value}`}
                                             title={`${s.name}: ${value}`}
                                         />
                                     );
@@ -404,12 +414,12 @@ const BarChart: React.FC<{
                                             height: `${ratio}%`,
                                             backgroundColor: color,
                                         }}
-                                        onClick={() =>
-                                            onPointClick?.(
-                                                { label, value, color },
-                                                s.name,
-                                            )
-                                        }
+                                        {...pressableProps(
+                                            onPointClick
+                                                ? () => onPointClick({ label, value, color }, s.name)
+                                                : undefined,
+                                        )}
+                                        aria-label={`${s.name}: ${value}`}
                                         title={`${s.name}: ${value}`}
                                     />
                                 );
@@ -437,6 +447,7 @@ const PieChart: React.FC<{
     donut?: boolean;
     onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
 }> = ({ data, height, showValues, donut = false, onPointClick }) => {
+    const { locale } = useTranslate();
     const total = data.reduce((sum, d) => sum + d.value, 0);
     const size = Math.min(height, 200);
     const radius = size / 2 - 8;
@@ -537,7 +548,7 @@ const PieChart: React.FC<{
                                 style={{ backgroundColor: seg.color }}
                             />
                             <Typography variant="caption" color="secondary" className="truncate">
-                                {seg.label}: {seg.percentage}%
+                                {seg.label}: {new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(seg.percentage) / 100)}
                             </Typography>
                         </HStack>
                     ))}
@@ -557,6 +568,7 @@ const LineChart: React.FC<{
     period?: ChartTimePeriod;
     onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
 }> = ({ series, height, showValues, fill = false, timeAxis, period, onPointClick }) => {
+    const i18n = useTranslate();
     const width = 400;
     const padding = { top: 20, right: 20, bottom: 30, left: 40 };
     const chartWidth = width - padding.left - padding.right;
@@ -688,7 +700,7 @@ const LineChart: React.FC<{
                                         fontSize="10"
                                         fontWeight="500"
                                     >
-                                        {formatValue(p.value, "number")}
+                                        {formatValue(p.value, "number", { locale: i18n.locale })}
                                     </text>
                                 )}
                             </g>
@@ -705,7 +717,7 @@ const LineChart: React.FC<{
                     fill="var(--color-muted-foreground)"
                     fontSize="9"
                 >
-                    {formatValue(v, "number")}
+                    {formatValue(v, "number", { locale: i18n.locale })}
                 </text>
             ))}
             {labels.map((label, idx) => (
@@ -717,7 +729,7 @@ const LineChart: React.FC<{
                     fill="var(--color-muted-foreground)"
                     fontSize="9"
                 >
-                    {timeAxis ? formatTimeLabel(label, period) : label}
+                    {timeAxis ? formatTimeLabel(label, period, i18n) : label}
                 </text>
             ))}
         </svg>
@@ -730,6 +742,8 @@ const ScatterChart: React.FC<{
     height: number;
     onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
 }> = ({ data, height, onPointClick }) => {
+    const { locale } = useTranslate();
+    const axisNumber = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     const width = 400;
     const padding = { top: 20, right: 20, bottom: 30, left: 40 };
     const chartWidth = width - padding.left - padding.right;
@@ -813,7 +827,7 @@ const ScatterChart: React.FC<{
                 fill="var(--color-muted-foreground)"
                 fontSize="9"
             >
-                {minX.toFixed(1)}
+                {axisNumber.format(minX)}
             </text>
             <text
                 x={width - padding.right}
@@ -822,7 +836,7 @@ const ScatterChart: React.FC<{
                 fill="var(--color-muted-foreground)"
                 fontSize="9"
             >
-                {maxX.toFixed(1)}
+                {axisNumber.format(maxX)}
             </text>
         </svg>
     );
@@ -912,7 +926,7 @@ export const Chart: React.FC<ChartProps> = ({
     }
 
     if (!hasContent) {
-        return <EmptyState title={t('empty.noData')} description={t('empty.noData')} className={className} />;
+        return <EmptyState title={t('empty.noData')} className={className} />;
     }
 
     return (
@@ -922,7 +936,7 @@ export const Chart: React.FC<ChartProps> = ({
                     <HStack justify="between" align="start">
                         <VStack gap="xs">
                             {title && (
-                                <Typography variant="h5" weight="semibold">
+                                <Typography variant="h5">
                                     {title}
                                 </Typography>
                             )}
@@ -958,7 +972,7 @@ export const Chart: React.FC<ChartProps> = ({
                             stack={stack}
                             timeAxis={timeAxis}
                             period={period}
-                            onPointClick={handlePointClick}
+                            onPointClick={drillEvent ? handlePointClick : undefined}
                         />
                     )}
                     {resolvedLook === "bar-horizontal" && (
@@ -970,7 +984,7 @@ export const Chart: React.FC<ChartProps> = ({
                             timeAxis={timeAxis}
                             period={period}
                             horizontal
-                            onPointClick={handlePointClick}
+                            onPointClick={drillEvent ? handlePointClick : undefined}
                         />
                     )}
                     {resolvedLook === "histogram" && (
@@ -981,7 +995,7 @@ export const Chart: React.FC<ChartProps> = ({
                             stack="none"
                             timeAxis={false}
                             histogram
-                            onPointClick={handlePointClick}
+                            onPointClick={drillEvent ? handlePointClick : undefined}
                         />
                     )}
                     {resolvedLook === "line" && (
@@ -991,7 +1005,7 @@ export const Chart: React.FC<ChartProps> = ({
                             showValues={showValues}
                             timeAxis={timeAxis}
                             period={period}
-                            onPointClick={handlePointClick}
+                            onPointClick={drillEvent ? handlePointClick : undefined}
                         />
                     )}
                     {resolvedLook === "area" && (
@@ -1002,7 +1016,7 @@ export const Chart: React.FC<ChartProps> = ({
                             timeAxis={timeAxis}
                             period={period}
                             fill
-                            onPointClick={handlePointClick}
+                            onPointClick={drillEvent ? handlePointClick : undefined}
                         />
                     )}
                     {resolvedLook === "pie" && (
@@ -1010,7 +1024,7 @@ export const Chart: React.FC<ChartProps> = ({
                             data={firstSeriesData}
                             height={height}
                             showValues={showLegend}
-                            onPointClick={handlePointClick}
+                            onPointClick={drillEvent ? handlePointClick : undefined}
                         />
                     )}
                     {resolvedLook === "donut" && (
@@ -1019,14 +1033,14 @@ export const Chart: React.FC<ChartProps> = ({
                             height={height}
                             showValues={showLegend}
                             donut
-                            onPointClick={handlePointClick}
+                            onPointClick={drillEvent ? handlePointClick : undefined}
                         />
                     )}
                     {resolvedLook === "scatter" && (
                         <ScatterChart
                             data={scatterData ?? []}
                             height={height}
-                            onPointClick={handlePointClick}
+                            onPointClick={drillEvent ? handlePointClick : undefined}
                         />
                     )}
                 </Box>

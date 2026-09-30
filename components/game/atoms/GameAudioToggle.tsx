@@ -17,6 +17,7 @@ import type { Asset, EventEmit } from '@almadar/core';
 import { Button } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { useGameAudioContextOptional } from '../../../providers/GameAudioProvider';
 import { GameIcon } from '../../core/atoms/GameIcon';
 import type { UiError } from '../../core/atoms/types';
@@ -60,6 +61,8 @@ export function GameAudioToggle({
     const muted = ctx ? ctx.muted : localMuted;
     const setMuted = ctx ? ctx.setMuted : setLocalMuted;
     const eventBus = useEventBus();
+    const { t } = useTranslate();
+    const stateLabel = muted ? t('gameAudio.muted') : t('gameAudio.soundOn');
 
     const handleToggle = useCallback(() => {
         const next = !muted;
@@ -76,9 +79,10 @@ export function GameAudioToggle({
             onClick={handleToggle}
             className={cn('text-lg leading-none px-2', className)}
             aria-pressed={muted}
+            aria-label={stateLabel}
         >
             {activeAsset ? (
-                <GameIcon assetUrl={activeAsset} icon="image" size={20} alt={muted ? 'Muted' : 'Sound on'} className="w-5 h-5 object-contain" />
+                <GameIcon assetUrl={activeAsset} icon="image" size={20} alt={stateLabel} className="w-5 h-5 object-contain" />
             ) : (
                 muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'
             )}

@@ -26,6 +26,7 @@ import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
+import { useTranslate } from '../hooks/useTranslate';
 import type { OrbitalSchema, EntityData, ResolvedTraitBinding, OrbitalDefinition, ThemeRef } from '@almadar/core';
 import { buildResolvedTraitConfigs, collectCallsiteCaptureChildren } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
@@ -721,6 +722,7 @@ export function OrbPreview({
   if (serverUrl && transport) {
     throw new Error('OrbPreview accepts serverUrl OR transport, not both');
   }
+  const { t } = useTranslate();
   // GAP-19: track when the server bridge falls back to local execution.
   // The 5s timeout in TraitInitializer fires onLocalFallback if the bridge
   // never connected. We surface a persistent banner below — the retired
@@ -1021,7 +1023,7 @@ export function OrbPreview({
       {localFallback && (
         <Box className="px-3 py-2 bg-[var(--color-warning)] bg-opacity-10 border-b border-[var(--color-warning)] flex items-center gap-2">
           <Typography variant="caption" className="text-[var(--color-warning-foreground)] flex-1">
-            Preview server unreachable — running locally. Server-side state and persistence are disabled.
+            {t('orbPreview.serverUnreachable')}
           </Typography>
         </Box>
       )}

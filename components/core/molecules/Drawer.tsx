@@ -16,7 +16,7 @@
  * @packageDocumentation
  */
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useId, useRef } from "react";
 import type { EventKey } from "@almadar/core";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
@@ -26,6 +26,7 @@ import { usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 
 // ============================================================================
 // Types
@@ -104,36 +105,13 @@ export const Drawer: React.FC<DrawerProps> = ({
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const drawerRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
+  const titleId = useId();
 
-  // Focus management
-  useEffect(() => {
-    if (isOpen) {
-      previousActiveElement.current = document.activeElement as HTMLElement;
-      const focusableElements = drawerRef.current?.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      const firstElement = focusableElements?.[0] as HTMLElement;
-      firstElement?.focus();
-    } else {
-      previousActiveElement.current?.focus();
-    }
-  }, [isOpen]);
-
-  // Escape key handler
-  useEffect(() => {
-    if (!isOpen || !closeOnEscape) return;
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
-        onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [isOpen, closeOnEscape, onClose, closeEvent, eventBus]);
+  const emitClose = () => {
+    if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
+    onClose();
+  };
+  useDialogBehavior({ open: isOpen, containerRef: drawerRef, onEscape: emitClose, closeOnEscape });
 
   // Enter/exit motion (token-driven). The slide direction is flipped per
   // side via the --motion-drawer-sign CSS var consumed by the drawer keyframes.
@@ -154,10 +132,7 @@ export const Drawer: React.FC<DrawerProps> = ({
 
   if (!mounted) return null;
 
-  const handleClose = () => {
-    if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
-    onClose();
-  };
+  const handleClose = emitClose;
 
   // Handle overlay click
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -195,8 +170,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         ref={drawerRef}
         bg="surface"
         border
-        shadow="xl"
-        className={cn(
+        className={cn("shadow-elevation-dialog", 
           // Above the page's floating chrome (tool strips, chat pills: z-50), like SidePanel.
           contained ? "absolute top-0 bottom-0 z-50 surface-material" : "fixed top-0 bottom-0 z-[60] surface-material",
           "flex flex-col",
@@ -210,7 +184,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         role="dialog"
         aria-modal="true"
         onAnimationEnd={onAnimationEnd}
-        {...(title && { "aria-labelledby": "drawer-title" })}
+        {...(title && { "aria-labelledby": titleId })}
       >
         {/* Header */}
         {(title || showCloseButton) && (
@@ -221,7 +195,7 @@ export const Drawer: React.FC<DrawerProps> = ({
             )}
           >
             {title && (
-              <Typography variant="h4" as="h2" id="drawer-title">
+              <Typography variant="h4" as="h2" id={titleId}>
                 {title}
               </Typography>
             )}

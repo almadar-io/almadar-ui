@@ -250,7 +250,7 @@ export const Carousel = <T = CarouselItem,>({
               'rounded-full',
               'bg-surface/80',
               'backdrop-blur-sm',
-              'shadow-sm',
+              'shadow-elevation-interactive',
               'hover:bg-surface',
             )}
           >
@@ -274,7 +274,7 @@ export const Carousel = <T = CarouselItem,>({
               'rounded-full',
               'bg-surface/80',
               'backdrop-blur-sm',
-              'shadow-sm',
+              'shadow-elevation-interactive',
               'hover:bg-surface',
             )}
           >
@@ -308,7 +308,7 @@ export const Carousel = <T = CarouselItem,>({
                   }}
                   onClick={() => goToSlide(index)}
                   role="button"
-                  aria-label={`Go to slide ${index + 1}`}
+                  aria-label={t('carousel.goToSlide', { number: index + 1 })}
                 />
               );
             })}

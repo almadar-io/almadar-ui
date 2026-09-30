@@ -15,6 +15,7 @@ import { useFrame } from '@react-three/fiber';
 import { MathUtils, type Group } from 'three';
 import { AVL_3D_COLORS } from '../../../lib/avl-3d-layout';
 import { useAvl3DPalette } from '../../../providers/avl-3d-context';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 import { Avl3DTooltip } from '../atoms/Avl3DTooltip';
 import { AVL_INK } from '../../../lib/avl-theme';
@@ -58,6 +59,7 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
   const groupRef = useRef<Group>(null);
   const [hovered, setHovered] = useState(false);
   const palette = useAvl3DPalette();
+  const { t } = useTranslate();
 
   // U2: Wider scale range (0.6 to 3.0) for stronger visual hierarchy
   const scale = useMemo(() => 0.6 + Math.min(traitCount, 8) * 0.3, [traitCount]);
@@ -183,10 +185,10 @@ export const Avl3DOrbitalNode: React.FC<Avl3DOrbitalNodeProps> = ({
           title={name}
           accentColor={AVL_3D_COLORS.orbitalRim}
           rows={[
-            { label: 'Entity', value: entityName },
-            { label: 'Persistence', value: persistence },
-            { label: 'Traits', value: String(traitCount) },
-            { label: 'Pages', value: String(pageCount) },
+            { label: t('avl.entity'), value: entityName },
+            { label: t('avl.glyph.persistence'), value: persistence },
+            { label: t('avl.traits'), value: String(traitCount) },
+            { label: t('avl3d.pages'), value: String(pageCount) },
           ]}
         />
       )}

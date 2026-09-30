@@ -153,7 +153,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
             onClick={handleReset}
             disabled={isRunning}
             icon={RotateCcw}
-            aria-label="Reset"
+            aria-label={t('common.reset')}
           />
           <Button
             variant="primary"
@@ -163,7 +163,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
             icon={isRunning ? RotateCcw : Play}
             className={isRunning ? '[&_svg]:animate-spin' : ''}
           >
-            {isRunning ? t('common.loading') : 'Run'}
+            {isRunning ? t('common.loading') : t('codeRunner.run')}
           </Button>
         </HStack>
       </Box>
@@ -177,14 +177,14 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
           >
             <Terminal size={16} className="text-muted-foreground" />
             <Typography variant="small" className="text-foreground font-medium">
-              Output
+              {t('codeRunner.output')}
             </Typography>
             {output && (
               <Badge
                 variant={output.exitCode === 0 ? 'success' : 'danger'}
                 size="sm"
               >
-                Exit {output.exitCode}
+                {t('codeRunner.exit', { code: output.exitCode })}
               </Badge>
             )}
           </HStack>
@@ -208,7 +208,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
                 ) : null}
                 {!output?.stdout && !output?.stderr ? (
                   <Typography variant="small" className="text-background italic">
-                    No output
+                    {t('codeRunner.noOutput')}
                   </Typography>
                 ) : null}
 
@@ -226,16 +226,16 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
                             variant="small"
                             className={test.passed ? 'text-success' : 'text-error'}
                           >
-                            Test {index + 1}: {test.passed ? 'passed' : 'failed'}
+                            {test.passed ? t('codeRunner.testPassed', { number: index + 1 }) : t('codeRunner.testFailed', { number: index + 1 })}
                           </Typography>
                           <Typography variant="small" className="text-background">
-                            Input: {test.input}
+                            {t('codeRunner.input', { value: test.input })}
                           </Typography>
                           <Typography variant="small" className="text-background">
-                            Expected: {test.expectedOutput}
+                            {t('codeRunner.expected', { value: test.expectedOutput })}
                           </Typography>
                           <Typography variant="small" className="text-background">
-                            Actual: {test.actualOutput}
+                            {t('codeRunner.actual', { value: test.actualOutput })}
                           </Typography>
                         </VStack>
                       </HStack>

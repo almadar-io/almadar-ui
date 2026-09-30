@@ -5,6 +5,7 @@ import { Card } from "../../core/atoms/Card";
 import { StatBadge, type StatBadgeProps } from "./StatBadge";
 import type { Asset } from "@almadar/core";
 import type { IconInput } from "../../core/atoms/index";
+import { useTranslate, type TranslateFunction } from "../../../hooks/useTranslate";
 
 export interface GameHudStat extends Omit<StatBadgeProps, "size"> {
   /** Data source entity name */
@@ -65,23 +66,23 @@ const positionMap: Record<string, string> = {
 /**
  * Convert schema-style elements to GameHudStat format.
  */
+const ELEMENT_LABEL_KEYS: Record<string, string> = {
+  "health-bar": "gameHud.health",
+  "score-display": "gameHud.score",
+  lives: "gameHud.lives",
+  timer: "gameHud.time",
+};
+
 function convertElementsToStats(
   elements: readonly GameHudElement[],
+  t: TranslateFunction,
 ): GameHudStat[] {
   return elements.map((el) => {
     // Parse bind format: "entity.field" -> source + field
     const [source, field] = el.bind?.split(".") ?? [];
 
-    // Map element type to stat label
-    const labelMap: Record<string, string> = {
-      "health-bar": "Health",
-      "score-display": "Score",
-      lives: "Lives",
-      timer: "Time",
-    };
-
     return {
-      label: el.label || labelMap[el.type ?? ""] || el.type || "",
+      label: el.label || (ELEMENT_LABEL_KEYS[el.type ?? ""] ? t(ELEMENT_LABEL_KEYS[el.type ?? ""]) : el.type) || "",
       source,
       field,
       // Pass through direct values from compiled render-ui effects
@@ -94,11 +95,11 @@ function convertElementsToStats(
   });
 }
 
-const DEFAULT_HUD_STATS: GameHudStat[] = [
-  { label: 'HP', value: 75, max: 100, format: 'bar', variant: 'danger' },
-  { label: 'MP', value: 40, max: 60, format: 'bar', variant: 'primary' },
-  { label: 'Score', value: 4200, format: 'number', variant: 'warning' },
-  { label: 'Level', value: 4, format: 'number', variant: 'default' },
+const DEFAULT_HUD_STATS: ReadonlyArray<Omit<GameHudStat, 'label'> & { labelKey: string }> = [
+  { labelKey: 'gameHud.hp', value: 75, max: 100, format: 'bar', variant: 'danger' },
+  { labelKey: 'gameHud.mp', value: 40, max: 60, format: 'bar', variant: 'primary' },
+  { labelKey: 'gameHud.score', value: 4200, format: 'number', variant: 'warning' },
+  { labelKey: 'gameHud.level', value: 4, format: 'number', variant: 'default' },
 ];
 
 export function GameHud({
@@ -113,8 +114,10 @@ export function GameHud({
 }: GameHudProps) {
   // Convert elements to stats if provided, with items as alias for stats
   // Defensive: ensure stats is always a valid array even if props are malformed
+  const { t } = useTranslate();
+  const defaultStats: GameHudStat[] = DEFAULT_HUD_STATS.map(({ labelKey, ...rest }) => ({ ...rest, label: t(labelKey) }));
   const rawStats =
-    propStats ?? items ?? (elements && Array.isArray(elements) ? convertElementsToStats(elements) : DEFAULT_HUD_STATS);
+    propStats ?? items ?? (elements && Array.isArray(elements) ? convertElementsToStats(elements, t) : defaultStats);
   const stats = Array.isArray(rawStats) ? rawStats : [];
 
   // Determine position from props or derive from elements

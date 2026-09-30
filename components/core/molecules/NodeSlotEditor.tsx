@@ -8,6 +8,7 @@ import { JsonTreeEditor } from './JsonTreeEditor';
 import { FieldControl } from './PropertyInspector';
 import { getKnownPatterns, getPatternDefinition } from '../../../lib/pattern-resolver';
 import { cn } from '../../../lib/cn';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 const isObj = (v: TraitConfigValue | undefined): v is TraitConfigObject =>
   v !== null && v !== undefined && typeof v === 'object' && !Array.isArray(v);
@@ -39,13 +40,14 @@ export interface NodeSlotEditorProps {
  * of the read-only "edit in source" fallback. Self-contained `@almadar/ui` atoms.
  */
 export const NodeSlotEditor: React.FC<NodeSlotEditorProps> = ({ value, onChange, className }) => {
+  const { t } = useTranslate();
   const { type, props, wasArray } = normalize(value);
   const patterns = React.useMemo<string[]>(() => {
     try { return [...getKnownPatterns()].sort(); } catch { return []; }
   }, []);
   const options = React.useMemo(
-    () => [{ value: '', label: '— none —' }, ...patterns.map((p) => ({ value: p, label: p }))],
-    [patterns],
+    () => [{ value: '', label: t('nodeSlot.none') }, ...patterns.map((p) => ({ value: p, label: p }))],
+    [patterns, t],
   );
 
   const emit = (nextType: string, nextProps: TraitConfigObject): void => {
@@ -82,7 +84,7 @@ export const NodeSlotEditor: React.FC<NodeSlotEditorProps> = ({ value, onChange,
       />
       {type !== '' && (
         <VStack gap="none" className="pl-1">
-          <Typography variant="caption" color="muted">props</Typography>
+          <Typography variant="caption" color="muted">{t('nodeSlot.props')}</Typography>
           {hasSchema ? (
             <VStack gap="xs">
               {schemaEntries.map(([propName, decl]) => (

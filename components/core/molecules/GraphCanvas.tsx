@@ -1004,7 +1004,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         return (
             <EmptyState
                 title={t('display.noGraphData')}
-                description="No nodes to display."
+                description={t('graphCanvas.noNodes')}
                 className={className}
             />
         );
@@ -1022,7 +1022,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         className="px-4 py-2 border-b border-border"
                     >
                         {title && (
-                            <Typography variant="h6" weight="semibold">
+                            <Typography variant="h6">
                                 {title}
                             </Typography>
                         )}

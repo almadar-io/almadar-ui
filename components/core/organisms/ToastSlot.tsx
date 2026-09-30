@@ -14,7 +14,9 @@
 import React from 'react';
 import { Toast, ToastVariant } from '../molecules/Toast';
 import { Box } from '../atoms/Box';
+import { ThemedPortal } from '../../../lib/ThemedPortal';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { useEntitySchemaOptional } from '../../../providers/EntitySchemaContext';
 import type { UiError } from '../atoms/types';
 
@@ -85,6 +87,7 @@ export const ToastSlot: React.FC<ToastSlotProps> = ({
   sourceTrait,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const schemaCtx = useEntitySchemaOptional();
   const isVisible = Boolean(children);
 
@@ -112,20 +115,22 @@ export const ToastSlot: React.FC<ToastSlotProps> = ({
   const isCustomContent = React.isValidElement(children) && !message;
 
   return (
-    <Box className="fixed bottom-4 right-4 z-50">
-      {isCustomContent ? (
-        children
-      ) : (
-        <Toast
-          variant={variant}
-          title={title}
-          message={message || 'Notification'}
-          duration={duration}
-          onDismiss={handleDismiss}
-          className={className}
-        />
-      )}
-    </Box>
+    <ThemedPortal>
+      <Box className="fixed bottom-4 right-4 z-50">
+        {isCustomContent ? (
+          children
+        ) : (
+          <Toast
+            variant={variant}
+            title={title}
+            message={message || t('toast.notification')}
+            duration={duration}
+            onDismiss={handleDismiss}
+            className={className}
+          />
+        )}
+      </Box>
+    </ThemedPortal>
   );
 };
 

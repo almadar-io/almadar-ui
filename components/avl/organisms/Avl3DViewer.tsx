@@ -34,6 +34,7 @@ import { Scene3D } from '../../../lib/drawable/three/Scene3D';
 import { Camera3D } from '../../../lib/drawable/three/Camera3D';
 import { Lighting3D } from '../../../lib/drawable/three/Lighting3D';
 import { AVL_3D_COLORS, CAMERA_POSITIONS } from '../../../lib/avl-3d-layout';
+import { pressableProps } from '../../../lib/pressable';
 import { Avl3DApplicationScene } from './Avl3DApplicationScene';
 import { Avl3DOrbitalScene } from './Avl3DOrbitalScene';
 import { Avl3DTraitScene } from './Avl3DTraitScene';
@@ -195,10 +196,10 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
   const schema: OrbitalSchema = useMemo(() => {
     if (typeof schemaProp === 'string') {
       try { return JSON.parse(schemaProp); }
-      catch { return { name: 'Error', orbitals: [] } as OrbitalSchema; }
+      catch { return { name: t('common.error'), orbitals: [] } as OrbitalSchema; }
     }
     return schemaProp;
-  }, [schemaProp]);
+  }, [schemaProp, t]);
 
   // 3D config context value
   const configValue = useMemo(() => ({
@@ -363,15 +364,15 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
               <Box
                 as="span"
                 className="cursor-pointer hover:underline"
-                onClick={() => handleBreadcrumbClick(crumb.level)}
+                {...pressableProps(() => handleBreadcrumbClick(crumb.level))}
               >
                 <Typography variant="small" color="muted">
-                  {crumb.label}
+                  {crumb.labelKey ? t(crumb.labelKey, crumb.labelParams) : crumb.label}
                 </Typography>
               </Box>
             ) : (
               <Typography variant="small" color="primary" className="font-bold">
-                {crumb.label}
+                {crumb.labelKey ? t(crumb.labelKey, crumb.labelParams) : crumb.label}
               </Typography>
             )}
           </React.Fragment>

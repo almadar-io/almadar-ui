@@ -16,12 +16,15 @@ import { Button } from '../../atoms/Button';
 import { Icon } from '../../atoms/Icon';
 import { Typography } from '../../atoms/Typography';
 import { cn } from '../../../../lib/cn';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 export interface ImportPreviewUnit {
   /** Staging ref, provenance-linked to a source span */
   ref: string;
   /** Target entity name */
   targetEntity: string;
+  /** Heading shown for the unit (defaults to its `ref`) */
+  title?: string;
   /** Mapped field values */
   fields: Record<string, FieldValue>;
   /** Staging ref of the unit this nests under */
@@ -59,8 +62,6 @@ export interface ImportPreviewTreeProps {
   className?: string;
 }
 
-const TITLE_KEYS = ['title', 'name', 'label'];
-
 function formatFieldValue(value: FieldValue): string {
   if (value === null) return '—';
   if (value instanceof Date) return value.toISOString();
@@ -70,16 +71,11 @@ function formatFieldValue(value: FieldValue): string {
 }
 
 function unitTitle(unit: ImportPreviewUnit): string {
-  for (const key of TITLE_KEYS) {
-    const value = unit.fields[key];
-    if (typeof value === 'string' && value.length > 0) return value;
-  }
-  return unit.ref;
+  return unit.title || unit.ref;
 }
 
 function fieldSummary(unit: ImportPreviewUnit): string {
   return Object.entries(unit.fields)
-    .filter(([key]) => !TITLE_KEYS.includes(key))
     .map(([key, value]) => `${key}: ${formatFieldValue(value)}`)
     .join(' · ');
 }
@@ -90,11 +86,12 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
   entityDisplay,
   onConfirm,
   onCancel,
-  confirmLabel = 'Confirm import',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   indent = 16,
   className,
 }) => {
+  const { t } = useTranslate();
   const groups = new Map<string, ImportPreviewUnit[]>();
   for (const unit of units) {
     const group = groups.get(unit.targetEntity);
@@ -131,7 +128,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
     <Box className={cn('flex flex-col gap-4', className)}>
       {units.length === 0 ? (
         <Typography variant="body2" className="text-muted-foreground">
-          No units staged.
+          {t('import.noUnitsStaged')}
         </Typography>
       ) : null}
       {Array.from(groups.entries()).map(([entity, groupUnits]) => {
@@ -161,7 +158,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
       {skipped.length > 0 ? (
         <Box border className="rounded-container border-border bg-card p-3">
           <Box className="flex items-center gap-2 pb-2">
-            <Typography variant="label">Skipped</Typography>
+            <Typography variant="label">{t('import.skipped')}</Typography>
             <Badge amount={skipped.length} />
           </Box>
           {skipped.map((element) => (
@@ -177,10 +174,10 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
       {onConfirm || onCancel ? (
         <Box className="flex items-center justify-end gap-2">
           {onCancel ? (
-            <Button variant="default" label={cancelLabel} onClick={onCancel} />
+            <Button variant="default" label={cancelLabel ?? t('common.cancel')} onClick={onCancel} />
           ) : null}
           {onConfirm ? (
-            <Button variant="primary" label={confirmLabel} onClick={onConfirm} />
+            <Button variant="primary" label={confirmLabel ?? t('import.confirmImport')} onClick={onConfirm} />
           ) : null}
         </Box>
       ) : null}

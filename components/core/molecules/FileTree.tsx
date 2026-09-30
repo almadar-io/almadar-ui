@@ -16,6 +16,7 @@ import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
 import { useDraggable, type DraggablePayload } from '../../../hooks/useDraggable';
 import { useDropZone } from '../../../hooks/useDropZone';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -306,6 +307,7 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
   isExpanded,
   onToggle,
 }) => {
+  const { t } = useTranslate();
   const children = childrenByParent.get(item.id);
   const hasChildren = !!children && children.length > 0;
   const expanded = hasChildren && isExpanded(item.id, depth);
@@ -386,7 +388,7 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
         {...dropProps}
       >
         {hasChildren ? (
-          <Box onClick={handleChevron} className="flex items-center flex-shrink-0" role="button" aria-label={expanded ? 'Collapse' : 'Expand'}>
+          <Box onClick={handleChevron} className="flex items-center flex-shrink-0" role="button" aria-label={expanded ? t('fileTree.collapse') : t('fileTree.expand')}>
             <Icon
               name={expanded ? 'chevron-down' : 'chevron-right'}
               size="xs"
@@ -413,7 +415,7 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
           <Box
             onClick={handleAction}
             role="button"
-            aria-label={nodeActionLabel ?? 'Node action'}
+            aria-label={nodeActionLabel ?? t('fileTree.nodeAction')}
             title={nodeActionLabel}
             className={`ml-auto flex-shrink-0 rounded-interactive p-0.5 opacity-0 group-hover/treerow:opacity-100 transition-opacity ${
               isSelected ? 'hover:bg-primary-foreground/20' : 'hover:bg-border'

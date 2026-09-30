@@ -16,6 +16,7 @@ import { Typography } from '../../../atoms/Typography';
 import { EmptyState } from '../../../molecules/EmptyState';
 import { Checkbox } from '../../../atoms/Checkbox';
 import { useTranslate } from '../../../../../hooks/useTranslate';
+import { pressableProps } from '../../../../../lib/pressable';
 
 interface TransitionTimelineProps {
     transitions: TransitionTrace[];
@@ -47,7 +48,7 @@ function EffectBadge({ effect }: { effect: EffectTrace }) {
 }
 
 export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
-    const { t } = useTranslate();
+    const { t, locale } = useTranslate();
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [autoScroll, setAutoScroll] = React.useState(true);
     const [expandedId, setExpandedId] = React.useState<string | null>(null);
@@ -70,7 +71,7 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
 
     const formatTime = (ts: number) => {
         const d = new Date(ts);
-        return d.toLocaleTimeString('en-US', {
+        return d.toLocaleTimeString(locale, {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
@@ -111,11 +112,12 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
                         <div
                             key={trace.id}
                             className={`
-                                relative pl-6 pb-3 border-l-2 cursor-pointer
+                                relative pl-6 pb-3 border-l-heavy cursor-pointer
                                 hover:bg-muted/50 rounded-r
                                 ${hasFailedEffects ? 'border-error' : 'border-border'}
                             `}
-                            onClick={() => setExpandedId(isExpanded ? null : trace.id)}
+                            {...pressableProps(() => setExpandedId(isExpanded ? null : trace.id))}
+                            aria-expanded={isExpanded}
                         >
                             {/* Timeline dot */}
                             <div className={`

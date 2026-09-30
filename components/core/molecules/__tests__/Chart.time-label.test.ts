@@ -4,7 +4,14 @@
  * period; buckets start at 00:00 UTC, so labels read in UTC.
  */
 import { describe, it, expect } from 'vitest';
-import { formatTimeLabel } from '../Chart';
+import { formatTimeLabel as formatLabel } from '../Chart';
+
+const i18n = {
+  locale: 'en',
+  t: (key: string, p?: Record<string, string | number>) =>
+    key === 'chart.weekOf' ? `Week of ${p?.date}` : key === 'chart.quarterOf' ? `Q${p?.quarter} ${p?.year}` : key,
+};
+const formatTimeLabel = (raw: string, period: Parameters<typeof formatLabel>[1]) => formatLabel(raw, period, i18n);
 
 const OCT_2_2026 = '2026-10-02T00:00:00.000Z';
 

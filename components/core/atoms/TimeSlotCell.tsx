@@ -8,6 +8,7 @@
 import React, { useCallback } from "react";
 import { cn } from "../../../lib/cn";
 import { Box } from "./Box";
+import { pressableProps } from "../../../lib/pressable";
 
 export interface TimeSlotCellProps {
   /** Time label for this slot (e.g. "09:00") */
@@ -20,6 +21,11 @@ export interface TimeSlotCellProps {
   children?: React.ReactNode;
   /** Whether this slot contains an event */
   isOccupied?: boolean;
+  onPointerDown?: React.PointerEventHandler<HTMLDivElement>;
+  onPointerUp?: React.PointerEventHandler<HTMLDivElement>;
+  onPointerCancel?: React.PointerEventHandler<HTMLDivElement>;
+  onPointerLeave?: React.PointerEventHandler<HTMLDivElement>;
+  "data-testid"?: string;
 }
 
 export function TimeSlotCell({
@@ -28,10 +34,16 @@ export function TimeSlotCell({
   className,
   children,
   isOccupied = false,
+  onPointerDown,
+  onPointerUp,
+  onPointerCancel,
+  onPointerLeave,
+  "data-testid": testId,
 }: TimeSlotCellProps): React.JSX.Element {
   const handleClick = useCallback(() => {
     onClick?.(time);
   }, [onClick, time]);
+  const press = pressableProps(onClick ? handleClick : undefined);
 
   return (
     <Box
@@ -40,7 +52,13 @@ export function TimeSlotCell({
         isOccupied && "bg-muted/30",
         className,
       )}
-      onClick={handleClick}
+      {...press}
+      aria-label={onClick ? time : undefined}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onPointerLeave={onPointerLeave}
+      data-testid={testId}
     >
       {children}
     </Box>

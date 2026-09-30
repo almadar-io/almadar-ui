@@ -176,7 +176,7 @@ export const Accordion: React.FC<AccordionProps> = ({
 
         return (
           <div key={item.id} className={index > 0 ? "mt-2" : ""}>
-            <div className="border-2 border-border overflow-hidden">
+            <div className="border-heavy border-border overflow-hidden">
               <button
                 type="button"
                 onClick={() => !isDisabled && handleToggle(item.id)}
@@ -215,7 +215,7 @@ export const Accordion: React.FC<AccordionProps> = ({
               {isOpen && (
                 <div
                   id={`accordion-content-${item.id}`}
-                  className="px-4 py-3 bg-card border-t-2 border-border"
+                  className="px-4 py-3 bg-card border-t-heavy border-border"
                 >
                   {item.content}
                 </div>

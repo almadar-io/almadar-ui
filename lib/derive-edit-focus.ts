@@ -29,7 +29,7 @@ export function deriveEditFocusFromElement(el: HTMLElement): EditFocus | null {
   const focus: EditFocus = {
     level: 'node',
     orbital,
-    label: patternType ?? trait ?? 'element',
+    label: patternType ?? trait ?? el.tagName.toLowerCase(),
   };
   if (path !== null) focus.path = path;
   if (trait !== null) focus.trait = trait;

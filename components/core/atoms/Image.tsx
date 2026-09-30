@@ -47,7 +47,7 @@ const roundedClass: Record<ImageRounded, string> = {
   md: 'rounded-md',
   lg: 'rounded-lg',
   xl: 'rounded-xl',
-  '2xl': 'rounded-2xl',
+  '2xl': 'rounded-[calc(var(--radius-xl)*1.5)]',
   full: 'rounded-full',
 };
 

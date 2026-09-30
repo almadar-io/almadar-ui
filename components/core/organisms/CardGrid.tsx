@@ -10,15 +10,16 @@
  * for pagination, filtering, or search. All state is owned by the trait state machine.
  */
 import React from 'react';
-import type { EventKey, EventPayload, FieldValue } from "@almadar/core";
+import type { EventKey, EventPayload, EventEmit, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
-import { formatDate, humanizeFieldName } from '../../../lib/format';
+import { formatValue } from '../../../lib/format';
+import { normalizeDisplayFields, badgeVariantFor, titleFieldOf } from '../../../lib/displayField';
 import { getNestedValue, resolveImageUrl } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useRowActions } from '../../../hooks/useRowActions';
 import type { RowActionCondition } from '../../../lib/row-action-when';
-import { useTranslate } from '../../../hooks/useTranslate';
+import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
 import { Button } from '../atoms/index';
 import { Badge } from '../atoms/Badge';
 import { Box } from '../atoms/Box';
@@ -26,6 +27,7 @@ import { Typography } from '../atoms/Typography';
 import { VStack, HStack } from '../atoms/Stack';
 import { Pagination } from '../molecules/Pagination';
 import type { DisplayStateProps } from './types';
+import type { DisplayField } from '../atoms/types';
 import type { EntityRow } from '@almadar/core';
 
 export type CardGridGap = 'none' | 'sm' | 'md' | 'lg' | 'xl';
@@ -50,61 +52,8 @@ export interface CardItemAction {
   when?: RowActionCondition;
 }
 
-/**
- * Field definition - can be a simple string or object with key/header or name/label
- */
-export type FieldDef = string | { key?: string; header?: string; name?: string; label?: string };
-
-/**
- * Normalize fields to simple string array
- */
-function normalizeFields(fields: readonly FieldDef[] | undefined): string[] {
-  if (!fields) return [];
-  return fields.map((f) => (typeof f === 'string' ? f : f.key ?? f.name ?? ''));
-}
-
-/**
- * Get a human-readable label from a field key.
- * "firstName" -> "First Name", "created_at" -> "Created At"
- */
-const fieldLabel = humanizeFieldName;
-
-/**
- * Detect boolean values (actual booleans or "true"/"false" strings)
- * and return the boolean, or null if the value is not boolean-like.
- */
-function asBooleanValue(value: FieldValue): boolean | null {
-  if (typeof value === 'boolean') return value;
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  return null;
-}
-
-/**
- * Fields that look like status/category values (render as Badge)
- */
-const STATUS_FIELDS = new Set(['status', 'state', 'priority', 'type', 'category', 'role', 'level', 'tier']);
-
-/**
- * Fields that look like dates
- */
-function isDateField(key: string): boolean {
-  const lower = key.toLowerCase();
-  return lower.includes('date') || lower.includes('time') || lower.endsWith('at') || lower.endsWith('_at');
-}
-
-
-/**
- * Pick badge variant based on status-like values
- */
-function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
-  const v = value.toLowerCase();
-  if (['active', 'completed', 'done', 'approved', 'published', 'resolved', 'open'].includes(v)) return 'success';
-  if (['pending', 'in_progress', 'in-progress', 'review', 'draft', 'processing'].includes(v)) return 'warning';
-  if (['inactive', 'deleted', 'rejected', 'failed', 'error', 'blocked', 'closed'].includes(v)) return 'error';
-  if (['new', 'created', 'scheduled', 'queued'].includes(v)) return 'info';
-  return 'default';
-}
+/** A field is a plain name or a declared {@link DisplayField}. */
+export type FieldDef = string | DisplayField;
 
 export interface CardGridProps extends DisplayStateProps {
   /** Entity data (single record or collection). */
@@ -125,6 +74,9 @@ export interface CardGridProps extends DisplayStateProps {
   fieldNames?: readonly string[];
   /** Alias for fields - backwards compatibility */
   columns?: readonly FieldDef[];
+  /** When set, clicking a card emits UI:{itemClickEvent} with { id, row }. Omit = cards are not clickable. */
+  /** @entityRow row */
+  itemClickEvent?: EventEmit<ItemActionPayload>;
   /** Actions for each card item (schema-driven) */
   itemActions?: readonly CardItemAction[];
   /** Show total count in pagination */
@@ -180,18 +132,17 @@ export const CardGrid: React.FC<CardGridProps> = ({
   fieldNames,
   columns,
   itemActions,
+  itemClickEvent,
   showTotal = true,
   imageField,
 }) => {
   const eventBus = useEventBus();
   const rowActions = useRowActions();
   const { t } = useTranslate();
+  const fmt = useFormatContext();
 
-  // Support fields, fieldNames, and columns (aliases) - normalize to string[]
-  const effectiveFieldNames =
-    normalizeFields(fields).length > 0
-      ? normalizeFields(fields)
-      : (fieldNames ?? normalizeFields(columns));
+  const declaredFields = normalizeDisplayFields(fields);
+  const effectiveFields = declaredFields.length > 0 ? declaredFields : normalizeDisplayFields(fieldNames ?? columns);
 
   // Build the grid-template-columns value
   const gridTemplateColumns = `repeat(auto-fit, minmax(min(${minCardWidth}px, 100%), 1fr))`;
@@ -208,10 +159,9 @@ export const CardGrid: React.FC<CardGridProps> = ({
     eventBus.emit('UI:PAGINATE', { page: newPage, pageSize });
   };
 
-  // Classify fields for smart layout
-  const titleField = effectiveFieldNames?.[0];
-  const statusField = effectiveFieldNames?.find((f) => STATUS_FIELDS.has(f.toLowerCase()));
-  const bodyFields = effectiveFieldNames?.filter((f) => f !== titleField && f !== statusField) ?? [];
+  const titleField = titleFieldOf(effectiveFields);
+  const badgeFields = effectiveFields.filter((f) => f.variant === 'badge' && f !== titleField);
+  const bodyFields = effectiveFields.filter((f) => f !== titleField && f.variant !== 'badge');
 
   // Handle action click - navigate, dispatch event, or call callback
   const handleActionClick = (action: CardItemAction, itemData: EventPayload) => (e: React.MouseEvent) => {
@@ -265,7 +215,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     if (normalizedData.length === 0) {
       return (
         <Box className="col-span-full text-center py-12 text-muted-foreground">
-          <Typography variant="body" color="secondary">{t('empty.noItems') || 'No items found'}</Typography>
+          <Typography variant="body" color="secondary">{t('empty.noItems')}</Typography>
         </Box>
       );
     }
@@ -279,8 +229,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
       const primaryActions = shownActions.filter((a) => a.variant !== 'danger');
       const dangerActions = shownActions.filter((a) => a.variant === 'danger');
 
-      const titleValue = titleField ? getNestedValue(itemData, titleField) : undefined;
-      const statusValue = statusField ? getNestedValue(itemData, statusField) : undefined;
+      const titleValue = titleField ? getNestedValue(itemData, titleField.name) : undefined;
 
       return (
         <Box
@@ -288,12 +237,13 @@ export const CardGrid: React.FC<CardGridProps> = ({
           data-entity-row
           className={cn(
             'bg-card rounded-container border border-border',
-            'shadow-sm hover:shadow-lg',
-            'cursor-pointer hover:border-primary transition-all',
+            'shadow-elevation-card hover:shadow-elevation-popover',
+            itemClickEvent && 'cursor-pointer hover:border-primary',
+            'transition-all',
             'flex flex-col'
           )}
-          action="VIEW"
-          actionPayload={{ row: itemData }}
+          action={itemClickEvent}
+          actionPayload={itemClickEvent ? { id: itemData.id as string | number, row: itemData } : undefined}
         >
           {/* Card Image: thumbnail from imageField */}
           {imageField && (() => {
@@ -316,17 +266,21 @@ export const CardGrid: React.FC<CardGridProps> = ({
             <HStack gap="sm" className="justify-between items-start">
               <VStack gap="xs" className="flex-1 min-w-0">
                 {titleValue !== undefined && titleValue !== null && (
-                  <Typography variant="h4" className="font-semibold truncate">
+                  <Typography variant="h4" className="truncate">
                     {String(titleValue)}
                   </Typography>
                 )}
-                {statusValue !== undefined && statusValue !== null && (
-                  <Box>
-                    <Badge variant={statusVariant(String(statusValue))}>
-                      {String(statusValue)}
-                    </Badge>
-                  </Box>
-                )}
+                {badgeFields.map((field) => {
+                  const badgeValue = getNestedValue(itemData, field.name);
+                  if (badgeValue === undefined || badgeValue === null || badgeValue === '') return null;
+                  return (
+                    <Box key={field.name}>
+                      <Badge variant={badgeVariantFor(String(badgeValue), field.colorMap)}>
+                        {String(badgeValue)}
+                      </Badge>
+                    </Box>
+                  );
+                })}
               </VStack>
               {/* Danger actions (Delete) as icon-style buttons in top-right */}
               {dangerActions.length > 0 && (
@@ -339,7 +293,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                       onClick={handleActionClick(action, itemData)}
                       data-testid={action.event ? `action-${action.event}` : undefined}
                       data-row-id={String(itemData.id)}
-                      className="text-error hover:bg-error/10 px-2"
+                      className="text-foreground hover:bg-error/10 px-2"
                     >
                       {action.label}
                     </Button>
@@ -354,43 +308,34 @@ export const CardGrid: React.FC<CardGridProps> = ({
             <Box className="px-4 py-3 flex-1">
               <VStack gap="xs">
                 {bodyFields.map((field) => {
-                  const value = getNestedValue(itemData, field);
+                  const value = getNestedValue(itemData, field.name);
                   if (value === undefined || value === null || value === '') return null;
 
                   const fieldValue = value as FieldValue;
+                  const label = field.label ?? field.name;
 
-                  // Boolean fields render as badges
-                  const boolVal = asBooleanValue(fieldValue);
-                  if (boolVal !== null) {
+                  if (typeof fieldValue === 'boolean') {
                     return (
-                      <HStack key={field} gap="sm" className="justify-between">
+                      <HStack key={field.name} gap="sm" className="justify-between">
                         <Typography variant="caption" color="secondary">
-                          {fieldLabel(field)}
+                          {label}
                         </Typography>
-                        {boolVal ? (
-                          <Badge variant="success">{t('common.yes') || 'Yes'}</Badge>
+                        {fieldValue ? (
+                          <Badge variant="success">{t('common.yes')}</Badge>
                         ) : (
-                          <Badge variant="neutral">{t('common.no') || 'No'}</Badge>
+                          <Badge variant="neutral">{t('common.no')}</Badge>
                         )}
                       </HStack>
                     );
                   }
 
-                  const displayValue = isDateField(field)
-                    ? formatDate(fieldValue)
-                    : STATUS_FIELDS.has(field.toLowerCase())
-                      ? undefined
-                      : String(value);
-
-                  if (!displayValue) return null;
-
                   return (
-                    <HStack key={field} gap="sm" className="justify-between">
+                    <HStack key={field.name} gap="sm" className="justify-between">
                       <Typography variant="caption" color="secondary">
-                        {fieldLabel(field)}
+                        {label}
                       </Typography>
                       <Typography variant="small" className="text-right truncate max-w-[60%]">
-                        {displayValue}
+                        {formatValue(fieldValue, field.format, fmt)}
                       </Typography>
                     </HStack>
                   );

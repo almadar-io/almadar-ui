@@ -176,7 +176,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           icon={resolvedAction.icon}
           onClick={resolvedAction.onClick}
           className="rounded-full shadow-elevation-popover"
-          aria-label={resolvedAction.label || "Action"}
+          aria-label={resolvedAction.label || t('fab.action')}
         >
           {resolvedAction.label && (
             <Typography as="span" className="sr-only">{resolvedAction.label}</Typography>
@@ -228,7 +228,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                 }}
               >
                 {position.includes("right") && (
-                  <Typography variant="small" className="text-foreground dark:text-foreground bg-card dark:bg-card px-2 py-1 rounded-interactive shadow-elevation-card whitespace-nowrap">
+                  <Typography variant="small" className="text-foreground bg-card px-2 py-1 rounded-interactive shadow-elevation-card whitespace-nowrap">
                     {actionItem.label}
                   </Typography>
                 )}
@@ -247,7 +247,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                   <Typography as="span" className="sr-only">{actionItem.label}</Typography>
                 </Button>
                 {position.includes("left") && (
-                  <Typography variant="small" className="text-foreground dark:text-foreground bg-card dark:bg-card px-2 py-1 rounded-interactive shadow-elevation-card whitespace-nowrap">
+                  <Typography variant="small" className="text-foreground bg-card px-2 py-1 rounded-interactive shadow-elevation-card whitespace-nowrap">
                     {actionItem.label}
                   </Typography>
                 )}
@@ -263,7 +263,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           icon={isExpanded ? "x" : "plus"}
           onClick={handleMainClick}
           className="rounded-full shadow-elevation-popover transition-all duration-normal"
-          aria-label={isExpanded ? "Close actions" : "Open actions"}
+          aria-label={isExpanded ? t('fab.closeActions') : t('fab.openActions')}
           aria-expanded={isExpanded}
         >
           <Typography as="span" className="sr-only">{isExpanded ? t('common.close') : t('common.open')}</Typography>

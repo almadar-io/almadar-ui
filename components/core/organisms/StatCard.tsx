@@ -9,10 +9,11 @@ import { Sparkline } from "../atoms/Sparkline";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { IconInput } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
-import { useTranslate } from "../../../hooks/useTranslate";
+import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
 import { resolveIcon } from "../atoms/Icon";
 import type { DisplayStateProps } from "./types";
 import type { EntityRow } from "@almadar/core";
+import { formatValue } from "../../../lib/format";
 
 /**
  * Schema metric definition
@@ -29,6 +30,10 @@ export interface MetricDefinition {
   icon?: IconInput;
   /** Value format (e.g., 'currency', 'percent', 'number') */
   format?: "currency" | "percent" | "number" | string;
+  /** How rows become the value: `count` rows, or `sum` the numeric `field` (default `sum` when `field` is set) */
+  aggregate?: "count" | "sum";
+  /** Only rows whose `field` equals `equals` are aggregated */
+  filter?: { field: string; equals: string | number | boolean };
 }
 
 export interface StatCardProps extends DisplayStateProps {
@@ -104,7 +109,8 @@ export const StatCard: React.FC<StatCardProps> = ({
   // Use title as fallback for label
   const labelToUse = propLabel ?? propTitle;
   const eventBus = useEventBus();
-  const { t } = useTranslate();
+  const { t, locale } = useTranslate();
+  const fmt = useFormatContext();
 
   // Handle action click with event bus integration
   const handleActionClick = React.useCallback(() => {
@@ -126,57 +132,17 @@ export const StatCard: React.FC<StatCardProps> = ({
   // Helper to compute a single metric value
   const computeMetricValue = React.useCallback(
     (metric: MetricDefinition, items: readonly EntityRow[]) => {
-      // If static value is provided, use it directly
-      if (metric.value !== undefined) {
-        return metric.value;
-      }
-
+      if (metric.value !== undefined) return metric.value;
+      const rows = metric.filter
+        ? items.filter((item) => item[metric.filter!.field] === metric.filter!.equals)
+        : items;
+      if (metric.aggregate === "count") return rows.length;
+      if (!metric.field) return 0;
       const field = metric.field;
-
-      // If no field specified, return 0
-      if (!field) {
-        return 0;
-      }
-
-      if (field === "count") {
-        return items.length;
-      }
-
-      // Handle explicit field:value format (e.g., "status:active")
-      if (field.includes(":")) {
-        const [fieldName, fieldValue] = field.split(":");
-        return items.filter((item) => item[fieldName] === fieldValue).length;
-      }
-
-      // Check if field exists on any item
-      const fieldExistsOnItems = items.some((item) => field in item);
-
-      if (fieldExistsOnItems) {
-        // Sum numeric field
-        return items.reduce((acc, item) => {
-          const val = item[field];
-          return acc + (typeof val === "number" ? val : 0);
-        }, 0);
-      }
-
-      // Auto-detect: field name might be a status value
-      // Check common status field names: status, state, phase
-      const statusFields = ["status", "state", "phase"];
-      for (const statusField of statusFields) {
-        const hasStatusField = items.some((item) => statusField in item);
-        if (hasStatusField) {
-          // Count items where statusField === field (the metric field is actually a value)
-          const count = items.filter(
-            (item) => item[statusField] === field,
-          ).length;
-          if (count > 0 || items.length === 0) {
-            return count;
-          }
-        }
-      }
-
-      // Fallback: return 0
-      return 0;
+      return rows.reduce((acc, item) => {
+        const val = item[field];
+        return acc + (typeof val === "number" ? val : 0);
+      }, 0);
     },
     [],
   );
@@ -206,10 +172,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   if (schemaStats && schemaStats.length > 1) {
     if (isLoading) {
       return (
-        <Box
-          className={cn("grid gap-4", className)}
-          style={{ gridTemplateColumns: `repeat(${schemaStats.length}, 1fr)` }}
-        >
+        <Box className={cn("grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))]", className)}>
           {schemaStats.map((_, idx) => (
             <Card key={idx} className="p-4">
               <VStack gap="xs" className="animate-pulse">
@@ -223,17 +186,14 @@ export const StatCard: React.FC<StatCardProps> = ({
     }
 
     return (
-      <Box
-        className={cn("grid gap-4", className)}
-        style={{ gridTemplateColumns: `repeat(${schemaStats.length}, 1fr)` }}
-      >
+      <Box className={cn("grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))]", className)}>
         {schemaStats.map((stat, idx) => (
           <Card key={idx} className="p-4">
             <Typography variant="overline" color="secondary">
               {stat.label}
             </Typography>
-            <Typography variant="h4" className="text-xl">
-              {stat.value}
+            <Typography variant="h4" className="text-xl tabular-nums">
+              {formatValue(stat.value, stat.format ?? "number", fmt)}
             </Typography>
           </Card>
         ))}
@@ -303,8 +263,8 @@ export const StatCard: React.FC<StatCardProps> = ({
           <Typography variant="overline" color="secondary">
             {label}
           </Typography>
-          <Typography variant="h4" className="text-2xl">
-            {value}
+          <Typography variant="h4" className="text-2xl tabular-nums">
+            {typeof value === "number" ? formatValue(value, schemaStats?.[0]?.format ?? "number", fmt) : value}
           </Typography>
 
           {/* Trend indicator */}
@@ -323,7 +283,7 @@ export const StatCard: React.FC<StatCardProps> = ({
                 )}
               >
                 <TrendIcon className="h-4 w-4" />
-                <Typography variant="caption" as="span">{Math.abs(calculatedTrend).toFixed(1)}%</Typography>
+                <Typography variant="caption" as="span">{new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(Math.abs(calculatedTrend) / 100)}</Typography>
               </HStack>
               <Typography variant="small" color="secondary" as="span">
                 {t('statCard.vsLastPeriod')}

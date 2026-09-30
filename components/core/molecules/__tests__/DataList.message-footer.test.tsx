@@ -18,13 +18,13 @@ const actions = [{ label: 'Open', event: 'VIEW', variant: 'ghost' as const }, { 
 describe('DataList message bubble footer', () => {
   it('wraps the footer so actions drop below the timestamp when the bubble is narrow', () => {
     withBus(<DataList entity={rows} variant="message" fields={[{ name: 'content' }, { name: 'timestamp', format: 'date' }]} itemActions={actions} maxInlineActions={2} senderField="sender" currentUser="u1" />);
-    const footer = screen.getByRole('button', { name: /open/i }).closest('[class*="justify-between"]');
+    const footer = screen.getAllByRole('button', { name: /open/i }).find((el) => el.tagName === 'BUTTON')?.closest('[class*="justify-between"]');
     expect(footer?.className).toContain('flex-wrap');
   });
 
   it('keeps the timestamp on one line', () => {
     withBus(<DataList entity={rows} variant="message" fields={[{ name: 'content' }, { name: 'timestamp', format: 'date' }]} itemActions={actions} maxInlineActions={2} senderField="sender" currentUser="u1" />);
-    const footer = screen.getByRole('button', { name: /open/i }).closest('[class*="justify-between"]');
+    const footer = screen.getAllByRole('button', { name: /open/i }).find((el) => el.tagName === 'BUTTON')?.closest('[class*="justify-between"]');
     expect(footer?.firstElementChild?.className).toContain('whitespace-nowrap');
   });
 });

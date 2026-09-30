@@ -4,6 +4,7 @@ import React, { useCallback } from "react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Label } from "../atoms/Label";
@@ -22,7 +23,7 @@ export interface LikertOption {
 export interface LikertScaleProps {
   /** Optional row prompt above the scale */
   question?: string;
-  /** Scale points (defaults to a 5-point agree/disagree set) */
+  /** Scale points (defaults to a translated 5-point agree/disagree set) */
   options?: LikertOption[];
   /** Selected value (controlled) */
   value?: number | string | null;
@@ -40,12 +41,12 @@ export interface LikertScaleProps {
   className?: string;
 }
 
-export const DEFAULT_LIKERT_OPTIONS: LikertOption[] = [
-  { value: 1, label: "Strongly Disagree" },
-  { value: 2, label: "Disagree" },
-  { value: 3, label: "Neutral" },
-  { value: 4, label: "Agree" },
-  { value: 5, label: "Strongly Agree" },
+export const DEFAULT_LIKERT_OPTION_KEYS: ReadonlyArray<{ value: number | string; labelKey: string }> = [
+  { value: 1, labelKey: "likert.stronglyDisagree" },
+  { value: 2, labelKey: "likert.disagree" },
+  { value: 3, labelKey: "likert.neutral" },
+  { value: 4, labelKey: "likert.agree" },
+  { value: 5, labelKey: "likert.stronglyAgree" },
 ];
 
 const radioSizes: Record<LikertScaleSize, { label: string; gap: string }> = {
@@ -70,7 +71,7 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
   (
     {
       question,
-      options = DEFAULT_LIKERT_OPTIONS,
+      options: optionsProp,
       value = null,
       onChange,
       changeEvent,
@@ -83,6 +84,9 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
   ) => {
     const groupId = React.useId();
     const eventBus = useEventBus();
+    const { t } = useTranslate();
+    const options: LikertOption[] =
+      optionsProp ?? DEFAULT_LIKERT_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.labelKey) }));
 
     const handleSelect = useCallback(
       (next: number | string) => {
@@ -104,7 +108,7 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
           className,
         )}
         role="radiogroup"
-        aria-label={question ?? "Likert scale"}
+        aria-label={question ?? t("likert.ariaLabel")}
       >
         {question && (
           <Box

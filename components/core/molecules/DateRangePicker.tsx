@@ -14,11 +14,13 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
+import { toDateInputValue } from '../../../lib/format';
 import { Button } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 import { HStack, VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface DateRange {
   from: string;
@@ -53,7 +55,7 @@ export interface DateRangePickerProps {
   /** Callback fired alongside the bus emit. */
   onChange?: (range: { from: string; to: string }) => void;
   /**
-   * Preset shortcuts. Defaults to the standard finance set
+   * Preset shortcuts. Defaults to the translated standard finance set
    * (Last 7d / Last 30d / This Month / This Quarter / YTD).
    * Pass an empty array to hide presets entirely.
    */
@@ -64,10 +66,6 @@ export interface DateRangePickerProps {
   toLabel?: string;
   /** Additional CSS classes. */
   className?: string;
-}
-
-function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 function startOfMonth(d: Date): Date {
@@ -91,19 +89,19 @@ function daysAgo(n: number): Date {
 /** Built-in relative ranges, resolved at click time. Declarative presets
  *  reference these by `value` when they carry no `range` of their own. */
 const TOKEN_RANGES: Record<string, () => DateRange> = {
-  '7d': () => ({ from: toISODate(daysAgo(7)), to: toISODate(new Date()) }),
-  '30d': () => ({ from: toISODate(daysAgo(30)), to: toISODate(new Date()) }),
-  month: () => ({ from: toISODate(startOfMonth(new Date())), to: toISODate(new Date()) }),
-  quarter: () => ({ from: toISODate(startOfQuarter(new Date())), to: toISODate(new Date()) }),
-  ytd: () => ({ from: toISODate(startOfYear(new Date())), to: toISODate(new Date()) }),
+  '7d': () => ({ from: toDateInputValue(daysAgo(7)), to: toDateInputValue(new Date()) }),
+  '30d': () => ({ from: toDateInputValue(daysAgo(30)), to: toDateInputValue(new Date()) }),
+  month: () => ({ from: toDateInputValue(startOfMonth(new Date())), to: toDateInputValue(new Date()) }),
+  quarter: () => ({ from: toDateInputValue(startOfQuarter(new Date())), to: toDateInputValue(new Date()) }),
+  ytd: () => ({ from: toDateInputValue(startOfYear(new Date())), to: toDateInputValue(new Date()) }),
 };
 
-const DEFAULT_PRESETS: DateRangePickerPreset[] = [
-  { label: 'Last 7 days', value: '7d' },
-  { label: 'Last 30 days', value: '30d' },
-  { label: 'This Month', value: 'month' },
-  { label: 'This Quarter', value: 'quarter' },
-  { label: 'YTD', value: 'ytd' },
+const DEFAULT_PRESET_KEYS: ReadonlyArray<{ value: string; labelKey: string }> = [
+  { value: '7d', labelKey: 'dateRange.last7Days' },
+  { value: '30d', labelKey: 'dateRange.last30Days' },
+  { value: 'month', labelKey: 'dateRange.thisMonth' },
+  { value: 'quarter', labelKey: 'dateRange.thisQuarter' },
+  { value: 'ytd', labelKey: 'dateRange.yearToDate' },
 ];
 
 function resolvePresetRange(preset: DateRangePickerPreset): DateRange | null {
@@ -117,12 +115,17 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   to: toProp,
   event,
   onChange,
-  presets = DEFAULT_PRESETS,
-  fromLabel = 'From',
-  toLabel = 'To',
+  presets: presetsProp,
+  fromLabel,
+  toLabel,
   className,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
+  const presets = useMemo<DateRangePickerPreset[]>(
+    () => presetsProp ?? DEFAULT_PRESET_KEYS.map((p) => ({ value: p.value, label: t(p.labelKey) })),
+    [presetsProp, t],
+  );
   const [from, setFrom] = useState(fromProp ?? '');
   const [to, setTo] = useState(toProp ?? '');
   const [activePreset, setActivePreset] = useState<string | null>(null);
@@ -191,7 +194,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       <HStack gap="md" align="end">
         <VStack gap="xs">
           <Typography variant="caption" color="secondary">
-            {fromLabel}
+            {fromLabel ?? t('dateRange.from')}
           </Typography>
           <Input
             type="date"
@@ -201,7 +204,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         </VStack>
         <VStack gap="xs">
           <Typography variant="caption" color="secondary">
-            {toLabel}
+            {toLabel ?? t('dateRange.to')}
           </Typography>
           <Input
             type="date"

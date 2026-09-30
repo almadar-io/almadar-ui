@@ -17,6 +17,7 @@ import { Box } from '../../atoms/Box';
 import { HStack, VStack } from '../../atoms/Stack';
 import { Typography } from '../../atoms/Typography';
 import { Badge } from '../../atoms/Badge';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 // ---------------------------------------------------------------------------
 // Types (mirrored from phase4-browser.ts broadcasts)
@@ -130,6 +131,7 @@ function layoutGraph(
 // ---------------------------------------------------------------------------
 
 export function WalkMinimap(): React.ReactElement | null {
+  const { t } = useTranslate();
   const [walkStep, setWalkStep] = React.useState<WalkStepInfo | null>(null);
   const [traits, setTraits] = React.useState<WalkTraitInfo[]>([]);
   const [coveredEdges, setCoveredEdges] = React.useState<CoveredEdge[]>([]);
@@ -159,10 +161,10 @@ export function WalkMinimap(): React.ReactElement | null {
 
   if (!walkStep || traits.length === 0) return null;
 
-  const activeTrait = traits.find(t => t.name === walkStep.traitName);
+  const activeTrait = traits.find(trait => trait.name === walkStep.traitName);
   const engineCount = coveredEdges.filter(e => e.phase === 'engine').length;
   const domCount = coveredEdges.filter(e => e.phase === 'dom').length;
-  const totalTransitions = traits.reduce((sum, t) => sum + t.transitions.length, 0);
+  const totalTransitions = traits.reduce((sum, trait) => sum + trait.transitions.length, 0);
 
   // Build edge coverage lookup for active trait
   const activeEdgeKeys = new Set(
@@ -200,20 +202,20 @@ export function WalkMinimap(): React.ReactElement | null {
       {/* Layer 1: Trait pills */}
       <Box className="px-2 py-1.5 border-b border-border overflow-x-auto">
         <HStack gap="xs" className="flex-nowrap">
-          {traits.map(t => {
-            const isDone = completedTraits.has(t.name);
-            const isActive = t.name === walkStep.traitName;
+          {traits.map(trait => {
+            const isDone = completedTraits.has(trait.name);
+            const isActive = trait.name === walkStep.traitName;
             const variant = isDone ? 'success' : isActive ? 'info' : 'neutral';
             // Shorten name: remove entity prefix for display
-            const shortName = t.name.replace(/^[A-Z][a-z]+/, '');
+            const shortName = trait.name.replace(/^[A-Z][a-z]+/, '');
             return (
               <Badge
-                key={t.name}
+                key={trait.name}
                 variant={variant}
                 size="sm"
                 className={`flex-shrink-0 text-[9px] ${isActive ? 'ring-1 ring-info' : ''}`}
               >
-                {isDone ? '\u2713' : isActive ? '\u25CF' : '\u25CB'} {shortName || t.name}
+                {isDone ? '\u2713' : isActive ? '\u25CF' : '\u25CB'} {shortName || trait.name}
               </Badge>
             );
           })}
@@ -386,15 +388,15 @@ export function WalkMinimap(): React.ReactElement | null {
       <Box className="px-2 py-1 border-t border-border">
         <HStack gap="sm" className="items-center justify-between">
           <Typography variant="caption" className="text-xs font-mono text-success">
-            Engine: {engineCount}/{totalTransitions}
+            {t('walkMinimap.engineProgress', { done: engineCount, total: totalTransitions })}
           </Typography>
           {domCount > 0 && (
             <Typography variant="caption" className="text-xs font-mono text-info">
-              DOM: {domCount}
+              {t('walkMinimap.domCount', { count: domCount })}
             </Typography>
           )}
           <Badge variant={walkStep.phase === 'engine' ? 'info' : 'warning'} size="sm" className="text-[9px]">
-            {walkStep.phase === 'engine' ? 'Engine' : 'DOM'}
+            {walkStep.phase === 'engine' ? t('walkMinimap.engine') : t('walkMinimap.dom')}
           </Badge>
         </HStack>
       </Box>

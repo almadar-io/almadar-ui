@@ -11,6 +11,7 @@ import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { useThemeScope } from "../../../providers/ThemeContext";
+import { pressableProps } from "../../../lib/pressable";
 
 export type BoxPadding = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 export type BoxMargin =
@@ -299,6 +300,11 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
     }, [hoverEvent, tapReveal, triggerProps, onPointerDown]);
 
     const isClickable = action || onClick;
+    // A declared `action` makes the box a control: keyboard-operable, a button
+    // unless the caller gives it its own role / tab stop.
+    const actionControl = action && rest.role === undefined && rest.tabIndex === undefined
+      ? pressableProps<HTMLDivElement>(handleClick)
+      : {};
     // Polymorphic render via React.createElement — `as: React.ElementType`
     // collapses prop inference to `never` inside JSX, so the prior code
     // hid the issue with `as React.FC<Record<string, unknown>>`.
@@ -328,6 +334,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
           className,
         ),
         onClick: isClickable ? handleClick : undefined,
+        ...actionControl,
         onMouseEnter: (hoverEvent || onMouseEnter) ? handleMouseEnter : undefined,
         onMouseLeave: (hoverEvent || onMouseLeave) ? handleMouseLeave : undefined,
         onPointerDown: ((hoverEvent && tapReveal) || onPointerDown) ? handlePointerDown : undefined,

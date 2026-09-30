@@ -19,6 +19,7 @@
 import React, { useState } from 'react';
 import type { EventKey, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
@@ -140,7 +141,7 @@ export function DocumentPanel({
     eventBus.emit(`UI:${titleCommitEvent}`, { title: next, id: recordId });
   };
 
-  const untitled = t('documentPanel.untitled') || 'Untitled';
+  const untitled = t('documentPanel.untitled');
 
   const titleNode =
     titleCommitEvent && titleDraft !== null ? (
@@ -177,12 +178,12 @@ export function DocumentPanel({
         }}
         data-testid="document-title-editable"
       >
-        <Typography variant="h2" weight="bold" className={cn(!title && 'text-muted-foreground')}>
+        <Typography variant="h2" className={cn(!title && 'text-muted-foreground')}>
           {title || untitled}
         </Typography>
       </Box>
     ) : (
-      <Typography variant="h2" weight="bold">
+      <Typography variant="h2">
         {title || untitled}
       </Typography>
     );
@@ -226,10 +227,10 @@ export function DocumentPanel({
             {editing ? (
               <>
                 <Typography variant="caption" color="muted" className="hidden sm:block">
-                  {autosaveHint ?? (t('documentPanel.autosaveHint') || '')}
+                  {autosaveHint ?? t('documentPanel.autosaveHint')}
                 </Typography>
                 <Button variant="primary" size="sm" onClick={emitWithId(doneEvent)} data-testid="document-done">
-                  {doneLabel ?? (t('documentPanel.done') || 'Done')}
+                  {doneLabel ?? t('documentPanel.done')}
                 </Button>
               </>
             ) : (
@@ -237,7 +238,7 @@ export function DocumentPanel({
                 {editEvent && (
                   <Button variant="ghost" size="sm" onClick={emitWithId(editEvent)} data-testid="document-edit">
                     <Icon name="edit" size="xs" className="mr-1" />
-                    {editLabel ?? (t('documentPanel.edit') || 'Edit')}
+                    {editLabel ?? t('documentPanel.edit')}
                   </Button>
                 )}
                 {inlineActions.map((action, idx) => (
@@ -278,7 +279,8 @@ export function DocumentPanel({
           <RichTextEditor value={value} changeEvent={contentChangeEvent} placeholder={placeholder} />
         ) : (
           <Box
-            onClick={emitWithId(editEvent)}
+            {...pressableProps(editEvent ? emitWithId(editEvent) : undefined)}
+            aria-label={editEvent ? (editLabel ?? t('documentPanel.edit')) : undefined}
             className={cn(
               'rounded-interactive px-1 -mx-1 min-h-[16rem]',
               editEvent && 'cursor-text transition-colors hover:bg-muted/30',
@@ -289,7 +291,7 @@ export function DocumentPanel({
               <RichTextEditor value={value} readOnly />
             ) : (
               <Typography variant="body" color="muted">
-                {placeholder ?? (t('documentPanel.placeholder') || '')}
+                {placeholder ?? t('documentPanel.placeholder')}
               </Typography>
             )}
           </Box>

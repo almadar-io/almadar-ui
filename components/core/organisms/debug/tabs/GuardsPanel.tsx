@@ -20,7 +20,7 @@ interface GuardsPanelProps {
 }
 
 export function GuardsPanel({ guards }: GuardsPanelProps) {
-    const { t } = useTranslate();
+    const { t, locale } = useTranslate();
     const [filter, setFilter] = React.useState<'all' | 'passed' | 'failed'>('all');
 
     if (guards.length === 0) {
@@ -44,7 +44,7 @@ export function GuardsPanel({ guards }: GuardsPanelProps) {
 
     const formatTime = (timestamp: number) => {
         const date = new Date(timestamp);
-        return date.toLocaleTimeString('en-US', {
+        return date.toLocaleTimeString(locale, {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',
@@ -77,7 +77,7 @@ export function GuardsPanel({ guards }: GuardsPanelProps) {
             <Stack gap="sm">
                 <div>
                     <Typography variant="small" weight="medium" className="text-muted-foreground">{t('debug.expression')}</Typography>
-                    <code className="block mt-1 text-xs text-warning bg-warning/10 px-2 py-1 rounded">
+                    <code className="block mt-1 text-xs text-foreground bg-warning/10 px-2 py-1 rounded">
                         {guard.expression}
                     </code>
                 </div>

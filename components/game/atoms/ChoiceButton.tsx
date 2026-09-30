@@ -6,6 +6,7 @@ import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { GameIcon } from '../../core/atoms/GameIcon';
 import type { Asset, EventKey } from '@almadar/core';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface ChoiceButtonProps {
   /** Choice text content */
@@ -31,7 +32,7 @@ export interface ChoiceButtonProps {
 }
 
 export function ChoiceButton({
-  text = 'Charge forward into the fray',
+  text: textProp,
   index,
   assetUrl,
   icon,
@@ -42,6 +43,8 @@ export function ChoiceButton({
   payload,
   className,
 }: ChoiceButtonProps) {
+  const { t } = useTranslate();
+  const text = textProp ?? t('choiceButton.defaultText');
   return (
     <Button
       variant="ghost"

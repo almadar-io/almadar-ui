@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
 import { Box } from '../atoms/Box';
 import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -52,19 +53,18 @@ export const DocTOC: React.FC<DocTOCProps> = ({
             <Box
               key={item.id}
               className={cn(
-                'block py-1.5 no-underline transition-colors border-l-2 cursor-pointer',
+                'block py-1.5 no-underline transition-colors border-l-heavy cursor-pointer',
                 'pl-3',
                 indent,
                 isActive
                   ? 'border-l-primary'
                   : 'border-l-transparent hover:border-l-[var(--color-muted)]',
               )}
-              onClick={() => {
+              {...pressableProps(() => {
                 const el = document.getElementById(item.id);
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
+              })}
               role="link"
-              tabIndex={0}
             >
               <Typography
                 variant="caption"

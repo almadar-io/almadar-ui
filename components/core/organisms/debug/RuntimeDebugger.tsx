@@ -12,6 +12,7 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import type { OrbitalSchema } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
+import { pressableProps } from '../../../../lib/pressable';
 import type { EffectTrace, ServerResponseTrace, TransitionTrace } from '../../../../lib/verificationRegistry';
 import { useDebugData } from './hooks/useDebugData';
 import { onDebugToggle, isDebugEnabled } from '../../../../lib/debugUtils';
@@ -50,17 +51,17 @@ function ServerResponseRow({ sr }: { sr: ServerResponseTrace }) {
                     {sr.orbitalName}
                 </span>
                 {sr.clientEffects > 0 && (
-                    <span className="px-1 rounded bg-primary/10 text-primary">
+                    <span className="px-1 rounded bg-primary/10 text-foreground">
                         {t('debug.clientEffectsCount', { count: sr.clientEffects })}
                     </span>
                 )}
                 {sr.emittedEvents.length > 0 && (
-                    <span className="px-1 rounded bg-primary/10 text-primary">
+                    <span className="px-1 rounded bg-primary/10 text-foreground">
                         {t('debug.emitLabel')} {sr.emittedEvents.join(', ')}
                     </span>
                 )}
                 {sr.error && (
-                    <span className="px-1 rounded bg-error/10 text-error truncate max-w-[300px]">
+                    <span className="px-1 rounded bg-error/10 text-foreground truncate max-w-[300px]">
                         {sr.error}
                     </span>
                 )}
@@ -117,9 +118,9 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
                     {trace.effects.map((eff: EffectTrace, i: number) => (
                         <span key={i} className={cn(
                             'px-1 rounded text-xs',
-                            eff.status === 'executed' ? 'bg-success/10 text-success' :
-                            eff.status === 'failed' ? 'bg-error/10 text-error' :
-                            'bg-warning/10 text-warning'
+                            eff.status === 'executed' ? 'bg-success/10 text-foreground' :
+                            eff.status === 'failed' ? 'bg-error/10 text-foreground' :
+                            'bg-warning/10 text-foreground'
                         )}>
                             {eff.status === 'executed' ? '\u2713' : eff.status === 'failed' ? '\u2717' : '-'} {eff.type}
                             {eff.args.length > 0 && (
@@ -187,7 +188,7 @@ function VerifyModePanel({
         <div
             className={cn(
                 'runtime-debugger runtime-debugger--verify',
-                'flex flex-col bg-[var(--color-card)] text-[var(--color-foreground)] border-t-2 border-accent',
+                'flex flex-col bg-[var(--color-card)] text-[var(--color-foreground)] border-t-heavy border-accent',
                 hudBottom ? '' : 'fixed bottom-0 left-0 right-0',
                 className
             )}
@@ -395,7 +396,8 @@ export function RuntimeDebugger({
                     {/* Header - always visible, acts as toggle */}
                     <div
                         className="runtime-debugger__header"
-                        onClick={() => setIsCollapsed(prev => !prev)}
+                        {...pressableProps(() => setIsCollapsed(prev => !prev))}
+                        aria-expanded={!isCollapsed}
                         style={{ cursor: 'pointer', userSelect: 'none' }}
                     >
                         <div className="flex items-center gap-2">
@@ -495,10 +497,10 @@ export function RuntimeDebugger({
                             onClick={() => setIsCollapsed(true)}
                             variant="ghost"
                             size="sm"
+                            icon="x"
                             title={t('debug.close')}
-                        >
-                            x
-                        </Button>
+                            aria-label={t('debug.close')}
+                        />
                     </div>
 
                     {/* Tabs - using existing Tabs molecule */}

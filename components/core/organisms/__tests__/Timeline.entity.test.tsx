@@ -15,13 +15,13 @@ const rows = [
 
 describe('Timeline entity rows', () => {
   it('renders entity rows when items is the empty default', () => {
-    render(<Timeline entity={rows} items={[]} fields={['title', 'description', 'date', 'status']} />);
+    render(<Timeline entity={rows} items={[]} fields={['title', 'description', 'date', 'status']} titleField="title" descriptionField="description" dateField="date" statusField="status" />);
     expect(screen.getByText('Elevated EU storage latency')).toBeTruthy();
     expect(screen.getByText('Webhook delivery delays')).toBeTruthy();
   });
 
   it('renders entity rows when items is omitted', () => {
-    render(<Timeline entity={rows} fields={['title', 'description', 'date']} />);
+    render(<Timeline entity={rows} fields={['title', 'description', 'date']} titleField="title" descriptionField="description" dateField="date" statusField="status" />);
     expect(screen.getByText('Resolved in 12 minutes.')).toBeTruthy();
   });
 

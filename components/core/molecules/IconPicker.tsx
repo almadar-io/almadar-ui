@@ -12,6 +12,7 @@ import React, { useMemo } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { Icon } from '../atoms/Icon';
 import { GridPicker, type PickerItem } from './GridPicker';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 /** Convert PascalCase lucide export name to canonical kebab-case: 'ShoppingCart' -> 'shopping-cart'. */
 function pascalToKebab(name: string): string {
@@ -34,7 +35,7 @@ function kebabToPascal(name: string): string {
  * (`Camera`, `CameraIcon`, `LucideCamera`); we take only the bare PascalCase
  * component exports, kebab-case them, and drop any name that doesn't round-trip
  * back to the same export (so it actually resolves to its glyph, not the
- * HelpCircle fallback). All items share one coarse 'icons' category.
+ * HelpCircle fallback). All items share one coarse translated category.
  */
 const ICON_ITEMS: PickerItem[] = (() => {
   const items: PickerItem[] = [];
@@ -64,14 +65,18 @@ export interface IconPickerProps {
 }
 
 export const IconPicker: React.FC<IconPickerProps> = ({ value, onChange, className }) => {
-  const items = useMemo(() => ICON_ITEMS, []);
+  const { t } = useTranslate();
+  const items = useMemo(() => {
+    const category = t('iconPicker.category');
+    return ICON_ITEMS.map((item) => ({ ...item, category }));
+  }, [t]);
 
   return (
     <GridPicker
       items={items}
       value={value}
       onChange={onChange}
-      searchPlaceholder="Search icons…"
+      searchPlaceholder={t('iconPicker.search')}
       renderThumbnail={(it) => <Icon name={it.id} />}
       cellSize={32}
       className={className}

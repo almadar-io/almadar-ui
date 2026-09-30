@@ -57,8 +57,7 @@ describe('DetailPanel', () => {
       <TestWrapper>
         <DetailPanel
           entity={mockProduct}
-          fields={['name', 'price', 'category']}
-          fieldNames={['name', 'price', 'category']}
+          fields={[{ name: 'name', variant: 'h3' }, { name: 'price', format: 'number' }, 'category']}
         />
       </TestWrapper>
     );
@@ -100,8 +99,7 @@ describe('DetailPanel', () => {
         <EventController />
         <DetailPanel
           entity={explicitData}
-          fields={['name', 'price']}
-          fieldNames={['name', 'price']}
+          fields={[{ name: 'name', variant: 'h3' }, 'price']}
         />
       </TestWrapper>
     );

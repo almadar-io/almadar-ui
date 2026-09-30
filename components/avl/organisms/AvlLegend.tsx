@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 import type { ZoomLevel } from '../../../lib/avl-zoom-state';
 
 export interface AvlLegendProps {
@@ -18,17 +19,17 @@ export interface AvlLegendProps {
 }
 
 interface LegendItem {
-  label: string;
+  labelKey: string;
   render: (x: number, y: number, color: string) => React.ReactElement;
 }
 
 const APPLICATION_ITEMS: LegendItem[] = [
   {
-    label: 'Orbital',
+    labelKey: 'avl.glyph.orbital',
     render: (x, y, c) => <circle cx={x} cy={y} r={8} fill="none" stroke={c} strokeWidth={1.5} />,
   },
   {
-    label: 'Entity',
+    labelKey: 'avl.glyph.entity',
     render: (x, y, c) => (
       <g>
         <circle cx={x} cy={y} r={5} fill={c} opacity={0.2} />
@@ -37,15 +38,15 @@ const APPLICATION_ITEMS: LegendItem[] = [
     ),
   },
   {
-    label: 'Trait',
+    labelKey: 'avl.glyph.trait',
     render: (x, y, c) => <ellipse cx={x} cy={y} rx={10} ry={5} fill="none" stroke={c} strokeWidth={1} strokeDasharray="3 1.5" />,
   },
   {
-    label: 'Page',
+    labelKey: 'avl.glyph.page',
     render: (x, y, c) => <rect x={x - 3} y={y - 3} width={6} height={6} fill={c} opacity={0.3} stroke={c} strokeWidth={1} />,
   },
   {
-    label: 'Event flow',
+    labelKey: 'avlLegend.eventFlow',
     render: (x, y, c) => (
       <g>
         <line x1={x - 10} y1={y} x2={x + 10} y2={y} stroke={c} strokeWidth={1} strokeDasharray="4 2" />
@@ -57,11 +58,11 @@ const APPLICATION_ITEMS: LegendItem[] = [
 
 const ORBITAL_ITEMS: LegendItem[] = [
   {
-    label: 'Orbital boundary',
+    labelKey: 'avlLegend.orbitalBoundary',
     render: (x, y, c) => <circle cx={x} cy={y} r={8} fill="none" stroke={c} strokeWidth={1.5} />,
   },
   {
-    label: 'Entity (nucleus)',
+    labelKey: 'avlLegend.entityNucleus',
     render: (x, y, c) => (
       <g>
         <circle cx={x} cy={y} r={5} fill={c} opacity={0.15} />
@@ -71,26 +72,26 @@ const ORBITAL_ITEMS: LegendItem[] = [
     ),
   },
   {
-    label: 'Trait ring',
+    labelKey: 'avlLegend.traitRing',
     render: (x, y, c) => <ellipse cx={x} cy={y} rx={10} ry={5} fill="none" stroke={c} strokeWidth={1} strokeDasharray="3 1.5" />,
   },
   {
-    label: 'Page',
+    labelKey: 'avl.glyph.page',
     render: (x, y, c) => <rect x={x - 3} y={y - 3} width={6} height={6} fill={c} opacity={0.3} stroke={c} strokeWidth={1} />,
   },
   {
-    label: 'External link',
+    labelKey: 'avlLegend.externalLink',
     render: (x, y, c) => <line x1={x - 8} y1={y} x2={x + 8} y2={y} stroke={c} strokeWidth={1} strokeDasharray="4 2" opacity={0.4} />,
   },
 ];
 
 const TRAIT_ITEMS: LegendItem[] = [
   {
-    label: 'State',
+    labelKey: 'avl.glyph.state',
     render: (x, y, c) => <rect x={x - 12} y={y - 6} width={24} height={12} rx={6} fill="none" stroke={c} strokeWidth={1.5} />,
   },
   {
-    label: 'Initial state',
+    labelKey: 'avlLegend.initialState',
     render: (x, y, c) => (
       <g>
         <circle cx={x - 10} cy={y} r={3} fill={c} />
@@ -99,7 +100,7 @@ const TRAIT_ITEMS: LegendItem[] = [
     ),
   },
   {
-    label: 'Transition',
+    labelKey: 'avl.glyph.transition',
     render: (x, y, c) => (
       <g>
         <line x1={x - 10} y1={y} x2={x + 8} y2={y} stroke={c} strokeWidth={1.2} opacity={0.5} />
@@ -108,13 +109,13 @@ const TRAIT_ITEMS: LegendItem[] = [
     ),
   },
   {
-    label: 'Event + effects',
+    labelKey: 'avlLegend.eventEffects',
     render: (x, y, c) => (
       <rect x={x - 14} y={y - 7} width={28} height={14} rx={3} fill="var(--color-surface, white)" stroke={c} strokeWidth={0.8} />
     ),
   },
   {
-    label: 'Emit (external)',
+    labelKey: 'avlLegend.emitExternal',
     render: (x, y, c) => (
       <circle cx={x} cy={y} r={3} fill={c} opacity={0.5}>
         <animate attributeName="r" values="2;4;2" dur="1.5s" repeatCount="indefinite" />
@@ -125,11 +126,11 @@ const TRAIT_ITEMS: LegendItem[] = [
 
 const TRANSITION_ITEMS: LegendItem[] = [
   {
-    label: 'State',
+    labelKey: 'avl.glyph.state',
     render: (x, y, c) => <rect x={x - 12} y={y - 6} width={24} height={12} rx={6} fill="none" stroke={c} strokeWidth={1.5} />,
   },
   {
-    label: 'Effect',
+    labelKey: 'avl.glyph.effect',
     render: (x, y, c) => (
       <g>
         <circle cx={x} cy={y} r={5} fill={c} opacity={0.15} />
@@ -138,11 +139,11 @@ const TRANSITION_ITEMS: LegendItem[] = [
     ),
   },
   {
-    label: 'Slot target',
+    labelKey: 'avlLegend.slotTarget',
     render: (x, y, c) => <rect x={x - 10} y={y - 5} width={20} height={10} rx={2} fill={c} opacity={0.1} stroke={c} strokeWidth={0.8} />,
   },
   {
-    label: 'Binding (@path)',
+    labelKey: 'avlLegend.bindingPath',
     render: (x, y, c) => <circle cx={x} cy={y} r={5} fill="none" stroke={c} strokeWidth={1} strokeDasharray="2 1.5" opacity={0.6} />,
   },
 ];
@@ -160,6 +161,7 @@ export const AvlLegend: React.FC<AvlLegendProps> = ({
   x = 10,
   y = 360,
 }) => {
+  const { t } = useTranslate();
   const items = ITEMS_BY_LEVEL[level];
   const itemSpacing = 16;
   const legendH = items.length * itemSpacing + 16;
@@ -183,7 +185,7 @@ export const AvlLegend: React.FC<AvlLegendProps> = ({
       {items.map((item, i) => {
         const iy = y - legendH + 22 + i * itemSpacing;
         return (
-          <g key={item.label}>
+          <g key={item.labelKey}>
             {item.render(x + 18, iy, color)}
             <text
               x={x + 35}
@@ -192,7 +194,7 @@ export const AvlLegend: React.FC<AvlLegendProps> = ({
               fontSize={8}
               opacity={0.8}
             >
-              {item.label}
+              {t(item.labelKey)}
             </text>
           </g>
         );

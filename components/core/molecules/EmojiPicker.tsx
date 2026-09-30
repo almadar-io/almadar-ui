@@ -14,6 +14,7 @@ import { lib, ordered } from 'emojilib';
 import type { EventEmit } from '@almadar/core';
 import type { EmojiPickPayload } from '@almadar/core/patterns';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { Button } from '../atoms/Button';
 import type { IconInput } from '../atoms/index';
 import { GridPicker, type PickerItem } from './GridPicker';
@@ -61,7 +62,7 @@ export interface EmojiPickerProps {
 
   /**
    * Accessible label for the trigger button
-   * @default 'Add emoji'
+   * @default translated "Add emoji"
    */
   triggerLabel?: string;
 
@@ -75,10 +76,12 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
   pickEvent,
   position = 'top',
   triggerIcon = 'smile',
-  triggerLabel = 'Add emoji',
+  triggerLabel,
   className,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
+  const label = triggerLabel ?? t('emojiPicker.addEmoji');
   const [open, setOpen] = useState(false);
 
   const handlePick = (glyph: string) => {
@@ -100,7 +103,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
         <GridPicker
           items={EMOJI_ITEMS}
           onChange={handlePick}
-          searchPlaceholder="Search emoji…"
+          searchPlaceholder={t('emojiPicker.search')}
           renderThumbnail={(item) => (
             <span className="text-xl leading-none" aria-hidden="true">
               {item.id}
@@ -114,8 +117,8 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
       <Button
         variant="ghost"
         icon={triggerIcon}
-        aria-label={triggerLabel}
-        title={triggerLabel}
+        aria-label={label}
+        title={label}
         className={className}
         data-testid="emoji-picker-trigger"
       />

@@ -16,7 +16,7 @@ import React from 'react';
 import type { EntityRow, EntityWith, FieldValue, EventKey, EventEmit } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
-import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
+import { formatValue, type FormatContext } from '../../../lib/format';
 import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
 import type { RelationOption } from './RelationSelect';
 import { createLogger } from '@almadar/logger';
@@ -26,7 +26,7 @@ import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useRowActions } from '../../../hooks/useRowActions';
 import type { RowActionCondition } from '../../../lib/row-action-when';
-import { useTranslate } from '../../../hooks/useTranslate';
+import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -39,7 +39,9 @@ import { Divider } from '../atoms/Divider';
 import { Menu } from './Menu';
 import { EmptyState, type EmptyStateSlotProps } from './EmptyState';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
-import type { UiError } from '../atoms/types';
+import type { BadgeColor, UiError } from '../atoms/types';
+import { badgeVariantFor, valueLabelFor } from '../../../lib/displayField';
+import { pressableProps, rowActivationProps } from '../../../lib/pressable';
 
 // ── Column Definition ────────────────────────────────────────────────
 
@@ -48,7 +50,7 @@ export interface TableViewColumn {
   key: string;
   /** Entity field to read (dot-notation ok). Defaults to `key`. */
   field?: string;
-  /** Header cell text. Falls back to `label`, then a humanized `key`. */
+  /** Header cell text. Falls back to `label`, then the `key` as written. */
   header?: string;
   /** Accessibility / fallback label. */
   label?: string;
@@ -64,6 +66,12 @@ export interface TableViewColumn {
   weight?: 'normal' | 'medium' | 'semibold';
   /** Value formatting hint. `badge` renders a status Badge. */
   format?: 'badge' | 'date' | 'currency' | 'number' | 'percent' | 'boolean';
+  /** Badge colour per exact value (for `format: 'badge'`); unmapped values are neutral. */
+  colorMap?: Readonly<Record<string, BadgeColor>>;
+  /** Display text per exact value (for `format: 'badge'`); unmapped values show as stored */
+  labels?: Readonly<Record<string, string>>;
+  /** `h3`/`h4` marks the row's title column: on narrow tables it heads the stacked card, unlabelled */
+  variant?: 'h3' | 'h4';
   /** Lucide icon name or component shown before the header label. */
   icon?: IconInput;
   /** Allow click-to-sort on this column's header (emits `sortEvent`). */
@@ -171,7 +179,7 @@ function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Ico
 }
 
 function columnLabel(col: TableViewColumn): string {
-  return col.header ?? col.label ?? humanizeFieldName(col.key);
+  return col.header ?? col.label ?? col.key;
 }
 
 function asFieldValue(v: ReturnType<typeof getNestedValue>): FieldValue | undefined {
@@ -184,19 +192,11 @@ function asFieldValue(v: ReturnType<typeof getNestedValue>): FieldValue | undefi
   return undefined;
 }
 
-function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
-  const v = value.toLowerCase();
-  if (['active', 'completed', 'done', 'approved', 'published', 'resolved', 'open', 'online', 'ok'].includes(v)) return 'success';
-  if (['pending', 'in_progress', 'in-progress', 'review', 'draft', 'processing', 'warn', 'warning'].includes(v)) return 'warning';
-  if (['inactive', 'deleted', 'rejected', 'failed', 'error', 'blocked', 'closed', 'offline'].includes(v)) return 'error';
-  if (['new', 'created', 'scheduled', 'queued', 'info'].includes(v)) return 'info';
-  return 'default';
-}
-
 const formatCell = (
   value: FieldValue | undefined,
-  format?: TableViewColumn['format'],
-  relationOptions?: readonly RelationOption[],
+  format: TableViewColumn['format'] | undefined,
+  relationOptions: readonly RelationOption[] | undefined,
+  fmt: FormatContext,
 ): string => {
   // A hydrated relation row (or array of rows/ids, from `include:` hydration)
   // reads by its name/title/label; a bare foreign id resolves through the
@@ -204,7 +204,7 @@ const formatCell = (
   // raw id when a label is knowable.
   const relationDisplay = resolveRelationCellDisplay(value, relationOptions);
   if (relationDisplay !== undefined) return relationDisplay;
-  return formatValue(value, format);
+  return formatValue(value, format, fmt);
 };
 
 function groupData(
@@ -301,6 +301,7 @@ export function TableView({
   const eventBus = useEventBus();
   const rowActions = useRowActions();
   const { t } = useTranslate();
+  const fmt = useFormatContext();
   const [visibleCount, setVisibleCount] = React.useState(pageSize > 0 ? pageSize : Infinity);
   const [localSelected, setLocalSelected] = React.useState<ReadonlySet<string>>(new Set());
 
@@ -390,23 +391,13 @@ export function TableView({
     eventBus.emit(`UI:${sortEvent}`, { column: col.field ?? col.key, direction: dir });
   };
 
-  // Explicit itemClickEvent wins; otherwise the first non-danger item action
-  // is the row's default click (declared `variant` is the semantic marker —
-  // no label/name matching — and a destructive action never becomes the
-  // default). Danger-only tables get no row click. The '' default is a
-  // declared contract the lolo-ui generator honors (default-off outlet).
-  // The default is the first action THIS row shows.
-  const rowClickEventFor = (row: EntityRow): EventKey | undefined =>
-    itemClickEvent || rowActions(actionDefs, row).find((a) => a.variant !== 'danger')?.event;
-
   const handleRowClick = (row: EntityRow) => () => {
-    const rowClickEvent = rowClickEventFor(row);
-    if (!rowClickEvent) return;
+    if (!itemClickEvent) return;
     const payload: ItemActionPayload = {
       id: row.id as string | number,
       row: row as ItemActionPayload['row'],
     };
-    eventBus.emit(`UI:${rowClickEvent}`, payload);
+    eventBus.emit(`UI:${itemClickEvent}`, payload);
   };
 
   // A bare `minmax(0, 1fr)` splits width evenly, so a long value (an email) is
@@ -419,7 +410,7 @@ export function TableView({
   const colFloors = React.useMemo(
     () => colDefs.map((col) => {
       const longest = data.reduce((widest, row) => {
-        const cell = formatCell(asFieldValue(getNestedValue(row, col.field ?? col.key)), col.format, relationsData?.[col.field ?? col.key]);
+        const cell = formatCell(asFieldValue(getNestedValue(row, col.field ?? col.key)), col.format, relationsData?.[col.field ?? col.key], fmt);
         return Math.max(widest, cell.length);
       }, columnLabel(col).length);
       // A badge wraps its text in padding, so the raw character count
@@ -427,7 +418,7 @@ export function TableView({
       const chrome = col.format === 'badge' ? BADGE_CHROME_CH : 0;
       return Math.min(longest + chrome, MAX_MEASURED_COL_CH);
     }),
-    [colDefs, data],
+    [colDefs, data, relationsData, fmt],
   );
 
   // The header is CHROME, not data. Loading / error / empty each used to return
@@ -498,22 +489,26 @@ export function TableView({
           <Box
             key={col.key}
             role="columnheader"
-            onClick={() => handleSort(col)}
-            className={cn(
-              'flex items-center gap-1 min-w-0',
-              alignClass[col.align ?? 'left'],
-              col.sortable && sortEvent && 'cursor-pointer select-none hover:text-foreground',
-            )}
+            aria-sort={col.sortable && sortEvent ? (active ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}
+            className={cn('flex items-center min-w-0', alignClass[col.align ?? 'left'])}
           >
-            {col.icon && renderIconInput(col.icon, { size: 'xs' })}
-            <span className="truncate">{columnLabel(col)}</span>
-            {col.sortable && sortEvent && (
-              <Icon
-                name={active ? (sortDirection === 'asc' ? 'chevron-up' : 'chevron-down') : 'chevrons-up-down'}
-                size="xs"
-                className={cn('flex-shrink-0', active ? 'text-foreground' : 'opacity-40')}
-              />
-            )}
+            <Box
+              {...pressableProps(col.sortable && sortEvent ? () => handleSort(col) : undefined)}
+              className={cn(
+                'flex items-center gap-1 min-w-0',
+                col.sortable && sortEvent && 'cursor-pointer select-none hover:text-foreground',
+              )}
+            >
+              {col.icon && renderIconInput(col.icon, { size: 'xs' })}
+              <span className="truncate">{columnLabel(col)}</span>
+              {col.sortable && sortEvent && (
+                <Icon
+                  name={active ? (sortDirection === 'asc' ? 'chevron-up' : 'chevron-down') : 'chevrons-up-down'}
+                  size="xs"
+                  className={cn('flex-shrink-0', active ? 'text-foreground' : 'opacity-40')}
+                />
+              )}
+            </Box>
           </Box>
         );
       })}
@@ -526,14 +521,14 @@ export function TableView({
   // ── A single body row ───────────────────────────────────────────
   const renderRow = (row: EntityRow, index: number) => {
     const id = String(row[idField] ?? index);
-    const rowClickEvent = rowClickEventFor(row);
+    const rowClickEvent = itemClickEvent || undefined;
     const overflowActions = rowActions(actionDefs, row);
     const rowInner = (
       <Box
         role="row"
         data-entity-row
         data-entity-id={id}
-        onClick={rowClickEvent ? handleRowClick(row) : undefined}
+        {...rowActivationProps(rowClickEvent ? handleRowClick(row) : undefined)}
         style={!hasRenderProp ? { gridTemplateColumns } : undefined}
         className={cn(
           'group relative transition-colors duration-fast',
@@ -558,11 +553,11 @@ export function TableView({
         {hasRenderProp ? (
           <Box className="flex-1 min-w-0">{children(row, index)}</Box>
         ) : (
-          colDefs.map((col, ci) => {
+          colDefs.map((col) => {
             const raw = asFieldValue(getNestedValue(row, col.field ?? col.key));
-            // Narrow: the first column is the card's title; every other cell
-            // is a label ⟷ value line (the header row is hidden there).
-            const isTitle = ci === 0;
+            // Narrow: the declared title column heads the card; every other
+            // cell is a label ⟷ value line (the header row is hidden there).
+            const isTitle = col.variant === 'h3' || col.variant === 'h4';
             const cellBase = cn(
               'flex items-center min-w-0 gap-3',
               isTitle ? 'font-medium @sm/table:font-[inherit]' : 'justify-between',
@@ -578,18 +573,18 @@ export function TableView({
             );
             if (col.format === 'badge' && raw != null && raw !== '') {
               const relationDisplay = resolveRelationCellDisplay(raw, relationsData?.[col.field ?? col.key]);
-              const label = relationDisplay ?? humanizeEnumValue(String(raw));
+              const label = relationDisplay ?? valueLabelFor(String(raw), col.labels);
               return (
                 <Box key={col.key} role="cell" className={cellBase}>
                   {stackedLabel}
-                  <Badge variant={statusVariant(String(raw))} size="sm" className="whitespace-nowrap">{label}</Badge>
+                  <Badge variant={badgeVariantFor(String(raw), col.colorMap)} size="sm" className="whitespace-nowrap">{label}</Badge>
                 </Box>
               );
             }
             return (
               <Box key={col.key} role="cell" className={cellBase}>
                 {stackedLabel}
-                <span className="truncate text-foreground">{formatCell(raw, col.format, relationsData?.[col.field ?? col.key])}</span>
+                <span className="truncate text-foreground">{formatCell(raw, col.format, relationsData?.[col.field ?? col.key], fmt)}</span>
               </Box>
             );
           })

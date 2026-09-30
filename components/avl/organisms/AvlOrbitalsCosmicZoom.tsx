@@ -12,6 +12,7 @@
 import React, { useMemo, useState, useCallback, useEffect, useReducer } from 'react';
 import type { EventEmit, OrbitalSchema } from '@almadar/core';
 import { parseTraitLevel } from '../../../lib/avl-schema-parser';
+import { pressableProps } from '../../../lib/pressable';
 import { transitionPlayback, type AvlPlayStep, type AvlStepRequest } from '../../../lib/avl-play';
 import { RangeSlider } from '../../core/atoms/RangeSlider';
 import { zoomReducer, initialZoomState, getBreadcrumbs, type ZoomLevel } from '../../../lib/avl-zoom-state';
@@ -216,19 +217,19 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
               {i < breadcrumbs.length - 1 ? (
                 <Box
                   as="span"
-                  onClick={() => handleBreadcrumbClick(crumb.level)}
+                  {...pressableProps(() => handleBreadcrumbClick(crumb.level))}
                   style={{ cursor: 'pointer' }}
                 >
                   <Typography
                     variant="small"
                     style={{ color, textDecoration: 'underline' }}
                   >
-                    {crumb.label}
+                    {crumb.labelKey ? t(crumb.labelKey, crumb.labelParams) : crumb.label}
                   </Typography>
                 </Box>
               ) : (
                 <Typography variant="small" weight="bold" style={{ color }}>
-                  {crumb.label}
+                  {crumb.labelKey ? t(crumb.labelKey, crumb.labelParams) : crumb.label}
                 </Typography>
               )}
             </React.Fragment>

@@ -45,7 +45,7 @@ function StatRow({ label, value, variant }: {
 }
 
 export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
-    const { t } = useTranslate();
+    const { t, locale } = useTranslate();
     if (!bridge) {
         return (
             <EmptyState
@@ -59,7 +59,7 @@ export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
     const formatTime = (ts: number) => {
         if (ts === 0) return t('debug.never');
         const d = new Date(ts);
-        return d.toLocaleTimeString('en-US', {
+        return d.toLocaleTimeString(locale, {
             hour12: false,
             hour: '2-digit',
             minute: '2-digit',

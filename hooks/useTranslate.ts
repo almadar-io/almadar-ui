@@ -14,7 +14,8 @@
  * translated strings via entity props from the organism above.
  */
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
+import { DEFAULT_CURRENCY, type FormatContext } from '../lib/format';
 import coreLocaleRaw from '../locales/en.json';
 
 // Strip $meta (object, not a string) so the lookup is Record<string, string>
@@ -33,6 +34,8 @@ export interface I18nContextValue {
   direction: 'ltr' | 'rtl';
   /** Translate a key, with optional interpolation params */
   t: TranslateFunction;
+  /** ISO 4217 currency of the app's money values, declared by the host with the locale (e.g. `SAR` for an ar-SA app) */
+  currency?: string;
 }
 
 const I18nContext = createContext<I18nContextValue>({
@@ -68,6 +71,15 @@ export const I18nProvider = I18nContext.Provider;
  */
 export function useTranslate(): I18nContextValue {
   return useContext(I18nContext);
+}
+
+/** The app's formatting settings for `formatValue`: its locale, currency and translated Yes/No. */
+export function useFormatContext(): FormatContext {
+  const { t, locale, currency } = useContext(I18nContext);
+  return useMemo(
+    () => ({ locale, currency: currency ?? DEFAULT_CURRENCY, booleanLabels: { yes: t('common.yes'), no: t('common.no') } }),
+    [t, locale, currency],
+  );
 }
 
 /**

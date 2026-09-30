@@ -71,7 +71,7 @@ describe('TableView relation columns', () => {
 
 describe('TableView narrow (stacked) layout — G-CROSS-019', () => {
   const cols: readonly TableViewColumn[] = [
-    { key: 'path', header: 'Path' },
+    { key: 'path', header: 'Path', variant: 'h4' },
     { key: 'method', header: 'Method', format: 'badge' },
     { key: 'owner', header: 'Owner' },
   ];

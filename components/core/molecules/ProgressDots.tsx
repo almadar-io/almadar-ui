@@ -8,6 +8,8 @@
 
 import React, { useCallback } from 'react';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { Box, HStack } from '../atoms/index';
 
 export type DotState = 'active' | 'complete' | 'pending';
@@ -48,6 +50,7 @@ export const ProgressDots: React.FC<ProgressDotsProps> = ({
   className,
   size = 'md',
 }) => {
+  const { t } = useTranslate();
   const defaultGetState = useCallback(
     (index: number): DotState => {
       if (index === currentIndex) return 'active';
@@ -70,17 +73,23 @@ export const ProgressDots: React.FC<ProgressDotsProps> = ({
           <Box
             key={index}
             className={cn(
-              'rounded-full transition-all duration-fast',
+              'flex items-center justify-center',
               onDotClick && 'cursor-pointer'
             )}
-            style={{
-              width: dotSize,
-              height: dotSize,
-              backgroundColor: stateColors[state],
-              transform: isActive ? 'scale(1.2)' : 'scale(1)',
-            }}
-            onClick={onDotClick ? () => onDotClick(index) : undefined}
-          />
+            style={onDotClick ? { minWidth: 24, minHeight: 24 } : undefined}
+            {...pressableProps(onDotClick ? () => onDotClick(index) : undefined)}
+            aria-label={onDotClick ? t('wizard.stepOf', { current: String(index + 1), total: String(count) }) : undefined}
+          >
+            <Box
+              className="rounded-full transition-all duration-fast"
+              style={{
+                width: dotSize,
+                height: dotSize,
+                backgroundColor: stateColors[state],
+                transform: isActive ? 'scale(1.2)' : 'scale(1)',
+              }}
+            />
+          </Box>
         );
       })}
     </HStack>

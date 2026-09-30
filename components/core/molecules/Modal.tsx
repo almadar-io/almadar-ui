@@ -6,7 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import type { EventEmit } from "@almadar/core";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
@@ -15,6 +15,7 @@ import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 import { usePresence } from "../atoms/Presence";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 
@@ -67,15 +68,16 @@ const sizeClasses: Record<ModalSize, string> = {
   full: "max-w-full mx-4",
 };
 
-// `minWidthClasses` floors the dialog above mobile. On phones (`max-sm:`)
+// `minWidthClasses` floors the dialog above mobile, capped at 100% so a
+// contained modal never overflows a preview narrower than the floor. On phones (`max-sm:`)
 // the floor drops to 0 so the full-screen variant shrinks to viewport
 // width without the hardcoded 400/520/600/700 fighting it. Kept as
 // Tailwind classes (not inline style) so media-query overrides can win.
 const minWidthClasses: Record<ModalSize, string> = {
-  sm: "min-w-[400px] max-sm:min-w-0",
-  md: "min-w-[520px] max-sm:min-w-0",
-  lg: "min-w-[600px] max-sm:min-w-0",
-  xl: "min-w-[700px] max-sm:min-w-0",
+  sm: "min-w-[min(400px,100%)] max-sm:min-w-0",
+  md: "min-w-[min(520px,100%)] max-sm:min-w-0",
+  lg: "min-w-[min(600px,100%)] max-sm:min-w-0",
+  xl: "min-w-[min(700px,100%)] max-sm:min-w-0",
   full: "min-w-0",
 };
 
@@ -111,7 +113,7 @@ export const Modal: React.FC<ModalProps> = ({
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const modalRef = useRef<HTMLDialogElement>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
+  const titleId = useId();
   const [dragY, setDragY] = useState(0);
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
@@ -123,30 +125,11 @@ export const Modal: React.FC<ModalProps> = ({
     onExited,
   });
 
-  useEffect(() => {
-    if (isOpen) {
-      previousActiveElement.current = document.activeElement as HTMLElement;
-      const focusableElements = modalRef.current?.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      const firstElement = focusableElements?.[0] as HTMLElement;
-      firstElement?.focus();
-    } else {
-      previousActiveElement.current?.focus();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen || !closeOnEscape) return;
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
-        onClose();
-      }
-    };
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [isOpen, closeOnEscape, onClose, closeEvent, eventBus]);
+  const emitClose = () => {
+    if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
+    onClose();
+  };
+  useDialogBehavior({ open: isOpen, containerRef: modalRef, onEscape: emitClose, closeOnEscape });
 
   useEffect(() => {
     if (contained) return;
@@ -166,10 +149,7 @@ export const Modal: React.FC<ModalProps> = ({
   const dialogAnim = presenceAnim ? (exiting ? "animate-modal-out" : "animate-modal-in") : "";
   const overlayAnim = presenceAnim ? (exiting ? "animate-overlay-out" : "animate-overlay-in") : "";
 
-  const handleClose = () => {
-    if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
-    onClose();
-  };
+  const handleClose = emitClose;
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {
@@ -190,7 +170,7 @@ export const Modal: React.FC<ModalProps> = ({
         contained ? "absolute inset-0 z-50" : "fixed inset-0 z-[1000]",
         "flex items-start justify-center px-4 pb-4",
         contained ? "pt-[10%]" : "pt-[10vh]",
-        "max-sm:items-stretch max-sm:p-0 max-sm:pt-0",
+        "max-sm:items-end max-sm:p-0 max-sm:pt-0",
         overlayAnim,
       )}
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
@@ -213,9 +193,9 @@ export const Modal: React.FC<ModalProps> = ({
             sizeClasses[size],
             minWidthClasses[size],
             contained ? "max-h-[80%]" : "max-h-[80vh]",
-            // Mobile: take the entire screen. Override desktop max-w cap,
-            // full height, no rounded corners, no min-width.
-            "max-sm:max-w-none max-sm:max-h-none max-sm:w-full max-sm:h-full max-sm:rounded-none",
+            // Mobile: a bottom sheet — full width, capped at 90vh, square
+            // bottom corners, clear of the home indicator.
+            "max-sm:max-w-none max-sm:w-full max-sm:max-h-[90vh] max-sm:rounded-b-none max-sm:pb-[env(safe-area-inset-bottom)]",
             lookStyles[look],
             className,
             dialogAnim,
@@ -225,7 +205,7 @@ export const Modal: React.FC<ModalProps> = ({
             transform: `translateY(${dragY}px)`,
             transition: isDragging.current ? 'none' : 'transform 200ms ease-out',
           } : undefined}
-          {...(title && { "aria-labelledby": "modal-title" })}
+          {...(title && { "aria-labelledby": titleId })}
         >
           {/* Drag handle (mobile bottom sheet) */}
           <Box
@@ -266,7 +246,7 @@ export const Modal: React.FC<ModalProps> = ({
               )}
             >
               {title && (
-                <Typography variant="h4" as="h2" id="modal-title">
+                <Typography variant="h4" as="h2" id={titleId}>
                   {title}
                 </Typography>
               )}

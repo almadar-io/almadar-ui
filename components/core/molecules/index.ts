@@ -218,8 +218,8 @@ export { EdgeDecoration, type EdgeDecorationProps, type EdgeVariant, type EdgeSi
 
 // Phase 10 molecules — generic primitives (community/forum, survey, content authoring, layout)
 export { VoteStack, type VoteStackProps } from './VoteStack';
-export { LikertScale, type LikertScaleProps, type LikertOption, DEFAULT_LIKERT_OPTIONS } from './LikertScale';
-export { MatrixQuestion, type MatrixQuestionProps, type MatrixRow, type MatrixColumn, DEFAULT_MATRIX_COLUMNS } from './MatrixQuestion';
+export { LikertScale, type LikertScaleProps, type LikertOption, DEFAULT_LIKERT_OPTION_KEYS } from './LikertScale';
+export { MatrixQuestion, type MatrixQuestionProps, type MatrixRow, type MatrixColumn, DEFAULT_MATRIX_COLUMN_KEYS } from './MatrixQuestion';
 export { QrScanner, type QrScannerProps, type QrScanResult } from './QrScanner';
 export { OptionConstraintGroup, type OptionConstraintGroupProps, type OptionConstraintOption, type OptionConstraint } from './OptionConstraintGroup';
 export { PositionedCanvas, type PositionedCanvasProps, type CanvasItemStatus, type CanvasItemShape } from './PositionedCanvas';

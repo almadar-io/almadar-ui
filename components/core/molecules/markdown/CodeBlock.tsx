@@ -1690,7 +1690,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       return <ErrorState title={t('display.codeViewerError')} message={error.message} className={className} />;
     }
     if (isViewerMode && !activeCode && !diffLines) {
-      return <EmptyState icon={CodeIcon} title={t('display.noCode')} description="No code to display." className={className} />;
+      return <EmptyState icon={CodeIcon} title={t('display.noCode')} description={t('codeBlock.noCode')} className={className} />;
     }
 
     // ── Viewer mode (title / multi-file / diff / showLineNumbers) ─────────────

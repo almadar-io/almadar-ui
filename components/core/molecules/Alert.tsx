@@ -11,9 +11,12 @@ import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
+import type { IconInput } from "../atoms/index";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { HStack } from "../atoms/Stack";
+import { Button } from "../atoms/Button";
 
 export type AlertVariant = "info" | "success" | "warning" | "error";
 
@@ -28,6 +31,8 @@ export interface AlertProps {
   onDismiss?: () => void;
   onClose?: () => void;
   actions?: React.ReactNode;
+  /** Icon shown instead of the variant's default (Lucide name or component) */
+  icon?: IconInput;
   className?: string;
   /** Declarative dismiss event — emits UI:{dismissEvent} via eventBus when alert is dismissed */
   dismissEvent?: EventKey;
@@ -63,6 +68,7 @@ export const Alert: React.FC<AlertProps> = ({
   onDismiss,
   onClose,
   actions,
+  icon,
   className,
   dismissEvent,
 }) => {
@@ -77,52 +83,47 @@ export const Alert: React.FC<AlertProps> = ({
   // Use message if provided, else children
   const content = children ?? message;
 
+  const isUrgent = variant === "error" || variant === "warning";
+
   return (
     <Box
       bg="surface"
       border
-      shadow="sm"
       padding="md"
-      rounded="sm"
-      className={cn(variantBorderClasses[variant], className)}
-      role="alert"
+      className={cn("rounded-container shadow-elevation-card", variantBorderClasses[variant], className)}
+      role={isUrgent ? "alert" : "status"}
+      data-pattern="alert"
     >
-      <div className="flex items-start gap-3">
-        {/* Icon */}
-        <div className="flex-shrink-0 mt-0.5">
-          <Icon
-            name={iconMap[variant]}
-            size="md"
-            className={variantIconColors[variant]}
-          />
-        </div>
+      <HStack gap="sm" align="start">
+        <Box className="flex-shrink-0 mt-0.5">
+          {icon && typeof icon !== "string" ? (
+            <Icon icon={icon} size="md" className={variantIconColors[variant]} />
+          ) : (
+            <Icon name={icon ?? iconMap[variant]} size="md" className={variantIconColors[variant]} />
+          )}
+        </Box>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
+        <Box className="flex-1 min-w-0">
           {title && (
             <Typography variant="h6" className="mb-1">
               {title}
             </Typography>
           )}
           <Typography variant="body2">{content}</Typography>
-          {actions && <div className="mt-3 flex gap-2">{actions}</div>}
-        </div>
+          {actions && <HStack gap="sm" wrap className="mt-3">{actions}</HStack>}
+        </Box>
 
-        {/* Dismiss Button */}
         {(dismissible || dismissEvent || handleDismissCallback) && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="x"
             onClick={handleDismiss}
-            className={cn(
-              "flex-shrink-0 p-1 transition-colors rounded-interactive",
-              "hover:bg-muted",
-            )}
+            className="flex-shrink-0"
             aria-label={t('aria.closeAlert')}
-          >
-            <Icon name="x" size="sm" />
-          </button>
+          />
         )}
-      </div>
+      </HStack>
     </Box>
   );
 };

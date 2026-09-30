@@ -12,6 +12,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
+import { useTranslate } from '../../../hooks/useTranslate';
 import type { OrbitalLevelData } from '../../../lib/avl-schema-parser';
 import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DEntityCore } from '../molecules/Avl3DEntityCore';
@@ -70,6 +71,7 @@ function TraitOrbit({
   const groupRef = useRef<Group>(null);
   const angleRef = useRef(Math.random() * Math.PI * 2);
   const palette = useAvl3DPalette();
+  const { t } = useTranslate();
 
   useFrame((_, delta) => {
     angleRef.current += delta * speed;
@@ -144,9 +146,9 @@ function TraitOrbit({
             title={name}
             accentColor={palette.traitOrbitHighlight}
             rows={[
-              { label: 'States', value: String(stateCount) },
-              { label: 'Events', value: String(eventCount) },
-              { label: 'Transitions', value: String(transitionCount) },
+              { label: t('avl3d.states'), value: String(stateCount) },
+              { label: t('avl3d.events'), value: String(eventCount) },
+              { label: t('avl3d.transitions'), value: String(transitionCount) },
             ]}
           />
         )}

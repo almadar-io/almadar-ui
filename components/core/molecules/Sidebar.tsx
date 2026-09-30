@@ -21,6 +21,7 @@ import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
 import { Typography } from '../atoms/Typography';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import type { UiError } from '../atoms/types';
@@ -104,7 +105,7 @@ const SidebarNavItem: React.FC<{
         isActive
           ? [
             'bg-primary text-primary-foreground',
-            'font-medium shadow-sm',
+            'font-medium shadow-elevation-interactive',
             'border-primary translate-x-1 rtl:-translate-x-1 -translate-y-0.5',
           ].join(' ')
           : [
@@ -206,7 +207,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             'flex items-center gap-3 cursor-pointer',
             collapsed && 'justify-center w-full'
           )}
-          onClick={handleLogoClick}
+          {...pressableProps(logoClickEvent ? handleLogoClick : undefined)}
+          aria-label={logoClickEvent ? brandName : undefined}
         >
           {/* Logo image or custom logo */}
           {logo ? (

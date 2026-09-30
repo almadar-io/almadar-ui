@@ -118,7 +118,7 @@ export function ControlButton({
       onPointerLeave={handlePointerLeave}
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        'flex items-center justify-center border-2 font-bold',
+        'flex items-center justify-center border-heavy font-bold',
         'select-none touch-none',
         'transition-all duration-100',
         'active:scale-95',

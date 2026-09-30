@@ -102,7 +102,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
   showAuditInfo = false,
 }) => {
   const eventBus = useEventBus();
-  const { t } = useTranslate();
+  const { t, locale } = useTranslate();
   const resolvedAddLabel = addLabel ?? t('common.add');
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noItemsAdded');
 
@@ -140,6 +140,12 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
       eventBus.emit("UI:SECTION_REMOVED", { sectionType, index, itemId });
     },
     [sectionType, onRemove, eventBus],
+  );
+
+  const canReorder = allowReorder && !readOnly;
+  const handleMove = useCallback(
+    (fromIndex: number, toIndex: number) => onReorder?.(fromIndex, toIndex),
+    [onReorder],
   );
 
   return (
@@ -192,7 +198,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
                     <HStack gap="sm" align="center">
                       {item.addedInState && (
                         <Typography variant="caption" color="muted">
-                          Added in:{" "}
+                          {t('repeatable.addedIn')}{" "}
                           <Typography
                             as="span"
                             variant="caption"
@@ -205,18 +211,32 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
                     </HStack>
                     {item.addedAt && (
                       <Typography variant="caption" color="muted">
-                        {new Date(item.addedAt).toLocaleString()}
+                        {new Date(item.addedAt).toLocaleString(locale)}
                       </Typography>
                     )}
                   </HStack>
                 )}
 
                 <HStack gap="sm" align="start">
-                  {/* Drag handle */}
-                  {allowReorder && !readOnly && (
-                    <Box className="pt-2 cursor-move text-muted-foreground hover:text-foreground">
-                      <Icon name="grip-vertical" size="md" />
-                    </Box>
+                  {canReorder && (
+                    <VStack gap="none">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon="chevron-up"
+                        aria-label={t('common.moveUp')}
+                        disabled={index === 0}
+                        onClick={() => handleMove(index, index - 1)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon="chevron-down"
+                        aria-label={t('common.moveDown')}
+                        disabled={index === safeItems.length - 1}
+                        onClick={() => handleMove(index, index + 1)}
+                      />
+                    </VStack>
                   )}
 
                   {/* Item content */}
@@ -228,7 +248,8 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemove(item.id, index)}
-                      className="text-error hover:text-error hover:bg-error/10"
+                      aria-label={t('common.remove')}
+                      className="text-foreground hover:bg-error/10"
                     >
                       <Icon name="trash-2" size="sm" />
                     </Button>
@@ -243,7 +264,9 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
       {/* Min items warning */}
       {safeItems.length < minItems && (
         <Typography variant="caption" color="warning">
-          At least {minItems} item{minItems !== 1 ? "s" : ""} required
+          {minItems === 1
+            ? t('repeatable.minItemsOne')
+            : t('repeatable.minItems', { count: minItems })}
         </Typography>
       )}
     </VStack>

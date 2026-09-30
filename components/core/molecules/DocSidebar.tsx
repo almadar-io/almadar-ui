@@ -99,7 +99,7 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
         'hover:bg-muted',
         depth > 0 && 'ml-2',
         item.active
-          ? 'bg-primary/8 text-primary font-semibold'
+          ? 'bg-primary/8 text-foreground font-semibold'
           : 'text-muted-foreground',
       )}
       onClick={() => { if (item.href) window.location.href = item.href; }}

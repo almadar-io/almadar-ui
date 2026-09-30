@@ -8,6 +8,7 @@
  */
 import React, { useCallback } from 'react';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
 import { Card } from '../atoms/Card';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
@@ -17,6 +18,8 @@ import { resolveIcon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { UiError } from '../atoms/types';
+import { formatValue, type FormatContext } from "../../../lib/format";
+import { useFormatContext } from "../../../hooks/useTranslate";
 
 export type StatDisplayLook =
   | 'elevated'
@@ -80,21 +83,6 @@ export interface StatDisplayProps {
   error?: UiError | null;
 }
 
-function formatNumber(value: number | string | null | undefined, format?: string): string {
-  if (value == null) return '0';
-  const v = typeof value === 'number' ? value : value;
-  switch (format) {
-    case 'currency':
-      return typeof v === 'number' ? `$${v.toFixed(2)}` : String(v);
-    case 'percent':
-      return typeof v === 'number' ? `${Math.round(v)}%` : String(v);
-    case 'number':
-      return typeof v === 'number' ? v.toLocaleString() : String(v);
-    default:
-      return String(v);
-  }
-}
-
 // Compose `prefix + formattedValue + (" / " + max if max>0) + suffix`. max:0
 // is the lolo default for std-stats's optional denominator and means "no max"
 // — we hide the divider so plain count cards don't render "10 / 0".
@@ -104,9 +92,10 @@ function composeDisplayValue(
   max?: number,
   prefix?: string,
   suffix?: string,
+  fmt: FormatContext = {},
 ): string {
-  const formatted = formatNumber(value, format);
-  const withMax = max != null && max > 0 ? `${formatted} / ${max}` : formatted;
+  const formatted = value == null ? '0' : formatValue(value, format, fmt);
+  const withMax = max != null && max > 0 ? `${formatted} / ${new Intl.NumberFormat(fmt.locale).format(max)}` : formatted;
   return `${prefix ?? ''}${withMax}${suffix ?? ''}`;
 }
 
@@ -144,6 +133,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   error = null,
 }) => {
   const eventBus = useEventBus();
+  const fmt = useFormatContext();
   const handleClick = useCallback(() => {
     if (clickEvent) eventBus.emit(`UI:${clickEvent}`, { metricLabel: label });
   }, [clickEvent, eventBus, label]);
@@ -155,7 +145,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   const valueSizes = { sm: 'text-lg', md: 'text-2xl', lg: 'text-3xl' };
   const padSizes = { sm: 'p-3', md: 'p-4', lg: 'p-6' };
 
-  const displayValue = composeDisplayValue(value, format, max, prefix, suffix);
+  const displayValue = composeDisplayValue(value, format, max, prefix, suffix, fmt);
   const numericValue = typeof value === 'number' ? value : Number(value);
   const showTarget = typeof target === 'number' && target > 0 && Number.isFinite(numericValue);
   const targetPct = showTarget ? Math.max(0, Math.min(100, (numericValue / (target as number)) * 100)) : 0;
@@ -191,11 +181,11 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
       <HStack
         gap="sm"
         className={cn('items-center', clickEvent && 'cursor-pointer hover:opacity-80', className)}
-        onClick={clickEvent ? handleClick : undefined}
+        {...pressableProps(clickEvent ? handleClick : undefined)}
       >
         {ResolvedIcon && <ResolvedIcon className={cn(iconSizes[size], iconColor)} />}
         <Typography variant="caption" color="secondary">{label}</Typography>
-        <Typography variant="h4" className={cn('font-bold', valueSizes[size], variantColor[variant])}>
+        <Typography variant="h4" className={cn('', valueSizes[size], variantColor[variant])}>
           {displayValue}
         </Typography>
         {showTrend && (
@@ -214,13 +204,13 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   return (
     <Card
       className={cn(padSizes[size], lookStyles[look], clickEvent && 'cursor-pointer hover:shadow-elevation-dialog transition-shadow', className)}
-      onClick={clickEvent ? handleClick : undefined}
+      {...pressableProps(clickEvent ? handleClick : undefined)}
     >
       <HStack align="start" justify="between">
         <VStack gap="none" className="space-y-1 flex-1">
           <Typography variant="overline" color="secondary">{label}</Typography>
           <HStack gap="sm" align="end">
-            <Typography variant="h4" className={cn('font-bold', valueSizes[size], variantColor[variant])}>
+            <Typography variant="h4" className={cn('', valueSizes[size], variantColor[variant])}>
               {displayValue}
             </Typography>
             {showTrend && (

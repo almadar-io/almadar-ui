@@ -15,6 +15,7 @@ import React, { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { MathUtils } from 'three';
 import { RoundedBox } from '@react-three/drei';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { AVL_3D_COLORS } from '../../../lib/avl-3d-layout';
 import { useAvl3DPalette } from '../../../providers/avl-3d-context';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
@@ -64,6 +65,7 @@ export const Avl3DStateNode: React.FC<Avl3DStateNodeProps> = ({
 }) => {
   const [hovered, setHovered] = useState(false);
   const palette = useAvl3DPalette();
+  const { t } = useTranslate();
 
   const targetScale = hovered ? 1.08 : 1;
   const currentScale = useRef(1);
@@ -193,10 +195,10 @@ export const Avl3DStateNode: React.FC<Avl3DStateNodeProps> = ({
           title={name}
           accentColor={active ? AVL_3D_COLORS.stateActive : AVL_3D_COLORS.stateEdge}
           rows={[
-            { label: 'Type', value: isInitial ? 'Initial' : isTerminal ? 'Terminal' : 'Standard' },
-            { label: 'Incoming', value: String(incomingCount) },
-            { label: 'Outgoing', value: String(outgoingCount) },
-            ...(active ? [{ label: 'Status', value: 'Active' }] : []),
+            { label: t('avl3d.type'), value: isInitial ? t('avl3d.typeInitial') : isTerminal ? t('avl3d.typeTerminal') : t('avl3d.typeStandard') },
+            { label: t('avl3d.incoming'), value: String(incomingCount) },
+            { label: t('avl3d.outgoing'), value: String(outgoingCount) },
+            ...(active ? [{ label: t('avl3d.status'), value: t('status.active') }] : []),
           ]}
         />
       )}

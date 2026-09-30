@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 import './Canvas3DLoadingState.css';
 
 export interface Canvas3DLoadingStateProps {
@@ -47,11 +48,14 @@ export function Canvas3DLoadingState({
     progress = 0,
     loaded = 0,
     total = 0,
-    message = 'Loading 3D Scene...',
+    message: messageProp,
     details,
     showSpinner = true,
     className,
 }: Canvas3DLoadingStateProps): React.JSX.Element {
+    const { t, locale } = useTranslate();
+    const message = messageProp ?? t('canvas3d.loadingScene');
+    const numberFormat = new Intl.NumberFormat(locale);
     const clampedProgress = Math.max(0, Math.min(100, progress));
     const hasProgress = total > 0;
 
@@ -78,9 +82,9 @@ export function Canvas3DLoadingState({
                             />
                         </div>
                         <div className="progress__text">
-                            <span className="progress__percentage">{clampedProgress}%</span>
+                            <span className="progress__percentage">{new Intl.NumberFormat(locale, { style: 'percent' }).format(clampedProgress / 100)}</span>
                             <span className="progress__count">
-                                ({loaded}/{total})
+                                ({numberFormat.format(loaded)}/{numberFormat.format(total)})
                             </span>
                         </div>
                     </div>

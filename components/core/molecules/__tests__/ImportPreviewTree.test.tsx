@@ -18,8 +18,8 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const units: ImportPreviewUnit[] = [
-  { ref: 'u1', targetEntity: 'Concept', fields: { title: 'Algebra', content: 'Math notes' } },
-  { ref: 'u2', targetEntity: 'Concept', parentRef: 'u1', fields: { title: 'Linear equations' } },
+  { ref: 'u1', targetEntity: 'Concept', title: 'Algebra', fields: { content: 'Math notes' } },
+  { ref: 'u2', targetEntity: 'Concept', parentRef: 'u1', title: 'Linear equations', fields: {} },
   { ref: 'u3', targetEntity: 'FlashCard', fields: { question: 'What is x?', answer: 'A variable' } },
 ];
 
@@ -54,7 +54,7 @@ describe('ImportPreviewTree', () => {
     expect((child as HTMLElement).style.paddingLeft).toBe('16px');
   });
 
-  it('summarizes non-title fields', () => {
+  it('summarizes the unit fields', () => {
     render(
       <TestWrapper>
         <ImportPreviewTree units={units} entityDisplay={entityDisplay} />
@@ -98,5 +98,18 @@ describe('ImportPreviewTree', () => {
     fireEvent.click(screen.getByText('Cancel'));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ImportPreviewTree unit headings are declared', () => {
+  it('shows the declared title', () => {
+    render(<TestWrapper><ImportPreviewTree units={[{ ref: 'u1', targetEntity: 'Product', title: 'Blue mug', fields: { price: 12 } }]} entityDisplay={entityDisplay} /></TestWrapper>);
+    expect(screen.getByText('Blue mug')).toBeTruthy();
+  });
+
+  it('control: a field named "name" is not taken as the heading and stays in the summary', () => {
+    render(<TestWrapper><ImportPreviewTree units={[{ ref: 'u1', targetEntity: 'Product', fields: { name: 'Blue mug' } }]} entityDisplay={entityDisplay} /></TestWrapper>);
+    expect(screen.getByText('u1')).toBeTruthy();
+    expect(screen.getByText(/name: Blue mug/)).toBeTruthy();
   });
 });

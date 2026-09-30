@@ -9,6 +9,7 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import type { EventEmit, EventPayload, EntityRow, EntityWith } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { pressableProps } from "../../../lib/pressable";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
@@ -140,9 +141,9 @@ function useDayWindow(override: CalendarDayWindow | 'auto'): CalendarDayWindow {
 }
 
 const SHORT_DATE: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-function formatDateRange(start: Date, end: Date): string {
-  const startStr = start.toLocaleDateString(undefined, SHORT_DATE);
-  const endStr = end.toLocaleDateString(undefined, SHORT_DATE);
+function formatDateRange(start: Date, end: Date, locale: string): string {
+  const startStr = start.toLocaleDateString(locale, SHORT_DATE);
+  const endStr = end.toLocaleDateString(locale, SHORT_DATE);
   return start.toDateString() === end.toDateString() ? startStr : `${startStr} – ${endStr}`;
 }
 
@@ -295,8 +296,9 @@ export function CalendarGrid({
 }: CalendarGridProps): React.JSX.Element {
   const evs = Array.isArray(events) ? events : events ? [events] : [];
   const eventBus = useEventBus();
-  const { t } = useTranslate();
+  const { t, locale } = useTranslate();
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
   const resolvedWeekStart = useMemo(
     () => (weekStart ? getStartOfWeek(weekStart) : getStartOfWeek(new Date())),
     [weekStart],
@@ -350,6 +352,10 @@ export function CalendarGrid({
 
   const handleSlotClick = useCallback(
     (day: Date, time: string) => {
+      if (longPressFired.current) {
+        longPressFired.current = false;
+        return;
+      }
       onSlotClick?.(day, time);
     },
     [onSlotClick],
@@ -362,6 +368,11 @@ export function CalendarGrid({
     },
     [onEventClick],
   );
+
+  const eventPressProps = (event: EntityRow) =>
+    onEventClick
+      ? pressableProps<HTMLElement>((e) => handleEventClick(event, e))
+      : { onClick: (e: React.MouseEvent) => e.stopPropagation() };
 
   const eventsForDayCount = useCallback(
     (day: Date): number =>
@@ -387,7 +398,10 @@ export function CalendarGrid({
 
   const startLongPress = useCallback((day: Date, time: string) => {
     if (!longPressEvent) return;
+    longPressFired.current = false;
     longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null;
+      longPressFired.current = true;
       eventBus.emit(`UI:${longPressEvent}`, { date: day.toISOString(), time, ...longPressPayload });
     }, 500);
   }, [longPressEvent, longPressPayload, eventBus]);
@@ -412,9 +426,9 @@ export function CalendarGrid({
         "cursor-pointer hover:shadow-elevation-card transition-shadow text-xs truncate",
         color
           ? color
-          : "bg-primary/10 border-primary/30 text-primary",
+          : "bg-primary/10 border-primary/30 text-foreground",
       )}
-      onClick={(e: React.MouseEvent) => handleEventClick(event, e)}
+      {...eventPressProps(event)}
     >
       {renderChip ? renderChip(event, eventIndex) : (
         <Typography variant="small" className="truncate font-medium">
@@ -451,7 +465,7 @@ export function CalendarGrid({
             {t('nav.previous')}
           </Button>
           <Typography variant="small" className="text-muted-foreground">
-            {formatDateRange(visibleDays[0], visibleDays[visibleDays.length - 1])}
+            {formatDateRange(visibleDays[0], visibleDays[visibleDays.length - 1], locale)}
           </Typography>
           <Button
             variant="ghost"
@@ -529,6 +543,7 @@ export function CalendarGrid({
                   <TimeSlotCell
                     key={`${day.toISOString()}-${time}`}
                     time={time}
+                    data-testid={`time-slot-${time}`}
                     isOccupied={slotEvents.length > 0 || continuingEvents.length > 0}
                     onClick={() => handleSlotClick(day, time)}
                     className={cn(
@@ -539,6 +554,7 @@ export function CalendarGrid({
                       onPointerDown: () => startLongPress(day, time),
                       onPointerUp: clearLongPress,
                       onPointerCancel: clearLongPress,
+                      onPointerLeave: clearLongPress,
                     } : {})}
                   >
                     <VStack gap="xs">
@@ -554,7 +570,8 @@ export function CalendarGrid({
                               "cursor-pointer h-2",
                               color ? cn(color, "opacity-50") : "bg-primary/10 border-primary/20",
                             )}
-                            onClick={(e: React.MouseEvent) => handleEventClick(event, e)}
+                            {...eventPressProps(event)}
+                            aria-label={onEventClick ? String(getNestedValue(event, titleField) ?? '') : undefined}
                           />
                         );
                       })}

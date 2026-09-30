@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { AvlEffect } from '../atoms/AvlEffect';
 import type { TransitionLevelData, ExprTreeNode } from '../../../lib/avl-schema-parser';
 import { getStateRole, STATE_COLORS } from '../../../lib/avl-theme';
@@ -43,6 +44,7 @@ export const AvlTransitionScene: React.FC<AvlTransitionSceneProps> = ({
   data,
   color = 'var(--color-primary)',
 }) => {
+  const { t, locale } = useTranslate();
   const fromRole = getStateRole();
   const toRole = getStateRole();
   const fromColors = STATE_COLORS[fromRole];
@@ -178,7 +180,7 @@ export const AvlTransitionScene: React.FC<AvlTransitionSceneProps> = ({
         return (
           <g>
             <text x={SECTION_LEFT} y={secY + 12} fill={color} fontSize={10} fontWeight={600} opacity={0.4} fontFamily="inherit">
-              TRIGGER
+              {t('avl.trigger').toLocaleUpperCase(locale)}
             </text>
             <text x={CONTENT_LEFT + 14} y={secY + 28} fill={color} fontSize={14} fontWeight={600} fontFamily="inherit">
               {data.event}
@@ -194,7 +196,7 @@ export const AvlTransitionScene: React.FC<AvlTransitionSceneProps> = ({
         return (
           <g>
             <text x={SECTION_LEFT} y={secY + 12} fill={color} fontSize={10} fontWeight={600} opacity={0.4} fontFamily="inherit">
-              GUARD
+              {t('avl.guard').toLocaleUpperCase(locale)}
             </text>
             <polygon
               points={`${CONTENT_LEFT + 6},${secY + 22} ${CONTENT_LEFT + 2},${secY + 26} ${CONTENT_LEFT + 6},${secY + 30} ${CONTENT_LEFT + 10},${secY + 26}`}
@@ -216,7 +218,7 @@ export const AvlTransitionScene: React.FC<AvlTransitionSceneProps> = ({
         return (
           <g>
             <text x={SECTION_LEFT} y={secY + 12} fill={color} fontSize={10} fontWeight={600} opacity={0.4} fontFamily="inherit">
-              EFFECTS
+              {t('avl.effects').toLocaleUpperCase(locale)}
             </text>
             {effects.map((eff, i) => {
               const rowY = secY + 22 + i * effectRowH;
@@ -260,7 +262,7 @@ export const AvlTransitionScene: React.FC<AvlTransitionSceneProps> = ({
         return (
           <g>
             <text x={SECTION_LEFT} y={secY + 12} fill={color} fontSize={10} fontWeight={600} opacity={0.4} fontFamily="inherit">
-              SLOTS
+              {t('avlTransitionScene.slots').toLocaleUpperCase(locale)}
             </text>
             {data.slotTargets.map((slot, i) => {
               const rowY = secY + 22 + i * 22;

@@ -14,6 +14,7 @@ import { Typography } from "../atoms/Typography";
 import { Input } from "../atoms/Input";
 import { Select } from "../atoms/Select";
 import { HStack } from "../atoms/Stack";
+import { Box } from "../atoms/Box";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -170,8 +171,9 @@ export const Pagination: React.FC<PaginationProps> = ({
   const pageNumbers = getPageNumbers();
 
   return (
-    <HStack align="center" className={cn("justify-between gap-4", className)}>
-      <HStack align="center" gap="sm">
+    <Box as="nav" aria-label={t('pagination.label')} className={cn("@container w-full", className)}>
+    <HStack align="center" className="flex-wrap justify-between gap-x-4 gap-y-2">
+      <HStack align="center" gap="sm" className="flex-wrap">
         {showTotal && totalItems !== undefined && (
           <Typography variant="small" color="secondary">
             {t('pagination.total')} {totalItems}
@@ -203,21 +205,21 @@ export const Pagination: React.FC<PaginationProps> = ({
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
           icon="chevron-left"
+          aria-label={t('pagination.previous')}
         >
-          {t('pagination.previous')}
+          <Box as="span" className="hidden @md:inline">{t('pagination.previous')}</Box>
         </Button>
 
-        <HStack align="center" gap="xs">
+        <Typography variant="small" color="secondary" className="px-2 tabular-nums @md:hidden">
+          {t('pagination.pageOf', { page: currentPage, total: totalPages })}
+        </Typography>
+
+        <HStack align="center" gap="xs" className="hidden @md:flex">
           {pageNumbers.map((page, index) => {
             if (page === "ellipsis") {
               return (
-                <Typography
-                  key={`ellipsis-${index}`}
-                  variant="small"
-                  color="muted"
-                  className="px-2"
-                >
-                  ...
+                <Typography key={`ellipsis-${index}`} variant="small" color="muted" aria-hidden="true" className="px-2">
+                  …
                 </Typography>
               );
             }
@@ -230,7 +232,8 @@ export const Pagination: React.FC<PaginationProps> = ({
                 variant={isActive ? "primary" : "ghost"}
                 size="sm"
                 onClick={() => handlePageChange(page)}
-                className="min-w-[2.5rem]"
+                aria-current={isActive ? "page" : undefined}
+                className="min-w-[2.5rem] tabular-nums"
               >
                 {page}
               </Button>
@@ -244,8 +247,9 @@ export const Pagination: React.FC<PaginationProps> = ({
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           iconRight="chevron-right"
+          aria-label={t('pagination.next')}
         >
-          {t('pagination.next')}
+          <Box as="span" className="hidden @md:inline">{t('pagination.next')}</Box>
         </Button>
       </HStack>
 
@@ -272,6 +276,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         </HStack>
       )}
     </HStack>
+    </Box>
   );
 };
 

@@ -15,6 +15,7 @@ import { Box } from "../../core/atoms/Box";
 import { Card } from "../../core/atoms/Card";
 import { Typography } from "../../core/atoms/Typography";
 import { AtlasPanel } from "../../core/atoms/AtlasImage";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 export interface GameShellProps {
     /** Application / game title shown as a floating chip */
@@ -44,7 +45,7 @@ export interface GameShellProps {
 }
 
 export const GameShell: React.FC<GameShellProps> = ({
-    appName = "Game",
+    appName: appNameProp,
     hud,
     addons,
     controls,
@@ -56,6 +57,8 @@ export const GameShell: React.FC<GameShellProps> = ({
     fontFamily,
     "data-theme": dataTheme,
 }) => {
+    const { t } = useTranslate();
+    const appName = appNameProp ?? t('gameShell.defaultName');
     const displayFont = resolveGameFontFamily(fontFamily);
     return (
         <Box

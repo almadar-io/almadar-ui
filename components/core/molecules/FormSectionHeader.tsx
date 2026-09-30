@@ -13,6 +13,7 @@ import { Typography } from "../atoms/Typography";
 import { Badge } from "../atoms/Badge";
 import { Icon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/index";
+import { pressableProps } from "../../../lib/pressable";
 
 export interface FormSectionHeaderProps {
   /** Section title */
@@ -69,12 +70,13 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
     <Box
       className={cn(
         "px-5 py-4 bg-muted/60 rounded-container",
-        "border border-border border-l-4 border-l-primary",
+        "border border-border border-s-heavy border-s-primary",
         isClickable &&
           "cursor-pointer hover:bg-muted transition-colors",
         className,
       )}
-      onClick={isClickable ? onToggle : undefined}
+      {...pressableProps(onToggle)}
+      aria-expanded={isClickable ? !isCollapsed : undefined}
     >
       <HStack justify="between" align="center">
         <HStack gap="sm" align="center">

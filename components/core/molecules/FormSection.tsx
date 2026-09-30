@@ -67,7 +67,7 @@ export const FormSection: React.FC<FormSectionProps> = ({
               className={cn(collapsible && "cursor-pointer")}
               action={collapsible ? "TOGGLE_COLLAPSE" : undefined}
             >
-              <Typography variant="h3" weight="semibold">
+              <Typography variant="h3">
                 {title}
               </Typography>
               {collapsible && (

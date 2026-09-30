@@ -7,6 +7,8 @@
 import React from "react";
 import { cn } from "../../../lib/cn";
 import type { ColorToken } from "./types";
+import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
+import { formatValue } from "../../../lib/format";
 
 export type ProgressBarType = "linear" | "circular" | "stepped";
 export type ProgressBarVariant =
@@ -110,7 +112,10 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   steps = 5,
   className,
 }) => {
+  const { t } = useTranslate();
+  const fmt = useFormatContext();
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+  const percentText = formatValue(Math.round(percentage), "percent", fmt);
   // Use color if provided, else variant
   const effectiveColor = color ?? variant;
   // Use showLabel as alias for showPercentage
@@ -129,7 +134,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
             )}
             {effectiveShowPercentage && (
               <span className={cn("text-sm text-foreground font-medium", !label && "ml-auto")}>
-                {Math.round(percentage)}%
+                {percentText}
               </span>
             )}
           </div>
@@ -145,7 +150,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
             aria-valuenow={value}
             aria-valuemin={0}
             aria-valuemax={max}
-            aria-label={label || `Progress: ${Math.round(percentage)}%`}
+            aria-label={label || t("progressBar.ariaLabel", { percent: percentText })}
           />
         </div>
       </div>
@@ -198,7 +203,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         {effectiveShowPercentage && (
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-sm font-bold text-foreground">
-              {Math.round(percentage)}%
+              {percentText}
             </span>
           </div>
         )}
@@ -223,7 +228,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
             )}
             {effectiveShowPercentage && (
               <span className={cn("text-sm text-muted-foreground", !label && "ml-auto")}>
-                {Math.round(percentage)}%
+                {percentText}
               </span>
             )}
           </div>

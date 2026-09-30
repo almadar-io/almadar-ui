@@ -4,6 +4,7 @@ import React, { useCallback, useRef, useState } from "react";
 import type { EventEmit, EntityRow, EntityWith } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 import { Typography, Badge, Box } from "../atoms/index";
 import { Icon } from "../atoms/Icon";
 
@@ -51,18 +52,18 @@ interface DragState {
 
 const STATUS_CLASSES: Record<CanvasItemStatus, string> = {
     empty: "bg-surface border-border text-foreground",
-    seated: "bg-surface border-success text-success",
-    ordered: "bg-surface border-warning text-warning",
-    'awaiting-bill': "bg-surface border-info text-info",
+    seated: "bg-surface border-success text-foreground",
+    ordered: "bg-surface border-warning text-foreground",
+    'awaiting-bill': "bg-surface border-info text-foreground",
     cleaning: "bg-muted border-border text-muted-foreground",
 };
 
-const STATUS_BADGE: Record<CanvasItemStatus, { variant: "default" | "success" | "warning" | "info" | "neutral"; label: string }> = {
-    empty: { variant: "default", label: "Empty" },
-    seated: { variant: "success", label: "Seated" },
-    ordered: { variant: "warning", label: "Ordered" },
-    'awaiting-bill': { variant: "info", label: "Awaiting bill" },
-    cleaning: { variant: "neutral", label: "Cleaning" },
+const STATUS_BADGE: Record<CanvasItemStatus, { variant: "default" | "success" | "warning" | "info" | "neutral"; labelKey: string }> = {
+    empty: { variant: "default", labelKey: "positionedCanvas.status.empty" },
+    seated: { variant: "success", labelKey: "positionedCanvas.status.seated" },
+    ordered: { variant: "warning", labelKey: "positionedCanvas.status.ordered" },
+    'awaiting-bill': { variant: "info", labelKey: "positionedCanvas.status.awaitingBill" },
+    cleaning: { variant: "neutral", labelKey: "positionedCanvas.status.cleaning" },
 };
 
 function getShapeClasses(shape: CanvasItemShape): string {
@@ -105,6 +106,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
     const dragRef = useRef<DragState | null>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const eventBus = useEventBus();
+    const { t } = useTranslate();
 
     const items: readonly EntityRow[] = Array.isArray(itemsProp) ? itemsProp : [];
 
@@ -224,7 +226,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
                         data-testid={`item-node-${itemId}`}
                         data-status={status}
                         className={cn(
-                            "absolute flex flex-col items-center justify-center gap-1 border-2 select-none",
+                            "absolute flex flex-col items-center justify-center gap-1 border-heavy select-none",
                             "transition-shadow",
                             STATUS_CLASSES[status],
                             getShapeClasses(shape),
@@ -247,7 +249,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
                         <Typography variant="caption" color="secondary">
                             {partySize !== undefined && status === 'seated'
                                 ? `${partySize}/${capacity}`
-                                : `Cap ${capacity}`}
+                                : t('positionedCanvas.capacity', { count: capacity })}
                         </Typography>
                         {status === 'seated' && serverName && (
                             <Typography variant="caption" color="secondary" className="truncate max-w-[80%]">
@@ -260,7 +262,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
                                 size="sm"
                                 className="absolute -top-2 -right-2"
                             >
-                                {statusBadge.label}
+                                {t(statusBadge.labelKey)}
                             </Badge>
                         )}
                     </Box>

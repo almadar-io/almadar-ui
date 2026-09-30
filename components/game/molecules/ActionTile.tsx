@@ -59,11 +59,11 @@ export function ActionTile({
         <Box
             display="flex"
             className={cn(
-                'flex-col items-center gap-1 rounded-container border-2 transition-all select-none',
+                'flex-col items-center gap-1 rounded-container border-heavy transition-all select-none',
                 config.px,
                 disabled
                     ? 'opacity-40 cursor-not-allowed border-border bg-muted'
-                    : 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-md border-border bg-card',
+                    : 'cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-elevation-popover border-border bg-card',
                 className,
             )}
             style={{

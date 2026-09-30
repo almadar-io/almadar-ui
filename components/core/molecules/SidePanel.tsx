@@ -114,8 +114,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         className={cn(
           "fixed top-16 lg:top-0 bottom-0 z-[60]",
           "bg-card surface-material",
-          "border-l-2 border-border",
-          position === "left" && "border-l-0 border-r-2",
+          "border-l-heavy border-border",
+          position === "left" && "border-l-0 border-r-heavy",
           "flex flex-col",
           panelAnim,
           width,
@@ -126,7 +126,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         onAnimationEnd={onAnimationEnd}
       >
         {/* Header */}
-        <Box className="flex items-center justify-between p-4 border-b-2 border-border sticky top-0 bg-card z-10">
+        <Box className="flex items-center justify-between p-4 border-b-heavy border-border sticky top-0 bg-card z-10">
           <Typography variant="h6">{title}</Typography>
           <Button
             variant="ghost"

@@ -153,7 +153,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
               });
             })
             .catch(() => {
-              setError(t('Could not read the selected file'));
+              setError(t('upload.error.readFailed'));
             });
         }
       }
@@ -199,7 +199,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
       className={cn(
         "relative flex flex-col items-center justify-center",
         "p-8 rounded-interactive",
-        "border-2 border-dashed",
+        "border-heavy border-dashed",
         "transition-colors duration-fast",
         "cursor-pointer",
         isDragOver

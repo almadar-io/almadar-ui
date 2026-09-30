@@ -204,11 +204,10 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
       bg="surface"
       border
       rounded="lg"
-      shadow="xl"
       padding="md"
       role="dialog"
       aria-label={title}
-      className={cn(
+      className={cn("shadow-elevation-popover", 
         "fixed z-50 max-w-xs w-72 transition-opacity duration-fast",
         centered || pos ? "opacity-100" : "opacity-0",
         className,
@@ -238,12 +237,12 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
         <div className="mt-3 flex items-center justify-end gap-2">
           {onSecondary && (
             <Button variant="ghost" size="sm" onClick={onSecondary}>
-              {secondaryLabel ?? "Skip"}
+              {secondaryLabel ?? t('coachmark.skip')}
             </Button>
           )}
           {onPrimary && (
             <Button variant="primary" size="sm" onClick={onPrimary}>
-              {primaryLabel ?? "Got it"}
+              {primaryLabel ?? t('coachmark.gotIt')}
             </Button>
           )}
         </div>

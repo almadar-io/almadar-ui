@@ -151,4 +151,32 @@ describe('SearchInput', () => {
     // Should NOT have emitted any events
     expect(eventListener).not.toHaveBeenCalled();
   });
+
+  it('keeps the field enabled and focused while a search is loading', () => {
+    const { rerender } = render(
+      <TestWrapper>
+        <SearchInput placeholder="Find" isLoading={false} />
+      </TestWrapper>
+    );
+    const input = screen.getByPlaceholderText('Find');
+    input.focus();
+    rerender(
+      <TestWrapper>
+        <SearchInput placeholder="Find" isLoading />
+      </TestWrapper>
+    );
+    const loading = screen.getByPlaceholderText('Find');
+    expect(loading).not.toBeDisabled();
+    expect(document.activeElement).toBe(loading);
+    expect(loading.getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('control: not busy when idle', () => {
+    render(
+      <TestWrapper>
+        <SearchInput placeholder="Find" />
+      </TestWrapper>
+    );
+    expect(screen.getByPlaceholderText('Find').getAttribute('aria-busy')).not.toBe('true');
+  });
 });

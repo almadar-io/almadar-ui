@@ -8,7 +8,7 @@ Every open gap this repo owns lives here. This file is the source of truth; the 
 - **Close by deleting.** Remove the entry in the same commit as the fix. There is no "closed" section; git history is the record.
 - **Cross-repo gaps don't go here.** If fixing it needs another repo, describe it in your report or PR body; the monorepo coordinator files it.
 
-Next code: `G-UI-041`
+Next code: `G-UI-044`
 
 ## Open gaps
 
@@ -22,6 +22,8 @@ Next code: `G-UI-041`
 - **G-UI-031** — `Stack` (and so `VStack`/`HStack`, `components/core/atoms/Stack.tsx`) and `Typography` forward only a fixed prop list, so `data-*` and `aria-*` attributes written on it type-check (JSX allows any `data-*`) yet never reach the DOM. Test ids and ARIA on stacks silently vanish; found 2026-09-29 when the Studio publish panel's `data-testid`s on VStack rows were missing (moved to `Box`, which forwards `...rest`). Fix: forward `data-*`/`aria-*` like `Box` does. Prevention rung: 1 (the props type should declare what is forwarded, so an undeclared attribute is a type error). `@almadar/ui` [mechanical]
 
 ### UI tier (`@almadar/ui`)
+- **G-UI-043** — A related record's display text is chosen by field name: `resolveRelationCellDisplay` reads a hydrated relation row's `name`/`title`/`label` (tables, lists, detail rows), the same class as the runtime's relation option label (`almadar-runtime` `effect-stage.ts:279`, `r.name ?? r.title ?? r.id`). Fix across both: the relation declares its display field (entity relation config in `@almadar/core`, read by runtime + UI + compiled path), with the record id when none is declared. Cross-repo (core → runtime → ui → orbital-rust). [architectural] — found 2026-09-30 heuristic retirement; prevention rung: `orb validate` warns on a displayed relation with no declared display field
+- **G-UI-041** — The name/value-heuristic retirement (2026-09-30, worktree `ui-audit`) added new top-level props that must reach the pattern registry and the `orb` binary before any `.lolo` can use them: `itemClickEvent` on DataTable/DataGrid/List/CardGrid, `DetailPanel.closeEvent`, `Timeline.titleField/descriptionField/dateField/statusField`, `MediaGallery.srcField/captionField`, `Gantt.statusColorMap`, `Alert.icon`; plus nested keys (`DisplayField.colorMap/labels/variant/format`, `TableViewColumn.colorMap/labels/variant`, DataTable `Column.align/format`, StatCard metric `aggregate/filter`, Menu item `type`, List action `icon`, `ImportPreviewUnit.title`). Run `patterns` → build `@almadar/core` → `lolo-ui` → `rust` → `make release install` (steps with `ORB_BIN`), then migrate every `.lolo` site that relied on the removed guessing (titles, badges, progress, dates, row clicks, StatCard counts, dividers). The site list is in the coordinator's migration notes. `components/core` + pattern-sync [architectural] — prevention rung: `orb validate` should flag a display field used as a badge/title with no declaration once the new keys exist
 
 - **G-UI-026** — AVL docs diagrams `AvlClosedCircuit`, `AvlEmitListen`, `AvlSlotMap`, `AvlOrbitalUnit` (used by almadar/orb MDX) still use the pre-redesign fixed-size SVG layouts; redesign to the approved AVL standard (tokens, fit-to-container, ≥12px text) and admit them in `components/avl/patterns.ts`. `AvlExprTree` is replaced by the Part B circuit view. `components/avl/molecules` · [architectural]
 - **G-UI-027** — `AvlBehaviorGlyph` has no consumer anywhere in the monorepo (only a palette test). Retire it or give it a user. `components/avl/molecules/AvlBehaviorGlyph.tsx` · [owner-decision]

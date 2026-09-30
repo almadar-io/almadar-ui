@@ -21,6 +21,9 @@ import { Typography } from '../atoms/Typography';
 import { LoadingState } from './LoadingState';
 import { EmptyState } from './EmptyState';
 import type { UiError } from '../atoms/types';
+import { badgeVariantFor } from "../../../lib/displayField";
+import type { BadgeColor } from "../atoms/types";
+import type { BadgeVariant } from "../atoms/Badge";
 
 /** A dependency between two task ids: `to` cannot start before `from` ends. */
 export interface GanttLink {
@@ -35,16 +38,17 @@ const ROW_HEIGHT = 36;
 const HEADER_HEIGHT = 44;
 const LABEL_WIDTH = 192;
 
-/** Bar treatment per status value; unknown statuses fall back to primary. */
-const STATUS_BAR: Record<string, string> = {
-  complete: 'bg-success/80 hover:bg-success',
-  done: 'bg-success/80 hover:bg-success',
-  active: 'bg-primary/80 hover:bg-primary',
-  'in-progress': 'bg-primary/80 hover:bg-primary',
-  blocked: 'bg-error/80 hover:bg-error',
+/** Bar treatment per declared colour; an unmapped status is a primary bar. */
+const BAR_CLASS: Record<BadgeVariant, string> = {
+  default: 'bg-primary/80 hover:bg-primary',
+  primary: 'bg-primary/80 hover:bg-primary',
+  secondary: 'bg-secondary/80 hover:bg-secondary',
+  success: 'bg-success/80 hover:bg-success',
+  warning: 'bg-warning/80 hover:bg-warning',
+  danger: 'bg-error/80 hover:bg-error',
   error: 'bg-error/80 hover:bg-error',
-  'at-risk': 'bg-warning/80 hover:bg-warning',
-  pending: 'bg-muted-foreground/50 hover:bg-muted-foreground/70',
+  info: 'bg-info/80 hover:bg-info',
+  neutral: 'bg-muted-foreground/50 hover:bg-muted-foreground/70',
 };
 
 /**
@@ -71,8 +75,10 @@ export interface GanttProps {
   endField?: string;
   /** Row field holding the task length in days, used when the row has no end. */
   durationField?: string;
-  /** Row field holding the bar status (drives bar colour). Defaults to `status`. */
+  /** Row field holding the bar status. Defaults to `status`. */
   statusField?: string;
+  /** Bar colour per exact status value; unmapped statuses are primary bars. */
+  statusColorMap?: Readonly<Record<string, BadgeColor>>;
   /** Row field rows are grouped under header rows by. Empty (default) = flat list. */
   groupField?: string;
   /** First visible day (ISO or Date). Defaults to 2 days before the earliest task. */
@@ -126,6 +132,7 @@ export function Gantt({
   endField = 'end',
   durationField,
   statusField = 'status',
+  statusColorMap,
   groupField = '',
   rangeStart,
   rangeEnd,
@@ -162,7 +169,7 @@ export function Gantt({
         row,
         id: String(row.id ?? idx),
         label: String(getNestedValue(row, titleField) ?? ''),
-        status: String(getNestedValue(row, statusField) ?? '').toLowerCase(),
+        status: String(getNestedValue(row, statusField) ?? ''),
         group: groupField ? String(getNestedValue(row, groupField) ?? '') : '',
         start,
         end,
@@ -313,7 +320,7 @@ export function Gantt({
                       'absolute top-1/2 -translate-y-1/2 h-4 rounded-sm transition-colors',
                       item.task.reversed
                         ? 'bg-error/30 border border-dashed border-error'
-                        : STATUS_BAR[item.task.status] ?? 'bg-primary/80 hover:bg-primary',
+                        : BAR_CLASS[badgeVariantFor(item.task.status, statusColorMap)],
                       barClickEvent ? 'cursor-pointer' : undefined,
                     )}
                     style={{

@@ -44,6 +44,8 @@ export const QrScanner: React.FC<QrScannerProps> = ({
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
+  const tRef = useRef(t);
+  tRef.current = t;
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -66,7 +68,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
 
   const startStream = useCallback(async () => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      const err = new Error("Camera API not available in this environment");
+      const err = new Error(tRef.current('qrScanner.apiUnavailable'));
       setCameraError(err);
       onError?.(err);
       return;
@@ -181,13 +183,13 @@ export const QrScanner: React.FC<QrScannerProps> = ({
       {showOverlay && isReady && !isPaused && (
         <Box position="absolute" className="pointer-events-none inset-0">
           {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
-          <Box position="absolute" className="left-[15%] top-[15%] h-8 w-8 border-l-2 border-t-2 border-white" />
+          <Box position="absolute" className="left-[15%] top-[15%] h-8 w-8 border-l-heavy border-t-heavy border-white" />
           {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
-          <Box position="absolute" className="right-[15%] top-[15%] h-8 w-8 border-r-2 border-t-2 border-white" />
+          <Box position="absolute" className="right-[15%] top-[15%] h-8 w-8 border-r-heavy border-t-heavy border-white" />
           {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
-          <Box position="absolute" className="bottom-[15%] left-[15%] h-8 w-8 border-b-2 border-l-2 border-white" />
+          <Box position="absolute" className="bottom-[15%] left-[15%] h-8 w-8 border-b-heavy border-l-heavy border-white" />
           {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
-          <Box position="absolute" className="bottom-[15%] right-[15%] h-8 w-8 border-b-2 border-r-2 border-white" />
+          <Box position="absolute" className="bottom-[15%] right-[15%] h-8 w-8 border-b-heavy border-r-heavy border-white" />
           {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Box position="absolute" className="left-[15%] right-[15%] top-1/2 h-px bg-white opacity-60" />
         </Box>

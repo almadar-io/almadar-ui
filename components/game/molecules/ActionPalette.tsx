@@ -43,7 +43,7 @@ export function ActionPalette({
     const { t } = useTranslate();
 
     return (
-        <VStack className={cn('p-3 rounded-lg bg-card border border-border', className)} gap="sm">
+        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm">
             <Typography variant="body2" className="text-muted-foreground font-medium">
                 {label ?? t('sequencer.actions')}
             </Typography>

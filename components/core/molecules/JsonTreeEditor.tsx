@@ -8,6 +8,7 @@ import { Switch } from '../atoms/Switch';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
 import { cn } from '../../../lib/cn';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 type V = TraitConfigValue;
 type Kind = 'object' | 'array' | 'string' | 'number' | 'boolean' | 'null';
@@ -25,14 +26,22 @@ function kindOf(v: V): Kind {
   return 'string';
 }
 
-const TYPE_LABEL: Record<Kind, string> = {
+const TYPE_LABEL_KEY: Partial<Record<Kind, string>> = {
+  string: 'jsonTree.type.text',
+  number: 'jsonTree.type.number',
+  boolean: 'jsonTree.type.boolean',
+};
+
+const TYPE_LABEL_SYMBOL: Record<'object' | 'array' | 'null', string> = {
   object: '{}',
   array: '[]',
-  string: 'txt',
-  number: 'num',
-  boolean: 'y/n',
   null: '—',
 };
+
+function typeLabel(kind: Kind, t: (key: string) => string): string {
+  if (kind === 'object' || kind === 'array' || kind === 'null') return TYPE_LABEL_SYMBOL[kind];
+  return t(TYPE_LABEL_KEY[kind] ?? '');
+}
 
 const KIND_OPTIONS: Kind[] = ['string', 'number', 'boolean', 'object', 'array'];
 
@@ -103,11 +112,12 @@ function KindSelect({
   kind: Kind;
   onChange: (k: Kind) => void;
 }): React.ReactElement {
+  const { t } = useTranslate();
   return (
     <select
       value={kind === 'null' ? 'string' : kind}
       onChange={(e) => onChange(e.target.value as Kind)}
-      aria-label="Value type"
+      aria-label={t('jsonTree.valueType')}
       className={cn(
         'h-6 rounded-interactive bg-muted text-muted-foreground text-[10px] font-mono px-1',
         'border-[length:var(--border-width-thin)] border-border',
@@ -115,7 +125,7 @@ function KindSelect({
       )}
     >
       {KIND_OPTIONS.map((k) => (
-        <option key={k} value={k}>{TYPE_LABEL[k]}</option>
+        <option key={k} value={k}>{typeLabel(k, t)}</option>
       ))}
     </select>
   );
@@ -170,6 +180,7 @@ function Row({
   onRemove: () => void;
   readonly?: boolean;
 }): React.ReactElement {
+  const { t } = useTranslate();
   const [keyDraft, setKeyDraft] = React.useState(rowKey);
   React.useEffect(() => setKeyDraft(rowKey), [rowKey]);
   const container = isObj(value) || isArr(value);
@@ -182,7 +193,7 @@ function Row({
             'h-6 rounded-interactive bg-muted text-muted-foreground text-[10px] font-mono px-1 flex items-center',
             'border-[length:var(--border-width-thin)] border-border',
           )}>
-            {TYPE_LABEL[kindOf(value)]}
+            {typeLabel(kindOf(value), t)}
           </span>
         ) : (
           <KindSelect kind={kindOf(value)} onChange={onChangeKind} />
@@ -218,7 +229,7 @@ function Row({
             size="sm"
             icon="x"
             onClick={onRemove}
-            aria-label="Remove"
+            aria-label={t('common.remove')}
             className="shrink-0 text-muted-foreground hover:text-error"
           />
         )}
@@ -244,6 +255,7 @@ function ContainerNode({
   depth: number;
   readonly?: boolean;
 }): React.ReactElement {
+  const { t } = useTranslate();
   const [open, setOpen] = React.useState(depth < 2);
   const array = isArr(value);
   const entries: Array<[string, V]> = array
@@ -286,7 +298,10 @@ function ContainerNode({
     }
   };
 
-  const summary = array ? `${entries.length} item${entries.length === 1 ? '' : 's'}` : `${entries.length} field${entries.length === 1 ? '' : 's'}`;
+  const summaryKey = array
+    ? (entries.length === 1 ? 'jsonTree.itemCountOne' : 'jsonTree.itemCountOther')
+    : (entries.length === 1 ? 'jsonTree.fieldCountOne' : 'jsonTree.fieldCountOther');
+  const summary = t(summaryKey, { count: entries.length });
 
   return (
     <VStack gap="none" className="w-full">
@@ -295,7 +310,7 @@ function ContainerNode({
           type="button"
           onClick={() => setOpen((o) => !o)}
           className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-          aria-label={open ? 'Collapse' : 'Expand'}
+          aria-label={open ? t('jsonTree.collapse') : t('jsonTree.expand')}
         >
           <Icon name={open ? 'chevron-down' : 'chevron-right'} size="sm" />
           <span className="font-mono text-xs">{array ? '[ ]' : '{ }'}</span>
@@ -326,7 +341,7 @@ function ContainerNode({
               variant="ghost"
               size="sm"
               icon="plus"
-              label={array ? 'Add item' : 'Add field'}
+              label={array ? t('jsonTree.addItem') : t('jsonTree.addField')}
               onClick={add}
               className="self-start text-muted-foreground"
             />

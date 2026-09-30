@@ -5,6 +5,7 @@ import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 function useSafeEventBus() {
   try {
@@ -67,6 +68,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
   const styles = sizeStyles[size];
   const displayValue = hoverValue ?? value;
 
+  const { t } = useTranslate();
   const emitChange = useCallback(
     (newValue: number) => {
       onChange?.(newValue);
@@ -98,6 +100,12 @@ export const StarRating: React.FC<StarRatingProps> = ({
     } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
       e.preventDefault();
       emitChange(Math.max(0, value - stepSize));
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      emitChange(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      emitChange(max);
     }
   };
 
@@ -110,7 +118,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
         className,
       )}
       role={readOnly ? "img" : "slider"}
-      aria-label={label ?? `Rating: ${value} out of ${max}`}
+      aria-label={label ?? t("aria.ratingValue", { value, max })}
       aria-valuemin={0}
       aria-valuemax={max}
       aria-valuenow={value}

@@ -3,6 +3,7 @@ import * as React from 'react';
 import type { EventEmit, EventKey, Asset } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../../core/atoms/Box';
 import { ControlButton } from '../atoms/ControlButton';
 import type { IconInput } from '../../core/atoms/index';
@@ -74,15 +75,15 @@ const arrowIcons: Record<DPadDirection, string> = {
   right: '▶',
 };
 
-const DEFAULT_BUTTONS: ControlGridButton[] = [
-  { id: 'jump', label: 'Jump', icon: 'chevron-up', variant: 'primary' },
-  { id: 'attack', label: 'Attack', icon: 'sword', variant: 'secondary' },
-  { id: 'dodge', label: 'Dodge', icon: 'wind', variant: 'ghost' },
+const DEFAULT_BUTTON_KEYS: ReadonlyArray<Omit<ControlGridButton, 'label'> & { labelKey: string }> = [
+  { id: 'jump', labelKey: 'controlGrid.jump', icon: 'chevron-up', variant: 'primary' },
+  { id: 'attack', labelKey: 'controlGrid.attack', icon: 'sword', variant: 'secondary' },
+  { id: 'dodge', labelKey: 'controlGrid.dodge', icon: 'wind', variant: 'ghost' },
 ];
 
 export function ControlGrid({
   kind,
-  buttons = DEFAULT_BUTTONS,
+  buttons: buttonsProp,
   layout = 'horizontal',
   includeDiagonals = false,
   onAction,
@@ -98,6 +99,8 @@ export function ControlGrid({
   className,
 }: ControlGridProps): React.JSX.Element | null {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
+  const buttons: ControlGridButton[] = buttonsProp ?? DEFAULT_BUTTON_KEYS.map(({ labelKey, ...rest }) => ({ ...rest, label: t(labelKey) }));
   const [active, setActive] = React.useState<Set<string>>(new Set());
   const [coarse, setCoarse] = React.useState(
     () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches,
@@ -174,7 +177,7 @@ export function ControlGrid({
         <Box />{cell('up')}<Box />
         {cell('left')}
         <Box className="flex items-center justify-center">
-          <Box className="w-6 h-6 rounded-interactive bg-muted border-2 border-muted-foreground" />
+          <Box className="w-6 h-6 rounded-interactive bg-muted border-heavy border-muted-foreground" />
         </Box>
         {cell('right')}
         <Box />{cell('down')}<Box />

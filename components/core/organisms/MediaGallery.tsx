@@ -21,11 +21,12 @@ import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
+import { Lightbox } from "../molecules/Lightbox";
 import { useEventBus, useEventListener } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { DisplayStateProps } from "./types";
 import type { EntityRow } from "@almadar/core";
-import { X, ZoomIn, Upload, Image as ImageIcon } from "lucide-react";
+import { ZoomIn, Upload, Image as ImageIcon } from "lucide-react";
 
 export type MediaItem = EntityRow & {
     /** Unique identifier */
@@ -72,6 +73,10 @@ export interface MediaGalleryProps extends DisplayStateProps {
     actions?: readonly MediaGalleryAction[];
     /** Aspect ratio for thumbnails */
     aspectRatio?: "square" | "landscape" | "portrait";
+    /** Record field holding each image's URL (entity mode). Default `src`. */
+    srcField?: string;
+    /** Record field holding each image's caption (entity mode). Default `caption`. */
+    captionField?: string;
 }
 
 const COLUMN_CLASSES: Record<number, string> = {
@@ -98,6 +103,8 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     showUpload = false,
     actions,
     aspectRatio = "square",
+    srcField = "src",
+    captionField = "caption",
     entity,
     isLoading = false,
     error,
@@ -105,10 +112,10 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
 }) => {
     const eventBus = useEventBus();
     const { t } = useTranslate();
-    const [lightboxItem, setLightboxItem] = useState<MediaItem | null>(null);
+    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const [failedIds, setFailedIds] = useState<ReadonlySet<string>>(new Set());
 
-    const closeLightbox = useCallback(() => setLightboxItem(null), []);
+    const closeLightbox = useCallback(() => setLightboxIndex(null), []);
     useEventListener("UI:LIGHTBOX_CLOSE", closeLightbox);
 
     const handleImageError = useCallback((id: string) => {
@@ -121,7 +128,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     }, []);
 
     const handleItemClick = useCallback(
-        (item: MediaItem) => {
+        (item: MediaItem, index: number) => {
             if (selectable) {
                 const isSelected = selectedItems.includes(item.id);
                 const newSelection = isSelected
@@ -129,7 +136,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                     : [...selectedItems, item.id];
                 eventBus.emit(`UI:${selectionEvent}`, { selection: newSelection });
             } else {
-                setLightboxItem(item);
+                setLightboxIndex(index);
             }
             eventBus.emit("UI:MEDIA_SELECT", { row: item });
         },
@@ -145,13 +152,13 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
         return entityData.map((record, idx): MediaItem => {
             return {
                 id: String(record.id ?? idx),
-                src: resolveImageUrl(record.src ?? ('url' in record ? record.url : undefined) ?? ('image' in record ? record.image : undefined)) ?? "",
+                src: resolveImageUrl(record[srcField]) ?? "",
                 alt: (record.alt ? String(record.alt) : undefined),
                 thumbnail: resolveImageUrl(record.thumbnail),
-                caption: (record.caption ? String(record.caption) : ('title' in record ? String(record.title) : undefined)),
+                caption: record[captionField] != null ? String(record[captionField]) : undefined,
             };
         });
-    }, [propItems, entityData]);
+    }, [propItems, entityData, srcField, captionField]);
 
     if (isLoading) {
         return <LoadingState message={t('common.loading')} className={className} />;
@@ -186,7 +193,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                     {(title || showUpload || (actions && actions.length > 0)) && (
                         <HStack justify="between" align="center">
                             {title && (
-                                <Typography variant="h5" weight="semibold">
+                                <Typography variant="h5">
                                     {title}
                                 </Typography>
                             )}
@@ -230,21 +237,31 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                             COLUMN_CLASSES[columns],
                         )}
                     >
-                        {items.map((item) => {
+                        {items.map((item, index) => {
                             const isSelected = selectedItems.includes(item.id);
                             return (
                                 <Box
                                     key={item.id}
                                     className={cn(
                                         "group relative overflow-hidden rounded-container cursor-pointer",
-                                        "border-2 transition-all duration-fast",
+                                        "border-heavy transition-all duration-fast",
                                         isSelected
                                             ? "border-primary ring-2 ring-primary/30"
                                             : "border-transparent hover:border-border",
                                         ASPECT_CLASSES[aspectRatio],
                                     )}
                                      
-                                    onClick={() => handleItemClick(item)}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={item.alt || item.caption || item.id}
+                                    aria-pressed={selectable ? isSelected : undefined}
+                                    onClick={() => handleItemClick(item, index)}
+                                    onKeyDown={(e: React.KeyboardEvent) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                            e.preventDefault();
+                                            handleItemClick(item, index);
+                                        }
+                                    }}
                                 >
                                     { }
                                     {failedIds.has(item.id) ? (
@@ -299,42 +316,13 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                 </VStack>
             </Card>
 
-            {/* Lightbox */}
-            {lightboxItem && (
-                <Box
-                    className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center"
-                    action="LIGHTBOX_CLOSE"
-                >
-                    <VStack
-                        align="center"
-                        justify="center"
-                        className="w-full h-full p-8"
-                         
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                    >
-                        <HStack justify="end" className="w-full max-w-4xl mb-2">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                icon={X}
-                                action="LIGHTBOX_CLOSE"
-                                className="text-foreground hover:bg-muted/50"
-                            />
-                        </HStack>
-                        { }
-                        <img
-                            src={lightboxItem.src}
-                            alt={lightboxItem.alt || lightboxItem.caption || ""}
-                            className="max-w-full max-h-[80vh] object-contain rounded-container"
-                        />
-                        {lightboxItem.caption && (
-                            <Typography variant="body" className="text-foreground mt-3 text-center">
-                                {lightboxItem.caption}
-                            </Typography>
-                        )}
-                    </VStack>
-                </Box>
-            )}
+            <Lightbox
+                images={items.map((it) => ({ src: it.src, alt: it.alt || it.caption, caption: it.caption }))}
+                currentIndex={lightboxIndex ?? 0}
+                isOpen={lightboxIndex !== null}
+                onClose={closeLightbox}
+                closeAction="LIGHTBOX_CLOSE"
+            />
         </>
     );
 };

@@ -13,6 +13,7 @@ import React, { useMemo, useState } from 'react';
 import { Quaternion, Vector3 } from 'three';
 import { arcCurve3D, effectTypePaletteKey, selfLoopCurve3D } from '../../../lib/avl-3d-layout';
 import { useAvl3DPalette } from '../../../providers/avl-3d-context';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 import { Avl3DTooltip } from '../atoms/Avl3DTooltip';
 import { AVL_INK } from '../../../lib/avl-theme';
@@ -69,6 +70,7 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
 }) => {
   const [hovered, setHovered] = useState(false);
   const palette = useAvl3DPalette();
+  const { t } = useTranslate();
 
   const { tubeArgs, labelPos, guardPos, arrowPos, arrowQuat, effectPositions } = useMemo(() => {
     const offset = 1.5 + index * 0.8;
@@ -179,10 +181,10 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
           title={event}
           accentColor={arcColor}
           rows={[
-            ...(fromState && toState ? [{ label: 'Transition', value: `${fromState} → ${toState}` }] : []),
-            ...(hasGuard ? [{ label: 'Guard', value: 'Yes' }] : []),
+            ...(fromState && toState ? [{ label: t('avl.transition'), value: `${fromState} → ${toState}` }] : []),
+            ...(hasGuard ? [{ label: t('avl.guard'), value: t('common.yes') }] : []),
             ...(effectTypes && effectTypes.length > 0
-              ? [{ label: 'Effects', value: effectTypes.slice(0, 3).join(', ') + (effectTypes.length > 3 ? ` +${effectTypes.length - 3}` : '') }]
+              ? [{ label: t('avl.effects'), value: effectTypes.slice(0, 3).join(', ') + (effectTypes.length > 3 ? ` +${effectTypes.length - 3}` : '') }]
               : []),
           ]}
         />

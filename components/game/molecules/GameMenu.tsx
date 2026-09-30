@@ -3,6 +3,7 @@ import * as React from "react";
 import type { EventKey, EventPayload, Asset } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 import { Box } from "../../core/atoms/Box";
 import { Card } from "../../core/atoms/Card";
 import { Typography } from "../../core/atoms/Typography";
@@ -45,14 +46,14 @@ export interface GameMenuProps {
   className?: string;
 }
 
-const DEFAULT_MENU_OPTIONS: MenuOption[] = [
-  { label: 'New Game', event: 'NEW_GAME', variant: 'primary' },
-  { label: 'Continue', event: 'CONTINUE', variant: 'secondary' },
-  { label: 'Settings', event: 'SETTINGS', variant: 'ghost' },
+const DEFAULT_MENU_OPTION_KEYS: ReadonlyArray<{ labelKey: string; event: EventKey; variant: string }> = [
+  { labelKey: 'gameMenu.newGame', event: 'NEW_GAME', variant: 'primary' },
+  { labelKey: 'gameMenu.continue', event: 'CONTINUE', variant: 'secondary' },
+  { labelKey: 'gameMenu.settings', event: 'SETTINGS', variant: 'ghost' },
 ];
 
 export function GameMenu({
-  title = 'Epic Quest',
+  title: titleProp,
   subtitle,
   options,
   menuItems,
@@ -63,7 +64,14 @@ export function GameMenu({
 }: GameMenuProps) {
   // Resolve alias: menuItems → options. Empty arrays count as unset (the
   // ui-game-menu atom always forwards both config fields, defaulting to []).
-  const resolvedOptions = (options?.length ? options : undefined) ?? (menuItems?.length ? menuItems : undefined) ?? DEFAULT_MENU_OPTIONS;
+  const { t } = useTranslate();
+  const title = titleProp ?? t('gameMenu.defaultTitle');
+  const defaultOptions: MenuOption[] = DEFAULT_MENU_OPTION_KEYS.map((o) => ({
+    label: t(o.labelKey),
+    event: o.event,
+    variant: o.variant,
+  }));
+  const resolvedOptions = (options?.length ? options : undefined) ?? (menuItems?.length ? menuItems : undefined) ?? defaultOptions;
 
   const eventBus = useEventBus();
 
@@ -108,7 +116,7 @@ export function GameMenu({
           )}
           <Typography
             variant="h1"
-            className="text-4xl md:text-5xl font-bold text-foreground tracking-tight"
+            className="text-4xl md:text-5xl text-foreground tracking-tight"
             style={{
               textShadow: "0 4px 12px rgba(0,0,0,0.5)",
             }}

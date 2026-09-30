@@ -13,6 +13,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 import { avlSeries, effectCategoryOf } from '../../../lib/avl-theme';
 import { type EntityPersistence } from '@almadar/core';
@@ -426,6 +427,7 @@ export const AvlBehaviorGlyph: React.FC<AvlBehaviorGlyphProps> = ({
   className,
   onClick,
 }) => {
+  const { t } = useTranslate();
   const resolvedColor = colorOverride ?? (domain ? DOMAIN_COLORS[domain] ?? 'var(--color-primary)' : 'var(--color-primary)');
   const dim = SIZE_MAP[size];
   const radius = dim * 0.4;
@@ -445,7 +447,7 @@ export const AvlBehaviorGlyph: React.FC<AvlBehaviorGlyphProps> = ({
       className={cn('inline-block', onClick && 'cursor-pointer', className)}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
-      aria-label={`${name} behavior glyph`}
+      aria-label={t('avlBehaviorGlyph.ariaLabel', { name })}
     >
       <defs>
         <radialGradient id={`${glyphId}-bg`} cx="50%" cy="50%" r="50%">

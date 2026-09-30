@@ -6,7 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useId } from "react";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { Box } from "../atoms/Box";
 import type { IconInput } from "../atoms/index";
@@ -21,8 +21,11 @@ import { useNavStack } from "../../../providers/NavStackContext";
 import { followHref } from "../../../lib/followHref";
 import type { EventKey } from "@almadar/core";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
+import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 
 export interface MenuItem {
+  /** `divider` renders a separator line instead of an item */
+  type?: "item" | "divider";
   /** Item ID (auto-generated from label if not provided) */
   id?: string;
   /** Item label */
@@ -68,6 +71,10 @@ export type MenuPosition =
 interface MenuTriggerProps {
   ref?: React.Ref<HTMLElement>;
   onClick?: React.MouseEventHandler<HTMLElement>;
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+  "aria-haspopup"?: "menu";
+  "aria-expanded"?: boolean;
+  "aria-controls"?: string;
 }
 
 export interface MenuProps {
@@ -86,6 +93,29 @@ export interface MenuProps {
 }
 
 const MENU_GAP = 4;
+
+type MenuFocusTarget = "first" | "last" | "next" | "prev";
+
+// Roving focus across the menu's own items (a submenu is a separate menu).
+function focusMenuItem(menu: HTMLElement | null, target: MenuFocusTarget): void {
+  if (!menu) return;
+  const items = Array.from(menu.querySelectorAll<HTMLElement>(':scope > [role="menuitem"], :scope > * > [role="menuitem"]'));
+  if (items.length === 0) return;
+  const at = items.indexOf(document.activeElement as HTMLElement);
+  const index =
+    target === "first" ? 0
+    : target === "last" ? items.length - 1
+    : target === "next" ? (at + 1) % items.length
+    : (at - 1 + items.length) % items.length;
+  items[index].focus();
+}
+
+const MENU_NAV_KEYS: Record<string, MenuFocusTarget> = {
+  ArrowDown: "next",
+  ArrowUp: "prev",
+  Home: "first",
+  End: "last",
+};
 
 // Gesture-driven file save for `MenuItem.url` — an anchor with `download` keeps
 // image/JSON URLs saving instead of navigating (same-origin; falls back to
@@ -140,14 +170,25 @@ function SubMenu({
   itemRef,
   direction,
   eventBus,
+  autoFocus,
+  onClose,
+  onActivate,
 }: {
   items: MenuItem[];
   itemRef: HTMLElement | null;
   direction: string;
   eventBus: ReturnType<typeof useEventBus>;
+  autoFocus: boolean;
+  onClose: () => void;
+  onActivate: () => void;
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const navStack = useNavStack();
+  const subRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (rect && autoFocus) focusMenuItem(subRef.current, "first");
+  }, [rect, autoFocus]);
 
   useEffect(() => {
     if (itemRef) {
@@ -165,13 +206,28 @@ function SubMenu({
       : { left: rect.right }),
   };
 
+  const backKey = isRtl ? "ArrowRight" : "ArrowLeft";
   const panel = (
     <div
+      ref={subRef}
+      role="menu"
       className={cn("fixed z-50", menuContainerStyles)}
       style={style}
+      onKeyDown={(e: React.KeyboardEvent) => {
+        const nav = MENU_NAV_KEYS[e.key];
+        if (nav) {
+          e.preventDefault();
+          e.stopPropagation();
+          focusMenuItem(subRef.current, nav);
+        } else if (e.key === backKey || e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose();
+        }
+      }}
     >
       {items.map((item, index) => {
-        const isDivider = item.id === "divider" || item.label === "divider";
+        const isDivider = item.type === "divider";
         const itemId =
           item.id ??
           `item-${item.label.toLowerCase().replace(/\s+/g, "-")}-${index}`;
@@ -185,12 +241,15 @@ function SubMenu({
           <Box
             key={itemId}
             as="button"
+            role="menuitem"
+            tabIndex={-1}
             onClick={() => {
               if (item.disabled) return;
               if (item.event) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
               if (item.url) downloadItemUrl(item.url, item.label);
               if (item.href !== undefined) followHref(item.href, navStack);
               item.onClick?.();
+              onActivate();
             }}
             aria-disabled={item.disabled || undefined}
             title={item.title}
@@ -201,16 +260,16 @@ function SubMenu({
               "hover:bg-muted focus:outline-none focus:bg-muted",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               item.disabled && "cursor-not-allowed",
-              isDanger && "text-error hover:bg-error/10",
+              isDanger && "text-foreground hover:bg-error/10 border-s-heavy border-error",
             )}
           >
             {item.icon &&
               (typeof item.icon === "string" ? (
-                <Icon name={item.icon} size="sm" className="flex-shrink-0" />
+                <Icon name={item.icon} size="sm" className={cn("flex-shrink-0", isDanger && "text-error")} />
               ) : (
-                <Icon icon={item.icon} size="sm" className="flex-shrink-0" />
+                <Icon icon={item.icon} size="sm" className={cn("flex-shrink-0", isDanger && "text-error")} />
               ))}
-            <Typography variant="small" className={cn("flex-1", isDanger && "text-error")}>
+            <Typography variant="small" className="flex-1">
               {item.label}
             </Typography>
             {item.badge !== undefined && (
@@ -234,10 +293,13 @@ function MenuItemRow({
   isDanger,
   direction,
   isSubMenuOpen,
+  subMenuAutoFocus,
   activeSubMenuRef,
   eventBus,
   onItemClick,
   openSubMenu,
+  closeSubMenu,
+  closeMenu,
 }: {
   item: MenuItem;
   itemId: string;
@@ -245,12 +307,16 @@ function MenuItemRow({
   isDanger: boolean;
   direction: string;
   isSubMenuOpen: boolean;
+  subMenuAutoFocus: boolean;
   activeSubMenuRef: HTMLElement | null;
   eventBus: ReturnType<typeof useEventBus>;
   onItemClick: (item: MenuItem, itemId: string) => void;
-  openSubMenu: (itemId: string, el: HTMLElement | null) => void;
+  openSubMenu: (itemId: string, el: HTMLElement | null, focusFirst?: boolean) => void;
+  closeSubMenu: () => void;
+  closeMenu: () => void;
 }) {
   const rowRef = useRef<HTMLDivElement>(null);
+  const openKey = direction === "rtl" ? "ArrowLeft" : "ArrowRight";
 
   const { triggerProps } = useTapReveal({
     enabled: hasSubMenu,
@@ -263,7 +329,18 @@ function MenuItemRow({
       <Box
         ref={rowRef}
         as="button"
+        role="menuitem"
+        tabIndex={-1}
+        aria-haspopup={hasSubMenu ? "menu" : undefined}
+        aria-expanded={hasSubMenu ? isSubMenuOpen : undefined}
         onClick={() => onItemClick({ ...item, id: itemId }, itemId)}
+        onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
+          if (hasSubMenu && e.key === openKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            openSubMenu(itemId, e.currentTarget, true);
+          }
+        }}
         aria-disabled={item.disabled || undefined}
         title={item.title}
         onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
@@ -278,19 +355,19 @@ function MenuItemRow({
           "focus:outline-none focus:bg-muted",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           item.disabled && "cursor-not-allowed",
-          isDanger && "text-error hover:bg-error/10",
+          isDanger && "text-foreground hover:bg-error/10 border-s-heavy border-error",
         )}
       >
         <Box className="flex items-center gap-3 flex-1 min-w-0">
           {item.icon &&
             (typeof item.icon === "string" ? (
-              <Icon name={item.icon} size="sm" className="flex-shrink-0" />
+              <Icon name={item.icon} size="sm" className={cn("flex-shrink-0", isDanger && "text-error")} />
             ) : (
-              <Icon icon={item.icon} size="sm" className="flex-shrink-0" />
+              <Icon icon={item.icon} size="sm" className={cn("flex-shrink-0", isDanger && "text-error")} />
             ))}
           <Typography
             variant="small"
-            className={cn("flex-1", isDanger && "text-error")}
+            className="flex-1"
           >
             {item.label}
           </Typography>
@@ -314,6 +391,12 @@ function MenuItemRow({
           itemRef={activeSubMenuRef}
           direction={direction}
           eventBus={eventBus}
+          autoFocus={subMenuAutoFocus}
+          onClose={() => {
+            closeSubMenu();
+            rowRef.current?.focus();
+          }}
+          onActivate={closeMenu}
         />
       )}
     </Box>
@@ -334,9 +417,11 @@ export const Menu: React.FC<MenuProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
   const [activeSubMenuRef, setActiveSubMenuRef] = useState<HTMLElement | null>(null);
+  const [subMenuAutoFocus, setSubMenuAutoFocus] = useState(false);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
   const triggerRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
 
   const updatePosition = () => {
     if (triggerRef.current) {
@@ -367,9 +452,46 @@ export const Menu: React.FC<MenuProps> = ({
     }
   };
 
-  const openSubMenu = (itemId: string, el: HTMLElement | null) => {
+  const openSubMenu = (itemId: string, el: HTMLElement | null, focusFirst = false) => {
     setActiveSubMenu(itemId);
     setActiveSubMenuRef(el);
+    setSubMenuAutoFocus(focusFirst);
+  };
+
+  const closeSubMenu = () => {
+    setActiveSubMenu(null);
+    setActiveSubMenuRef(null);
+  };
+
+  const closeMenu = () => {
+    setIsOpen(false);
+    closeSubMenu();
+  };
+
+  const openMenu = () => {
+    updatePosition();
+    setIsOpen(true);
+  };
+
+  useDialogBehavior({ open: isOpen, containerRef: menuRef, onEscape: closeMenu, modal: false, returnFocusRef: triggerRef });
+
+  // Focus lands once, when the panel first mounts.
+  const panelMounted = isOpen && triggerRect !== null;
+  useEffect(() => {
+    if (panelMounted) focusMenuItem(menuRef.current, "first");
+  }, [panelMounted]);
+
+  const onTriggerKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!isOpen) openMenu();
+    }
+  };
+
+  const triggerA11y = {
+    "aria-haspopup": "menu" as const,
+    "aria-expanded": isOpen,
+    ...(isOpen ? { "aria-controls": menuId } : undefined),
   };
 
   useEffect(() => {
@@ -417,12 +539,25 @@ export const Menu: React.FC<MenuProps> = ({
     React.cloneElement(trigger as React.ReactElement<MenuTriggerProps>, {
       ref: triggerRef,
       onClick: handleToggle,
+      onKeyDown: onTriggerKeyDown,
+      ...triggerA11y,
     })
   ) : (
     <Box
       as="span"
       ref={(el: HTMLDivElement | null) => { triggerRef.current = el; }}
       onClick={handleToggle}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleToggle();
+        } else {
+          onTriggerKeyDown(e);
+        }
+      }}
+      {...triggerA11y}
       className="inline-flex"
     >
       {typeof trigger === "string" || typeof trigger === "number" ? (
@@ -435,7 +570,7 @@ export const Menu: React.FC<MenuProps> = ({
 
   const renderMenuItems = (menuItems: MenuItem[]) =>
     menuItems.map((item, index) => {
-      const isDivider = item.id === "divider" || item.label === "divider";
+      const isDivider = item.type === "divider";
       const itemId =
         item.id ??
         `item-${item.label.toLowerCase().replace(/\s+/g, "-")}-${index}`;
@@ -455,10 +590,13 @@ export const Menu: React.FC<MenuProps> = ({
           isDanger={isDanger}
           direction={direction}
           isSubMenuOpen={activeSubMenu === itemId}
+          subMenuAutoFocus={subMenuAutoFocus}
           activeSubMenuRef={activeSubMenuRef}
           eventBus={eventBus}
           onItemClick={handleItemClick}
           openSubMenu={openSubMenu}
+          closeSubMenu={closeSubMenu}
+          closeMenu={closeMenu}
         />
       );
     });
@@ -472,7 +610,17 @@ export const Menu: React.FC<MenuProps> = ({
       ref={menuRef}
       className={cn("fixed z-50", menuContainerStyles, className)}
       style={computeMenuStyle(effectivePosition, triggerRect)}
+      id={menuId}
       role="menu"
+      onKeyDown={(e: React.KeyboardEvent) => {
+        const nav = MENU_NAV_KEYS[e.key];
+        if (nav) {
+          e.preventDefault();
+          focusMenuItem(menuRef.current, nav);
+        } else if (e.key === "Tab") {
+          closeMenu();
+        }
+      }}
     >
       {header && <div className="px-4 py-2 border-b border-border">{header}</div>}
       {renderMenuItems(items)}

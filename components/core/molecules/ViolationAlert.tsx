@@ -8,11 +8,10 @@
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
-import { Box } from "../atoms/Box";
 import { VStack, HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
-import { Icon } from "../atoms/Icon";
+import { Alert } from "./Alert";
 
 export type ViolationRecord = {
   /** Unique violation identifier */
@@ -91,172 +90,54 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
   const effectiveSeverity =
     severity ?? (resolvedViolation.actionType === "measure" ? "warning" : "error");
 
-  const bgColor =
-    effectiveSeverity === "warning"
-      ? "bg-warning/10 border-warning/30"
-      : "bg-error/10 border-error/30";
-
-  const textColor =
-    effectiveSeverity === "warning"
-      ? "text-warning"
-      : "text-error";
-
-  const iconColor =
-    effectiveSeverity === "warning"
-      ? "text-warning"
-      : "text-error";
+  const citation = t('violationAlert.citation', { law: resolvedViolation.law, article: resolvedViolation.article });
+  const icon = actionTypeIcons[resolvedViolation.actionType];
+  const dismiss = dismissible && onDismiss ? { dismissible: true, onDismiss } : {};
 
   if (compact) {
     return (
-      <Box
-        className={cn(
-          "px-3 py-2 rounded-container border",
-          bgColor,
-          className,
-        )}
-      >
-        <HStack gap="sm" align="center" justify="between">
-          <HStack gap="sm" align="center">
-            <Icon
-              name={actionTypeIcons[resolvedViolation.actionType]}
-              size="sm"
-              className={iconColor}
-            />
-            <Typography
-              variant="caption"
-              className={textColor}
-              weight="semibold"
-            >
-              {resolvedViolation.law} Art. {resolvedViolation.article}
-            </Typography>
-            <Typography variant="caption" className={textColor}>
-              {resolvedViolation.message}
-            </Typography>
-          </HStack>
-          {dismissible && onDismiss && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDismiss}
-              className="p-1"
-            >
-              <Icon name="x" size="sm" className={iconColor} />
-            </Button>
-          )}
-        </HStack>
-      </Box>
+      <Alert variant={effectiveSeverity} icon={icon} title={citation} className={cn("px-3 py-2", className)} {...dismiss}>
+        {resolvedViolation.message}
+      </Alert>
     );
   }
 
+  const navigate = resolvedViolation.fieldId && onNavigateToField ? resolvedViolation.fieldId : undefined;
+
   return (
-    <Box
-      className={cn(
-        "p-4 rounded-container border",
-        bgColor,
-        className,
-      )}
-    >
-      <VStack gap="sm">
-        {/* Header */}
-        <HStack justify="between" align="start">
-          <HStack gap="sm" align="center">
-            <Icon
-              name={actionTypeIcons[resolvedViolation.actionType]}
-              size="md"
-              className={iconColor}
-            />
-            <VStack gap="xs">
-              <Typography variant="label" weight="bold" className={textColor}>
-                {resolvedViolation.law} Art. {resolvedViolation.article}
-              </Typography>
-              <Typography
-                variant="caption"
-                className={cn(textColor, "opacity-75")}
-              >
-                {t(actionTypeLabelKeys[resolvedViolation.actionType])}
-              </Typography>
-            </VStack>
-          </HStack>
-          {dismissible && onDismiss && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDismiss}
-              className="p-1"
-            >
-              <Icon name="x" size="sm" className={iconColor} />
-            </Button>
-          )}
-        </HStack>
-
-        {/* Message */}
-        <Typography variant="body2" className={textColor}>
-          {resolvedViolation.message}
-        </Typography>
-
-        {/* Action references */}
-        {(resolvedViolation.adminAction || resolvedViolation.penaltyAction) && (
-          <Box
-            className={cn(
-              "pt-2 border-t",
-              effectiveSeverity === "warning"
-                ? "border-warning/30"
-                : "border-error/30",
-            )}
-          >
-            <VStack gap="xs">
-              {resolvedViolation.adminAction && (
-                <HStack gap="xs" align="center">
-                  <Typography
-                    variant="caption"
-                    className={cn(textColor, "opacity-75")}
-                  >
-                    {t('violationAlert.adminLabel')}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    weight="semibold"
-                    className={textColor}
-                  >
-                    {resolvedViolation.adminAction}
-                  </Typography>
-                </HStack>
-              )}
-              {resolvedViolation.penaltyAction && (
-                <HStack gap="xs" align="center">
-                  <Typography
-                    variant="caption"
-                    className={cn(textColor, "opacity-75")}
-                  >
-                    {t('violationAlert.penaltyLabel')}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    weight="semibold"
-                    className={textColor}
-                  >
-                    {resolvedViolation.penaltyAction}
-                  </Typography>
-                </HStack>
-              )}
-            </VStack>
-          </Box>
-        )}
-
-        {/* Navigate to field button */}
-        {resolvedViolation.fieldId && onNavigateToField && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onNavigateToField(resolvedViolation.fieldId!)}
-            className={cn(textColor, "self-start")}
-          >
-            <Icon name="arrow-right" size="sm" className="mr-1" />
+    <Alert
+      variant={effectiveSeverity}
+      icon={icon}
+      title={citation}
+      className={className}
+      {...dismiss}
+      actions={
+        navigate ? (
+          <Button variant="ghost" size="sm" icon="arrow-right" onClick={() => onNavigateToField?.(navigate)}>
             {t('violationAlert.goToField')}
           </Button>
+        ) : undefined
+      }
+    >
+      <VStack gap="xs">
+        <Typography variant="caption" color="muted">
+          {t(actionTypeLabelKeys[resolvedViolation.actionType])}
+        </Typography>
+        <Typography variant="body2">{resolvedViolation.message}</Typography>
+        {resolvedViolation.adminAction && (
+          <HStack gap="xs" align="center" wrap>
+            <Typography variant="caption" color="muted">{t('violationAlert.adminLabel')}</Typography>
+            <Typography variant="caption" weight="semibold">{resolvedViolation.adminAction}</Typography>
+          </HStack>
+        )}
+        {resolvedViolation.penaltyAction && (
+          <HStack gap="xs" align="center" wrap>
+            <Typography variant="caption" color="muted">{t('violationAlert.penaltyLabel')}</Typography>
+            <Typography variant="caption" weight="semibold">{resolvedViolation.penaltyAction}</Typography>
+          </HStack>
         )}
       </VStack>
-    </Box>
+    </Alert>
   );
 };
 

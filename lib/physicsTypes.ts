@@ -25,13 +25,15 @@ export interface PhysicsConstraint {
 
 export interface PhysicsPreset {
     id: string;
-    name: string;
-    description: string;
+    /** Translation key for the preset display name. */
+    nameKey: string;
+    /** Translation key for the preset description. */
+    descriptionKey: string;
     domain: string;
     gravity?: { x: number; y: number };
     bodies: PhysicsBody[];
     constraints?: PhysicsConstraint[];
     backgroundColor?: string;
     showVelocity?: boolean;
-    parameters: Record<string, { value: number; min: number; max: number; step: number; label: string }>;
+    parameters: Record<string, { value: number; min: number; max: number; step: number; labelKey: string }>;
 }

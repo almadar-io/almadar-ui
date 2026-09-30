@@ -65,11 +65,11 @@ export type ViewLevel = 'overview' | 'trait-expanded' | 'system';
  */
 export type ScreenSize = 'mobile' | 'tablet' | 'laptop' | 'wide';
 
-export const SCREEN_SIZE_PRESETS: Record<ScreenSize, { width: number; minHeight: number; label: string; icon: string }> = {
-  mobile: { width: 375,  minHeight: 320, label: 'Mobile', icon: 'smartphone' },
-  tablet: { width: 768,  minHeight: 320, label: 'Tablet', icon: 'tablet' },
-  laptop: { width: 1280, minHeight: 360, label: 'Laptop', icon: 'monitor' },
-  wide:   { width: 1600, minHeight: 360, label: 'Wide',   icon: 'monitor-up' },
+export const SCREEN_SIZE_PRESETS: Record<ScreenSize, { width: number; minHeight: number; labelKey: string; icon: string }> = {
+  mobile: { width: 375,  minHeight: 320, labelKey: 'screenSize.mobile', icon: 'smartphone' },
+  tablet: { width: 768,  minHeight: 320, labelKey: 'screenSize.tablet', icon: 'tablet' },
+  laptop: { width: 1280, minHeight: 360, labelKey: 'screenSize.laptop', icon: 'monitor' },
+  wide:   { width: 1600, minHeight: 360, labelKey: 'screenSize.wide',   icon: 'monitor-up' },
 };
 
 /**

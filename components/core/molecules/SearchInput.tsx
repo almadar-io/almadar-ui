@@ -187,7 +187,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         icon={Search}
         clearable={clearable && !isLoading}
         onClear={handleClear}
-        disabled={isLoading}
+        aria-busy={isLoading || undefined}
         className="pr-10"
         {...props}
       />

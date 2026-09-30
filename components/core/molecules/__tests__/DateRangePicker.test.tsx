@@ -85,3 +85,20 @@ describe('DateRangePicker presets', () => {
         expect(screen.queryByText('Last 7 days')).toBeNull();
     });
 });
+
+describe('DateRangePicker local calendar days', () => {
+    it('"This Month" starts on the 1st in a zone east of UTC', () => {
+        const original = process.env.TZ;
+        process.env.TZ = 'Asia/Riyadh';
+        try {
+            const onChange = vi.fn();
+            renderWithProvider(<DateRangePicker presets={[{ label: 'This Month', value: 'month' }]} onChange={onChange} />);
+            fireEvent.click(screen.getByText('This Month'));
+            const now = new Date();
+            const expected = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+            expect(JSON.stringify(onChange.mock.calls[0])).toContain(expected);
+        } finally {
+            process.env.TZ = original;
+        }
+    });
+});

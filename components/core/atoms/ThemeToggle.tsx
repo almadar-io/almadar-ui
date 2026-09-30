@@ -12,6 +12,7 @@ import React from "react";
 import { Icon } from "./Icon";
 import { cn } from "../../../lib/cn";
 import { useTheme } from "../../../providers/ThemeContext";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 export interface ThemeToggleProps {
   /** Additional CSS classes */
@@ -55,7 +56,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   showLabel = false,
 }) => {
   const { resolvedMode, toggleMode } = useTheme();
+  const { t } = useTranslate();
   const isDark = resolvedMode === "dark";
+  const switchLabel = isDark ? t("themeToggle.switchToLight") : t("themeToggle.switchToDark");
 
   return (
     <button
@@ -70,8 +73,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         sizeClasses[size],
         className,
       )}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={switchLabel}
+      title={switchLabel}
     >
       {isDark ? (
         <Icon
@@ -85,7 +88,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         />
       )}
       {showLabel && (
-        <span className="text-sm font-medium">{isDark ? "Light" : "Dark"}</span>
+        <span className="text-sm font-medium">{isDark ? t("themeToggle.light") : t("themeToggle.dark")}</span>
       )}
     </button>
   );

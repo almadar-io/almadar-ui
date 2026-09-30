@@ -107,7 +107,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
         className,
       )}
       role="group"
-      aria-label={label ?? "Vote"}
+      aria-label={label ?? t('voteStack.ariaLabel')}
     >
       <button
         type="button"

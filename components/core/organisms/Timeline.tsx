@@ -20,7 +20,8 @@ import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
-import { useTranslate } from "../../../hooks/useTranslate";
+import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
+import { formatValue } from "../../../lib/format";
 // Timeline carries `icon?: IconInput` on TimelineItem (a React component),
 // which is the separate non-entity item channel. Schema entity data arrives
 // via the `entity` prop typed against @almadar/core's EntityRow, and is
@@ -33,13 +34,6 @@ import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import type { UiError } from '../atoms/types';
 
 export type TimelineItemStatus = "complete" | "active" | "pending" | "error";
-
-/** Same contract as DataGrid/DataList: locale date when parseable, raw string otherwise. */
-function formatDate(value: string): string {
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return value;
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
 
 /**
  * Layer 2 visual treatment for the timeline pattern — orthogonal to the
@@ -93,8 +87,16 @@ export interface TimelineProps {
     title?: string;
     /** Timeline items */
     items?: readonly TimelineItem[];
-    /** Fields to display */
-    fields: readonly string[];
+    /** Entity fields the timeline draws; each slot is named by its own `*Field` prop. */
+    fields?: readonly string[];
+    /** Entity field holding each item's title. */
+    titleField?: string;
+    /** Entity field holding each item's description. */
+    descriptionField?: string;
+    /** Entity field holding each item's date. */
+    dateField?: string;
+    /** Entity field holding each item's status (complete | active | pending | error). */
+    statusField?: string;
     /** Actions per item */
     itemActions?: readonly TimelineAction[];
     /** Layer 2 visual treatment. */
@@ -142,7 +144,10 @@ const STATUS_STYLES: Record<
 export const Timeline: React.FC<TimelineProps> = ({
     title,
     items: propItems,
-    fields,
+    titleField,
+    descriptionField,
+    dateField,
+    statusField,
     itemActions,
     entity,
     isLoading = false,
@@ -151,6 +156,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     look = "vertical-spacious",
 }) => {
     const { t } = useTranslate();
+    const fmt = useFormatContext();
 
     // Normalize entity data to TimelineItem[] if schema data is provided
     const entityData: readonly EntityRow[] = entity ?? [];
@@ -159,25 +165,15 @@ export const Timeline: React.FC<TimelineProps> = ({
         if (entityData.length === 0) return [];
 
         return entityData.map((record, idx) => {
-            const resolvedFields = fields ?? [];
-            const titleField = resolvedFields[0] || "title";
-            const descField = resolvedFields[1] || "description";
-            const dateField = resolvedFields.find((f) =>
-                f.toLowerCase().includes("date"),
-            ) || "date";
-            const statusField = resolvedFields.find((f) =>
-                f.toLowerCase().includes("status"),
-            ) || "status";
-
             return {
                 id: String(record.id ?? idx),
-                title: String(record[titleField] ?? ""),
-                description: record[descField] ? String(record[descField]) : undefined,
-                date: record[dateField] ? String(record[dateField]) : undefined,
-                status: (record[statusField] as TimelineItemStatus) || "pending",
+                title: titleField ? String(record[titleField] ?? "") : "",
+                description: descriptionField && record[descriptionField] ? String(record[descriptionField]) : undefined,
+                date: dateField && record[dateField] ? String(record[dateField]) : undefined,
+                status: statusField ? (record[statusField] as TimelineItemStatus) || "pending" : "pending",
             };
         });
-    }, [propItems, entityData, fields]);
+    }, [propItems, entityData, titleField, descriptionField, dateField, statusField]);
 
     if (isLoading) {
         return <LoadingState message={t('common.loading')} className={className} />;
@@ -197,7 +193,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         return (
             <EmptyState
                 title={t('display.noEvents')}
-                description="No timeline events to display."
+                description={t('display.noTimelineEvents')}
                 className={className}
             />
         );
@@ -207,7 +203,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         <Card className={cn("p-6", className)}>
             <VStack gap="md">
                 {title && (
-                    <Typography variant="h5" weight="semibold">
+                    <Typography variant="h5">
                         {title}
                     </Typography>
                 )}
@@ -247,7 +243,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         </Typography>
                                         {item.date && (
                                             <Typography variant="caption" color="secondary" className="flex-shrink-0">
-                                                {formatDate(item.date)}
+                                                {formatValue(item.date, 'date', fmt)}
                                             </Typography>
                                         )}
                                     </HStack>

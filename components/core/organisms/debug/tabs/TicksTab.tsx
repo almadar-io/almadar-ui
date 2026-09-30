@@ -17,26 +17,27 @@ interface TicksTabProps {
 }
 
 export function TicksTab({ ticks }: TicksTabProps) {
-    const { t } = useTranslate();
-    const activeTicks = ticks.filter(t => t.active);
-    const inactiveTicks = ticks.filter(t => !t.active);
+    const { t, locale } = useTranslate();
+    const numberFormat = new Intl.NumberFormat(locale);
+    const activeTicks = ticks.filter(tick => tick.active);
+    const inactiveTicks = ticks.filter(tick => !tick.active);
 
     if (ticks.length === 0) {
         return (
             <EmptyState
                 title={t('debug.noTicks')}
-                description="Ticks will appear when trait tick handlers are running"
+                description={t('debug.ticksHint')}
                 className="py-8"
             />
         );
     }
 
     const formatTime = (ms: number) => {
-        if (ms === 0) return 'never';
+        if (ms === 0) return t('debug.never');
         const seconds = Math.floor((Date.now() - ms) / 1000);
-        if (seconds < 1) return 'just now';
-        if (seconds < 60) return `${seconds}s ago`;
-        return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 1) return t('debug.justNow');
+        if (seconds < 60) return t('debug.secondsAgo', { count: numberFormat.format(seconds) });
+        return t('debug.minutesAgo', { count: numberFormat.format(Math.floor(seconds / 60)) });
     };
 
     const TickCard = ({ tick, active }: { tick: TickExecution; active: boolean }) => (
@@ -51,9 +52,9 @@ export function TicksTab({ ticks }: TicksTabProps) {
                 </Typography>
             </div>
             <div className="flex gap-3 text-xs text-muted-foreground">
-                <span>{tick.interval}ms</span>
-                <span>{tick.runCount} runs</span>
-                <span>{tick.executionTime.toFixed(1)}ms exec</span>
+                <span>{t('debug.tickInterval', { count: numberFormat.format(tick.interval) })}</span>
+                <span>{t(tick.runCount === 1 ? 'debug.tickRunOne' : 'debug.tickRunOther', { count: numberFormat.format(tick.runCount) })}</span>
+                <span>{t('debug.tickExec', { count: new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(tick.executionTime) })}</span>
                 <span>{formatTime(tick.lastRun)}</span>
             </div>
             {tick.guardName && (
@@ -72,7 +73,7 @@ export function TicksTab({ ticks }: TicksTabProps) {
             {activeTicks.length > 0 && (
                 <div className="mb-4">
                     <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">
-                        Active ({activeTicks.length})
+                        {t('debug.activeCount', { count: activeTicks.length })}
                     </Typography>
                     <Stack gap="sm">
                         {activeTicks.map(tick => (
@@ -86,7 +87,7 @@ export function TicksTab({ ticks }: TicksTabProps) {
             {inactiveTicks.length > 0 && (
                 <div>
                     <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">
-                        Inactive ({inactiveTicks.length})
+                        {t('debug.inactiveCount', { count: inactiveTicks.length })}
                     </Typography>
                     <Stack gap="sm">
                         {inactiveTicks.map(tick => (

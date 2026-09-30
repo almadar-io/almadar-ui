@@ -10,6 +10,7 @@ import type {
 } from '@almadar/core';
 import { isSecretConfigType } from '@almadar/core';
 import { cn } from '../../../lib/cn';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Button } from '../atoms/Button';
@@ -52,6 +53,14 @@ export interface PropertyInspectorProps extends DisplayStateProps {
 }
 
 const TIER_ORDER = ['presentation', 'domain', 'policy', 'infra', 'internal'];
+
+const TIER_LABEL_KEYS: Record<string, string> = {
+  presentation: 'propertyInspector.tier.presentation',
+  domain: 'propertyInspector.tier.domain',
+  policy: 'propertyInspector.tier.policy',
+  infra: 'propertyInspector.tier.infra',
+  internal: 'propertyInspector.tier.internal',
+};
 
 function currentValue(
   decl: ConfigFieldDeclaration,
@@ -127,6 +136,7 @@ export function FieldControl({
   onChange: (field: string, value: TraitConfigValue) => void;
   assets?: AssetCatalog;
 }): React.ReactElement {
+  const { t } = useTranslate();
   let control: React.ReactNode;
 
   const stringValue = typeof value === 'string' ? value : undefined;
@@ -193,7 +203,7 @@ export function FieldControl({
   } else {
     control = (
       <Typography variant="caption" color="muted">
-        {decl.type} — edit in source
+        {t('propertyInspector.editInSource', { type: decl.type })}
       </Typography>
     );
   }
@@ -221,6 +231,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
   assets,
   tiers,
 }) => {
+  const { t } = useTranslate();
   const allowedTiers = tiers ? new Set(tiers) : null;
   const fields = Object.entries(config).filter(([, decl]) => {
     if (!allowedTiers) return true;
@@ -244,21 +255,21 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
     <VStack gap="sm" className={cn('w-full', className)}>
       <HStack justify="between" align="center">
         <Typography variant="caption" weight="bold">
-          {title ?? 'Config'}
+          {title ?? t('propertyInspector.config')}
         </Typography>
         {onReset !== undefined && (
-          <Button variant="ghost" size="sm" icon="rotate-ccw" label="Reset" onClick={onReset} />
+          <Button variant="ghost" size="sm" icon="rotate-ccw" label={t('common.reset')} onClick={onReset} />
         )}
       </HStack>
 
       {fields.length === 0 && (
         <Typography variant="caption" color="muted">
-          No configurable properties.
+          {t('propertyInspector.noProperties')}
         </Typography>
       )}
 
       {tierList.map((tier) => (
-        <FormSection key={tier} title={tier} collapsible defaultCollapsed={tier !== 'presentation'}>
+        <FormSection key={tier} title={TIER_LABEL_KEYS[tier] ? t(TIER_LABEL_KEYS[tier]) : tier} collapsible defaultCollapsed={tier !== 'presentation'}>
           <VStack gap="sm">
             {byTier.get(tier)?.map(([name, decl]) => (
               <FieldControl

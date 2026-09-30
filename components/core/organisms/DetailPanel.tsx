@@ -34,13 +34,16 @@ import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../../lib/cn";
 import { SlotContainedContext } from "../../../lib/slotContained";
-import { humanizeFieldName, humanizeEnumValue } from "../../../lib/format";
+import { formatValue, type FormatContext } from "../../../lib/format";
+import { normalizeDisplayField, badgeVariantFor, titleFieldOf, valueLabelFor } from "../../../lib/displayField";
+import type { DisplayField, DisplayFieldFormat } from "../atoms/types";
+import type { TranslateFunction } from "../../../hooks/useTranslate";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { relationDisplayLabels } from "../../../lib/relationLabel";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useRowActions } from "../../../hooks/useRowActions";
 import type { RowActionCondition } from "../../../lib/row-action-when";
-import { useTranslate } from "../../../hooks/useTranslate";
+import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
 import { useNavStack } from "../../../providers/NavStackContext";
 import { useRenderSlot } from "../../../providers/RenderSlotContext";
 import type { DisplayStateProps } from "./types";
@@ -48,56 +51,11 @@ import type { RelationOption } from "../molecules/RelationSelect";
 import { formatFileSize } from "../molecules/UploadDropZone";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 
-function getBadgeVariant(
-  fieldName: string,
-  value: string,
-): "default" | "success" | "warning" | "danger" | "info" {
-  const name = fieldName.toLowerCase();
-  const val = String(value).toLowerCase();
+const formatFieldLabel = (name: string): string => name;
 
-  if (name.includes("status")) {
-    if (
-      val.includes("complete") ||
-      val.includes("done") ||
-      val.includes("active")
-    )
-      return "success";
-    if (val.includes("progress") || val.includes("pending")) return "warning";
-    if (val.includes("block") || val.includes("cancel")) return "danger";
-    return "info";
-  }
-
-  if (name.includes("priority")) {
-    if (val.includes("high") || val.includes("urgent")) return "danger";
-    if (val.includes("medium") || val.includes("normal")) return "warning";
-    if (val.includes("low")) return "info";
-  }
-
-  return "default";
-}
-
-const formatFieldLabel = humanizeFieldName;
-
-function formatFieldValue(value: FieldValue | undefined, fieldName: string): string {
-  if (typeof value === "number") {
-    if (
-      fieldName.toLowerCase().includes("progress") ||
-      fieldName.toLowerCase().includes("percent")
-    ) {
-      return `${value}%`;
-    }
-    if (
-      fieldName.toLowerCase().includes("budget") ||
-      fieldName.toLowerCase().includes("cost")
-    ) {
-      return `$${value.toLocaleString()}`;
-    }
-    return value.toLocaleString();
-  }
-  if (value instanceof Date) {
-    return value.toLocaleDateString();
-  }
-  return String(value);
+function formatPlain(value: FieldValue | undefined, format: DisplayFieldFormat | undefined, fmt: FormatContext): string {
+  if (value instanceof Date && format === undefined) return formatValue(value, "date", fmt);
+  return formatValue(value, format, fmt);
 }
 
 // Lazy-load react-markdown only when needed
@@ -136,11 +94,14 @@ export interface FieldMeta {
  */
 function renderRichFieldValue(
   value: FieldValue | undefined,
-  fieldName: string,
-  fieldType?: string,
+  field: ResolvedField,
+  ctx: RenderContext,
   meta?: FieldMeta,
 ): React.ReactNode {
   if (value === undefined || value === null) return "—";
+  const fieldName = field.name;
+  const fieldType = field.type;
+  const { locale, t, fmt } = ctx;
 
   const str = String(value);
 
@@ -254,7 +215,7 @@ function renderRichFieldValue(
     case "timestamp": {
       const d = new Date(str);
       if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString(undefined, {
+        return d.toLocaleDateString(locale, {
           year: "numeric",
           month: "long",
           day: "numeric",
@@ -267,7 +228,7 @@ function renderRichFieldValue(
     case "money": {
       const n = typeof value === "number" ? value : Number(str);
       if (!isNaN(n)) {
-        return new Intl.NumberFormat(undefined, {
+        return new Intl.NumberFormat(locale, {
           style: "currency",
           currency: "USD",
         }).format(n);
@@ -306,7 +267,7 @@ function renderRichFieldValue(
           <a
             href={typeof file.url === "string" ? file.url : undefined}
             download={label}
-            className="inline-flex items-center gap-1.5 rounded-interactive border border-border bg-muted px-2 py-1 text-sm text-foreground no-underline hover:bg-accent"
+            className="inline-flex items-center gap-1.5 rounded-interactive border border-border bg-muted px-2 py-1 text-sm text-foreground no-underline hover:bg-accent hover:text-accent-foreground"
           >
             <Icon icon={FileText} size="sm" className="text-muted-foreground" />
             {label}
@@ -322,9 +283,9 @@ function renderRichFieldValue(
     }
 
     case "boolean": {
-      if (typeof value === "boolean") return value ? "Yes" : "No";
-      if (str === "true") return "Yes";
-      if (str === "false") return "No";
+      if (typeof value === "boolean") return value ? t("common.yes") : t("common.no");
+      if (str === "true") return t("common.yes");
+      if (str === "false") return t("common.no");
       return str;
     }
 
@@ -363,12 +324,12 @@ function renderRichFieldValue(
       // union) renders as a Badge — its value is a state, not prose.
       if (meta?.values && meta.values.length > 0 && meta.values.includes(str)) {
         return (
-          <Badge variant={getBadgeVariant(fieldName, str)}>
-            {humanizeEnumValue(str)}
+          <Badge variant={badgeVariantFor(str, field.colorMap)}>
+            {valueLabelFor(str, field.labels)}
           </Badge>
         );
       }
-      return formatFieldValue(value, fieldName);
+      return formatPlain(value, field.format, fmt);
   }
 }
 
@@ -404,74 +365,53 @@ export interface DetailPanelAction {
   when?: RowActionCondition;
 }
 
+/** Schema metadata the runtime's detail enrichment (UISlotRenderer) or the
+ *  compiled path's codegen injects onto a field. */
+export interface DetailFieldSchema {
+  type?: string;
+  values?: readonly string[];
+  relation?: DetailRelationMeta;
+}
+
 /**
- * Field definition for unified interface - can be a simple string, key/header
- * object, or typed object. `type`/`values`/`relation` on the {key, header}
- * shape are injected by the runtime's detail enrichment (UISlotRenderer) or
- * the compiled path's codegen — call sites keep authoring plain {key, header}.
+ * Field definition: a plain name, a declared {@link DisplayField} (name, label,
+ * variant, format, colorMap), or the legacy {key, header} spelling. Every slot a
+ * field fills — title (`h3`/`h4`), header badge (`badge`), progress bar
+ * (`progress`), prose block (`body`), date, metric — is declared here.
  */
 export type FieldDef =
   | string
-  | { key: string; header?: string; type?: string; values?: readonly string[]; relation?: DetailRelationMeta }
-  | { name: string; type: string; values?: readonly string[]; relation?: DetailRelationMeta };
+  | (DisplayField & DetailFieldSchema)
+  | (Pick<DisplayField, "variant" | "format" | "colorMap"> & DetailFieldSchema & { key: string; header?: string });
 
-/**
- * Normalize fields to simple string array
- */
-function normalizeFieldDefs(fields: readonly FieldDef[] | undefined): string[] {
-  if (!fields) return [];
-  return fields.map((f) => {
-    if (typeof f === "string") return f;
-    if ("key" in f) return f.key;
-    if ("name" in f) return f.name;
-    return String(f);
-  });
+/** A field after normalization: its declared display shape plus injected schema metadata. */
+type ResolvedField = DisplayField & DetailFieldSchema;
+
+interface RenderContext {
+  locale: string;
+  t: TranslateFunction;
+  fmt: FormatContext;
 }
 
-/**
- * Build a map of field name -> authored header, so a call site's `header`
- * survives into the rendered section instead of being re-derived from the key.
- */
-function buildFieldLabelMap(fields: readonly FieldDef[] | undefined): Record<string, string> {
-  const map: Record<string, string> = {};
-  if (!fields) return map;
-  for (const f of fields) {
-    if (typeof f === "object" && "key" in f && f.header !== undefined && f.header !== "") {
-      map[f.key] = f.header;
-    }
+function resolveFields(fields: readonly FieldDef[] | undefined): ResolvedField[] {
+  const out: ResolvedField[] = [];
+  for (const f of fields ?? []) {
+    const base = normalizeDisplayField(f);
+    if (!base) continue;
+    out.push(typeof f === "string" ? base : { ...base, variant: f.variant, format: f.format, colorMap: f.colorMap, type: f.type, values: f.values, relation: f.relation });
   }
-  return map;
+  return out;
 }
 
-/**
- * Build a map of field name -> field type from typed field definitions.
- * Reads `type` off BOTH object shapes — {name, type} and the enriched
- * {key, header, type} the runtime/compiled paths inject.
- */
-function buildFieldTypeMap(fields: readonly FieldDef[] | undefined): Record<string, string> {
-  const map: Record<string, string> = {};
-  if (!fields) return map;
-  for (const f of fields) {
-    if (typeof f === "object" && f.type !== undefined) {
-      map["name" in f ? f.name : f.key] = f.type;
-    }
-  }
-  return map;
-}
+type FieldSlot = "badge" | "progress" | "body" | "date" | "metric" | "other";
 
-/**
- * Build a map of field name -> schema metadata (values vocabulary, relation
- * target) from enriched field definitions.
- */
-function buildFieldMetaMap(fields: readonly FieldDef[] | undefined): Record<string, FieldMeta> {
-  const map: Record<string, FieldMeta> = {};
-  if (!fields) return map;
-  for (const f of fields) {
-    if (typeof f === "object" && (f.type !== undefined || f.values !== undefined || f.relation !== undefined)) {
-      map["name" in f ? f.name : f.key] = { type: f.type, values: f.values, relation: f.relation };
-    }
-  }
-  return map;
+function slotOf(f: ResolvedField): FieldSlot {
+  if (f.variant === "badge") return "badge";
+  if (f.variant === "progress") return "progress";
+  if (f.variant === "body") return "body";
+  if (f.format === "date") return "date";
+  if (f.format === "currency" || f.format === "number" || f.format === "percent") return "metric";
+  return "other";
 }
 
 export interface DetailPanelStatus {
@@ -513,6 +453,11 @@ export interface DetailPanelProps extends DisplayStateProps {
    * action buttons + close X. Never inferred from actions[] labels.
    */
   backAction?: DetailPanelAction;
+  /**
+   * The event of the declared action that dismisses the panel. The matching
+   * action renders as the header close ×; omitted, no × is drawn.
+   */
+  closeEvent?: EventKey;
   footer?: React.ReactNode;
   slideOver?: boolean;
 
@@ -549,6 +494,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   actions,
   maxInlineActions = 2,
   backAction,
+  closeEvent,
   footer,
   slideOver = false,
   showActions = true,
@@ -563,7 +509,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 }) => {
   const eventBus = useEventBus();
   const rowActions = useRowActions();
-  const { t } = useTranslate();
+  const { t, locale } = useTranslate();
+  const fmt = useFormatContext();
+  const ctx: RenderContext = { locale, t, fmt };
   // Inside a contained preview (playground/builder canvas card) a portaled
   // slide-over would dock to the host viewport instead of the preview box.
   const contained = useContext(SlotContainedContext);
@@ -583,31 +531,22 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     );
   };
 
-  const effectiveFieldNames = isFieldDefArray(propFields)
-    ? normalizeFieldDefs(propFields)
-    : fieldNames;
-
-  // Build field type map from typed field definitions
-  const fieldTypeMap = isFieldDefArray(propFields)
-    ? buildFieldTypeMap(propFields)
-    : {};
-
-  const fieldMetaMap = isFieldDefArray(propFields)
-    ? buildFieldMetaMap(propFields)
-    : {};
-
-  const fieldLabelMap = isFieldDefArray(propFields)
-    ? buildFieldLabelMap(propFields)
-    : {};
-  const labelFor = (field: string): string => fieldLabelMap[field] ?? formatFieldLabel(field);
+  const resolvedFields: ResolvedField[] | undefined = isFieldDefArray(propFields)
+    ? resolveFields(propFields)
+    : fieldNames?.map((name) => ({ name }));
+  const fieldByName = new Map((resolvedFields ?? []).map((f) => [f.name, f]));
+  const fieldFor = (name: string): ResolvedField => fieldByName.get(name) ?? { name };
+  const labelFor = (name: string): string => fieldByName.get(name)?.label ?? formatFieldLabel(name);
 
   // Schema metadata + relation options merged per field for typed rendering.
-  const metaFor = (field: string): FieldMeta | undefined => {
-    const base = fieldMetaMap[field];
-    const options = relationsData?.[field];
-    if (!base && !options) return undefined;
-    return { ...base, options };
+  const metaFor = (field: ResolvedField): FieldMeta | undefined => {
+    const hasSchema = field.type !== undefined || field.values !== undefined || field.relation !== undefined;
+    const options = relationsData?.[field.name];
+    if (!hasSchema && !options) return undefined;
+    return { type: field.type, values: field.values, relation: field.relation, options };
   };
+  const richValue = (field: ResolvedField, value: FieldValue | undefined): React.ReactNode =>
+    renderRichFieldValue(value, field, ctx, metaFor(field));
 
   // Handle action click with event bus and navigation support
   const handleActionClick = useCallback(
@@ -658,7 +597,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
           return {
             label: labelFor(field),
-            value: formatFieldValue(value, field),
+            value: formatPlain(value, fieldFor(field).format, fmt),
           };
         }
         return field;
@@ -667,132 +606,50 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   }
 
   // Build sections from schema if provided
-  if (normalizedData && effectiveFieldNames) {
-    const primaryField = effectiveFieldNames[0];
-    // Only the field actually consumed as the title is withheld from the body
-    const titleDerivedFromPrimary = Boolean(
-      !title && primaryField && normalizedData[primaryField],
+  if (normalizedData && resolvedFields) {
+    const declaredTitle = titleFieldOf(resolvedFields);
+    const titleDerived = Boolean(
+      !title && declaredTitle && getNestedValue(normalizedData, declaredTitle.name),
     );
-    if (titleDerivedFromPrimary) {
-      title = String(normalizedData[primaryField]);
+    if (titleDerived && declaredTitle) {
+      title = String(getNestedValue(normalizedData, declaredTitle.name));
     }
 
-    // Categorize fields
-    const statusFields = effectiveFieldNames.filter(
-      (f) =>
-        f.toLowerCase().includes("status") ||
-        f.toLowerCase().includes("priority"),
-    );
-    const progressFields = effectiveFieldNames.filter(
-      (f) =>
-        f.toLowerCase().includes("progress") ||
-        f.toLowerCase().includes("percent"),
-    );
-    const metricFields = effectiveFieldNames.filter(
-      (f) =>
-        (f.toLowerCase().includes("budget") ||
-          f.toLowerCase().includes("cost") ||
-          f.toLowerCase().includes("count")) &&
-        !progressFields.includes(f),
-    );
-    const dateFields = effectiveFieldNames.filter(
-      (f) =>
-        f.toLowerCase().includes("date") || f.toLowerCase().includes("time"),
-    );
-    const descriptionFields = effectiveFieldNames.filter(
-      (f) =>
-        f.toLowerCase().includes("description") ||
-        f.toLowerCase().includes("note"),
-    );
-    const otherFields = effectiveFieldNames.filter(
-      (f) =>
-        (!titleDerivedFromPrimary || f !== primaryField) &&
-        !statusFields.includes(f) &&
-        !progressFields.includes(f) &&
-        !metricFields.includes(f) &&
-        !dateFields.includes(f) &&
-        !descriptionFields.includes(f),
-    );
+    const slotted = (slot: FieldSlot): ResolvedField[] =>
+      resolvedFields.filter((f) => slotOf(f) === slot && !(titleDerived && f === declaredTitle));
+    const progressFields = slotted("progress");
+    const metricFields = slotted("metric");
+    const dateFields = slotted("date");
+    const descriptionFields = slotted("body");
+    const otherFields = slotted("other");
+
+    const toDetailFields = (group: readonly ResolvedField[]): DetailField[] => {
+      const out: DetailField[] = [];
+      for (const field of group) {
+        const value = getNestedValue(normalizedData, field.name) as FieldValue | undefined;
+        if (value !== undefined && value !== null) {
+          out.push({ label: labelFor(field.name), value: richValue(field, value) });
+        }
+      }
+      return out;
+    };
 
     sections = [];
 
-    // Overview section. Status/priority fields are DELIBERATELY withheld —
-    // they already render as badges beside the title; repeating them as grid
-    // rows showed the same value twice on 53 of 79 surveyed detail pages.
-    if (otherFields.length > 0) {
-      const overviewFields: DetailField[] = [];
+    // Badge-variant fields are DELIBERATELY withheld — they already render as
+    // badges beside the title; repeating them as grid rows showed the same
+    // value twice on 53 of 79 surveyed detail pages.
+    const overviewFields = toDetailFields(otherFields);
+    if (overviewFields.length > 0) sections.push({ title: t("detailPanel.section.overview"), fields: overviewFields });
 
-      otherFields.forEach((field) => {
-        const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
-        if (value !== undefined && value !== null) {
-          overviewFields.push({
-            label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
-          });
-        }
-      });
+    const metricsFields = toDetailFields([...progressFields, ...metricFields]);
+    if (metricsFields.length > 0) sections.push({ title: t("detailPanel.section.metrics"), fields: metricsFields });
 
-      if (overviewFields.length > 0) {
-        sections.push({ title: "Overview", fields: overviewFields });
-      }
-    }
+    const timelineFields = toDetailFields(dateFields);
+    if (timelineFields.length > 0) sections.push({ title: t("detailPanel.section.timeline"), fields: timelineFields });
 
-    // Metrics section
-    if (progressFields.length > 0 || metricFields.length > 0) {
-      const metricsFields: DetailField[] = [];
-
-      [...progressFields, ...metricFields].forEach((field) => {
-        const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
-        if (value !== undefined && value !== null) {
-          metricsFields.push({
-            label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
-          });
-        }
-      });
-
-      if (metricsFields.length > 0) {
-        sections.push({ title: "Metrics", fields: metricsFields });
-      }
-    }
-
-    // Timeline section
-    if (dateFields.length > 0) {
-      const timelineFields: DetailField[] = [];
-
-      dateFields.forEach((field) => {
-        const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
-        if (value !== undefined && value !== null) {
-          timelineFields.push({
-            label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
-          });
-        }
-      });
-
-      if (timelineFields.length > 0) {
-        sections.push({ title: "Timeline", fields: timelineFields });
-      }
-    }
-
-    // Description section
-    if (descriptionFields.length > 0) {
-      const descFields: DetailField[] = [];
-
-      descriptionFields.forEach((field) => {
-        const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
-        if (value !== undefined && value !== null) {
-          descFields.push({
-            label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
-          });
-        }
-      });
-
-      if (descFields.length > 0) {
-        sections.push({ title: "Details", fields: descFields });
-      }
-    }
+    const descFields = toDetailFields(descriptionFields);
+    if (descFields.length > 0) sections.push({ title: t("detailPanel.section.details"), fields: descFields });
   }
 
   // Feed the loaded record's title into the nav stack's current crumb, so a
@@ -833,13 +690,13 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   if (
     !normalizedData &&
     !isLoading &&
-    effectiveFieldNames &&
-    effectiveFieldNames.length > 0
+    resolvedFields &&
+    resolvedFields.length > 0
   ) {
     return (
       <EmptyState
         title={t('error.notFound')}
-        description="The requested item could not be found."
+        description={t('display.itemNotFound')}
         className={className}
       />
     );
@@ -854,7 +711,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           const value = (normalizedData ? getNestedValue(normalizedData, field) : undefined) as FieldValue | undefined;
           allFields.push({
             label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
+            value: richValue(fieldFor(field), value),
           });
         } else {
           allFields.push(field);
@@ -863,34 +720,28 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     }
   }
 
-  // The close × renders ONLY when the call site declares a close-matching
-  // action — a routed detail page declares none and gets no dismiss
-  // affordance (the shell's Back owns navigation there). Viewers,
-  // slide-overs and modals keep their declared Close, wired to its event.
+  // The close × renders ONLY for the action whose event the call site names
+  // in `closeEvent` — a routed detail page names none and gets no dismiss
+  // affordance (the shell's Back owns navigation there).
   const shownActions = rowActions(actions ?? [], data ?? {});
-  const closeAction = shownActions.find(
-    (a) => a.event === "CLOSE" || a.event === "CANCEL" || a.label?.toLowerCase() === "close",
-  );
+  const closeAction = closeEvent ? shownActions.find((a) => a.event === closeEvent) : undefined;
   const otherActions = shownActions.filter((a) => a !== closeAction);
 
   const statusBadges = (
     <>
-      {normalizedData && effectiveFieldNames &&
-        effectiveFieldNames
-          .filter(
-            (f) =>
-              f.toLowerCase().includes("status") ||
-              f.toLowerCase().includes("priority"),
-          )
+      {normalizedData &&
+        resolvedFields &&
+        resolvedFields
+          .filter((f) => slotOf(f) === "badge")
           .map((field) => {
-            const value = getNestedValue(normalizedData, field);
+            const value = getNestedValue(normalizedData, field.name);
             if (!value) return null;
             return (
               <Badge
-                key={field}
-                variant={getBadgeVariant(field, String(value))}
+                key={field.name}
+                variant={badgeVariantFor(String(value), field.colorMap)}
               >
-                {humanizeEnumValue(String(value))}
+                {valueLabelFor(String(value), field.labels)}
               </Badge>
             );
           })}
@@ -947,13 +798,13 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         }}
         data-testid="detail-title-editable"
       >
-        <Typography variant="h2" weight="bold">
-          {title || "Details"}
+        <Typography variant="h2">
+          {title || t("display.details")}
         </Typography>
       </Box>
     ) : (
-      <Typography variant="h2" weight="bold">
-        {title || "Details"}
+      <Typography variant="h2">
+        {title || t("display.details")}
       </Typography>
     );
 
@@ -1044,29 +895,20 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 
         {/* Progress bars */}
         {normalizedData &&
-          effectiveFieldNames &&
-          effectiveFieldNames
-            .filter(
-              (f) =>
-                f.toLowerCase().includes("progress") ||
-                f.toLowerCase().includes("percent"),
-            )
+          resolvedFields &&
+          resolvedFields
+            .filter((f) => slotOf(f) === "progress")
             .map((field) => {
-              const value = getNestedValue(normalizedData, field);
-              if (
-                value === undefined ||
-                value === null ||
-                typeof value !== "number"
-              )
-                return null;
+              const value = getNestedValue(normalizedData, field.name);
+              if (typeof value !== "number") return null;
               return (
-                <VStack key={field} gap="xs" className="w-full">
+                <VStack key={field.name} gap="xs" className="w-full">
                   <HStack justify="between">
                     <Typography variant="small" color="secondary">
-                      {formatFieldLabel(field)}
+                      {labelFor(field.name)}
                     </Typography>
                     <Typography variant="small" weight="medium">
-                      {value}%
+                      {formatValue(value, field.format, fmt)}
                     </Typography>
                   </HStack>
                   <ProgressBar value={value} />

@@ -6,9 +6,15 @@
  */
 
 import React from 'react';
-import { cn } from '../../../lib/cn';
 import { Label } from '../atoms/Label';
 import { Typography } from '../atoms/Typography';
+import { VStack } from '../atoms/Stack';
+
+interface FieldChildProps {
+  id?: string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean;
+}
 
 export interface FormFieldProps {
   label: string;
@@ -27,27 +33,40 @@ export const FormField: React.FC<FormFieldProps> = ({
   className,
   children,
 }) => {
-  // A single field child is named by the label (its own id kept when given).
+  // A single field child is named by the label (its own id kept when given)
+  // and described by the hint or error.
   const generatedId = React.useId();
-  const field = React.Children.count(children) === 1 && React.isValidElement<{ id?: string }>(children)
+  const field = React.Children.count(children) === 1 && React.isValidElement<FieldChildProps>(children)
     ? children
     : null;
   const fieldId = field ? field.props.id ?? generatedId : undefined;
+  const baseId = fieldId ?? generatedId;
+  const hintId = `${baseId}-hint`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [field?.props['aria-describedby'], error ? errorId : hint ? hintId : undefined]
+    .filter(Boolean)
+    .join(' ') || undefined;
   return (
-    <div className={cn('space-y-1.5', className)}>
+    <VStack gap="xs" className={className}>
       <Label required={required} htmlFor={fieldId}>{label}</Label>
-      {field ? React.cloneElement(field, { id: fieldId }) : children}
+      {field
+        ? React.cloneElement(field, {
+            id: fieldId,
+            'aria-describedby': describedBy,
+            'aria-invalid': error ? true : field.props['aria-invalid'],
+          })
+        : children}
       {error && (
-        <Typography variant="caption" color="error">
+        <Typography id={errorId} variant="caption" color="error" data-field-error>
           {error}
         </Typography>
       )}
       {hint && !error && (
-        <Typography variant="caption" color="muted">
+        <Typography id={hintId} variant="caption" color="muted">
           {hint}
         </Typography>
       )}
-    </div>
+    </VStack>
   );
 };
 

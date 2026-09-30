@@ -90,16 +90,14 @@ describe('detail-panel schema enrichment (runtime path)', () => {
     expect(screen.getByText(/March 14, 1988/)).toBeInTheDocument();
   });
 
-  it('renders a union-valued field as a humanized badge, not the raw token', () => {
+  it('renders a union-valued field as a badge showing the stored value (no English prettifying)', () => {
     render(
       <Harness>
         <SlotContentRenderer content={detailContent} onDismiss={() => {}} />
       </Harness>,
     );
-    // humanizeEnumValue: "checked_in" → "Checked In"; raw token must be gone
-    // from the body grid (the name-heuristic status Badge row may still show
-    // the raw value — the typed body field is what this asserts).
-    expect(screen.getByText('Checked In')).toBeInTheDocument();
+    expect(screen.getByText('checked_in')).toBeInTheDocument();
+    expect(screen.queryByText('Checked In')).toBeNull();
   });
 });
 
@@ -128,6 +126,7 @@ describe('DetailPanel header layout', () => {
         { label: 'Edit', event: 'EDIT', variant: 'primary' },
         { label: 'Close', event: 'CLOSE_VIEW', variant: 'ghost' },
       ],
+      closeEvent: 'CLOSE_VIEW',
     });
 
     const back = screen.getByTestId('action-BACK');

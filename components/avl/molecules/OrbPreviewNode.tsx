@@ -168,6 +168,15 @@ const ROLE_COLORS: Record<StateRole, { border: string; dot: string }> = {
 };
 
 const LAYER_ORDER = ['Infrastructure', 'Services', 'UI Patterns', 'Game', 'ML', 'Domain', 'Community'] as const;
+const LAYER_LABEL_KEYS: Record<string, string> = {
+  Infrastructure: 'orbPreview.layer.infrastructure',
+  Services: 'orbPreview.layer.services',
+  'UI Patterns': 'orbPreview.layer.uiPatterns',
+  Game: 'orbPreview.layer.game',
+  ML: 'orbPreview.layer.ml',
+  Domain: 'orbPreview.layer.domain',
+  Community: 'orbPreview.layer.community',
+};
 const LAYER_COLORS: Record<string, string> = Object.fromEntries(LAYER_ORDER.map((layer, i) => [layer, avlSeries(i)]));
 
 // ---------------------------------------------------------------------------
@@ -1715,7 +1724,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       {layerColor && (
         <Box
           style={{ height: 3, backgroundColor: layerColor }}
-          title={data.layer}
+          title={data.layer && LAYER_LABEL_KEYS[data.layer] ? t(LAYER_LABEL_KEYS[data.layer]) : data.layer}
         />
       )}
 

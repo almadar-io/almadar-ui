@@ -19,15 +19,16 @@
  */
 
 import React, { useMemo } from "react";
-import type { AssetUrl, EventKey, EventPayload, FieldValue, EntityRow } from "@almadar/core";
-import type { IconInput } from "../atoms/Icon";
+import type { AssetUrl, EventKey, EventEmit, EventPayload, FieldValue, EntityRow } from "@almadar/core";
+import type { ItemActionPayload } from "@almadar/core/patterns";
+import { Icon, type IconInput } from "../atoms/Icon";
+import { Badge } from "../atoms/Badge";
+import type { DisplayField } from "../atoms/types";
 import {
   Calendar,
   MoreHorizontal,
   Package,
   ChevronRight,
-  Pencil,
-  Eye,
 } from "lucide-react";
 import { Typography, Checkbox, Divider, Box, Button } from "../atoms/index";
 import { HStack, VStack } from "../atoms/Stack";
@@ -36,12 +37,14 @@ import { EmptyState } from "../molecules/EmptyState";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { cn } from "../../../lib/cn";
-import { humanizeFieldName } from "../../../lib/format";
+import { formatValue } from "../../../lib/format";
+import { rowActivationProps } from "../../../lib/pressable";
+import { normalizeDisplayFields, badgeVariantFor, titleFieldOf, valueLabelFor } from "../../../lib/displayField";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useRowActions } from "../../../hooks/useRowActions";
 import type { RowActionCondition } from "../../../lib/row-action-when";
-import { useTranslate } from "../../../hooks/useTranslate";
+import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
 import type { DisplayStateProps } from "./types";
 import { EntityDisplayEvents } from "./types";
 
@@ -71,24 +74,16 @@ export interface SchemaItemAction {
   /** Action placement - accepts all common placement values */
   placement?: "row" | "bulk" | "card" | "footer" | string;
   variant?: "primary" | "secondary" | "ghost" | "danger" | "default";
+  /** Declaring an icon draws the action as an inline icon button; actions without one go in the overflow menu. */
+  icon?: IconInput;
   /** Click handler from generated code */
   onClick?: (row: EntityRow) => void;
   /** Per-row condition, authored as `(fn row <bool>)`: the row's action is drawn only when it returns true. Omit = always shown. */
   when?: RowActionCondition;
 }
 
-/**
- * Field definition - can be a simple string or object with key/header or name/label
- */
-export type FieldDef = string | { key?: string; header?: string; name?: string; label?: string };
-
-/**
- * Normalize fields to simple string array
- */
-function normalizeFields(fields: readonly FieldDef[] | undefined): string[] {
-  if (!fields) return [];
-  return fields.map((f) => (typeof f === "string" ? f : f.key ?? f.name ?? ''));
-}
+/** A field is a plain name or a declared {@link DisplayField}. */
+export type FieldDef = string | DisplayField;
 
 /**
  * Extract bus-safe entity fields from a ListItem.
@@ -149,151 +144,14 @@ export interface ListProps extends DisplayStateProps {
   fields: readonly FieldDef[];
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];
+  /** When set, clicking a row emits UI:{itemClickEvent} with { id, row }. Omit = rows are not clickable. */
+  /** @entityRow row */
+  itemClickEvent?: EventEmit<ItemActionPayload>;
+  /** Row field that marks an item completed (`true` strikes its title through) */
+  completedField?: string;
+  /** Row field that marks an item disabled (`true` dims the row and disables its click) */
+  disabledField?: string;
 }
-
-// Refined color palette for status indicators using CSS variables
-const STATUS_STYLES: Record<
-  string,
-  { bg: string; text: string; dot: string; border: string }
-> = {
-  complete: {
-    bg: "bg-success/10",
-    text: "text-success",
-    dot: "bg-success ring-4 ring-success/20",
-    border: "border-success/30",
-  },
-  active: {
-    bg: "bg-info/10",
-    text: "text-info",
-    dot: "bg-info ring-4 ring-info/20",
-    border: "border-info/30",
-  },
-  pending: {
-    bg: "bg-warning/10",
-    text: "text-warning",
-    dot: "bg-warning ring-4 ring-warning/20",
-    border: "border-warning/30",
-  },
-  blocked: {
-    bg: "bg-error/10",
-    text: "text-error",
-    dot: "bg-error ring-4 ring-error/20",
-    border: "border-error/30",
-  },
-  high: {
-    bg: "bg-warning/10",
-    text: "text-warning",
-    dot: "bg-warning ring-4 ring-warning/20",
-    border: "border-warning/30",
-  },
-  medium: {
-    bg: "bg-accent/10",
-    text: "text-accent",
-    dot: "bg-accent ring-4 ring-accent/20",
-    border: "border-accent/30",
-  },
-  low: {
-    bg: "bg-muted",
-    text: "text-muted-foreground",
-    dot: "bg-muted-foreground ring-4 ring-muted-foreground/20",
-    border: "border-border",
-  },
-  default: {
-    bg: "bg-muted",
-    text: "text-muted-foreground",
-    dot: "bg-muted-foreground ring-4 ring-muted-foreground/20",
-    border: "border-border",
-  },
-};
-
-function getStatusStyle(fieldName: string, value: string) {
-  const val = String(value).toLowerCase();
-
-  if (val.includes("complete") || val.includes("done"))
-    return STATUS_STYLES.complete;
-  if (val.includes("active") || val.includes("progress"))
-    return STATUS_STYLES.active;
-  if (val.includes("pending") || val.includes("waiting"))
-    return STATUS_STYLES.pending;
-  if (val.includes("block") || val.includes("cancel"))
-    return STATUS_STYLES.blocked;
-  if (val.includes("high") || val.includes("urgent")) return STATUS_STYLES.high;
-  if (val.includes("medium") || val.includes("normal"))
-    return STATUS_STYLES.medium;
-  if (val.includes("low")) return STATUS_STYLES.low;
-
-  return STATUS_STYLES.default;
-}
-
-function formatValue(value: FieldValue | undefined, fieldName: string): string {
-  if (typeof value === "number") {
-    if (
-      fieldName.toLowerCase().includes("progress") ||
-      fieldName.toLowerCase().includes("percent")
-    ) {
-      return `${value}%`;
-    }
-    if (
-      fieldName.toLowerCase().includes("budget") ||
-      fieldName.toLowerCase().includes("cost")
-    ) {
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0,
-      }).format(value);
-    }
-    return value.toLocaleString();
-  }
-  if (value instanceof Date) {
-    return value.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  }
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
-    return new Date(value).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  }
-  return String(value);
-}
-
-function formatFieldLabel(fieldName: string): string {
-  return humanizeFieldName(fieldName)
-    .replace(/\sId$/, "")
-    .trim();
-}
-
-// Custom Badge component with refined styling
-const StatusBadge: React.FC<{ value: string; fieldName: string }> = ({
-  value,
-  fieldName,
-}) => {
-  const style = getStatusStyle(fieldName, value);
-  return (
-    <Typography
-      as="span"
-      className={cn(
-        "inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide",
-        "border shadow-elevation-card backdrop-blur-sm transition-colors",
-        style.bg,
-        style.text,
-        style.border,
-      )}
-    >
-      <Typography
-        as="span"
-        className={cn(
-          "w-1.5 h-1.5 rounded-full shadow-elevation-interactive",
-          style.dot,
-        )}
-      />
-      {value}
-    </Typography>
-  );
-};
 
 // Elegant progress bar
 const ProgressIndicator: React.FC<{ value: number }> = ({ value }) => {
@@ -337,16 +195,20 @@ export const List: React.FC<ListProps> = ({
   renderItem: customRenderItem,
   fields,
   fieldNames,
+  itemClickEvent,
+  completedField,
+  disabledField,
   entityType,
 }) => {
   const eventBus = useEventBus();
   const rowActions = useRowActions();
   const { t } = useTranslate();
+  const fmt = useFormatContext();
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noData');
 
-  // Support fields and fieldNames (alias) - normalize to string[]
-  const effectiveFieldNames =
-    normalizeFields(fields).length > 0 ? normalizeFields(fields) : fieldNames;
+  const declaredFields = normalizeDisplayFields(fields);
+  const effectiveFields = declaredFields.length > 0 ? declaredFields : normalizeDisplayFields(fieldNames);
+  const titleField = titleFieldOf(effectiveFields);
 
   // Normalize entity data: handle arrays, single objects
   const rawItems = useMemo(() => {
@@ -366,6 +228,7 @@ export const List: React.FC<ListProps> = ({
       return rowActions(itemActions as readonly SchemaItemAction[], row).map((action, idx) => ({
         id: `${item.id}-action-${idx}`,
         label: action.label,
+        icon: action.icon,
         event: action.event,
         onClick: () => {
           // ListItem carries UI-level decorators (LucideIcon, ReactNode metadata,
@@ -422,23 +285,17 @@ export const List: React.FC<ListProps> = ({
           id: (item as ListItem).id || `item-${index}`,
         } as ListItem;
 
-        if (effectiveFieldNames && effectiveFieldNames.length > 0) {
-          const firstField = effectiveFieldNames[0];
-
-          if (
-            !normalizedItem.title &&
-            getNestedValue(item, firstField)
-          ) {
-            normalizedItem.title = String(
-              getNestedValue(item, firstField),
-            );
+        if (effectiveFields.length > 0) {
+          if (titleField) {
+            const titleValue = getNestedValue(item, titleField.name);
+            if (titleValue !== undefined && titleValue !== null) normalizedItem.title = String(titleValue);
           }
 
-          normalizedItem._fields = effectiveFieldNames.reduce(
+          normalizedItem._fields = effectiveFields.reduce(
             (acc, field) => {
-              const value = getNestedValue(item, field);
+              const value = getNestedValue(item, field.name);
               if (value !== undefined && value !== null) {
-                acc[field] = value as FieldValue;
+                acc[field.name] = value as FieldValue;
               }
               return acc;
             },
@@ -477,60 +334,21 @@ export const List: React.FC<ListProps> = ({
     const actions = normalizedItemActions ? normalizedItemActions(item, rawItems[index] ?? {}) : [];
     const hasActions = actions.length > 0;
 
-    // Find specific actions for UI promotion
-    const viewAction = actions.find(
-      (a) =>
-        a.label.toLowerCase().includes("view") ||
-        a.label.toLowerCase() === "open",
-    );
-    const editAction = actions.find((a) =>
-      a.label.toLowerCase().includes("edit"),
-    );
+    const inlineActions = actions.filter((a) => a.icon !== undefined);
+    const overflowActions = actions.filter((a) => a.icon === undefined);
 
-    // Row click dispatches VIEW via event bus action prop
-    const hasExplicitClick = !!(viewAction?.event || item.onClick);
-    const rowAction = viewAction?.event ?? "VIEW";
-    const rowActionPayload: EventPayload = { row: entityFieldsFromListItem(item) };
+    const rawRow = rawItems[index] ?? {};
+    const isCompleted = completedField !== undefined && rawRow[completedField] === true;
+    const isDisabled = disabledField !== undefined && rawRow[disabledField] === true;
+    const hasExplicitClick = !!itemClickEvent && !isDisabled;
+    const rowActionPayload: EventPayload = { id: item.id, row: entityFieldsFromListItem(item) };
 
-    // Categorize fields
-    const primaryField = effectiveFieldNames?.[0];
-    const statusField = effectiveFieldNames?.find((f) =>
-      f.toLowerCase().includes("status"),
+    const badgeFields = effectiveFields.filter((f) => f.variant === 'badge' && f !== titleField);
+    const progressFields = effectiveFields.filter((f) => f.variant === 'progress' && f !== titleField);
+    const metadataFields = effectiveFields.filter(
+      (f) => f !== titleField && f.variant !== 'badge' && f.variant !== 'progress',
     );
-    const priorityField = effectiveFieldNames?.find((f) =>
-      f.toLowerCase().includes("priority"),
-    );
-    const progressField = effectiveFieldNames?.find(
-      (f) =>
-        f.toLowerCase().includes("progress") ||
-        f.toLowerCase().includes("percent"),
-    );
-    const dateFields =
-      effectiveFieldNames?.filter(
-        (f) =>
-          f.toLowerCase().includes("date") || f.toLowerCase().includes("due"),
-      ) || [];
-    const metadataFields =
-      effectiveFieldNames
-        ?.filter(
-          (f) =>
-            f !== primaryField &&
-            f !== statusField &&
-            f !== priorityField &&
-            f !== progressField &&
-            !dateFields.includes(f),
-        )
-        .slice(0, 2) || [];
-
-    // Get status for left indicator
-    const statusValue = statusField ? item._fields?.[statusField] : null;
-    const statusStyle = statusValue
-      ? getStatusStyle(statusField!, String(statusValue))
-      : null;
-
-    // Get progress value
-    const progressValue = progressField ? item._fields?.[progressField] : null;
-    const hasProgress = typeof progressValue === "number";
+    const fieldLabel = (f: DisplayField) => f.label ?? f.name;
 
     return (
       <Box key={item.id}>
@@ -542,16 +360,17 @@ export const List: React.FC<ListProps> = ({
             // Hover state
             "hover:bg-muted/80",
             // Selected state
-            isSelected && "bg-primary/10 shadow-inner",
-            item.disabled && "opacity-50 cursor-not-allowed grayscale",
+            isSelected && "bg-primary/10 shadow-elevation-pressed",
+            isDisabled && "opacity-50",
           )}
-          action={rowAction}
-          actionPayload={rowActionPayload}
+          aria-disabled={isDisabled || undefined}
+          {...rowActivationProps(hasExplicitClick ? () => eventBus.emit(`UI:${itemClickEvent}`, rowActionPayload) : undefined)}
         >
           {/* Checkbox if selectable */}
           {selectable && (
             <Box
               className="flex-shrink-0 pt-0.5"
+              role="none"
               action={isSelected ? EntityDisplayEvents.DESELECT : EntityDisplayEvents.SELECT}
               actionPayload={{ ids: isSelected ? selectedIds.filter((sid) => String(sid) !== item.id) : [...selectedIds.map(String), item.id] }}
             >
@@ -571,150 +390,123 @@ export const List: React.FC<ListProps> = ({
           {/* Main content */}
           <Box className="flex-1 min-w-0 space-y-2.5">
             {/* Primary row: Title + Badges */}
-            <HStack className="flex items-center gap-4">
-              <Typography
-                as="h3"
-                className={cn(
-                  "heading-voice text-base text-foreground truncate flex-1",
-                  "leading-snug",
-                  item.completed &&
-                  "line-through text-muted-foreground",
+            {(titleField || badgeFields.length > 0) && (
+              <HStack className="flex items-center gap-4">
+                {titleField && item.title && (
+                  <Typography
+                    as="h3"
+                    className={cn("heading-voice text-base text-foreground truncate flex-1 leading-snug", isCompleted && "line-through text-muted-foreground")}
+                  >
+                    {item.title}
+                  </Typography>
                 )}
-              >
-                {item.title || "Untitled"}
-              </Typography>
 
-              {/* Status & Priority badges */}
-              <HStack className="flex items-center gap-2 flex-shrink-0">
-                {!!statusValue && (
-                  <StatusBadge
-                    value={String(statusValue)}
-                    fieldName={statusField!}
-                  />
-                )}
-                {!!(priorityField && item._fields?.[priorityField]) && (
-                  <StatusBadge
-                    value={String(item._fields![priorityField])}
-                    fieldName={priorityField}
-                  />
-                )}
+                <HStack className="flex items-center gap-2 flex-shrink-0">
+                  {badgeFields.map((field) => {
+                    const badgeValue = item._fields?.[field.name];
+                    if (badgeValue === undefined || badgeValue === null || badgeValue === "") return null;
+                    return (
+                      <Badge key={field.name} variant={badgeVariantFor(String(badgeValue), field.colorMap)}>
+                        {valueLabelFor(String(badgeValue), field.labels)}
+                      </Badge>
+                    );
+                  })}
+                </HStack>
               </HStack>
-            </HStack>
+            )}
 
             {/* Secondary row: Metadata */}
             <HStack className="flex items-center gap-6 text-sm font-medium text-muted-foreground">
-              {/* Date fields with icon */}
-              {dateFields.slice(0, 1).map((field) => {
-                const value = item._fields?.[field];
-                if (!value) return null;
+              {metadataFields.map((field) => {
+                const value = item._fields?.[field.name];
+                if (value === undefined || value === null || value === "") return null;
+                const text = formatValue(value, field.format, fmt);
+                if (field.variant === "body") {
+                  return (
+                    <Typography as="span" key={field.name} className="text-foreground">
+                      {text}
+                    </Typography>
+                  );
+                }
+                const lead = field.icon ? (
+                  <Icon {...(typeof field.icon === "string" ? { name: field.icon } : { icon: field.icon })} size="xs" />
+                ) : field.format === "date" ? (
+                  <Calendar className="w-3.5 h-3.5" />
+                ) : null;
                 return (
                   <Typography
                     as="span"
-                    key={field}
-                    className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground transition-colors"
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <Typography as="span">{formatValue(value, field)}</Typography>
-                  </Typography>
-                );
-              })}
-
-              {/* Other metadata fields */}
-              {metadataFields.map((field, i) => {
-                const value = item._fields?.[field];
-                if (value === undefined || value === null) return null;
-                return (
-                  <Typography
-                    as="span"
-                    key={field}
+                    key={field.name}
                     className="truncate flex items-center gap-1.5 text-muted-foreground"
                   >
-                    <Typography as="span" className="opacity-75">
-                      {formatFieldLabel(field)}:
-                    </Typography>
+                    {lead ?? (
+                      <Typography as="span" className="opacity-75">
+                        {fieldLabel(field)}:
+                      </Typography>
+                    )}
                     <Typography as="span" className="text-foreground">
-                      {formatValue(value, field)}
+                      {text}
                     </Typography>
                   </Typography>
                 );
               })}
 
-              {/* Progress indicator */}
-              {hasProgress && (
-                <Box className="ml-auto">
-                  <ProgressIndicator value={progressValue as number} />
-                </Box>
-              )}
+              {progressFields.map((field) => {
+                const value = item._fields?.[field.name];
+                if (typeof value !== "number") return null;
+                return (
+                  <Box key={field.name} className="ml-auto">
+                    <ProgressIndicator value={value} />
+                  </Box>
+                );
+              })}
             </HStack>
           </Box>
 
           {/* Actions */}
           <HStack className="flex items-center gap-1 flex-shrink-0">
-            {/* Direct Edit Action */}
-            {editAction && (
+            {inlineActions.map((action, idx) => (
               <Button
+                key={action.id ?? idx}
                 variant="ghost"
-                action={editAction.event}
-                className={cn(
-                  "p-2 rounded-container transition-all duration-fast",
-                  "hover:bg-primary/10 hover:text-primary",
-                  "text-muted-foreground",
-                  "active:scale-95",
-                )}
-                title={editAction.label}
-                data-testid={editAction.event ? `action-${editAction.event}` : undefined}
-              >
-                <Pencil className="w-4 h-4" />
-              </Button>
-            )}
-
-            {/* Direct View Action */}
-            {viewAction && (
-              <Button
-                variant="ghost"
-                action={viewAction.event}
+                action={action.event}
+                onClick={action.event ? undefined : action.onClick}
                 className={cn(
                   "p-2 rounded-container transition-all duration-fast",
                   "hover:bg-muted hover:text-foreground",
                   "text-muted-foreground",
                   "active:scale-95",
                 )}
-                title={viewAction.label}
-                data-testid={viewAction.event ? `action-${viewAction.event}` : undefined}
+                title={action.label}
+                data-testid={action.event ? `action-${action.event}` : undefined}
               >
-                <Eye className="w-4 h-4" />
+                {typeof action.icon === "string" ? (
+                  <Icon name={action.icon} size="sm" />
+                ) : (
+                  <Icon icon={action.icon} size="sm" />
+                )}
               </Button>
+            ))}
+
+            {overflowActions.length > 0 && (
+              <Menu
+                trigger={
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "p-2 rounded-container transition-all duration-fast",
+                      "hover:bg-muted hover:shadow-elevation-card",
+                      "text-muted-foreground hover:text-foreground",
+                      "active:scale-95",
+                    )}
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                }
+                items={overflowActions}
+                position="bottom-right"
+              />
             )}
-
-            {/* Overflow Menu for filtered actions */}
-            {(() => {
-              const filteredActions = actions.filter(
-                (a) =>
-                  !a.label.toLowerCase().includes("edit") &&
-                  !a.label.toLowerCase().includes("view") &&
-                  !a.label.toLowerCase().includes("open"),
-              );
-
-              return filteredActions.length > 0 ? (
-                <Menu
-                  trigger={
-                    <Button
-                      variant="ghost"
-                      className={cn(
-                        "p-2 rounded-container transition-all duration-fast",
-                        "hover:bg-muted hover:shadow-elevation-card",
-                        "text-muted-foreground hover:text-foreground",
-                        "active:scale-95",
-                      )}
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  }
-                  items={filteredActions}
-                  position="bottom-right"
-                />
-              ) : null;
-            })()}
 
             {hasExplicitClick && (
               <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />

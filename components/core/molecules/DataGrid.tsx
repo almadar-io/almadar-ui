@@ -15,7 +15,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import type { EntityRow, EventKey, EventEmit, FieldValue } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
-import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
+import { pressableProps } from '../../../lib/pressable';
+import { formatValue, type BooleanLabels } from '../../../lib/format';
 import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
 import type { RelationOption } from './RelationSelect';
 import { createLogger } from '@almadar/logger';
@@ -25,45 +26,25 @@ import { getNestedValue, resolveImageUrl } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useRowActions } from '../../../hooks/useRowActions';
 import type { RowActionCondition } from '../../../lib/row-action-when';
-import { useTranslate } from '../../../hooks/useTranslate';
+import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { EmptyState, type EmptyStateSlotProps } from './EmptyState';
-import { Badge, type BadgeVariant } from '../atoms/Badge';
+import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
-import type { UiError } from '../atoms/types';
+import type { DisplayField, UiError } from '../atoms/types';
+import { badgeVariantFor, titleFieldOf, valueLabelFor } from '../../../lib/displayField';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
-export interface DataGridField {
-  /** Entity field name (dot-notation supported) */
-  name: string;
-  /** Display label (auto-generated from name if omitted) */
-  label?: string;
-  /** Lucide icon name or component to show beside the field */
-  icon?: IconInput;
-  /** Rendering variant: 'h3' for title, 'body' for text, 'caption' for small,
-   *  'badge' for status badge, 'progress' for progress display */
-  variant?: 'h3' | 'h4' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
-  /** Optional format function name: 'date', 'currency', 'number', 'boolean' */
-  format?: 'date' | 'currency' | 'number' | 'boolean' | 'percent';
-  /**
-   * Per-value color mapping for `variant: 'badge'`. Keys are exact field
-   * values; values are Badge variant names. Accepts the shadcn-style
-   * `destructive` alias and normalises it to `danger` at render time. When
-   * present, takes precedence over the built-in `statusVariant` heuristic.
-   *
-   * Example:
-   *   colorMap: { active: 'success', pending: 'warning', failed: 'destructive' }
-   */
-  colorMap?: Record<string, string>;
-}
+/** A DataGrid field is the shared display-field shape: every slot (title, badge, format, colour) is declared on it. */
+export type DataGridField = DisplayField;
 
 // ── Item Action Definition ───────────────────────────────────────────
 
@@ -111,6 +92,9 @@ export interface DataGridProps extends DataDndProps, EmptyStateSlotProps {
   columns?: readonly DataGridField[];
   /** Per-item action buttons */
   itemActions?: readonly DataGridItemAction[];
+  /** When set, clicking a card emits UI:{itemClickEvent} with { id, row }. Omit = cards are not clickable. */
+  /** @entityRow row */
+  itemClickEvent?: EventEmit<ItemActionPayload>;
   /** Max inline primary action buttons before the rest collapse into a "⋯" overflow menu. Omit = all inline. */
   maxInlineActions?: number;
   /** Lay items in a single horizontally-scrolling row (kanban columns) sized to `minCardWidth` instead of a wrapping grid. */
@@ -172,36 +156,7 @@ function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Ico
     : <Icon icon={icon} {...props} />;
 }
 
-const fieldLabel = humanizeFieldName;
-
-function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
-  const v = value.toLowerCase();
-  if (['active', 'completed', 'done', 'approved', 'published', 'resolved', 'open', 'online'].includes(v)) return 'success';
-  if (['pending', 'in_progress', 'in-progress', 'review', 'draft', 'processing', 'warning'].includes(v)) return 'warning';
-  if (['inactive', 'deleted', 'rejected', 'failed', 'error', 'blocked', 'closed', 'offline'].includes(v)) return 'error';
-  if (['new', 'created', 'scheduled', 'queued', 'info'].includes(v)) return 'info';
-  return 'default';
-}
-
-const BADGE_VARIANTS = new Set<BadgeVariant>([
-  'default', 'primary', 'secondary', 'success', 'warning', 'danger', 'error', 'info', 'neutral',
-]);
-
-/**
- * Resolve the badge variant for a given field value. Prefers the field's
- * explicit `colorMap` when present; falls back to the legacy `statusVariant`
- * heuristic. Normalises shadcn-style `destructive` to the `danger` variant.
- */
-function resolveBadgeVariant(field: DataGridField, value: string): BadgeVariant {
-  const fromMap = field.colorMap?.[value];
-  if (fromMap) {
-    const normalised: string = fromMap === 'destructive' ? 'danger' : fromMap;
-    if (BADGE_VARIANTS.has(normalised as BadgeVariant)) {
-      return normalised as BadgeVariant;
-    }
-  }
-  return statusVariant(value);
-}
+const fieldLabel = (name: string): string => name;
 
 
 const gapStyles: Record<string, string> = {
@@ -235,6 +190,7 @@ export function DataGrid({
   fields,
   columns,
   itemActions,
+  itemClickEvent,
   maxInlineActions,
   scrollX = false,
   cols,
@@ -266,6 +222,8 @@ export function DataGrid({
   const eventBus = useEventBus();
   const rowActions = useRowActions();
   const { t } = useTranslate();
+  const fmt = useFormatContext();
+  const boolLabels: BooleanLabels = { yes: t('common.yes'), no: t('common.no') };
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(pageSize || Infinity);
 
@@ -321,7 +279,7 @@ export function DataGrid({
   }, [data, selectionEvent, eventBus]);
 
   // Separate fields by variant for smart card layout
-  const titleField = fieldDefs.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fieldDefs[0];
+  const titleField = titleFieldOf(fieldDefs);
   const badgeFields = fieldDefs.filter((f) => f.variant === 'badge' && f !== titleField);
   const bodyFields = fieldDefs.filter((f) => f !== titleField && !badgeFields.includes(f));
 
@@ -341,10 +299,6 @@ export function DataGrid({
       visible,
       inline,
       menu: visible.filter((a) => !inline.includes(a)),
-      // The whole card is the default action — the first non-danger action
-      // THIS row shows (declared `variant` is the semantic marker; a
-      // destructive action never becomes the default).
-      click: visible.find((a) => a.variant !== 'danger'),
     };
   };
 
@@ -372,9 +326,6 @@ export function DataGrid({
     fireAction(action, itemData);
   };
 
-  // Card click = the row's first non-danger action (danger-only cards get no
-  // card click), routed through fireAction so a navigatesTo default navigates
-  // instead of emitting.
 
   // The compiled (orbital-rust) codegen path passes the per-item renderer
   // as the `renderItem` PROP (a real function); the interpreted/runtime
@@ -485,7 +436,7 @@ export function DataGrid({
             aria-label={t('aria.selectAll')}
           />
           <Typography variant="caption" className="font-semibold">
-            {selectedIds.size} {t('common.selected') || 'selected'}
+            {selectedIds.size} {t('common.selected')}
           </Typography>
         </HStack>
       )}
@@ -507,8 +458,9 @@ export function DataGrid({
           const id = itemData.id || String(index);
           const isSelected = selectedIds.has(id);
           const rowAct = cardActionsFor(itemData);
-          const rowClick = rowAct.click;
-          const handleCardClick = rowClick ? () => fireAction(rowClick, itemData) : undefined;
+          const handleCardClick = itemClickEvent
+            ? () => eventBus.emit(`UI:${itemClickEvent}`, { id: itemData.id as string | number, row: itemData })
+            : undefined;
           const stopCardClick = handleCardClick ? (e: React.MouseEvent) => e.stopPropagation() : undefined;
           const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
           const wrapDnd = (node: React.ReactNode): React.ReactNode =>
@@ -528,7 +480,7 @@ export function DataGrid({
                 key={id}
                 data-entity-row
                 data-entity-id={id}
-                onClick={handleCardClick}
+                {...pressableProps(handleCardClick)}
                 className={cn('relative group/rowactions', handleCardClick && 'cursor-pointer', isSelected && 'ring-2 ring-primary rounded-container')}
               >
                 {itemRenderer!(itemData, index)}
@@ -587,7 +539,7 @@ export function DataGrid({
               key={id}
               data-entity-row
               data-entity-id={id}
-              onClick={handleCardClick}
+              {...pressableProps(handleCardClick)}
               className={cn(
                 'bg-card rounded-container',
                 'border border-border',
@@ -647,8 +599,8 @@ export function DataGrid({
                         return (
                           <HStack key={field.name} gap="xs" className="items-center">
                             {field.icon && renderIconInput(field.icon, { size: 'xs' })}
-                            <Badge variant={resolveBadgeVariant(field, String(val))}>
-                              {resolveRelationCellDisplay(val as FieldValue, relationsData?.[field.name]) ?? humanizeEnumValue(formatValue(val, field.format))}
+                            <Badge variant={badgeVariantFor(String(val), field.colorMap)}>
+                              {resolveRelationCellDisplay(val as FieldValue, relationsData?.[field.name]) ?? valueLabelFor(formatValue(val, field.format, fmt), field.labels)}
                             </Badge>
                           </HStack>
                         );
@@ -717,7 +669,7 @@ export function DataGrid({
                     if (value === undefined || value === null || value === '') return null;
                     return (
                       <Typography key={field.name} variant="small" color="secondary" className="line-clamp-2">
-                        {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format)}
+                        {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format, fmt)}
                       </Typography>
                     );
                   })}
@@ -734,7 +686,7 @@ export function DataGrid({
                               {field.label ?? fieldLabel(field.name)}
                             </Typography>
                             <Badge variant={value ? 'success' : 'neutral'}>
-                              {value ? (t('common.yes') || 'Yes') : (t('common.no') || 'No')}
+                              {value ? boolLabels.yes : boolLabels.no}
                             </Badge>
                           </HStack>
                         );
@@ -752,7 +704,7 @@ export function DataGrid({
                             {(field.label ?? fieldLabel(field.name)) + ':'}
                           </Typography>
                           <Typography variant="small" color="secondary">
-                            {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format)}
+                            {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format, fmt)}
                           </Typography>
                         </HStack>
                       );

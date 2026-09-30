@@ -22,7 +22,8 @@ import { Button } from '../atoms/Button';
 import { Modal } from '../molecules/Modal';
 import { Accordion, type AccordionItem } from '../molecules/Accordion';
 import { CodeBlock, MarkdownContent } from '../molecules/markdown/index';
-import { useTranslate } from '../../../hooks/useTranslate';
+import { useTranslate, type TranslateFunction } from '../../../hooks/useTranslate';
+import { pressableProps } from '../../../lib/pressable';
 import type { DisplayStateProps } from './types';
 import type {
   TraceActivity,
@@ -71,11 +72,11 @@ export interface SubagentTracePanelProps extends DisplayStateProps {
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
-/** Group subagents by orbitalName. Subagents without an orbital go under '(unattached)'. */
-function groupByOrbital(subagents: TraceSubagent[]): Map<string, TraceSubagent[]> {
+/** Group subagents by orbitalName. Subagents without an orbital go under `unattachedLabel`. */
+function groupByOrbital(subagents: TraceSubagent[], unattachedLabel: string): Map<string, TraceSubagent[]> {
   const map = new Map<string, TraceSubagent[]>();
   for (const sub of subagents) {
-    const key = sub.orbitalName ?? '(unattached)';
+    const key = sub.orbitalName ?? unattachedLabel;
     const arr = map.get(key) ?? [];
     arr.push(sub);
     map.set(key, arr);
@@ -99,12 +100,8 @@ function lastMessage(sub: TraceSubagent): string | undefined {
   return sub.messages[sub.messages.length - 1].message;
 }
 
-function formatHHMMSS(ts: number): string {
-  const d = new Date(ts);
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
-  return `${hh}:${mm}:${ss}`;
+function formatHHMMSS(ts: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(new Date(ts));
 }
 
 function compactJson(value: JsonValue | ToolArgs | TraceActivityItem | undefined): string {
@@ -141,7 +138,7 @@ function previewText(text: string | undefined, max = 120): string {
 // ─── Existing overlay components (kept unchanged) ─────────────────────
 
 /** Convert page-level TraceActivity[] to TraceActivityItem[] for the inline stream. */
-function coordinatorToActivityItems(activities: TraceActivity[]): TraceActivityItem[] {
+function coordinatorToActivityItems(activities: TraceActivity[], t: TranslateFunction): TraceActivityItem[] {
   return activities.flatMap((a): TraceActivityItem[] => {
     switch (a.type) {
       case 'tool_call':
@@ -170,7 +167,7 @@ function coordinatorToActivityItems(activities: TraceActivity[]): TraceActivityI
         return [{
           type: 'message',
           role: 'system' as const,
-          content: `Error: ${a.message}`,
+          content: t('subagentTrace.errorMessage', { message: a.message }),
           timestamp: a.timestamp,
         }];
       case 'coordinator_decision':
@@ -233,7 +230,8 @@ interface InlineRowProps extends DisplayStateProps {
 }
 
 const InlineActivityRow: React.FC<InlineRowProps> = ({ activity }) => {
-  const time = formatHHMMSS(activity.timestamp);
+  const { locale } = useTranslate();
+  const time = formatHHMMSS(activity.timestamp, locale);
   const baseRow = 'items-start px-3 py-1 hover:bg-[var(--color-surface)]';
 
   if (activity.type === 'tool_call') {
@@ -583,7 +581,7 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({ message, index }) => {
 
   if (role === 'tool') {
     const pretty = tryPrettyJson(content);
-    const title = `${toolName ?? 'tool'} →${toolCallId ? ` ${toolCallId.slice(0, 8)}` : ''}`;
+    const title = `${toolName ?? t('subagentTrace.role.tool')} →${toolCallId ? ` ${toolCallId.slice(0, 8)}` : ''}`;
     const body: React.ReactNode = pretty !== null
       ? <CodeBlock code={pretty} language="json" maxHeight="24rem" />
       : <Typography variant="body" className="whitespace-pre-wrap font-mono text-[11px]">{content}</Typography>;
@@ -601,7 +599,7 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({ message, index }) => {
   return (
     <VStack gap="xs" className="px-3 py-2 border-b border-[var(--color-border)]">
       <HStack gap="xs" className="items-center">
-        <Badge variant={roleBadgeVariant[role]} className="text-[10px] uppercase">{role}</Badge>
+        <Badge variant={roleBadgeVariant[role]} className="text-[10px] uppercase">{t(`subagentTrace.role.${role}`)}</Badge>
         {hasReasoning && (
           <Typography variant="caption" color="muted" className="text-[10px]">· {t('subagentTrace.thinking')}</Typography>
         )}
@@ -706,26 +704,31 @@ function timelineItemIcon(item: TimelineItem): { name: string; color: string } {
   }
 }
 
-function timelineItemLabel(item: TimelineItem): string {
+/** Closed vocabulary of activity kinds → translated badge text. */
+function activityTypeLabel(type: TraceActivity['type'] | TraceActivityItem['type'], t: TranslateFunction): string {
+  return t(`subagentTrace.activityType.${type}`);
+}
+
+function timelineItemLabel(item: TimelineItem, t: TranslateFunction): string {
   switch (item.source) {
     case 'message': {
       const m = item.data;
-      if (m.role === 'tool') return 'tool';
-      if (m.reasoningContent) return 'thinking';
-      return m.role;
+      if (m.role === 'tool') return t('subagentTrace.role.tool');
+      if (m.reasoningContent) return t('subagentTrace.thinking');
+      return t(`subagentTrace.role.${m.role}`);
     }
     case 'activity':
-      return item.data.type;
+      return activityTypeLabel(item.data.type, t);
     case 'subagent':
-      return 'subagent';
+      return t('subagentTrace.subagent');
   }
 }
 
-function timelineItemPreview(item: TimelineItem): string {
+function timelineItemPreview(item: TimelineItem, t: TranslateFunction): string {
   switch (item.source) {
     case 'message': {
       const m = item.data;
-      if (m.role === 'tool') return `${m.toolName ?? 'tool'} → ${m.toolCallId?.slice(0, 8) ?? ''}`;
+      if (m.role === 'tool') return `${m.toolName ?? t('subagentTrace.role.tool')} → ${m.toolCallId?.slice(0, 8) ?? ''}`;
       if (m.reasoningContent) return previewText(m.reasoningContent, 120);
       return previewText(m.content, 120);
     }
@@ -736,8 +739,8 @@ function timelineItemPreview(item: TimelineItem): string {
         case 'tool_result': return `${a.tool}: ${compactJson(a.result)}`;
         case 'message': return previewText(a.content, 120);
         case 'error': return previewText(a.message, 120);
-        case 'file_operation': return `${a.operation} ${a.path}`;
-        case 'schema_diff': return `diff ${a.filePath}`;
+        case 'file_operation': return `${t(`subagentTrace.fileOperation.${a.operation}`)} ${a.path}`;
+        case 'schema_diff': return t('subagentTrace.diffPreview', { path: a.filePath });
         default: return String(a.type);
       }
     }
@@ -746,11 +749,11 @@ function timelineItemPreview(item: TimelineItem): string {
   }
 }
 
-function timelineItemTimeLabel(item: TimelineItem): string | undefined {
-  if (item.source === 'activity') return formatHHMMSS(item.data.timestamp);
+function timelineItemTimeLabel(item: TimelineItem, locale: string): string | undefined {
+  if (item.source === 'activity') return formatHHMMSS(item.data.timestamp, locale);
   if (item.source === 'subagent') {
     const ts = item.data.messages[0]?.timestamp;
-    return ts !== undefined ? formatHHMMSS(ts) : undefined;
+    return ts !== undefined ? formatHHMMSS(ts, locale) : undefined;
   }
   return undefined;
 }
@@ -758,14 +761,14 @@ function timelineItemTimeLabel(item: TimelineItem): string | undefined {
 // ─── Tab mode: detail modal content ───────────────────────────────────
 
 function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElement {
-  const { t } = useTranslate();
+  const { t, locale } = useTranslate();
   switch (item.source) {
     case 'message': {
       const m = item.data;
       return (
         <VStack gap="md">
           <HStack gap="xs" className="items-center">
-            <Badge variant={roleBadgeVariant[m.role]} className="text-[10px] uppercase">{m.role}</Badge>
+            <Badge variant={roleBadgeVariant[m.role]} className="text-[10px] uppercase">{t(`subagentTrace.role.${m.role}`)}</Badge>
           </HStack>
           {typeof m.reasoningContent === 'string' && m.reasoningContent.length > 0 && (
             <Box>
@@ -811,8 +814,8 @@ function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElemen
           return (
             <VStack gap="md">
               <HStack gap="xs" className="items-center">
-                <Badge variant="default" className="text-[10px]">tool_call</Badge>
-                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp)}</Typography>
+                <Badge variant="default" className="text-[10px]">{activityTypeLabel('tool_call', t)}</Badge>
+                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp, locale)}</Typography>
               </HStack>
               <Typography variant="body2">{a.tool}</Typography>
               <CodeBlock code={JSON.stringify(a.args, null, 2)} language="json" maxHeight="60vh" />
@@ -823,9 +826,9 @@ function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElemen
             <VStack gap="md">
               <HStack gap="xs" className="items-center">
                 <Badge variant={a.success !== false ? 'default' : 'warning'} className="text-[10px]">
-                  {a.success !== false ? 'success' : 'fail'}
+                  {a.success !== false ? t('subagentTrace.success') : t('subagentTrace.fail')}
                 </Badge>
-                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp)}</Typography>
+                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp, locale)}</Typography>
               </HStack>
               <Typography variant="body2">{a.tool}</Typography>
               <CodeBlock code={JSON.stringify(a.result, null, 2)} language="json" maxHeight="60vh" />
@@ -835,8 +838,8 @@ function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElemen
           return (
             <VStack gap="md">
               <HStack gap="xs" className="items-center">
-                <Badge variant="neutral" className="text-[10px]">{a.role}</Badge>
-                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp)}</Typography>
+                <Badge variant="neutral" className="text-[10px]">{t(`subagentTrace.role.${a.role}`)}</Badge>
+                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp, locale)}</Typography>
               </HStack>
               <Typography variant="body2" className="whitespace-pre-wrap">{a.content}</Typography>
             </VStack>
@@ -845,8 +848,8 @@ function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElemen
           return (
             <VStack gap="md">
               <HStack gap="xs" className="items-center">
-                <Badge variant="warning" className="text-[10px]">error</Badge>
-                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp)}</Typography>
+                <Badge variant="warning" className="text-[10px]">{t('subagentTrace.badgeError')}</Badge>
+                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp, locale)}</Typography>
               </HStack>
               <Typography variant="body2" className="whitespace-pre-wrap text-[var(--color-danger)]">{a.message}</Typography>
             </VStack>
@@ -855,18 +858,18 @@ function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElemen
           return (
             <VStack gap="md">
               <HStack gap="xs" className="items-center">
-                <Badge variant="neutral" className="text-[10px]">file</Badge>
-                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp)}</Typography>
+                <Badge variant="neutral" className="text-[10px]">{t('subagentTrace.badgeFile')}</Badge>
+                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp, locale)}</Typography>
               </HStack>
-              <Typography variant="body2">{a.operation} {a.path}</Typography>
+              <Typography variant="body2">{t(`subagentTrace.fileOperation.${a.operation}`)} {a.path}</Typography>
             </VStack>
           );
         case 'schema_diff':
           return (
             <VStack gap="md">
               <HStack gap="xs" className="items-center">
-                <Badge variant="neutral" className="text-[10px]">diff</Badge>
-                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp)}</Typography>
+                <Badge variant="neutral" className="text-[10px]">{t('subagentTrace.badgeDiff')}</Badge>
+                <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp, locale)}</Typography>
               </HStack>
               <Typography variant="body2">{a.filePath}</Typography>
             </VStack>
@@ -874,7 +877,7 @@ function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElemen
         default:
           return (
             <VStack gap="md">
-              <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp)}</Typography>
+              <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp, locale)}</Typography>
               <Typography variant="body2">{String(a.type)}</Typography>
             </VStack>
           );
@@ -889,7 +892,7 @@ function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElemen
           <HStack gap="xs" className="items-center">
             <Badge variant="default" className="text-[10px]">{s.role}</Badge>
             {ts !== undefined && (
-              <Typography variant="caption" color="muted">{formatHHMMSS(ts)}</Typography>
+              <Typography variant="caption" color="muted">{formatHHMMSS(ts, locale)}</Typography>
             )}
           </HStack>
           <Typography variant="body2" weight="semibold">{s.name}</Typography>
@@ -918,7 +921,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
   coordinatorActivities,
   coordinatorMessages,
 }) => {
-  const { t } = useTranslate();
+  const { t, locale } = useTranslate();
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
   const densityLabel = (rich: boolean): string => rich ? t('subagentTrace.densityRich') : t('subagentTrace.densityCompact');
 
@@ -969,7 +972,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
                   <Box
                     key={`${item.source}-${i}`}
                     className="flex items-start px-3 py-2 border-b border-[var(--color-border)] hover:bg-[var(--color-muted)]/30 transition-colors duration-fast cursor-pointer"
-                    onClick={() => setSelectedItem(item)}
+                    {...pressableProps(() => setSelectedItem(item))}
                   >
                     {/* Timeline gutter */}
                     <Box className="flex flex-col items-center mr-3 mt-0.5" style={{ width: 20 }}>
@@ -998,18 +1001,18 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
                     <VStack gap="xs" className="flex-1 min-w-0">
                       <HStack gap="xs" className="items-center">
                         <Icon name={iconName} size="xs" className={`flex-shrink-0 ${iconColor}`} />
-                        {timelineItemTimeLabel(item) && (
+                        {timelineItemTimeLabel(item, locale) && (
                           <Typography variant="caption" color="muted">
-                            {timelineItemTimeLabel(item)}
+                            {timelineItemTimeLabel(item, locale)}
                           </Typography>
                         )}
                         <Badge variant="neutral" className="text-[10px]">
-                          {timelineItemLabel(item)}
+                          {timelineItemLabel(item, t)}
                         </Badge>
                       </HStack>
                       <HStack gap="sm" className="items-start">
                         <Typography variant="body2" color="muted" className="flex-1 min-w-0 line-clamp-2">
-                          {timelineItemPreview(item)}
+                          {timelineItemPreview(item, t)}
                         </Typography>
                         <Button variant="ghost" size="sm" className="flex-shrink-0 mt-0" onClick={(e) => { e.stopPropagation(); setSelectedItem(item); }}>
                           <Icon name="maximize-2" size="xs" />
@@ -1026,7 +1029,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
         <Modal
           isOpen={selectedItem !== null}
           onClose={() => setSelectedItem(null)}
-          title={selectedItem ? `${timelineItemLabel(selectedItem)}${timelineItemTimeLabel(selectedItem) ? ` · ${timelineItemTimeLabel(selectedItem)}` : ''}` : ''}
+          title={selectedItem ? `${timelineItemLabel(selectedItem, t)}${timelineItemTimeLabel(selectedItem, locale) ? ` · ${timelineItemTimeLabel(selectedItem, locale)}` : ''}` : ''}
           size="lg"
         >
           {selectedItem && <TraceDetailContent item={selectedItem} />}
@@ -1116,7 +1119,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
 
   // L1/L2 overview: group by orbital with compact rows
   // L3/L4 overview: flat list of rich cards
-  const grouped = groupByOrbital(filtered);
+  const grouped = groupByOrbital(filtered, t('subagentTrace.unattached'));
   const coordinatorSnapshot = pluckCoordinatorState(coordinatorActivities ?? []);
   return (
     <Box className={wrapperClass} style={wrapperStyle}>
@@ -1165,7 +1168,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
               </HStack>
               <Box className="max-h-60 overflow-y-auto">
                 <InlineActivityStream
-                  activities={coordinatorToActivityItems(filteredCoordinator)}
+                  activities={coordinatorToActivityItems(filteredCoordinator, t)}
                   autoScroll
                 />
               </Box>
