@@ -40,6 +40,7 @@ import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
 import type { DisplayField, UiError } from '../atoms/types';
 import { badgeVariantFor, titleFieldOf, valueLabelFor } from '../../../lib/displayField';
+import { Checkbox } from '../atoms/Checkbox';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
@@ -428,11 +429,9 @@ export function DataGrid({
       {/* Selection toolbar */}
       {selectable && someSelected && (
         <HStack gap="sm" className="items-center px-2 py-2 bg-muted rounded-container">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={allSelected}
             onChange={toggleAll}
-            className="w-4 h-4 accent-primary"
             aria-label={t('aria.selectAll')}
           />
           <Typography variant="caption" className="font-semibold">
@@ -570,12 +569,11 @@ export function DataGrid({
             <Box className={cn('p-4', bodyFields.length > 0 && 'pb-0')}>
               <HStack gap="sm" className="justify-between items-start">
                 {selectable && (
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={isSelected}
                     onChange={() => toggleSelection(id)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 mt-1 flex-shrink-0 accent-primary"
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    className="mt-1 flex-shrink-0"
                     aria-label={t('card.selectItem', { item: titleDisplay ?? t('card.itemFallback') })}
                   />
                 )}

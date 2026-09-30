@@ -14,6 +14,13 @@ import type { IconInput } from "../atoms/index";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useLongPress } from "../../../hooks/useLongPress";
+import { Card as AtomCard } from "../atoms/Card";
+import { Box } from "../atoms/Box";
+import { Button } from "../atoms/Button";
+import { Image } from "../atoms/Image";
+import { Typography } from "../atoms/Typography";
+import { HStack } from "../atoms/Stack";
+import { cn } from "../../../lib/cn";
 
 export interface CardAction {
   label: string;
@@ -91,20 +98,10 @@ export function Card({
   };
 
   return (
-    <div
-      className={`
-        bg-card
-        border border-border
-        rounded-container shadow-elevation-card
-        ${isClickable ? "cursor-pointer hover:shadow-elevation-dialog transition-shadow" : ""}
-        ${className}
-      `}
+    <AtomCard
+      padding="none"
+      className={cn(isClickable && "hover:shadow-elevation-dialog transition-shadow", className)}
       onClick={isClickable ? handleClick : undefined}
-      role={isClickable ? "button" : undefined}
-      tabIndex={isClickable ? 0 : undefined}
-      onKeyDown={
-        isClickable ? (e) => e.key === "Enter" && handleClick() : undefined
-      }
       {...(longPressEvent ? {
         onPointerDown: longPress.onPointerDown,
         onPointerMove: longPress.onPointerMove,
@@ -112,72 +109,52 @@ export function Card({
         onPointerCancel: longPress.onPointerCancel,
       } : {})}
     >
-      {/* Image */}
       {image && (
-        <div className="aspect-video w-full overflow-hidden rounded-t-container">
-          <img
-            src={image}
-            alt={title || t('card.imageAlt')}
-            className="w-full h-full object-cover"
-          />
-        </div>
+        <Box className="aspect-video w-full overflow-hidden rounded-t-container">
+          <Image src={image} alt={title || t('card.imageAlt')} className="w-full h-full object-cover" />
+        </Box>
       )}
 
-      {/* Content */}
-      <div className="p-4">
-        {/* Header */}
+      <Box className="p-4">
         {(title || subtitle) && (
-          <div className="mb-3">
+          <Box className="mb-3">
             {title && (
-              <h3 className="heading-voice text-lg text-card-foreground">
+              <Typography variant="h5" as="h3" className="text-card-foreground">
                 {title}
-              </h3>
+              </Typography>
             )}
             {subtitle && (
-              <p className="text-sm text-muted-foreground mt-1">
+              <Typography variant="small" color="muted" className="mt-1">
                 {subtitle}
-              </p>
+              </Typography>
             )}
-          </div>
+          </Box>
         )}
 
-        {/* Children */}
-        {children && (
-          <div className="text-card-foreground">{children}</div>
-        )}
+        {children && <Box className="text-card-foreground">{children}</Box>}
 
-        {/* Actions */}
         {actions && actions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-            {actions.map((action, index) => (
-              <button
+          <HStack gap="sm" wrap className="mt-4 pt-4 border-t border-border">
+            {actions.map((cardAction, index) => (
+              <Button
                 key={index}
-                onClick={(e) => {
+                size="sm"
+                variant={cardAction.variant === "primary" ? "primary" : cardAction.variant === "danger" ? "danger" : "secondary"}
+                leftIcon={cardAction.icon}
+                disabled={cardAction.disabled}
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
-                  if (action.event) eventBus.emit(`UI:${action.event}`, { label: action.label });
-                  action.onClick?.();
+                  if (cardAction.event) eventBus.emit(`UI:${cardAction.event}`, { label: cardAction.label });
+                  cardAction.onClick?.();
                 }}
-                disabled={action.disabled}
-                className={`
-                  px-3 py-1.5 text-sm font-medium rounded-interactive
-                  transition-colors
-                  ${
-                    action.variant === "primary"
-                      ? "bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
-                      : action.variant === "danger"
-                        ? "bg-error text-error-foreground hover:opacity-90 disabled:opacity-50"
-                        : "bg-muted text-foreground hover:bg-[var(--color-surface-hover)]"
-                  }
-                  disabled:cursor-not-allowed
-                `}
               >
-                {action.label}
-              </button>
+                {cardAction.label}
+              </Button>
             ))}
-          </div>
+          </HStack>
         )}
-      </div>
-    </div>
+      </Box>
+    </AtomCard>
   );
 }
 
