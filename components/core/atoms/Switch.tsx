@@ -71,7 +71,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         >
           <span
             className={cn(
-              "pointer-events-none block h-[1.25rem] w-[1.25rem] rounded-full bg-background shadow-lg ring-0 transition-transform duration-fast",
+              "pointer-events-none block h-[1.25rem] w-[1.25rem] rounded-full bg-background shadow-elevation-interactive ring-0 transition-transform duration-fast",
               isChecked ? "translate-x-[1.25rem]" : "translate-x-0",
             )}
           />

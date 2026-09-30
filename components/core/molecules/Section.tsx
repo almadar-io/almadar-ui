@@ -57,13 +57,13 @@ const variantStyles: Record<SectionVariant, string> = {
     'bg-card',
     'border-[length:var(--border-width)] border-border',
     'shadow',
-    'rounded-md',
+    'rounded-container',
   ].join(' '),
   bordered: [
     'border-[length:var(--border-width)] border-border',
-    'rounded-md',
+    'rounded-container',
   ].join(' '),
-  filled: 'bg-muted rounded-md',
+  filled: 'bg-muted rounded-container',
 };
 
 /**

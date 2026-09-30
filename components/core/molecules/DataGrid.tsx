@@ -23,10 +23,13 @@ import { createLogger } from '@almadar/logger';
 const dataGridLog = createLogger('almadar:ui:data-grid');
 import { getNestedValue, resolveImageUrl } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useRowActions } from '../../../hooks/useRowActions';
+import type { RowActionCondition } from '../../../lib/row-action-when';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
+import { EmptyState, type EmptyStateSlotProps } from './EmptyState';
 import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
@@ -77,6 +80,8 @@ export interface DataGridItemAction {
   icon?: IconInput;
   /** Button variant */
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  /** Per-row condition, authored as `(fn row <bool>)`: the row's button is drawn only when it returns true. Omit = always shown. */
+  when?: RowActionCondition;
 }
 
 // ── Props ────────────────────────────────────────────────────────────
@@ -87,8 +92,9 @@ export interface DataGridItemAction {
  *
  * @capabilities admin table, records grid, user list, CRUD list, manage-records view, spreadsheet-style data grid, sortable columns
  * @fieldsContract display
+ * @minWidth 200
  */
-export interface DataGridProps extends DataDndProps {
+export interface DataGridProps extends DataDndProps, EmptyStateSlotProps {
   /**
    * Schema entity data — the collection of rows to render. pattern-sync tags
    * it `kind:"entity", cardinality:"collection"` so consumers bind the domain
@@ -222,6 +228,10 @@ const lookStyles: Record<NonNullable<DataGridProps['look']>, string> = {
 
 export function DataGrid({
   entity,
+  emptyIcon,
+  emptyTitle,
+  emptyDescription,
+  emptyAction,
   fields,
   columns,
   itemActions,
@@ -254,6 +264,7 @@ export function DataGrid({
   relationsData,
 }: DataGridProps) {
   const eventBus = useEventBus();
+  const rowActions = useRowActions();
   const { t } = useTranslate();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(pageSize || Infinity);
@@ -323,8 +334,19 @@ export function DataGrid({
   // the title). Wide row layouts (TableView, DataList rows) keep the
   // maxInlineActions cluster; a narrow card cannot afford it.
   const inlineCap = Math.min(maxInlineActions ?? 1, 1);
-  const inlineCardActions = actionDefs.filter((a) => a.variant === 'primary').slice(0, inlineCap);
-  const menuCardActions = actionDefs.filter((a) => !inlineCardActions.includes(a));
+  const cardActionsFor = (itemData: EntityRow) => {
+    const visible = rowActions(actionDefs, itemData);
+    const inline = visible.filter((a) => a.variant === 'primary').slice(0, inlineCap);
+    return {
+      visible,
+      inline,
+      menu: visible.filter((a) => !inline.includes(a)),
+      // The whole card is the default action — the first non-danger action
+      // THIS row shows (declared `variant` is the semantic marker; a
+      // destructive action never becomes the default).
+      click: visible.find((a) => a.variant !== 'danger'),
+    };
+  };
 
   // navigatesTo-first with early return (mirrors CardGrid): a navigating
   // action must not also emit — the old order double-fired and emitted
@@ -350,17 +372,9 @@ export function DataGrid({
     fireAction(action, itemData);
   };
 
-  // The whole card is the default action — the same contract TableView rows
-  // carry: the first non-danger item action fires on card click (declared
-  // `variant` is the semantic marker — no label/name matching — and a
-  // destructive action never becomes the default; danger-only cards get no
-  // card click). Routed through fireAction so a navigatesTo default
-  // navigates instead of emitting.
-  const cardClickAction = actionDefs.find((a) => a.variant !== 'danger');
-  const handleCardClick = cardClickAction
-    ? (itemData: EntityRow) => () => fireAction(cardClickAction, itemData)
-    : undefined;
-  const stopCardClick = handleCardClick ? (e: React.MouseEvent) => e.stopPropagation() : undefined;
+  // Card click = the row's first non-danger action (danger-only cards get no
+  // card click), routed through fireAction so a navigatesTo default navigates
+  // instead of emitting.
 
   // The compiled (orbital-rust) codegen path passes the per-item renderer
   // as the `renderItem` PROP (a real function); the interpreted/runtime
@@ -442,11 +456,13 @@ export function DataGrid({
   // a kanban column with zero cards still accepts drops.
   if (data.length === 0) {
     const emptyNode = (
-      <Box className="text-center py-12">
-        <Typography variant="body" color="secondary">
-          {t('empty.noItems')}
-        </Typography>
-      </Box>
+      <EmptyState
+        icon={emptyIcon}
+        title={emptyTitle || t('empty.noItems')}
+        description={emptyDescription}
+        actionLabel={emptyAction?.label}
+        actionEvent={emptyAction?.event}
+      />
     );
     return dnd.enabled ? <>{dnd.wrapContainer(emptyNode)}</> : emptyNode;
   }
@@ -460,7 +476,7 @@ export function DataGrid({
     <VStack gap="sm">
       {/* Selection toolbar */}
       {selectable && someSelected && (
-        <HStack gap="sm" className="items-center px-2 py-2 bg-muted rounded-sm">
+        <HStack gap="sm" className="items-center px-2 py-2 bg-muted rounded-container">
           <input
             type="checkbox"
             checked={allSelected}
@@ -475,10 +491,12 @@ export function DataGrid({
       )}
 
       <Box
-        className={cn('grid', gapStyles[gap], scrollX ? 'grid-flow-col overflow-x-auto' : colsClass, lookStyles[look], className)}
+        className={cn('grid', gapStyles[gap], scrollX ? 'grid-flow-col overflow-x-auto snap-x snap-mandatory [&>*]:snap-start pb-2' : colsClass, lookStyles[look], className)}
         style={
           scrollX
-            ? { gridAutoFlow: 'column', gridAutoColumns: `minmax(${minCardWidth}px, 1fr)` }
+            // Capped below the board width so, on a narrow screen, the next
+            // column always peeks in — the cue that the board scrolls.
+            ? { gridAutoFlow: 'column', gridAutoColumns: `minmax(min(${minCardWidth}px, 85%), 1fr)` }
             : gridTemplateColumns
               ? { gridTemplateColumns }
               : undefined
@@ -488,6 +506,10 @@ export function DataGrid({
           const itemData: EntityRow = item;
           const id = itemData.id || String(index);
           const isSelected = selectedIds.has(id);
+          const rowAct = cardActionsFor(itemData);
+          const rowClick = rowAct.click;
+          const handleCardClick = rowClick ? () => fireAction(rowClick, itemData) : undefined;
+          const stopCardClick = handleCardClick ? (e: React.MouseEvent) => e.stopPropagation() : undefined;
           const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
           const wrapDnd = (node: React.ReactNode): React.ReactNode =>
             dnd.isZone ? <dnd.SortableItem key={dndId} id={dndId}>{node}</dnd.SortableItem> : node;
@@ -506,18 +528,18 @@ export function DataGrid({
                 key={id}
                 data-entity-row
                 data-entity-id={id}
-                onClick={handleCardClick?.(itemData)}
-                className={cn('relative group/rowactions', handleCardClick && 'cursor-pointer', isSelected && 'ring-2 ring-primary rounded-lg')}
+                onClick={handleCardClick}
+                className={cn('relative group/rowactions', handleCardClick && 'cursor-pointer', isSelected && 'ring-2 ring-primary rounded-container')}
               >
                 {itemRenderer!(itemData, index)}
-                {actionDefs.length > 0 && (
+                {rowAct.visible.length > 0 && (
                   <Box onClick={stopCardClick} className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
                     {/* Card rule (same as the fields path): at most one
                         explicit primary inline, everything else behind one
                         kebab — an overlay cluster of labeled buttons sat on
                         the custom card's title. */}
-                    <HStack gap="xs" className="rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5">
-                      {inlineCardActions.map((action, idx) => (
+                    <HStack gap="xs" className="rounded-container border border-border bg-card/95 backdrop-blur-sm shadow-elevation-popover surface-material p-0.5">
+                      {rowAct.inline.map((action, idx) => (
                         <Button
                           key={idx}
                           variant="primary"
@@ -530,7 +552,7 @@ export function DataGrid({
                           {action.label}
                         </Button>
                       ))}
-                      {menuCardActions.length > 0 && (
+                      {rowAct.menu.length > 0 && (
                         <Menu
                           position="bottom-end"
                           trigger={
@@ -538,7 +560,7 @@ export function DataGrid({
                               <Icon name="more-horizontal" size="xs" />
                             </Button>
                           }
-                          items={menuCardActions.map((action) => ({
+                          items={rowAct.menu.map((action) => ({
                             label: action.label,
                             icon: action.icon,
                             variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),
@@ -565,9 +587,9 @@ export function DataGrid({
               key={id}
               data-entity-row
               data-entity-id={id}
-              onClick={handleCardClick?.(itemData)}
+              onClick={handleCardClick}
               className={cn(
-                'bg-card rounded-lg',
+                'bg-card rounded-container',
                 'border border-border',
                 'shadow-elevation-card hover:shadow-elevation-dialog',
                 'hover:border-primary transition-all',
@@ -581,7 +603,7 @@ export function DataGrid({
               const imgUrl = resolveImageUrl(getNestedValue(itemData, imageField));
               if (!imgUrl) return null;
               return (
-                <Box className="w-full aspect-video overflow-hidden rounded-t-lg">
+                <Box className="w-full aspect-video overflow-hidden rounded-t-container">
                   <img
                     src={imgUrl}
                     alt={titleDisplay ?? ''}
@@ -641,9 +663,9 @@ export function DataGrid({
                     styled there. Four inline buttons used to starve the
                     title to a couple of characters
                     (U-DATAGRID-ACTIONS-STARVE-CARD-TITLE). */}
-                {actionDefs.length > 0 && (
+                {rowAct.visible.length > 0 && (
                   <HStack gap="xs" onClick={stopCardClick} className="flex-shrink-0">
-                    {inlineCardActions.map((action, idx) => (
+                    {rowAct.inline.map((action, idx) => (
                       <Button
                         key={idx}
                         variant="primary"
@@ -660,7 +682,7 @@ export function DataGrid({
                           : action.label}
                       </Button>
                     ))}
-                    {menuCardActions.length > 0 && (
+                    {rowAct.menu.length > 0 && (
                       <Menu
                         position="bottom-end"
                         trigger={
@@ -668,7 +690,7 @@ export function DataGrid({
                             <Icon name="more-horizontal" size="xs" />
                           </Button>
                         }
-                        items={menuCardActions.map((action) => ({
+                        items={rowAct.menu.map((action) => ({
                           label: action.label,
                           icon: action.icon,
                           variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),

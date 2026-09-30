@@ -253,7 +253,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
           {clearable && selectedOption && !disabled && (
             <Box
               as="button"
-              className="p-0.5 hover:bg-muted rounded cursor-pointer"
+              className="p-0.5 hover:bg-muted rounded-interactive cursor-pointer"
               onClick={handleClear}
             >
               <Icon name="x" className="h-4 w-4 text-muted-foreground" />

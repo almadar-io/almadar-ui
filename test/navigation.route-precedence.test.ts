@@ -93,3 +93,30 @@ describe('findPageByPath', () => {
     expect(hit?.params).toEqual({ id: 'xyz' });
   });
 });
+
+describe('matchPathAmong — a static sibling wins whatever else the page list holds', () => {
+  // std-healthcare's real page list: `/appointments/checkin` opened the detail page
+  // with id "checkin" because sorting by a non-transitive comparator left
+  // `/appointments/:id` ahead of it once enough unrelated pages sat between them.
+  const healthcare = ['/patients', '/patients/upload', '/patients/:id', '/appointments/waitlist', '/appointments',
+    '/appointments/reminder', '/appointments/:id', '/my-appointments', '/intake', '/prescriptions/refill-requests',
+    '/prescriptions', '/my-prescriptions', '/dashboard', '/patients-phi', '/rx-controlled', '/insurance-claims-from-std',
+    '/appointment-policies-from-std', '/billing', '/my-billing', '/appointments/checkin', '/people'];
+  const pages = healthcare.map((p, i) => pageEntry(p, `P${i}`));
+
+  it('resolves the declared static page', () => {
+    expect(matchPathAmong(pages, '/appointments/checkin', (e) => e.page.path)?.candidate.page.path).toBe('/appointments/checkin');
+    expect(matchPathAmong(pages, '/patients/upload', (e) => e.page.path)?.candidate.page.path).toBe('/patients/upload');
+  });
+
+  it('control: an unknown segment still lands on the param page with its id', () => {
+    const hit = matchPathAmong(pages, '/appointments/a-17', (e) => e.page.path);
+    expect(hit?.candidate.page.path).toBe('/appointments/:id');
+    expect(hit?.params).toEqual({ id: 'a-17' });
+  });
+
+  it('edge: the order of the list never changes the winner', () => {
+    const reversed = [...pages].reverse();
+    expect(matchPathAmong(reversed, '/appointments/checkin', (e) => e.page.path)?.candidate.page.path).toBe('/appointments/checkin');
+  });
+});

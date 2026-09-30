@@ -193,7 +193,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
             className={cn(
               "absolute rounded-full bg-primary-foreground",
               "border-2 border-primary",
-              "shadow-sm",
+              "shadow-elevation-interactive",
               "pointer-events-none",
               "transition-transform duration-instant",
               isDragging && "scale-[var(--hover-scale)]",
@@ -210,7 +210,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
           {showTooltip && showTip && (
             <div
               className={cn(
-                "absolute -top-8 px-2 py-0.5 rounded",
+                "absolute -top-8 px-2 py-0.5 rounded-container",
                 "bg-foreground text-background",
                 "text-xs font-medium whitespace-nowrap",
                 "pointer-events-none",

@@ -25,10 +25,13 @@ import { createLogger } from '@almadar/logger';
 const dataListLog = createLogger('almadar:ui:data-list');
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useRowActions } from '../../../hooks/useRowActions';
+import type { RowActionCondition } from '../../../lib/row-action-when';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
+import { EmptyState, type EmptyStateSlotProps } from './EmptyState';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
@@ -67,6 +70,8 @@ export interface DataListItemAction {
   icon?: IconInput;
   /** Button variant */
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  /** Per-row condition, authored as `(fn row <bool>)`: the row's button is drawn only when it returns true. Omit = always shown. */
+  when?: RowActionCondition;
 }
 
 export interface DataListSwipeAction {
@@ -82,8 +87,9 @@ export interface DataListSwipeAction {
 
 /**
  * @fieldsContract display
+ * @minWidth 200
  */
-export interface DataListProps extends DataDndProps {
+export interface DataListProps extends DataDndProps, EmptyStateSlotProps {
   /**
    * Schema entity data — the collection of rows to render.
    */
@@ -271,6 +277,10 @@ export function DataList({
   senderLabelField,
   currentUser,
   emptyMessage,
+  emptyIcon,
+  emptyTitle,
+  emptyDescription,
+  emptyAction,
   className,
   isLoading = false,
   error = null,
@@ -304,6 +314,7 @@ export function DataList({
   relationsData,
 }: DataListProps) {
   const eventBus = useEventBus();
+  const rowActions = useRowActions();
   const { t } = useTranslate();
   const [visibleCount, setVisibleCount] = React.useState(pageSize || Infinity);
 
@@ -398,13 +409,15 @@ export function DataList({
    */
   const renderItemActions = (itemData: EntityRow, onPrimary = false) => {
     if (!itemActions || itemActions.length === 0) return null;
-    const inline = maxInlineActions != null ? itemActions.slice(0, maxInlineActions) : itemActions;
-    const overflow = maxInlineActions != null ? itemActions.slice(maxInlineActions) : [];
+    const shown = rowActions(itemActions, itemData);
+    if (shown.length === 0) return null;
+    const inline = maxInlineActions != null ? shown.slice(0, maxInlineActions) : shown;
+    const overflow = maxInlineActions != null ? shown.slice(maxInlineActions) : [];
     return (
       // stopPropagation at the cluster: the "⋯" trigger opens the overflow
       // menu without also firing the row's default click (inline buttons
       // already stop it in handleActionClick; the Menu panel is portaled).
-      <HStack gap="xs" onClick={rowClickEvent ? (e) => e.stopPropagation() : undefined} className="flex-shrink-0">
+      <HStack gap="xs" onClick={rowClickEventFor(itemData) ? (e) => e.stopPropagation() : undefined} className="flex-shrink-0">
         {inline.map((action, idx) => (
           <Button
             key={idx}
@@ -451,11 +464,13 @@ export function DataList({
   // Explicit itemClickEvent wins; otherwise the first non-danger item action
   // is the row's default click — the same contract TableView rows carry
   // (declared `variant` is the semantic marker, and a destructive action
-  // never becomes the default; danger-only rows get no row click).
-  const rowClickEvent: EventKey | undefined =
-    itemClickEvent || itemActions?.find((a) => a.variant !== 'danger')?.event;
+  // never becomes the default; danger-only rows get no row click). The
+  // default is the first action THIS row shows.
+  const rowClickEventFor = (itemData: EntityRow): EventKey | undefined =>
+    itemClickEvent || rowActions(itemActions ?? [], itemData).find((a) => a.variant !== 'danger')?.event;
 
   const handleRowClick = (itemData: EntityRow) => () => {
+    const rowClickEvent = rowClickEventFor(itemData);
     if (!rowClickEvent) return;
     const payload: ItemActionPayload = {
       id: itemData.id as string | number,
@@ -492,11 +507,13 @@ export function DataList({
   // (kanban column with zero cards becomes a dead zone).
   if (data.length === 0) {
     const emptyNode = (
-      <Box className="text-center py-12">
-        <Typography variant="body" color="secondary">
-          {emptyMessage || t('empty.noItems')}
-        </Typography>
-      </Box>
+      <EmptyState
+        icon={emptyIcon}
+        title={emptyTitle || emptyMessage || t('empty.noItems')}
+        description={emptyDescription}
+        actionLabel={emptyAction?.label}
+        actionEvent={emptyAction?.event}
+      />
     );
     return dnd.enabled ? <>{dnd.wrapContainer(emptyNode)}</> : emptyNode;
   }
@@ -550,10 +567,10 @@ export function DataList({
                   key={id}
                   data-entity-row
                   data-entity-id={id}
-                  onClick={rowClickEvent ? handleRowClick(itemData) : undefined}
+                  onClick={rowClickEventFor(itemData) ? handleRowClick(itemData) : undefined}
                   className={cn(
                     'flex px-4 group/rowactions',
-                    rowClickEvent && 'cursor-pointer',
+                    rowClickEventFor(itemData) && 'cursor-pointer',
                     isSent ? 'justify-end' : 'justify-start',
                   )}
                 >
@@ -596,11 +613,11 @@ export function DataList({
                         })}
                       </HStack>
                     )}
-                    <HStack gap="xs" className="mt-1 items-center justify-between">
+                    <HStack gap="xs" className="mt-1 items-center justify-between flex-wrap">
                       {timestamp != null ? (
                         <Typography
                           variant="caption"
-                          className={cn('text-xs', isSent ? 'opacity-70' : 'text-muted-foreground')}
+                          className={cn('text-xs whitespace-nowrap', isSent ? 'opacity-70' : 'text-muted-foreground')}
                         >
                           {formatDate(timestamp)}
                         </Typography>
@@ -646,18 +663,18 @@ export function DataList({
       const id = (itemData.id as string) || String(index);
       const actions = renderItemActions(itemData);
       return wrapDnd(
-        <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEvent ? handleRowClick(itemData) : undefined} className={cn('relative group/rowactions', rowClickEvent && 'cursor-pointer')}>
+        <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEventFor(itemData) ? handleRowClick(itemData) : undefined} className={cn('relative group/rowactions', rowClickEventFor(itemData) && 'cursor-pointer')}>
           {itemRenderer!(itemData as EntityRow, index)}
           {actions && (
             <Box className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
               {/* Fine pointers: hover-revealed inline cluster. */}
-              <Box className="rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5 [@media(pointer:coarse)]:hidden">
+              <Box className="rounded-container border border-border bg-card/95 backdrop-blur-sm shadow-elevation-popover surface-material p-0.5 [@media(pointer:coarse)]:hidden">
                 {actions}
               </Box>
               {/* Coarse pointers: always-visible single kebab — an inline
                   cluster would sit on the card title at phone widths
                   (verified at 390px). */}
-              <Box className="hidden [@media(pointer:coarse)]:block rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5">
+              <Box className="hidden [@media(pointer:coarse)]:block rounded-container border border-border bg-card/95 backdrop-blur-sm shadow-elevation-popover surface-material p-0.5">
                 <Menu
                   position="bottom-end"
                   trigger={
@@ -665,7 +682,7 @@ export function DataList({
                       <Icon name="more-horizontal" size="xs" />
                     </Button>
                   }
-                  items={(itemActions ?? []).map((action) => ({
+                  items={rowActions(itemActions ?? [], itemData).map((action) => ({
                     label: action.label,
                     icon: action.icon,
                     variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),
@@ -695,7 +712,7 @@ export function DataList({
     ) ?? (titleValue !== undefined && titleValue !== null ? String(titleValue) : undefined);
 
     return wrapDnd(
-      <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEvent ? handleRowClick(itemData) : undefined} className={cn(rowClickEvent && 'cursor-pointer')}>
+      <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEventFor(itemData) ? handleRowClick(itemData) : undefined} className={cn(rowClickEventFor(itemData) && 'cursor-pointer')}>
         <Box
           className={cn(
             // items-start, not items-center: a multi-line row (title + meta +
@@ -705,7 +722,7 @@ export function DataList({
             'group flex items-start gap-4 transition-all duration-fast',
             isCompact ? 'px-4 py-2' : 'px-6 py-4',
             'hover:bg-muted/80',
-            !isCard && !isCompact && 'rounded-lg border border-transparent hover:border-border',
+            !isCard && !isCompact && 'rounded-container border border-transparent hover:border-border',
           )}
         >
           {/* Main content area */}
@@ -814,7 +831,7 @@ export function DataList({
   return dnd.wrapContainer(
     <Box
       className={cn(
-        isCard && 'bg-card rounded-xl border border-border shadow-elevation-dialog overflow-hidden',
+        isCard && 'bg-card rounded-container border border-border shadow-elevation-dialog overflow-hidden',
         // `gap-*` is inert on a block container, and Box only emits a display
         // class when its `display` prop is set — so every non-card list had
         // been asking for a gap that CSS silently dropped. flex-col makes it

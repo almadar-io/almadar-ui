@@ -39,6 +39,8 @@ import { cn } from "../../../lib/cn";
 import { humanizeFieldName } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useRowActions } from "../../../hooks/useRowActions";
+import type { RowActionCondition } from "../../../lib/row-action-when";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { DisplayStateProps } from "./types";
 import { EntityDisplayEvents } from "./types";
@@ -71,6 +73,8 @@ export interface SchemaItemAction {
   variant?: "primary" | "secondary" | "ghost" | "danger" | "default";
   /** Click handler from generated code */
   onClick?: (row: EntityRow) => void;
+  /** Per-row condition, authored as `(fn row <bool>)`: the row's action is drawn only when it returns true. Omit = always shown. */
+  when?: RowActionCondition;
 }
 
 /**
@@ -273,7 +277,7 @@ const StatusBadge: React.FC<{ value: string; fieldName: string }> = ({
       as="span"
       className={cn(
         "inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide",
-        "border shadow-sm backdrop-blur-sm transition-colors",
+        "border shadow-elevation-card backdrop-blur-sm transition-colors",
         style.bg,
         style.text,
         style.border,
@@ -282,7 +286,7 @@ const StatusBadge: React.FC<{ value: string; fieldName: string }> = ({
       <Typography
         as="span"
         className={cn(
-          "w-1.5 h-1.5 rounded-full shadow-sm",
+          "w-1.5 h-1.5 rounded-full shadow-elevation-interactive",
           style.dot,
         )}
       />
@@ -336,6 +340,7 @@ export const List: React.FC<ListProps> = ({
   entityType,
 }) => {
   const eventBus = useEventBus();
+  const rowActions = useRowActions();
   const { t } = useTranslate();
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noData');
 
@@ -351,14 +356,14 @@ export const List: React.FC<ListProps> = ({
   }, [entity]);
 
   const getItemActions = React.useCallback(
-    (item: ListItem): MenuItem[] => {
+    (item: ListItem, row: EntityRow): MenuItem[] => {
       if (!itemActions) return [];
 
       if (typeof itemActions === "function") {
         return itemActions(item);
       }
 
-      return (itemActions as SchemaItemAction[]).map((action, idx) => ({
+      return rowActions(itemActions as readonly SchemaItemAction[], row).map((action, idx) => ({
         id: `${item.id}-action-${idx}`,
         label: action.label,
         event: action.event,
@@ -383,7 +388,7 @@ export const List: React.FC<ListProps> = ({
         },
       }));
     },
-    [itemActions, eventBus],
+    [itemActions, eventBus, rowActions],
   );
 
   const normalizedItemActions = itemActions ? getItemActions : undefined;
@@ -469,7 +474,7 @@ export const List: React.FC<ListProps> = ({
     const isSelected = selectedIds.map(String).includes(item.id);
 
     // Get all actions once
-    const actions = normalizedItemActions ? normalizedItemActions(item) : [];
+    const actions = normalizedItemActions ? normalizedItemActions(item, rawItems[index] ?? {}) : [];
     const hasActions = actions.length > 0;
 
     // Find specific actions for UI promotion
@@ -570,8 +575,8 @@ export const List: React.FC<ListProps> = ({
               <Typography
                 as="h3"
                 className={cn(
-                  "text-base font-semibold text-foreground truncate flex-1",
-                  "tracking-tight leading-snug",
+                  "heading-voice text-base text-foreground truncate flex-1",
+                  "leading-snug",
                   item.completed &&
                   "line-through text-muted-foreground",
                 )}
@@ -651,7 +656,7 @@ export const List: React.FC<ListProps> = ({
                 variant="ghost"
                 action={editAction.event}
                 className={cn(
-                  "p-2 rounded-lg transition-all duration-fast",
+                  "p-2 rounded-container transition-all duration-fast",
                   "hover:bg-primary/10 hover:text-primary",
                   "text-muted-foreground",
                   "active:scale-95",
@@ -669,7 +674,7 @@ export const List: React.FC<ListProps> = ({
                 variant="ghost"
                 action={viewAction.event}
                 className={cn(
-                  "p-2 rounded-lg transition-all duration-fast",
+                  "p-2 rounded-container transition-all duration-fast",
                   "hover:bg-muted hover:text-foreground",
                   "text-muted-foreground",
                   "active:scale-95",
@@ -696,8 +701,8 @@ export const List: React.FC<ListProps> = ({
                     <Button
                       variant="ghost"
                       className={cn(
-                        "p-2 rounded-lg transition-all duration-fast",
-                        "hover:bg-muted hover:shadow-sm",
+                        "p-2 rounded-container transition-all duration-fast",
+                        "hover:bg-muted hover:shadow-elevation-card",
                         "text-muted-foreground hover:text-foreground",
                         "active:scale-95",
                       )}
@@ -741,9 +746,9 @@ export const List: React.FC<ListProps> = ({
       className={cn(
         // Container with refined styling
         "bg-card backdrop-blur-sm",
-        "rounded-xl", // Increased rounding
+        "rounded-container",
         "border border-border",
-        "shadow-lg", // Softer, improved shadow
+        "shadow-elevation-card",
         "overflow-hidden",
         className,
       )}

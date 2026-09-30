@@ -1,6 +1,8 @@
 'use client';
 import React from "react";
+import { LOADING_STATE_MARKER } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { Box } from "../atoms/Box";
 import { Spinner } from "../atoms/index";
 import { VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
@@ -23,32 +25,34 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   const { t } = useTranslate();
   const displayMessage = message ?? t('common.loading');
   return (
-    <VStack
-      align="center"
-      className={cn(
-        "justify-center",
-        fullPage
-          ? "fixed inset-0 z-[1000] py-12 bg-background/80 backdrop-blur-sm animate-overlay-in"
-          : "py-12",
-        className,
-      )}
-    >
-      <Spinner size="lg" />
-      {title && (
-        <Typography variant="h3" className="mt-4 text-lg font-semibold text-foreground">
-          {title}
-        </Typography>
-      )}
-      <Typography
-        variant="small"
+    <Box className="contents" {...{ [LOADING_STATE_MARKER]: "" }}>
+      <VStack
+        align="center"
         className={cn(
-          "text-muted-foreground",
-          title ? "mt-2" : "mt-4",
+          "justify-center",
+          fullPage
+            ? "fixed inset-0 z-[1000] py-12 bg-background/80 backdrop-blur-sm animate-overlay-in"
+            : "py-12",
+          className,
         )}
       >
-        {displayMessage}
-      </Typography>
-    </VStack>
+        <Spinner size="lg" />
+        {title && (
+          <Typography variant="h3" className="mt-4 text-lg text-foreground">
+            {title}
+          </Typography>
+        )}
+        <Typography
+          variant="small"
+          className={cn(
+            "text-muted-foreground",
+            title ? "mt-2" : "mt-4",
+          )}
+        >
+          {displayMessage}
+        </Typography>
+      </VStack>
+    </Box>
   );
 };
 

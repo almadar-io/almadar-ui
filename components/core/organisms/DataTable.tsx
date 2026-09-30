@@ -12,16 +12,18 @@ import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { EmptyState, Pagination } from "../molecules/index";
+import type { EmptyStateAction } from "../molecules/EmptyState";
 import { Icon, resolveIcon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useRowActions } from "../../../hooks/useRowActions";
+import type { RowActionCondition } from "../../../lib/row-action-when";
 import { useTranslate } from "../../../hooks/useTranslate";
 import {
   ChevronUp,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Search,
   MoreHorizontal,
 } from "lucide-react";
 import { DisplayStateProps, EntityDisplayEvents } from "./types";
@@ -89,12 +91,11 @@ export interface RowAction<T> {
   variant?: "default" | "danger";
   show?: (row: T) => boolean;
   event?: EventKey;
+  /** Per-row condition, authored as `(fn row <bool>)`; composes with `show`. Omit = always shown. */
+  when?: RowActionCondition;
 }
 
-export interface DataTableEmptyAction {
-  label: string;
-  event?: EventKey;
-}
+export type DataTableEmptyAction = EmptyStateAction;
 
 /**
  * @fieldsContract display
@@ -116,6 +117,8 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
     icon?: IconInput;
     variant?: "default" | "primary" | "secondary" | "ghost" | "danger" | string;
     onClick?: (row: T) => void;
+    /** Per-row condition, authored as `(fn row <bool>)`: the row's action is drawn only when it returns true. Omit = always shown. */
+    when?: RowActionCondition;
   }[];
   emptyIcon?: IconInput;
   emptyTitle?: string;
@@ -204,6 +207,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
     null,
   );
   const eventBus = useEventBus();
+  const viewerRowActions = useRowActions();
   const { t } = useTranslate();
 
   const resolvedEmptyTitle = emptyTitle ?? t("table.empty.title");
@@ -246,6 +250,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
         icon: action.icon,
         variant: action.variant,
         event: action.event,
+        when: action.when,
         onClick: (row: T) => {
           if (action.navigatesTo) {
             const url = action.navigatesTo
@@ -389,16 +394,14 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
         <HStack className="px-4 py-3 border-b-2 border-border flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <HStack className="flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {searchable && (
-              <Box className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  value={searchValue}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder={resolvedSearchPlaceholder}
-                  className="pl-9 w-full sm:w-64"
-                />
-              </Box>
+              <Input
+                type="search"
+                icon="search"
+                value={searchValue}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder={resolvedSearchPlaceholder}
+                className="w-full sm:w-64"
+              />
             )}
 
             {/* Bulk actions */}
@@ -605,7 +608,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                     <td className="px-4 py-3 relative">
                       <Button
                         variant="ghost"
-                        className="p-1 rounded hover:bg-muted"
+                        className="p-1 rounded-interactive hover:bg-muted"
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpenActionMenu(
@@ -624,8 +627,8 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                               setOpenActionMenu(null);
                             }}
                           />
-                          <VStack className="absolute right-0 mt-1 w-48 bg-card rounded-lg shadow-lg border border-border py-1 z-50">
-                            {(rowActions ?? [])
+                          <VStack className="absolute right-0 mt-1 w-48 bg-card surface-material rounded-container shadow-elevation-popover border border-border py-1 z-50">
+                            {viewerRowActions(rowActions ?? [], row)
                               .filter(
                                 (action) => !action.show || action.show(row),
                               )

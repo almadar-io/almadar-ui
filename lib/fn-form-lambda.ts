@@ -12,7 +12,7 @@
 
 import React from "react";
 import { isSExpr, isEventPayloadValue, isRenderBindingMarker, containsEntityBinding, RENDER_BINDING_MARKER, type RenderBindingMarker, type SExpr, type EntityRow, type EventPayloadValue, type RenderItemLambda, type RuntimeValue } from "@almadar/core";
-import type { AnyPatternConfig } from "@almadar/core/patterns";
+import { getPatternDefinition, type AnyPatternConfig, type PatternPropDef, type PatternPropTypeSchema } from "@almadar/core/patterns";
 import type { SlotProps, SlotPropValue } from "../hooks/useUISlots";
 import { evaluate, createMinimalContext } from "@almadar/evaluator";
 // Browser-safe subpath (pure operator metadata) — same import the runtime's
@@ -21,6 +21,19 @@ import { isKnownStdOperator } from "@almadar/std/registry";
 import { createLogger } from '@almadar/logger';
 
 const lambdaLog = createLogger("almadar:ui:fn-form-lambda");
+
+type PropSchemaNode = PatternPropDef | PatternPropTypeSchema;
+type PropSchemaMap = Record<string, PropSchemaNode | undefined>;
+
+function patternPropsSchema(patternType: SlotPropValue): PropSchemaMap | undefined {
+  return typeof patternType === "string" ? getPatternDefinition(patternType)?.propsSchema : undefined;
+}
+
+// The registry types render props `function` and evaluable members (e.g. an
+// action item's `when`) `sexpr`; only the former compile to render functions.
+function isDeclaredSExpr(def: PropSchemaNode | undefined): boolean {
+  return def?.types?.includes("sexpr") ?? false;
+}
 
 /**
  * Operator-call predicate for substituted arrays, mirroring
@@ -215,7 +228,7 @@ function makeLambdaFn(
     // Without this, the inner data-list receives a raw `["fn", ...]` array
     // and falls back to fields-based rendering with no fields, silently
     // dropping the children.
-    const childProps = convertObjectProps(rawChildProps);
+    const childProps = convertObjectProps(rawChildProps, patternPropsSchema(record.type));
     const childContent = {
       id: `lambda-${callerKey}-${index}`,
       pattern: record.type,
@@ -234,7 +247,7 @@ function makeLambdaFn(
 // `stack > data-grid > renderItem`) get converted, not just top-level
 // props. Identity-preserving when nothing converts so memoised consumers
 // downstream don't re-render needlessly.
-function convertNode(node: SlotPropValue, callerKey: string): SlotPropValue {
+function convertNode(node: SlotPropValue, callerKey: string, def?: PropSchemaNode): SlotPropValue {
   if (node === null || node === undefined) return node;
   // A `$renderBinding` marker's `expression` is one S-expr evaluated whole at
   // render time — descending into it would compile its `fn` nodes into
@@ -248,22 +261,28 @@ function convertNode(node: SlotPropValue, callerKey: string): SlotPropValue {
     const arr = node as ReadonlyArray<SlotPropValue>;
     let anyChanged = false;
     const mapped: SlotPropValue[] = arr.map((item, i) => {
-      const next = convertNode(item, `${callerKey}[${i}]`);
+      const next = convertNode(item, `${callerKey}[${i}]`, def?.items);
       if (next !== item) anyChanged = true;
       return next;
     });
     return anyChanged ? mapped : node;
   }
   if (typeof node === "object" && !React.isValidElement(node) && !(node instanceof Date)) {
-    return convertObjectProps(node as SlotProps);
+    return convertObjectProps(node as SlotProps, def?.properties);
   }
   return node;
 }
 
-function convertObjectProps(props: SlotProps): SlotProps {
+function convertObjectProps(props: SlotProps, inherited?: PropSchemaMap): SlotProps {
   let convertedAny = false;
   const out: Record<string, SlotPropValue> = {};
+  const schema = patternPropsSchema(props.type) ?? inherited;
   for (const [key, value] of Object.entries(props)) {
+    const def = schema?.[key];
+    if (isDeclaredSExpr(def)) {
+      out[key] = value;
+      continue;
+    }
     if (isFnFormLambda(value)) {
       convertedAny = true;
       const arr = value as ReadonlyArray<SlotPropValue>;
@@ -277,7 +296,7 @@ function convertObjectProps(props: SlotProps): SlotProps {
       lambdaLog.debug(`convert key=${key}${key === "renderItem" ? " (+children)" : ""}`);
       continue;
     }
-    const next = convertNode(value, key);
+    const next = convertNode(value, key, def);
     if (next !== value) convertedAny = true;
     out[key] = next;
   }
@@ -290,10 +309,10 @@ function convertObjectProps(props: SlotProps): SlotProps {
  * function. Pure on inputs without lambdas: returns the props object
  * unchanged by reference.
  */
-export function convertFnFormLambdasInProps(props: SlotProps | string): SlotProps | string {
+export function convertFnFormLambdasInProps(props: SlotProps | string, patternType?: string): SlotProps | string {
   // Route through the node-level converter: a bare-string slot payload
   // (`(render-ui main "@trait.X")`) is not a props object and must pass
   // through untouched — convertObjectProps would explode it into chars.
   if (props === null || typeof props !== 'object') return props;
-  return convertObjectProps(props);
+  return convertObjectProps(props, patternType !== undefined ? patternPropsSchema(patternType) : undefined);
 }

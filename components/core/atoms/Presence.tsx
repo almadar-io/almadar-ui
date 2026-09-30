@@ -35,7 +35,8 @@ export type PresenceAnimation =
 const SAFE_EXIT_MS = 1000;
 
 let motionEnabledCache: boolean | null = null;
-function isMotionEnabled(): boolean {
+/** Whether token-driven motion is on (`--motion-enable` is not `off`). */
+export function isMotionEnabled(): boolean {
   if (typeof document === "undefined") return true;
   if (motionEnabledCache !== null) return motionEnabledCache;
   const v = getComputedStyle(document.documentElement)
@@ -109,6 +110,7 @@ export function usePresence(show: boolean, opts: UsePresenceOptions): PresenceRe
       } else {
         setMounted(false);
         setExiting(false);
+        onExitedRef.current?.();
       }
     }
     prev.current = show;

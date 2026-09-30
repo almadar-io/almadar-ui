@@ -19,6 +19,9 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { useQuerySingleton } from '../../../hooks/useQuerySingleton';
 import { useTranslate } from '../../../hooks/useTranslate';
 
+/**
+ * @minWidth 160
+ */
 export interface SearchInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   /**
    * Search value (controlled mode)

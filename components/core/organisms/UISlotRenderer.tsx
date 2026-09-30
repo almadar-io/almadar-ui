@@ -14,14 +14,14 @@
  * @packageDocumentation
  */
 
-import React, { Suspense, createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { Suspense, createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useEntitySchemaOptional } from "../../../providers/EntitySchemaContext";
 import { useEntityBindingSnapshot } from "../../../providers/EntityBindingContext";
 import { resolveRenderBindingMarkers, isEvaluatorResolvedData } from "../../../lib/resolve-render-bindings";
 import { TraitScopeProvider, useTraitScope } from "../../../providers/TraitScopeProvider";
 import { RenderSlotProvider } from "../../../providers/RenderSlotContext";
 import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, ResolvedEntity } from "@almadar/core";
-import { isRenderBindingMarker } from "@almadar/core";
+import { isRenderBindingMarker, PATTERN_PROP_TYPE_ERROR_TESTID } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/core/patterns";
 import { SELF_OVERLAY_PATTERN_TYPES } from "@almadar/core/patterns";
 import {
@@ -33,6 +33,7 @@ import {
 } from "../../../providers/UISlotContext";
 import { Modal } from "../molecules/Modal";
 import { Drawer } from "../molecules/Drawer";
+import { PageTransition } from "../molecules/PageTransition";
 import { Toast } from "../molecules/Toast";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
@@ -349,6 +350,12 @@ const PATTERNS_WITH_CHILDREN = new Set([
 // Slot Component
 // ============================================================================
 
+/** A modal/drawer slot's presence: false while a cleared slot plays its exit. */
+export interface SlotPresence {
+  open: boolean;
+  onExited: () => void;
+}
+
 export interface UISlotComponentProps {
   slot: UISlot;
   portal?: boolean;
@@ -364,8 +371,12 @@ export interface UISlotComponentProps {
   isLoading?: boolean;
   error?: UiError | null;
   entity?: string;
-  /** Compiled mode: render children directly instead of resolving from context */
-  children?: React.ReactNode;
+  /**
+   * Compiled mode: render children directly instead of resolving from context.
+   * A function receives the slot's presence — compiled self-overlaying content
+   * (Modal / ConfirmDialog) takes it as `isOpen`/`onExited` to play its exit.
+   */
+  children?: React.ReactNode | ((presence: SlotPresence) => React.ReactNode);
   /** Pattern type for data-pattern attribute (compiled mode) */
   pattern?: string;
   /** Source trait name for data-source-trait attribute (compiled mode) */
@@ -388,16 +399,49 @@ export interface UISlotComponentProps {
   mode?: "replace" | "append";
 }
 
+/** Compiled children, resolved against the slot's presence when they are a render function. */
+function resolveCompiledChildren(
+  children: React.ReactNode | ((presence: SlotPresence) => React.ReactNode),
+  presence: SlotPresence,
+): React.ReactNode {
+  return typeof children === "function" ? children(presence) : children;
+}
+
+/** Modal and drawer slots animate out: they stay mounted through the exit. */
+function isAnimatedPortalSlot(slot: UISlot): boolean {
+  return slot === "modal" || slot === "drawer";
+}
+
+/**
+ * Keeps an animated portal slot's last value mounted after the slot clears, so
+ * the Modal/Drawer can play its exit animation: `open` flips false while
+ * `shown` still holds the last value, and `onExited` releases it.
+ */
+function useSlotPresence<T>(value: T | null): { shown: T | null; open: boolean; onExited: () => void } {
+  const last = useRef<T | null>(null);
+  const current = useRef<T | null>(value);
+  current.current = value;
+  const [, rerender] = useReducer((n: number) => n + 1, 0);
+  if (value !== null) last.current = value;
+  const onExited = useCallback(() => {
+    if (current.current !== null) return;
+    last.current = null;
+    rerender();
+  }, []);
+  return { shown: value ?? last.current, open: value !== null, onExited };
+}
+
 /**
  * Render portal slot content inline with absolute positioning (contained mode).
  * Used by playground/builder previews to keep all content within the preview box.
  * Mirrors SlotPortal's wrapper logic but uses absolute instead of fixed positioning.
  */
 function renderContainedPortal(
-  t: (key: string) => string,
   slot: UISlot,
   content: SlotContent,
   onDismiss: () => void,
+  open: boolean,
+  onExited: () => void,
 ): React.ReactElement {
   // Wrap with MaybeTraitScope so bare `UI:X` emits inside the slot (e.g.
   // form submit dispatching `UI:SAVE`) get qualified to
@@ -407,7 +451,7 @@ function renderContainedPortal(
   // the form-submit event in playground/builder previews (contained mode).
   const slotContent = (
     <MaybeTraitScope sourceTrait={content.sourceTrait}>
-      <SlotContentRenderer content={content} onDismiss={onDismiss} />
+      <SlotContentRenderer content={content} onDismiss={onDismiss} presence={{ open, onExited }} />
     </MaybeTraitScope>
   );
   // Every mounted portal slot advertises `id="slot-{name}"` so VG1's portal
@@ -426,58 +470,16 @@ function renderContainedPortal(
         return <Box id={slotId} className="contents">{slotContent}</Box>;
       }
       return (
-        <Box
-          id={slotId}
-          className="absolute inset-0 z-50 flex items-start justify-center overflow-auto"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', paddingTop: '10%' }}
-          onClick={onDismiss}
+        <Modal
+          contained
+          isOpen={open}
+          onExited={onExited}
+          onClose={onDismiss}
+          title={slotPropsOf(content).title as string | undefined}
+          size={slotPropsOf(content).size as "sm" | "md" | "lg" | "xl" | "full" | undefined}
         >
-          <Box
-            bg="surface"
-            border
-            shadow="lg"
-            rounded="md"
-            className="pointer-events-auto w-full overflow-auto flex flex-col"
-            style={{ minWidth: '520px', maxWidth: '700px', maxHeight: '80%' }}
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-          >
-            {/*
-              The header (with the X close button) always renders. Previously
-              the entire header — INCLUDING the close affordance — was gated
-              on `slotPropsOf(content).title` being truthy, so any pattern that
-              didn't set a top-level `title` prop (e.g. a `stack` wrapper
-              around a form) painted a modal with NO way to dismiss except
-              clicking the overlay. The X also lacked `data-event` /
-              `data-testid`, so click-path verifiers and any external
-              automation couldn't find it. Now: title is optional but the
-              X is structural, with the same data attributes the Modal
-              molecule's X carries so the verifier maps clicks → CLOSE.
-            */}
-            <Box className={cn(
-              "flex items-center p-4",
-              typeof content.props === 'object' && slotPropsOf(content).title ? "justify-between border-b border-border" : "justify-end",
-            )}>
-              {typeof content.props === 'object' && slotPropsOf(content).title ? (
-                <Typography variant="h3" className="text-lg font-semibold">
-                  {String(slotPropsOf(content).title)}
-                </Typography>
-              ) : null}
-              <Box
-                as="button"
-                className="text-muted-foreground hover:text-foreground cursor-pointer"
-                onClick={onDismiss}
-                data-event="CLOSE"
-                data-testid="action-CLOSE"
-                aria-label={t('aria.closeModal')}
-              >
-                ✕
-              </Box>
-            </Box>
-            <Box className="flex-1 overflow-auto p-4">
-              {slotContent}
-            </Box>
-          </Box>
-        </Box>
+          <Box id={slotId}>{slotContent}</Box>
+        </Modal>
       );
 
     case "drawer":
@@ -502,49 +504,17 @@ function renderContainedPortal(
         );
       }
       return (
-        <Box
-          id={slotId}
-          className="absolute inset-0 z-50 overflow-hidden"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-          onClick={onDismiss}
+        <Drawer
+          contained
+          isOpen={open}
+          onExited={onExited}
+          onClose={onDismiss}
+          title={slotPropsOf(content).title as string | undefined}
+          position={(slotPropsOf(content).position as "left" | "right") ?? "right"}
+          width={slotPropsOf(content).width as string | undefined}
         >
-          <Box
-            bg="surface"
-            className={cn(
-              "absolute top-0 bottom-0 w-80 max-w-[80%] overflow-auto pointer-events-auto",
-              (slotPropsOf(content).position as string) === "left" ? "left-0" : "right-0",
-            )}
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-          >
-            {/* Same rationale as the modal header above: the X is structural,
-                title is optional, and the close button carries the
-                CLOSE event-key data attributes so verifiers and automation
-                can drive the close path. */}
-            <Box className={cn(
-              "flex items-center p-4",
-              typeof content.props === 'object' && slotPropsOf(content).title ? "justify-between border-b border-border" : "justify-end",
-            )}>
-              {typeof content.props === 'object' && slotPropsOf(content).title ? (
-                <Typography variant="h3" className="text-lg font-semibold">
-                  {String(slotPropsOf(content).title)}
-                </Typography>
-              ) : null}
-              <Box
-                as="button"
-                className="text-muted-foreground hover:text-foreground cursor-pointer"
-                onClick={onDismiss}
-                data-event="CLOSE"
-                data-testid="action-CLOSE"
-                aria-label={t('aria.closeDrawer')}
-              >
-                ✕
-              </Box>
-            </Box>
-            <Box className="p-4">
-              {slotContent}
-            </Box>
-          </Box>
-        </Box>
+          <Box id={slotId}>{slotContent}</Box>
+        </Drawer>
       );
 
     case "toast":
@@ -699,12 +669,44 @@ function UISlotComponentInner({
     return resolvedProps === rawContent.props ? rawContent : { ...rawContent, props: resolvedProps };
   }, [rawContent, binding.entity, binding.config, binding.state]);
 
+  // Modal/drawer slots stay mounted through their exit animation (runtime
+  // content and compiled children alike) — see useSlotPresence.
+  const animatedPortal = isAnimatedPortalSlot(slot);
+  const runtimePresence = useSlotPresence(portal && animatedPortal ? (content ?? null) : null);
+  const compiledPresence = useSlotPresence(
+    children !== undefined && pattern !== "clear" && animatedPortal ? { children, pattern, sourceTrait } : null,
+  );
+
   // Compiled mode: children provided directly, skip context resolution
   if (children !== undefined) {
-    // "clear" pattern means dismiss/hide the slot, render nothing
+    // "clear" pattern means dismiss/hide the slot — an animated portal slot
+    // first plays its exit with the last children.
     if (pattern === "clear") {
-      return null;
+      const last = compiledPresence.shown;
+      // Self-overlaying content plays its own exit only when the codegen
+      // handed it the presence (render-function children); finished JSX can't
+      // take it, so it unmounts at once.
+      const selfOverlay = last !== null && last.pattern !== undefined && SELF_OVERLAY_PATTERN_TYPES.has(last.pattern);
+      if (last === null || contained || (selfOverlay && typeof last.children !== "function")) {
+        return null;
+      }
+      return (
+        <CompiledPortal
+          slot={slot}
+          className={className}
+          pattern={last.pattern}
+          sourceTrait={last.sourceTrait}
+          open={false}
+          onExited={compiledPresence.onExited}
+        >
+          <MaybeTraitScope sourceTrait={last.sourceTrait}>
+            {resolveCompiledChildren(last.children, { open: false, onExited: compiledPresence.onExited })}
+          </MaybeTraitScope>
+        </CompiledPortal>
+      );
     }
+
+    const openChildren = resolveCompiledChildren(children, { open: true, onExited: compiledPresence.onExited });
 
     // Portal slots (modal, drawer, toast): render through a portal with proper wrapper
     // In contained mode, use inline rendering with absolute positioning
@@ -717,13 +719,20 @@ function UISlotComponentInner({
             data-pattern={pattern}
             data-source-trait={sourceTrait}
           >
-            <MaybeTraitScope sourceTrait={sourceTrait}>{children}</MaybeTraitScope>
+            <MaybeTraitScope sourceTrait={sourceTrait}>{openChildren}</MaybeTraitScope>
           </Box>
         );
       }
       return (
-        <CompiledPortal slot={slot} className={className} pattern={pattern} sourceTrait={sourceTrait}>
-          <MaybeTraitScope sourceTrait={sourceTrait}>{children}</MaybeTraitScope>
+        <CompiledPortal
+          slot={slot}
+          className={className}
+          pattern={pattern}
+          sourceTrait={sourceTrait}
+          open={true}
+          onExited={compiledPresence.onExited}
+        >
+          <MaybeTraitScope sourceTrait={sourceTrait}>{openChildren}</MaybeTraitScope>
         </CompiledPortal>
       );
     }
@@ -735,16 +744,21 @@ function UISlotComponentInner({
         data-pattern={pattern}
         data-source-trait={sourceTrait}
       >
-        <MaybeTraitScope sourceTrait={sourceTrait}>{children}</MaybeTraitScope>
+        <MaybeTraitScope sourceTrait={sourceTrait}>{openChildren}</MaybeTraitScope>
       </Box>
     );
   }
+
+  // A cleared modal/drawer slot keeps rendering its last content (closed)
+  // until the exit animation ends.
+  const shownContent = content ?? runtimePresence.shown;
+  const slotOpen = content !== null && content !== undefined;
 
   // Handle empty slot. When a `fallback` is supplied it renders INLINE at
   // this position regardless of `portal` — a portal slot's fallback is host
   // chrome, not something a plugin should ever be able to relocate, so it
   // never goes through SlotPortal/CompiledPortal.
-  if (!content) {
+  if (!shownContent) {
     if (fallback !== undefined) {
       return (
         <Box
@@ -781,7 +795,7 @@ function UISlotComponentInner({
   // Mirrors `ModalSlot.handleClose` (which has done it right all along).
   const handleDismiss = () => {
     if (slot === 'modal' || slot === 'drawer') {
-      const trait = content?.sourceTrait;
+      const trait = shownContent.sourceTrait;
       const orbital = trait !== undefined && schemaCtx !== null
         ? schemaCtx.orbitalsByTrait.get(trait)
         : undefined;
@@ -816,7 +830,7 @@ function UISlotComponentInner({
       return (
         <>
           {inlineFallback}
-          {renderContainedPortal(t, slot, content, handleDismiss)}
+          {renderContainedPortal(slot, shownContent, handleDismiss, slotOpen, runtimePresence.onExited)}
         </>
       );
     }
@@ -825,9 +839,11 @@ function UISlotComponentInner({
         {inlineFallback}
         <SlotPortal
           slot={slot}
-          content={content}
+          content={shownContent}
           position={position}
           onDismiss={handleDismiss}
+          open={slotOpen}
+          onExited={runtimePresence.onExited}
         />
       </>
     );
@@ -839,7 +855,7 @@ function UISlotComponentInner({
   // of blanking the whole preview. Optional Suspense wraps when the
   // consumer opts in for async data.
   const slotContent = (
-    <SlotContentRenderer content={content} onDismiss={handleDismiss} />
+    <SlotContentRenderer content={shownContent} onDismiss={handleDismiss} />
   );
 
   const wrappedContent = suspenseConfig.enabled ? (
@@ -858,13 +874,13 @@ function UISlotComponentInner({
     <Box
       id={`slot-${slot}`}
       className={cn("ui-slot", `ui-slot-${slot}`, regionClassName)}
-      data-pattern={content.pattern}
-      data-source-trait={content.sourceTrait}
+      data-pattern={shownContent.pattern}
+      data-source-trait={shownContent.sourceTrait}
       data-testid={`ui-slot-${slot}`}
       data-slot-mode={showFallback ? "append" : "content"}
     >
       {showFallback ? fallback : null}
-      <MaybeTraitScope sourceTrait={content.sourceTrait}>{wrappedContent}</MaybeTraitScope>
+      <MaybeTraitScope sourceTrait={shownContent.sourceTrait}>{wrappedContent}</MaybeTraitScope>
     </Box>
   );
 }
@@ -879,9 +895,12 @@ interface CompiledPortalProps {
   pattern?: string;
   sourceTrait?: string;
   children: React.ReactNode;
+  /** False while a cleared modal/drawer plays its exit animation. */
+  open: boolean;
+  onExited: () => void;
 }
 
-function CompiledPortal({ slot, className, pattern, sourceTrait, children }: CompiledPortalProps): React.ReactElement | null {
+function CompiledPortal({ slot, className, pattern, sourceTrait, children, open, onExited }: CompiledPortalProps): React.ReactElement | null {
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const slotsBus = useUISlots();
   const eventBus = useEventBus();
@@ -939,7 +958,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
       wrapper = pattern !== undefined && SELF_OVERLAY_PATTERN_TYPES.has(pattern) ? (
         innerContent
       ) : (
-        <Modal isOpen={true} onClose={handleDismiss} showCloseButton={true} size="lg">
+        <Modal isOpen={open} onExited={onExited} onClose={handleDismiss} showCloseButton={true} size="lg">
           {innerContent}
         </Modal>
       );
@@ -948,7 +967,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
 
     case "drawer":
       wrapper = (
-        <Drawer isOpen={true} onClose={handleDismiss} position="right">
+        <Drawer isOpen={open} onExited={onExited} onClose={handleDismiss} position="right">
           <Box
             id={slotId}
             className={cn("ui-slot", `ui-slot-${slot}`, className)}
@@ -1001,6 +1020,9 @@ interface SlotPortalProps {
   content: SlotContent;
   position?: string;
   onDismiss: () => void;
+  /** False while a cleared modal/drawer plays its exit animation. */
+  open: boolean;
+  onExited: () => void;
   className?: string;
   isLoading?: boolean;
   error?: UiError | null;
@@ -1012,6 +1034,8 @@ function SlotPortal({
   content,
   position,
   onDismiss,
+  open,
+  onExited,
 }: SlotPortalProps): React.ReactElement | null {
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
 
@@ -1028,7 +1052,7 @@ function SlotPortal({
   const slotId = `slot-${slot}`;
   const slotContent = (
     <MaybeTraitScope sourceTrait={content.sourceTrait}>
-      <SlotContentRenderer content={content} onDismiss={onDismiss} />
+      <SlotContentRenderer content={content} onDismiss={onDismiss} presence={{ open, onExited }} />
     </MaybeTraitScope>
   );
 
@@ -1044,7 +1068,8 @@ function SlotPortal({
         <Box id={slotId}>{slotContent}</Box>
       ) : (
         <Modal
-          isOpen={true}
+          isOpen={open}
+          onExited={onExited}
           onClose={onDismiss}
           title={slotPropsOf(content).title as string | undefined}
           size={
@@ -1059,7 +1084,8 @@ function SlotPortal({
     case "drawer":
       wrapper = (
         <Drawer
-          isOpen={true}
+          isOpen={open}
+          onExited={onExited}
           onClose={onDismiss}
           title={slotPropsOf(content).title as string | undefined}
           position={(slotPropsOf(content).position as "left" | "right") ?? "right"}
@@ -1142,6 +1168,11 @@ function getToastPosition(position?: string): string {
 interface SlotContentRendererProps {
   content: SlotContent;
   onDismiss: () => void;
+  /**
+   * The owning modal slot's presence. A self-overlaying pattern (Modal /
+   * ConfirmDialog) receives it as `isOpen`/`onExited` so it plays its own exit.
+   */
+  presence?: { open: boolean; onExited: () => void };
   className?: string;
   isLoading?: boolean;
   error?: UiError | null;
@@ -1587,6 +1618,7 @@ function SlotContentRenderer({
   content,
   onDismiss,
   patternPath,
+  presence,
 }: SlotContentRendererProps): React.ReactElement {
   // Render-time binding resolution (compiled-shell parity): `@entity`-
   // dependent prop leaves arrive as `RenderBindingMarker`s and resolve
@@ -1919,8 +1951,8 @@ function SlotContentRenderer({
       });
       return (
         <Box
-          className="p-4 text-sm border border-dashed border-error rounded"
-          data-testid="pattern-prop-type-error"
+          className="p-4 text-sm border border-dashed border-error rounded-container"
+          data-testid={PATTERN_PROP_TYPE_ERROR_TESTID}
           data-orb-pattern={content.pattern}
           data-orb-trait={content.sourceTrait}
           data-orb-slot={content.slot}
@@ -1959,7 +1991,11 @@ function SlotContentRenderer({
         data-orb-pattern={content.pattern}
         data-orb-orbital={orbitalName}
       >
-        {renderedChildren !== undefined ? (
+        {presence !== undefined && SELF_OVERLAY_PATTERN_TYPES.has(content.pattern) ? (
+          <PatternComponent {...finalProps} isOpen={presence.open} onExited={presence.onExited}>
+            {renderedChildren}
+          </PatternComponent>
+        ) : renderedChildren !== undefined ? (
           <PatternComponent {...finalProps}>{renderedChildren}</PatternComponent>
         ) : (
           <PatternComponent {...finalProps} />
@@ -1986,7 +2022,7 @@ function SlotContentRenderer({
       data-orb-orbital={orbitalName}
     >
       {(propsObj.children as React.ReactNode) ?? (
-        <Box className="p-4 text-sm text-muted-foreground border border-dashed border-border rounded">
+        <Box className="p-4 text-sm text-muted-foreground border border-dashed border-border rounded-container">
           Unknown pattern: {content.pattern}
           {content.sourceTrait && (
             <Typography variant="small" className="ml-2">(from {content.sourceTrait})</Typography>
@@ -2022,6 +2058,12 @@ export interface UISlotRendererProps {
    * Skeleton fallbacks. Opt-in — existing isLoading prop pattern still works.
    */
   suspense?: boolean | SuspenseConfig;
+  /**
+   * The current page (path or name). When set, the main slot's content animates
+   * in on every page change (`PageTransition`); a layout's own content region
+   * claims the transition so its chrome stays still.
+   */
+  pageKey?: string;
 }
 
 /**
@@ -2046,6 +2088,7 @@ export function UISlotRenderer({
   includeFloating = false,
   className,
   suspense,
+  pageKey,
 }: UISlotRendererProps): React.ReactElement {
   const isContained = hudMode === 'inline';
   const suspenseConfig: SuspenseConfig =
@@ -2063,7 +2106,13 @@ export function UISlotRenderer({
           pages without one keep the plain full-width main. */}
       <Box className="flex min-h-full flex-col lg:flex-row">
         <UISlotComponent slot="sidebar" className="ui-slot-sidebar min-w-0 lg:shrink-0" />
-        <UISlotComponent slot="main" className="ui-slot-main flex-1 min-w-0 min-h-[200px]" />
+        {pageKey !== undefined ? (
+          <PageTransition locationKey={pageKey} className="flex flex-1 min-w-0 flex-col">
+            <UISlotComponent slot="main" className="ui-slot-main flex-1 min-w-0 min-h-[200px]" />
+          </PageTransition>
+        ) : (
+          <UISlotComponent slot="main" className="ui-slot-main flex-1 min-w-0 min-h-[200px]" />
+        )}
       </Box>
 
       {/* Portal slots */}

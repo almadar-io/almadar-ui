@@ -26,7 +26,7 @@ import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
-import type { OrbitalSchema, EntityData, ResolvedTraitBinding, OrbitalDefinition } from '@almadar/core';
+import type { OrbitalSchema, EntityData, ResolvedTraitBinding, OrbitalDefinition, ThemeRef } from '@almadar/core';
 import { buildResolvedTraitConfigs, collectCallsiteCaptureChildren } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { matchPathAmong } from '../providers/navigation';
@@ -270,7 +270,7 @@ function FitToBox({ children, mode = 'box' }: { children: React.ReactNode; mode?
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence }: {
+function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, themeOverride }: {
   schema: OrbitalSchema;
   serverUrl?: string;
   transport?: ServerBridgeTransport;
@@ -288,6 +288,8 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
   localFallbackTimeoutMs?: number;
   /** Offline-preview persistence layer. */
   persistence?: PersistenceAdapter;
+  /** See OrbPreviewProps.themeOverride. */
+  themeOverride?: string;
 }) {
   const { traits, allEntities, allTraits, ir } = useResolvedSchema(schema, pageName);
 
@@ -504,27 +506,7 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
     return set;
   }, [schema, pageName]);
 
-  // Per-orbital theme: find the orbital whose pages[] contains the active
-  // page and surface its `theme` to OrbitalThemeProvider. When pageName is
-  // unset (initial mount before SchemaRunner picks the first page), fall back
-  // to the first orbital's theme. Falling back keeps the wrapper a no-op
-  // when no orbital declares a theme — `OrbitalThemeProvider` passes through
-  // for undefined themes. Mirrors compile-time scoping: each orbital's pages
-  // resolve against THAT orbital's `theme` in the generated CSS.
-  const activeOrbitalTheme = useMemo(() => {
-    if (!schema?.orbitals?.length) return undefined;
-    if (pageName) {
-      for (const orb of schema.orbitals) {
-        for (const pageRef of orb.pages ?? []) {
-          const name = typeof pageRef === 'object' && pageRef !== null
-            ? (pageRef as { name?: string }).name
-            : undefined;
-          if (name === pageName) return orb.theme ?? schema.theme;
-        }
-      }
-    }
-    return schema.orbitals[0]?.theme ?? schema.theme;
-  }, [schema, pageName]);
+  const activeOrbitalTheme = useMemo(() => resolvePreviewTheme(schema, pageName), [schema, pageName]);
 
   const inner = (
     <VerificationProvider enabled>
@@ -568,9 +550,9 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
             The HUD docks via `absolute bottom-0` inside UISlotRenderer's
             own `relative min-h-full` container, so empty layouts still
             anchor the bar at the bottom of the viewport. */}
-        <OrbitalThemeProvider theme={activeOrbitalTheme}>
+        <OrbitalThemeProvider theme={activeOrbitalTheme} override={themeOverride}>
           <Box className="h-full min-h-full overflow-auto p-4">
-            <UISlotRenderer includeHud hudMode="inline" includeFloating />
+            <UISlotRenderer includeHud hudMode="inline" includeFloating pageKey={pageName} />
           </Box>
         </OrbitalThemeProvider>
         </TraitInitializer>
@@ -675,6 +657,35 @@ export interface OrbPreviewProps {
    * own router. When set, it replaces the built-in `?page=` URL sync.
    */
   onPageChange?: (path: string) => void;
+  /**
+   * A registry theme key (`"<base>-<light|dark>"`) that replaces every
+   * orbital's declared theme — a host's explicit theme pick (the playground
+   * picker). Omitted → each page renders in its own orbital's theme.
+   */
+  themeOverride?: string;
+}
+
+/**
+ * The theme a preview page's orbital declares: the orbital owning `pageName`
+ * (falling back to the app theme), or the first orbital's before a page is
+ * picked. Mirrors the compiled scoping where each orbital's pages resolve
+ * against its own theme. A host's `themeOverride` is applied on top by
+ * `OrbitalThemeProvider`.
+ */
+export function resolvePreviewTheme(
+  schema: OrbitalSchema,
+  pageName: string | undefined,
+): ThemeRef | undefined {
+  if (!schema.orbitals?.length) return schema.theme;
+  if (pageName) {
+    for (const orb of schema.orbitals) {
+      for (const pageRef of orb.pages ?? []) {
+        const name = typeof pageRef === 'object' && pageRef !== null && 'name' in pageRef ? pageRef.name : undefined;
+        if (name === pageName) return orb.theme ?? schema.theme;
+      }
+    }
+  }
+  return schema.orbitals[0]?.theme ?? schema.theme;
 }
 
 /**
@@ -705,6 +716,7 @@ export function OrbPreview({
   onPageChange,
   user = null,
   localFallbackTimeoutMs,
+  themeOverride,
 }: OrbPreviewProps): React.ReactElement {
   if (serverUrl && transport) {
     throw new Error('OrbPreview accepts serverUrl OR transport, not both');
@@ -1039,6 +1051,7 @@ export function OrbPreview({
                   onLocalFallback={handleLocalFallback}
                   localFallbackTimeoutMs={localFallbackTimeoutMs}
                   persistence={persistence}
+                  themeOverride={themeOverride}
                 />
               </FitToBox>
             ) : (
@@ -1055,6 +1068,7 @@ export function OrbPreview({
                 onLocalFallback={handleLocalFallback}
                 localFallbackTimeoutMs={localFallbackTimeoutMs}
                 persistence={persistence}
+                themeOverride={themeOverride}
               />
             )}
           </UISlotProvider>

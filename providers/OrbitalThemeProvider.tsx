@@ -32,7 +32,7 @@
  * ```
  */
 
-import React, { type CSSProperties, type ReactElement, type ReactNode } from 'react';
+import React, { useEffect, type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import { isThemeRegistryKey, type ThemeRef } from '@almadar/core';
 import { useTheme, useThemeScope, ThemeScopeContext } from './ThemeContext';
 import { themeTokensToCssVars, resolveThemeForRuntime } from '../lib/themeTokens';
@@ -41,23 +41,51 @@ import { Box } from '../components/core/atoms/Box';
 export interface OrbitalThemeProviderProps {
   /** The `OrbitalDefinition.theme` value (inline definition or string ref). */
   theme?: ThemeRef;
+  /**
+   * A host's explicit theme pick (registry key, e.g. the playground picker).
+   * Replaces `theme` here, in every nested orbital scope, and on every
+   * `data-theme` a component declares inside (see `ThemeScope.override`).
+   */
+  override?: string;
   children: ReactNode;
 }
 
 // Both theme forms paint the orbital's own surface, so a themed orbital never
 // shows the host document's background (playground, runtime-verify catalog).
-const SURFACE = 'h-full min-h-full bg-background text-foreground';
+const SURFACE = 'h-full min-h-full bg-background surface-page text-foreground';
 
-export function OrbitalThemeProvider({ theme, children }: OrbitalThemeProviderProps): ReactElement {
+// An inline theme's `typeScale.fontImport` is loaded once per document, the
+// runtime twin of the `@import` the compiled theme CSS carries.
+function useFontImport(href: string | undefined): void {
+  useEffect(() => {
+    if (!href || typeof document === 'undefined') return;
+    const existing = Array.from(document.head.querySelectorAll('link[data-almadar-font]'))
+      .some((el) => el.getAttribute('href') === href);
+    if (existing) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.setAttribute('data-almadar-font', '');
+    document.head.appendChild(link);
+  }, [href]);
+}
+
+export function OrbitalThemeProvider({ theme: declared, override, children }: OrbitalThemeProviderProps): ReactElement {
+  const parent = useThemeScope();
+  const hostOverride = override || parent.override || undefined;
+  const theme = hostOverride ?? declared;
   const resolved = resolveThemeForRuntime(theme);
   // useTheme provides the document-level resolved color mode. Per-orbital
   // overrides ride on top of that mode's variant.
   const { resolvedMode } = useTheme();
-  const parent = useThemeScope();
+  const darkTypeScale = resolvedMode === 'dark' ? resolved?.variants?.dark?.typeScale : undefined;
+  useFontImport(darkTypeScale?.fontImport ?? resolved?.tokens.typeScale?.fontImport);
 
   if (isThemeRegistryKey(theme)) {
     return (
-      <ThemeScopeContext.Provider value={{ ...parent, theme }}>
+      <ThemeScopeContext.Provider
+        value={hostOverride ? { ...parent, theme, vars: undefined, override: hostOverride } : { ...parent, theme }}
+      >
         <Box data-theme={theme} className={SURFACE}>
           {children}
         </Box>

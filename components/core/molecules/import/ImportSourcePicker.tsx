@@ -94,7 +94,7 @@ export const ImportSourcePicker: React.FC<ImportSourcePickerProps> = ({
             }
           }}
           className={cn(
-            'flex items-center gap-3 rounded-md border border-border bg-card px-4 py-3 text-left',
+            'flex items-center gap-3 rounded-interactive border border-border bg-card px-4 py-3 text-left',
             source.disabled
               ? 'opacity-50 cursor-not-allowed'
               : 'cursor-pointer hover:bg-accent hover:text-accent-foreground',

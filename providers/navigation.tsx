@@ -20,6 +20,9 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { OrbitalSchema, OrbitalPage, Orbital, FieldValue } from '@almadar/core';
+import { matchPath, comparePathSpecificity, matchPathAmong } from '@almadar/core';
+
+export { matchPath, comparePathSpecificity, matchPathAmong };
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:navigation');
@@ -27,60 +30,6 @@ const log = createLogger('almadar:ui:navigation');
 // ============================================================================
 // Path Matching Utilities
 // ============================================================================
-
-/**
- * Match a concrete path against a pattern with :param placeholders.
- * Returns null if no match, or the extracted params if match.
- *
- * @example
- * matchPath('/inspection/:id', '/inspection/123') // { id: '123' }
- * matchPath('/users/:userId/posts/:postId', '/users/42/posts/7') // { userId: '42', postId: '7' }
- * matchPath('/about', '/about') // {}
- * matchPath('/about', '/contact') // null
- */
-export function matchPath(
-    pattern: string,
-    path: string
-): Record<string, string> | null {
-    // Normalize paths - remove trailing slashes, ensure leading slash
-    const normalizeSegment = (p: string) => {
-        let normalized = p.trim();
-        if (!normalized.startsWith('/')) normalized = '/' + normalized;
-        if (normalized.length > 1 && normalized.endsWith('/')) {
-            normalized = normalized.slice(0, -1);
-        }
-        return normalized;
-    };
-
-    const normalizedPattern = normalizeSegment(pattern);
-    const normalizedPath = normalizeSegment(path);
-
-    const patternParts = normalizedPattern.split('/').filter(Boolean);
-    const pathParts = normalizedPath.split('/').filter(Boolean);
-
-    // Must have same number of segments
-    if (patternParts.length !== pathParts.length) {
-        return null;
-    }
-
-    const params: Record<string, string> = {};
-
-    for (let i = 0; i < patternParts.length; i++) {
-        const patternPart = patternParts[i];
-        const pathPart = pathParts[i];
-
-        if (patternPart.startsWith(':')) {
-            // This is a param - extract the name and value
-            const paramName = patternPart.slice(1);
-            params[paramName] = decodeURIComponent(pathPart);
-        } else if (patternPart !== pathPart) {
-            // Static segment doesn't match
-            return null;
-        }
-    }
-
-    return params;
-}
 
 /**
  * Extract route params from a path given its pattern.
@@ -100,50 +49,6 @@ export function pathMatches(pattern: string, path: string): boolean {
     return matchPath(pattern, path) !== null;
 }
 
-/**
- * Order two route patterns most-specific-first: at the first segment where they
- * disagree in kind, a static segment outranks a `:param`. Patterns that agree in
- * kind everywhere tie, leaving declaration order to decide.
- *
- * Without this, `/listings/:id` declared before `/listings/moderation` swallows
- * its static sibling, because every `:param` matches any segment.
- */
-export function comparePathSpecificity(a: string, b: string): number {
-    const aParts = a.split('/').filter(Boolean);
-    const bParts = b.split('/').filter(Boolean);
-    const shared = Math.min(aParts.length, bParts.length);
-
-    for (let i = 0; i < shared; i++) {
-        const aParam = aParts[i].startsWith(':');
-        const bParam = bParts[i].startsWith(':');
-        if (aParam !== bParam) return aParam ? 1 : -1;
-    }
-
-    return 0;
-}
-
-/**
- * Match a concrete path against route-bearing candidates, most-specific first.
- * The single resolver every route lookup goes through — the candidate array is
- * never reordered in place, so callers keep their declaration-order semantics.
- */
-export function matchPathAmong<T>(
-    candidates: readonly T[],
-    path: string,
-    pathOf: (candidate: T) => string | undefined
-): { candidate: T; params: Record<string, string> } | null {
-    const routed = candidates.filter((candidate) => Boolean(pathOf(candidate)));
-    const ranked = [...routed].sort((a, b) =>
-        comparePathSpecificity(pathOf(a) as string, pathOf(b) as string)
-    );
-
-    for (const candidate of ranked) {
-        const params = matchPath(pathOf(candidate) as string, path);
-        if (params !== null) return { candidate, params };
-    }
-
-    return null;
-}
 
 // ============================================================================
 // Page Finding Utilities

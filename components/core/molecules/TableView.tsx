@@ -24,6 +24,8 @@ import { createLogger } from '@almadar/logger';
 const tableViewLog = createLogger('almadar:ui:table-view');
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useRowActions } from '../../../hooks/useRowActions';
+import type { RowActionCondition } from '../../../lib/row-action-when';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
@@ -35,6 +37,7 @@ import type { IconInput } from '../atoms/index';
 import { Checkbox } from '../atoms/Checkbox';
 import { Divider } from '../atoms/Divider';
 import { Menu } from './Menu';
+import { EmptyState, type EmptyStateSlotProps } from './EmptyState';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
 import type { UiError } from '../atoms/types';
 
@@ -78,6 +81,8 @@ export interface TableViewItemAction {
   icon?: IconInput;
   /** Button variant. */
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  /** Per-row condition, authored as `(fn row <bool>)`: the row's menu item is drawn only when it returns true. Omit = always shown. */
+  when?: RowActionCondition;
 }
 
 // ── Props ────────────────────────────────────────────────────────────
@@ -88,8 +93,9 @@ export interface TableViewItemAction {
  *
  * @capabilities admin console table, records list, CRUD data table, user list, manage-users grid, sortable columns, row selection with bulk actions, grouped list view
  * @fieldsContract display
+ * @minWidth 240
  */
-export interface TableViewProps extends DataDndProps {
+export interface TableViewProps extends DataDndProps, EmptyStateSlotProps {
   /** Schema entity data — the collection of rows to render. */
   entity: readonly EntityRow[];
   /** Column definitions. The compiler emits `columns`; `fields` is the alias. */
@@ -221,10 +227,12 @@ const MAX_MEASURED_COL_CH = 32;
 /** Horizontal padding a Badge adds around its label, in approximate `ch`. */
 const BADGE_CHROME_CH = 4;
 
+// Alignment applies to the column layout only; a stacked (narrow) row lays
+// each cell out as label ⟷ value instead.
 const alignClass: Record<NonNullable<TableViewColumn['align']>, string> = {
-  left: 'justify-start text-left',
-  center: 'justify-center text-center',
-  right: 'justify-end text-right',
+  left: '@sm/table:justify-start @sm/table:text-left',
+  center: '@sm/table:justify-center @sm/table:text-center',
+  right: '@sm/table:justify-end @sm/table:text-right',
 };
 
 const weightClass: Record<NonNullable<TableViewColumn['weight']>, string> = {
@@ -268,6 +276,10 @@ export function TableView({
   sortDirection,
   className,
   emptyMessage,
+  emptyIcon,
+  emptyTitle,
+  emptyDescription,
+  emptyAction,
   isLoading = false,
   error = null,
   groupBy,
@@ -287,6 +299,7 @@ export function TableView({
   relationsData,
 }: TableViewProps) {
   const eventBus = useEventBus();
+  const rowActions = useRowActions();
   const { t } = useTranslate();
   const [visibleCount, setVisibleCount] = React.useState(pageSize > 0 ? pageSize : Infinity);
   const [localSelected, setLocalSelected] = React.useState<ReadonlySet<string>>(new Set());
@@ -305,7 +318,6 @@ export function TableView({
   // actions track — the buttons overflow and the pinned opaque cell paints
   // over the data columns beside it (observed 2026-09-17 on std-browse
   // dense tables, e.g. PF Timesheets: View/Edit covering the Status pill).
-  const overflowActions = actionDefs;
   const fireAction = (action: TableViewItemAction, row: EntityRow) =>
     eventBus.emit(`UI:${action.event}`, {
       id: row.id as string | number,
@@ -383,10 +395,12 @@ export function TableView({
   // no label/name matching — and a destructive action never becomes the
   // default). Danger-only tables get no row click. The '' default is a
   // declared contract the lolo-ui generator honors (default-off outlet).
-  const rowClickEvent: EventKey | undefined =
-    itemClickEvent || actionDefs.find((a) => a.variant !== 'danger')?.event;
+  // The default is the first action THIS row shows.
+  const rowClickEventFor = (row: EntityRow): EventKey | undefined =>
+    itemClickEvent || rowActions(actionDefs, row).find((a) => a.variant !== 'danger')?.event;
 
   const handleRowClick = (row: EntityRow) => () => {
+    const rowClickEvent = rowClickEventFor(row);
     if (!rowClickEvent) return;
     const payload: ItemActionPayload = {
       id: row.id as string | number,
@@ -431,9 +445,13 @@ export function TableView({
       <Typography variant="body" color="error">{error.message}</Typography>
     </Box>
   ) : data.length === 0 ? (
-    <Box className="text-center py-12">
-      <Typography variant="body" color="secondary">{emptyMessage || t('empty.noItems')}</Typography>
-    </Box>
+    <EmptyState
+      icon={emptyIcon}
+      title={emptyTitle || emptyMessage || t('empty.noItems')}
+      description={emptyDescription}
+      actionLabel={emptyAction?.label}
+      actionEvent={emptyAction?.event}
+    />
   ) : null;
 
   const lk = LOOKS[look];
@@ -463,7 +481,7 @@ export function TableView({
       role="row"
       style={{ gridTemplateColumns }}
       className={cn(
-        'grid items-center gap-3 sticky top-0 z-10',
+        'hidden @sm/table:grid items-center gap-3 sticky top-0 z-10',
         'bg-[var(--color-surface-subtle)] border-b border-[var(--color-border)]',
         'text-muted-foreground uppercase text-xs font-semibold tracking-wide',
         lk.headPad,
@@ -508,6 +526,8 @@ export function TableView({
   // ── A single body row ───────────────────────────────────────────
   const renderRow = (row: EntityRow, index: number) => {
     const id = String(row[idField] ?? index);
+    const rowClickEvent = rowClickEventFor(row);
+    const overflowActions = rowActions(actionDefs, row);
     const rowInner = (
       <Box
         role="row"
@@ -516,14 +536,14 @@ export function TableView({
         onClick={rowClickEvent ? handleRowClick(row) : undefined}
         style={!hasRenderProp ? { gridTemplateColumns } : undefined}
         className={cn(
-          'group items-center gap-3 transition-colors duration-fast',
-          hasRenderProp ? 'flex' : 'grid',
+          'group relative transition-colors duration-fast',
+          hasRenderProp ? 'flex items-center gap-3' : 'flex flex-col gap-1 @sm/table:grid @sm/table:items-center @sm/table:gap-3',
           rowClickEvent && 'cursor-pointer',
           lk.rowPad,
           lk.divider && 'border-b border-[var(--color-border)]',
           lk.striped && index % 2 === 1 && 'bg-[var(--color-surface-subtle)]',
           'hover:bg-[var(--color-surface-subtle)]',
-          look === 'bordered' && '[&>*]:border-r [&>*]:border-[var(--color-border)] [&>*:last-child]:border-r-0',
+          look === 'bordered' && '@sm/table:[&>*]:border-r @sm/table:[&>*]:border-[var(--color-border)] @sm/table:[&>*:last-child]:border-r-0',
         )}
       >
         {selectable && (
@@ -538,25 +558,37 @@ export function TableView({
         {hasRenderProp ? (
           <Box className="flex-1 min-w-0">{children(row, index)}</Box>
         ) : (
-          colDefs.map((col) => {
+          colDefs.map((col, ci) => {
             const raw = asFieldValue(getNestedValue(row, col.field ?? col.key));
+            // Narrow: the first column is the card's title; every other cell
+            // is a label ⟷ value line (the header row is hidden there).
+            const isTitle = ci === 0;
             const cellBase = cn(
-              'flex items-center min-w-0',
+              'flex items-center min-w-0 gap-3',
+              isTitle ? 'font-medium @sm/table:font-[inherit]' : 'justify-between',
+              isTitle && hasActions && 'pr-10 @sm/table:pr-0',
               alignClass[col.align ?? 'left'],
               weightClass[col.weight ?? 'normal'],
               col.className,
+            );
+            const stackedLabel = isTitle ? null : (
+              <span className="@sm/table:hidden shrink-0 text-xs text-muted-foreground" data-stacked-label>
+                {columnLabel(col)}
+              </span>
             );
             if (col.format === 'badge' && raw != null && raw !== '') {
               const relationDisplay = resolveRelationCellDisplay(raw, relationsData?.[col.field ?? col.key]);
               const label = relationDisplay ?? humanizeEnumValue(String(raw));
               return (
                 <Box key={col.key} role="cell" className={cellBase}>
+                  {stackedLabel}
                   <Badge variant={statusVariant(String(raw))} size="sm" className="whitespace-nowrap">{label}</Badge>
                 </Box>
               );
             }
             return (
               <Box key={col.key} role="cell" className={cellBase}>
+                {stackedLabel}
                 <span className="truncate text-foreground">{formatCell(raw, col.format, relationsData?.[col.field ?? col.key])}</span>
               </Box>
             );
@@ -569,12 +601,14 @@ export function TableView({
             // the whole actions cell shields the row click instead.
             onClick={rowClickEvent ? (e) => e.stopPropagation() : undefined}
             className={cn(
-              // Pinned: the fixed column tracks routinely overflow the caller's
-              // scroll container, which would leave the kebab off-screen.
-              // Opaque + hairline edge so it reads as a pinned column, not a
-              // floating control, while scrolled cells pass underneath.
-              'justify-end flex-shrink-0 sticky right-0 z-[1] transition-colors',
-              'border-l border-[var(--color-border)]',
+              // Wide: pinned — the fixed column tracks routinely overflow the
+              // caller's scroll container, which would leave the kebab
+              // off-screen. Opaque + hairline edge so it reads as a pinned
+              // column while scrolled cells pass underneath. Narrow: the
+              // stacked card's top-right corner.
+              'justify-end flex-shrink-0 z-[1] transition-colors',
+              'absolute top-1 right-1 @sm/table:sticky @sm/table:top-auto @sm/table:right-0',
+              '@sm/table:border-l @sm/table:border-[var(--color-border)]',
               lk.striped && index % 2 === 1
                 ? 'bg-[var(--color-surface-subtle)]'
                 : 'bg-[var(--color-card)] group-hover:bg-[var(--color-surface-subtle)]',
@@ -631,7 +665,7 @@ export function TableView({
   return (
     <Box
       role="table"
-      className={cn('w-full text-sm', className)}
+      className={cn('@container/table w-full text-sm', className)}
     >
       {showHeader && header}
       {dnd.wrapContainer(statusNode ? <Box role="rowgroup">{statusNode}</Box> : body)}

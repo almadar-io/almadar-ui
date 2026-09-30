@@ -777,5 +777,6 @@
   "avl.flow.traitsCount": "{{count}} traits",
   "avl.flow.piecesCount": "{{count}} render pieces",
   "avl.flow.traitsCountOne": "1 trait",
-  "avl.flow.piecesCountOne": "1 render piece"
+  "avl.flow.piecesCountOne": "1 render piece",
+  "gantt.datesReversed": "Ends before it starts — check its dates"
 }

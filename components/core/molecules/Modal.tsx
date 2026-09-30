@@ -52,6 +52,11 @@ export interface ModalProps {
   swipeDownToClose?: boolean;
   /** Layer 2 visual treatment — orthogonal to the semantic variant. */
   look?: ModalLook;
+  /**
+   * Render inside the nearest positioned ancestor (a preview frame) instead of
+   * portaling over the whole window; page scroll is left alone.
+   */
+  contained?: boolean;
 }
 
 const sizeClasses: Record<ModalSize, string> = {
@@ -101,6 +106,7 @@ export const Modal: React.FC<ModalProps> = ({
   closeEvent,
   swipeDownToClose = true,
   look = "centered-card",
+  contained = false,
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -112,7 +118,7 @@ export const Modal: React.FC<ModalProps> = ({
   // Presence keeps the dialog mounted through the entire exit animation
   // (mounted stays true while exiting), so the dialog is never
   // unmounted-then-remounted — only its className swaps modal-in→modal-out.
-  const { mounted, exiting, onAnimationEnd: handleAnimEnd } = usePresence(isOpen, {
+  const { mounted, exiting, className: presenceAnim, onAnimationEnd: handleAnimEnd } = usePresence(isOpen, {
     animation: "modal",
     onExited,
   });
@@ -143,6 +149,7 @@ export const Modal: React.FC<ModalProps> = ({
   }, [isOpen, closeOnEscape, onClose, closeEvent, eventBus]);
 
   useEffect(() => {
+    if (contained) return;
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -151,12 +158,13 @@ export const Modal: React.FC<ModalProps> = ({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isOpen]);
+  }, [isOpen, contained]);
 
   if (typeof document === "undefined") return null;
   if (!mounted) return null;
-  const dialogAnim = exiting ? "animate-modal-out" : "animate-modal-in";
-  const overlayAnim = exiting ? "animate-overlay-out" : "animate-overlay-in";
+  // Presence yields no class when motion is off (`--motion-enable`, reduced motion).
+  const dialogAnim = presenceAnim ? (exiting ? "animate-modal-out" : "animate-modal-in") : "";
+  const overlayAnim = presenceAnim ? (exiting ? "animate-overlay-out" : "animate-overlay-in") : "";
 
   const handleClose = () => {
     if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
@@ -176,11 +184,12 @@ export const Modal: React.FC<ModalProps> = ({
   // two sibling `fixed inset-0` layers cause a ghost compositor artifact.
   // No aria-hidden here: this div is also the open Dialog's ancestor, and
   // Dialog already declares its own role="dialog"/aria-modal="true".
-  return (<ThemedPortal>{
+  const layer = (
     <div
       className={cn(
-        "fixed inset-0 z-[1000]",
-        "flex items-start justify-center px-4 pb-4 pt-[10vh]",
+        contained ? "absolute inset-0 z-50" : "fixed inset-0 z-[1000]",
+        "flex items-start justify-center px-4 pb-4",
+        contained ? "pt-[10%]" : "pt-[10vh]",
         "max-sm:items-stretch max-sm:p-0 max-sm:pt-0",
         overlayAnim,
       )}
@@ -199,11 +208,11 @@ export const Modal: React.FC<ModalProps> = ({
             // dialog to top-left).
             "static m-0 p-0 border-0 bg-transparent",
             // Pre-existing dialog frame
-            "pointer-events-auto w-full flex flex-col bg-surface border shadow-elevation-dialog rounded-container",
+            "pointer-events-auto w-full flex flex-col bg-surface surface-material border shadow-elevation-dialog rounded-container",
             // Desktop sizing + viewport-aware floor.
             sizeClasses[size],
             minWidthClasses[size],
-            "max-h-[80vh]",
+            contained ? "max-h-[80%]" : "max-h-[80vh]",
             // Mobile: take the entire screen. Override desktop max-w cap,
             // full height, no rounded corners, no min-width.
             "max-sm:max-w-none max-sm:max-h-none max-sm:w-full max-sm:h-full max-sm:rounded-none",
@@ -268,6 +277,7 @@ export const Modal: React.FC<ModalProps> = ({
                   icon="x"
                   onClick={handleClose}
                   data-event="CLOSE"
+                  data-testid="action-CLOSE"
                   aria-label={t('aria.closeModal')}
                 />
               )}
@@ -289,7 +299,9 @@ export const Modal: React.FC<ModalProps> = ({
             </Box>
           )}
         </Dialog>
-    </div>}</ThemedPortal>);
+    </div>
+  );
+  return contained ? layer : <ThemedPortal>{layer}</ThemedPortal>;
 };
 
 Modal.displayName = "Modal";

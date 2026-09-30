@@ -18,7 +18,7 @@
  */
 import { useCallback } from 'react';
 import type { EventPayload, EntityRow, PatternConfig, ResolvedPatternProps, ResolvedTraitBinding, UserContext } from '@almadar/core';
-import { LIFECYCLE_EVENTS, type CircuitStore, type TraitIndex } from '@almadar/runtime';
+import type { CircuitStore, TraitIndex } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 import { runCircuitEffects } from '../../lib/circuitEffectRunner';
 import type { EventBusContextType } from '../../types/event-bus-types';
@@ -39,6 +39,10 @@ export type ReRenderCallsiteCaptureChildren = (
   callsitePayload: EventPayload,
   entityByTrait: Record<string, EntityRow>,
   visited?: Set<string>,
+  /** Children the server recomposed in this dispatch: their recorded composing payload wins over `callsitePayload`. */
+  serverComposed?: ReadonlySet<string>,
+  /** Walking through a child that was not repainted: its children keep the payload they were last composed with. */
+  keepComposed?: boolean,
 ) => Promise<void>;
 
 export function useCallsiteCapture(
@@ -53,6 +57,8 @@ export function useCallsiteCapture(
     callsitePayload: EventPayload,
     entityByTrait: Record<string, EntityRow>,
     visited: Set<string> = new Set(),
+    serverComposed: ReadonlySet<string> = new Set(),
+    keepComposed = false,
   ): Promise<void> {
     const children = options.callsiteCaptureChildrenByTrait?.get(traitName);
     if (!children || children.size === 0) return;
@@ -64,15 +70,22 @@ export function useCallsiteCapture(
       const childBinding = bindingMap.get(childName);
       if (!childBinding) continue;
 
-      const lifecycleEvent = LIFECYCLE_EVENTS.find((evt: string) => store.manager.canHandleEvent(childName, evt));
-      if (lifecycleEvent === undefined) continue;
-
-      const [entry] = store.manager.sendEvent(lifecycleEvent, {}, undefined, entityByTrait, undefined, childName);
-      if (!entry || !entry.result.executed) continue;
-
+      const composedWith = serverComposed.has(childName) || keepComposed
+        ? store.callsitePayloads.get(childName) ?? callsitePayload
+        : callsitePayload;
+      const lifecycleEvent = store.manager.repaintLifecycleEvent(childName);
       const indexed = traitIndex.byName.get(childName);
-      const frameKey = indexed?.frameKey ?? childName;
+      const [entry] = lifecycleEvent === undefined || indexed === undefined
+        ? []
+        : store.manager.sendEvent(lifecycleEvent, {}, undefined, entityByTrait, undefined, childName);
+      if (lifecycleEvent === undefined || indexed === undefined || !entry || !entry.result.executed) {
+        await reRender(childName, composedWith, entityByTrait, visited, serverComposed, true);
+        continue;
+      }
+
+      const frameKey = indexed.frameKey;
       log.debug('rerender', { referrer: traitName, child: childName, lifecycleEvent });
+      store.callsitePayloads.set(childName, composedWith);
 
       const pendingSlots = new Map<string, Array<{ pattern: PatternConfig; props?: ResolvedPatternProps }>>();
       await runCircuitEffects({
@@ -84,13 +97,13 @@ export function useCallsiteCapture(
         state: entry.result.previousState,
         transitionLabel: `${entry.result.previousState}->${entry.result.newState}`,
         payload: {},
-        callsitePayload,
-        config: indexed?.config,
+        callsitePayload: composedWith,
+        config: indexed.config,
         user: options.user,
-        orbitalName: indexed?.orbitalName,
-        orbitalId: indexed?.orbitalId,
-        traitId: indexed?.irTrait.id,
-        emits: indexed?.irTrait.emits,
+        orbitalName: indexed.orbitalName,
+        orbitalId: indexed.orbitalId,
+        traitId: indexed.irTrait.id,
+        emits: indexed.irTrait.emits,
         navigate: options.navigate,
         navigateBack: options.navigateBack,
         onPattern: (slot, pattern, props) => {
@@ -116,7 +129,7 @@ export function useCallsiteCapture(
         );
       }
 
-      await reRender(childName, callsitePayload, entityByTrait, visited);
+      await reRender(childName, composedWith, entityByTrait, visited, serverComposed, keepComposed);
     }
   }, [traitBindings, store, traitIndex, slotFlush, options.callsiteCaptureChildrenByTrait, options.eventBus, options.navigate, options.navigateBack, options.user]);
 }

@@ -16,6 +16,8 @@ import { cn } from '../../../lib/cn';
 import { formatDate, humanizeFieldName } from '../../../lib/format';
 import { getNestedValue, resolveImageUrl } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useRowActions } from '../../../hooks/useRowActions';
+import type { RowActionCondition } from '../../../lib/row-action-when';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Button } from '../atoms/index';
 import { Badge } from '../atoms/Badge';
@@ -44,6 +46,8 @@ export interface CardItemAction {
   placement?: 'card' | 'footer' | 'row' | string;
   /** Button variant - accepts string for compatibility with generated code */
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | string;
+  /** Per-row condition, authored as `(fn row <bool>)`: the card's button is drawn only when it returns true. Omit = always shown. */
+  when?: RowActionCondition;
 }
 
 /**
@@ -180,6 +184,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   imageField,
 }) => {
   const eventBus = useEventBus();
+  const rowActions = useRowActions();
   const { t } = useTranslate();
 
   // Support fields, fieldNames, and columns (aliases) - normalize to string[]
@@ -207,10 +212,6 @@ export const CardGrid: React.FC<CardGridProps> = ({
   const titleField = effectiveFieldNames?.[0];
   const statusField = effectiveFieldNames?.find((f) => STATUS_FIELDS.has(f.toLowerCase()));
   const bodyFields = effectiveFieldNames?.filter((f) => f !== titleField && f !== statusField) ?? [];
-
-  // Separate actions by type for layout
-  const primaryActions = itemActions?.filter((a) => a.variant !== 'danger') ?? [];
-  const dangerActions = itemActions?.filter((a) => a.variant === 'danger') ?? [];
 
   // Handle action click - navigate, dispatch event, or call callback
   const handleActionClick = (action: CardItemAction, itemData: EventPayload) => (e: React.MouseEvent) => {
@@ -273,6 +274,11 @@ export const CardGrid: React.FC<CardGridProps> = ({
       const itemData = item as EventPayload;
       const id = (itemData.id as string) || String(index);
 
+      // Separate the actions THIS card shows by type for layout
+      const shownActions = rowActions(itemActions ?? [], item);
+      const primaryActions = shownActions.filter((a) => a.variant !== 'danger');
+      const dangerActions = shownActions.filter((a) => a.variant === 'danger');
+
       const titleValue = titleField ? getNestedValue(itemData, titleField) : undefined;
       const statusValue = statusField ? getNestedValue(itemData, statusField) : undefined;
 
@@ -281,7 +287,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
           key={id}
           data-entity-row
           className={cn(
-            'bg-card rounded-lg border border-border',
+            'bg-card rounded-container border border-border',
             'shadow-sm hover:shadow-lg',
             'cursor-pointer hover:border-primary transition-all',
             'flex flex-col'
@@ -294,7 +300,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
             const imgUrl = resolveImageUrl(getNestedValue(itemData, imageField));
             if (!imgUrl) return null;
             return (
-              <Box className="w-full aspect-video overflow-hidden rounded-t-lg">
+              <Box className="w-full aspect-video overflow-hidden rounded-t-container">
                 <img
                   src={imgUrl}
                   alt={titleValue !== undefined ? String(titleValue) : ''}

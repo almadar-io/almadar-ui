@@ -69,7 +69,7 @@ export const BloomQuizBlock: React.FC<BloomQuizBlockProps> = ({
   return (
     <div
       className={cn(
-        'rounded-lg border border-primary p-4 my-4 transition-all',
+        'rounded-container border border-primary p-4 my-4 transition-all',
         config.bgColor,
         className,
       )}
@@ -106,14 +106,14 @@ export const BloomQuizBlock: React.FC<BloomQuizBlockProps> = ({
 
       <button
         type="button"
-        className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+        className="inline-flex items-center rounded-interactive bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
         onClick={handleReveal}
       >
         {revealed ? 'Hide Answer' : 'Reveal Answer'}
       </button>
 
       {revealed && (
-        <div className="rounded-lg bg-card/80 p-3 text-sm text-foreground shadow-sm border border-primary mt-3 space-y-2">
+        <div className="rounded-container bg-card/80 p-3 text-sm text-foreground shadow-elevation-card surface-material border border-primary mt-3 space-y-2">
           <div className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">
             Answer:
           </div>

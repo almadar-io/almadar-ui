@@ -61,7 +61,7 @@ export function TopNavItem({ item, activeHref, tone = 'solid', className }: TopN
   };
 
   const triggerClass = cn(
-    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
+    'flex items-center gap-1.5 px-3 py-1.5 rounded-interactive text-sm font-medium transition-colors whitespace-nowrap',
     isActive
       ? tone === 'solid' ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-primary/10 text-primary'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -108,7 +108,7 @@ export function TopNavItem({ item, activeHref, tone = 'solid', className }: TopN
           <Box className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <Box
             role="menu"
-            className="absolute start-0 top-full mt-1 min-w-48 bg-card rounded-lg shadow-lg border border-border py-1 z-30"
+            className="absolute start-0 top-full mt-1 min-w-48 bg-card surface-material rounded-container shadow-elevation-popover border border-border py-1 z-30"
           >
             {children.map((child) => {
               const childActive = child.active === true || (child.href !== undefined && child.href === activeHref);

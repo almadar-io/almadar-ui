@@ -583,7 +583,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           aria-label={t('richTextEditor.editorToolbar')}
           className={cn(
             'sticky top-0 z-10 flex flex-wrap items-center gap-0.5 self-start',
-            'rounded-md border border-border bg-background/95 px-1 py-0.5 shadow-sm',
+            'rounded-container border border-border bg-background/95 px-1 py-0.5 shadow-sm',
           )}
         >
           <ToolbarButton icon={Bold} label={t('richTextEditor.bold')} active={toolbar.bold} onExec={() => execInline('bold')} />

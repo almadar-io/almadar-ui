@@ -169,7 +169,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   return (
     <>
       <Box
-        className={`flex items-center gap-1.5 py-0.5 px-2 cursor-pointer rounded-sm transition-colors ${
+        className={`flex items-center gap-1.5 py-0.5 px-2 cursor-pointer rounded-interactive transition-colors ${
           isSelected
             ? 'bg-primary text-primary-foreground'
             : 'hover:bg-muted'
@@ -374,7 +374,7 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
     <>
       <Box
         ref={rowRef}
-        className={`group/treerow flex items-center gap-1.5 px-2 cursor-pointer rounded-sm transition-colors ${
+        className={`group/treerow flex items-center gap-1.5 px-2 cursor-pointer rounded-interactive transition-colors ${
           nav ? 'py-1' : 'py-0.5'
         } ${isSelected ? 'bg-primary text-primary-foreground' : nav ? 'text-foreground hover:bg-muted' : 'hover:bg-muted'}`}
         style={{ paddingLeft: depth * indent + 8 }}
@@ -415,7 +415,7 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
             role="button"
             aria-label={nodeActionLabel ?? 'Node action'}
             title={nodeActionLabel}
-            className={`ml-auto flex-shrink-0 rounded-sm p-0.5 opacity-0 group-hover/treerow:opacity-100 transition-opacity ${
+            className={`ml-auto flex-shrink-0 rounded-interactive p-0.5 opacity-0 group-hover/treerow:opacity-100 transition-opacity ${
               isSelected ? 'hover:bg-primary-foreground/20' : 'hover:bg-border'
             }`}
           >

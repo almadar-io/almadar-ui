@@ -222,7 +222,7 @@ export const GridPicker: React.FC<GridPickerProps> = ({
               onClick={() => select(item)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               className={cn(
-                'flex items-center justify-center rounded-sm',
+                'flex items-center justify-center rounded-interactive',
                 'transition-colors hover:bg-muted',
                 'focus:outline-none focus:ring-1 focus:ring-ring',
                 selected && 'bg-primary/10 ring-1 ring-primary',

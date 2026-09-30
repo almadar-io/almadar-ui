@@ -11,6 +11,8 @@ import React, { useCallback, useRef, useState } from 'react';
 import type { EntityRow, EventKey, EventPayload } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useRowActions } from '../../../hooks/useRowActions';
+import type { RowActionCondition } from '../../../lib/row-action-when';
 import { Box } from '../atoms/Box';
 import { HStack } from '../atoms/Stack';
 import { Button } from '../atoms/Button';
@@ -26,6 +28,8 @@ export interface SwipeAction {
   /** Payload included with the `event` emit
    *  @payloadFor event */
   eventPayload?: EventPayload;
+  /** Per-row condition, authored as `(fn row <bool>)`: the swipe action is revealed only when it returns true. Omit = always shown. */
+  when?: RowActionCondition;
 }
 
 export interface SwipeableRowProps {
@@ -48,14 +52,17 @@ function useSafeEventBus() {
 }
 
 export const SwipeableRow: React.FC<SwipeableRowProps> = ({
-  leftActions = [],
-  rightActions = [],
+  leftActions: leftActionDefs = [],
+  rightActions: rightActionDefs = [],
   threshold = 80,
   children,
   itemData,
   className,
 }) => {
   const eventBus = useSafeEventBus();
+  const rowActions = useRowActions();
+  const leftActions = rowActions(leftActionDefs, itemData ?? {});
+  const rightActions = rowActions(rightActionDefs, itemData ?? {});
   const [revealState, setRevealState] = useState<RevealState>('closed');
   const [offsetX, setOffsetX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -164,7 +171,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
     setOffsetX(0);
   }, []);
 
-  const renderActions = (actions: SwipeAction[], side: 'left' | 'right') => {
+  const renderActions = (actions: readonly SwipeAction[], side: 'left' | 'right') => {
     if (actions.length === 0) return null;
 
     return (

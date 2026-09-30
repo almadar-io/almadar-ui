@@ -142,7 +142,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
     <div
       className={cn(
         "inline-flex items-center",
-        "rounded-sm",
+        "rounded-interactive",
         "border-[length:var(--border-width)] border-border",
         "bg-surface",
         disabled && "opacity-50 cursor-not-allowed",
@@ -163,7 +163,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         disabled={disabled || isAtMin}
         className={cn(
           "inline-flex items-center justify-center",
-          "rounded-l-sm",
+          "rounded-l-interactive",
           "text-foreground",
           "hover:bg-muted",
           "active:bg-muted",
@@ -204,7 +204,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         disabled={disabled || isAtMax}
         className={cn(
           "inline-flex items-center justify-center",
-          "rounded-r-sm",
+          "rounded-r-interactive",
           "text-foreground",
           "hover:bg-muted",
           "active:bg-muted",

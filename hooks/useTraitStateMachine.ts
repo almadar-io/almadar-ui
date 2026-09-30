@@ -223,6 +223,7 @@ export function useTraitStateMachine(
     const entityId = typeof payload?.entityId === 'string' ? payload.entityId : undefined;
     const orbitalName = traitIndex.byName.get(traitName)?.orbitalName ?? traitName;
     let outcome: Awaited<ReturnType<typeof kernel.dispatch>>;
+    const composedBefore = new Map(store.callsitePayloads);
     try {
       outcome = await kernel.dispatch({
         event: eventKey,
@@ -255,7 +256,11 @@ export function useTraitStateMachine(
         const row = store.frames.get(entry.frameKey);
         if (row !== undefined) entityByTrait[name] = row;
       }
-      await reRenderCallsiteCaptureChildren(traitName, payload ?? {}, entityByTrait);
+      // A child the response already repainted was composed under the payload that
+      // really fired (a fetch's success, not this dispatch's INIT) — its frame stays.
+      const repainted = new Set((outcome.response.clientEffectsByTrait ?? []).map((e) => e.traitName));
+      const serverComposed = new Set([...store.callsitePayloads].filter(([child, composed]) => composedBefore.get(child) !== composed).map(([child]) => child));
+      await reRenderCallsiteCaptureChildren(traitName, payload ?? {}, entityByTrait, repainted, serverComposed);
     }
     options.onEventProcessed?.(eventKey, payload);
   }, [kernel, slotFlush, traitIndex, store, eventBus, reRenderCallsiteCaptureChildren, options.navigate, options.navigateBack, options.onEventProcessed]);

@@ -100,7 +100,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
         // compact pill into a page-wide band.
         "w-fit",
         variant === "vertical" ? "flex-col" : "flex-row",
-        "rounded-sm",
+        "rounded-interactive",
         "border-[length:var(--border-width)] border-border",
         "bg-surface",
         disabled && "opacity-50 cursor-not-allowed",
@@ -117,7 +117,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
         aria-pressed={isUp}
         className={cn(
           "inline-flex items-center justify-center",
-          variant === "vertical" ? "rounded-t-sm" : "rounded-l-sm",
+          variant === "vertical" ? "rounded-t-interactive" : "rounded-l-interactive",
           isUp ? "text-primary" : "text-muted-foreground",
           "hover:bg-muted",
           "active:bg-muted",
@@ -154,7 +154,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
         aria-pressed={isDown}
         className={cn(
           "inline-flex items-center justify-center",
-          variant === "vertical" ? "rounded-b-sm" : "rounded-r-sm",
+          variant === "vertical" ? "rounded-b-interactive" : "rounded-r-interactive",
           isDown ? "text-primary" : "text-muted-foreground",
           "hover:bg-muted",
           "active:bg-muted",

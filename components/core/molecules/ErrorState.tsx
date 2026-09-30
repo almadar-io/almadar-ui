@@ -51,7 +51,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
       <Box className="mb-4 rounded-full bg-error/10 p-3">
         <Icon name="alert-circle" className="h-8 w-8 text-error" />
       </Box>
-      <Typography variant="h3" className="text-lg font-medium text-foreground">
+      <Typography variant="h3" className="text-lg text-foreground">
         {resolvedTitle}
       </Typography>
       <Typography variant="small" className="mt-1 text-muted-foreground max-w-sm">

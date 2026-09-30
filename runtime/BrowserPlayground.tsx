@@ -23,7 +23,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { createInProcessTransport, type EventTransport } from '@almadar/runtime';
-import type { OrbitalSchema } from '@almadar/core';
+import type { OrbitalSchema, UserContext } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { OrbPreview } from './OrbPreview';
 
@@ -46,6 +46,8 @@ export interface BrowserPlaygroundProps {
   fit?: boolean;
   /** Called with the page path on every in-preview page switch. Forwarded to OrbPreview. */
   onPageChange?: (path: string) => void;
+  /** Who is viewing (`@user`). Default: the app's first seeded persona. */
+  viewer?: UserContext;
 }
 
 export function BrowserPlayground({
@@ -57,9 +59,10 @@ export function BrowserPlayground({
   paused,
   fit,
   onPageChange,
+  viewer,
 }: BrowserPlaygroundProps): React.ReactElement {
   const [runtime] = useState(
-    () => new OrbitalServerRuntime({ mode, debug: false }),
+    () => new OrbitalServerRuntime({ mode, debug: false, ...(viewer !== undefined ? { defaultUser: viewer } : {}) }),
   );
 
   // Purely additive: `paused` undefined never calls pause/resume, so a
@@ -157,6 +160,7 @@ export function BrowserPlayground({
       className={className}
       fit={fit}
       onPageChange={onPageChange}
+      user={viewer ?? null}
       // BrowserPlayground is always a sandboxed in-process preview embedded in
       // a host (studio canvas / preview tab). Its bus must stay context-local
       // and must NOT clobber the host's global event bus — otherwise a host

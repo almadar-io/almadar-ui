@@ -14,7 +14,7 @@
  */
 
 'use client';
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import type { IconFamily as IconFamilyType } from '@almadar/core';
 import * as LucideIcons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -53,9 +53,23 @@ export function getCurrentIconFamily(): IconFamily {
  * The theme's `--icon-stroke-width` belongs to the theme's family; it applies
  * only when that family is the one rendering (unset = the default family).
  */
-function themeStrokeApplies(): boolean {
-  const raw = themeIconFamily();
+function familyStrokeApplies(raw: string): boolean {
   return raw === '' || (VALID_FAMILIES as ReadonlyArray<string>).includes(raw);
+}
+
+function themeStrokeApplies(): boolean {
+  return familyStrokeApplies(themeIconFamily());
+}
+
+/** The --icon-family in effect at `el`: a theme may be scoped to a subtree.
+ *  Custom properties inherit, so the nearest ancestor carrying one is the value
+ *  in effect (a browser already reports it on `el`; jsdom only on the declarer). */
+function scopedIconFamily(el: Element): string {
+  for (let node: Element | null = el; node; node = node.parentElement) {
+    const raw = getComputedStyle(node).getPropertyValue('--icon-family').trim().replace(/^["']|["']$/g, '');
+    if (raw !== '') return raw;
+  }
+  return '';
 }
 
 // ---------------------------------------------------------------------------
@@ -64,8 +78,10 @@ function themeStrokeApplies(): boolean {
 
 let cachedFamily: IconFamily | null = null;
 let cachedStrokeApplies: boolean | null = null;
+let themeVersion = 0;
 const listeners = new Set<() => void>();
 let observer: MutationObserver | null = null;
+let scopeObserver: MutationObserver | null = null;
 
 function ensureObserver(): void {
   if (typeof window === 'undefined' || observer) return;
@@ -75,12 +91,25 @@ function ensureObserver(): void {
     if (next !== cachedFamily || nextStroke !== cachedStrokeApplies) {
       cachedFamily = next;
       cachedStrokeApplies = nextStroke;
+      themeVersion++;
       listeners.forEach((fn) => fn());
     }
   });
   observer.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme', 'style'],
+  });
+  // Scoped themes (`data-theme` on a subtree) change what an icon's CSS
+  // variables resolve to without touching <html>.
+  scopeObserver = new MutationObserver((records) => {
+    if (records.every((r) => r.target === document.documentElement)) return;
+    themeVersion++;
+    listeners.forEach((fn) => fn());
+  });
+  scopeObserver.observe(document.documentElement, {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ['data-theme'],
   });
   cachedFamily = getCurrentIconFamily();
   cachedStrokeApplies = themeStrokeApplies();
@@ -110,9 +139,19 @@ function getStrokeAppliesSnapshot(): boolean {
   return cachedStrokeApplies;
 }
 
+function getThemeVersionSnapshot(): number {
+  return themeVersion;
+}
+
 /** React hook: whether the theme's `--icon-stroke-width` applies to the rendered icons. */
-export function useThemeIconStrokeApplies(): boolean {
-  return useSyncExternalStore(subscribeIconFamily, getStrokeAppliesSnapshot, () => true);
+export function useThemeIconStrokeApplies(ref: React.RefObject<Element | null>): boolean {
+  const documentApplies = useSyncExternalStore(subscribeIconFamily, getStrokeAppliesSnapshot, () => true);
+  const version = useSyncExternalStore(subscribeIconFamily, getThemeVersionSnapshot, () => 0);
+  const [scopedApplies, setScopedApplies] = useState<boolean | null>(null);
+  useLayoutEffect(() => {
+    if (ref.current) setScopedApplies(familyStrokeApplies(scopedIconFamily(ref.current)));
+  }, [ref, version]);
+  return scopedApplies ?? documentApplies;
 }
 
 /** React hook: returns the active icon family, re-renders on theme switch. */
@@ -180,18 +219,21 @@ function resolveLucide(name: string): LucideIcon {
 // Main dispatcher
 // ---------------------------------------------------------------------------
 
-function makeLucideAdapter(
-  name: string,
-): React.ComponentType<RenderedIconProps> {
+export type RenderedIcon = React.ForwardRefExoticComponent<
+  RenderedIconProps & React.RefAttributes<SVGSVGElement>
+>;
+
+function makeLucideAdapter(name: string): RenderedIcon {
   const LucideComp = resolveLucide(name);
-  const Adapter: React.FC<RenderedIconProps> = (props) => (
+  const Adapter = React.forwardRef<SVGSVGElement, RenderedIconProps>((props, ref) => (
     <LucideComp
+      ref={ref}
       className={props.className}
       strokeWidth={props.strokeWidth}
       style={props.style}
       size={props.size}
     />
-  );
+  ));
   Adapter.displayName = `Lucide.${name}`;
   return Adapter;
 }
@@ -203,7 +245,7 @@ function makeLucideAdapter(
 export function resolveIconForFamily(
   name: string,
   _family: IconFamily,
-): React.ComponentType<RenderedIconProps> {
+): RenderedIcon {
   return makeLucideAdapter(name);
 }
 
@@ -218,9 +260,9 @@ export function resolveIconForFamily(
  */
 export function useResolvedIcon(
   name: string,
-): React.ComponentType<RenderedIconProps> {
+): RenderedIcon {
   const family = useIconFamily();
-  const [comp, setComp] = useState<React.ComponentType<RenderedIconProps>>(() =>
+  const [comp, setComp] = useState<RenderedIcon>(() =>
     resolveIconForFamily(name, family),
   );
   useEffect(() => {

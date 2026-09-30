@@ -43,7 +43,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         className={cn(
-          "block w-full border-[length:var(--border-width)] shadow-sm",
+          "block w-full rounded-interactive border-[length:var(--border-width)] shadow-elevation-interactive interactive-border",
           "px-3 py-2 text-sm text-foreground",
           "bg-card",
           "placeholder:text-[var(--color-placeholder)]",

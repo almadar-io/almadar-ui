@@ -42,6 +42,40 @@ describe('Icon stroke under a theme icon family', () => {
     await waitFor(() => expect(strokeStyleOf(container)).toContain('--icon-stroke-width'));
   });
 
+  it('G-UI-033: a fill-family theme scoped to a subtree does not zero the stroke under a lucide <html>', async () => {
+    themed('lucide', '1.5');
+    const { container } = render(
+      <div data-theme="kiosk-light" style={{ ['--icon-family' as string]: 'fa-solid', ['--icon-stroke-width' as string]: '0' }}>
+        <Icon name="flame" />
+      </div>,
+    );
+    await waitFor(() => expect(strokeStyleOf(container)).not.toContain('--icon-stroke-width'));
+  });
+
+  it('G-UI-033 control: a lucide theme scoped under a fill-family <html> drives the stroke', async () => {
+    themed('fa-solid', '0');
+    const { container } = render(
+      <div data-theme="linear-clean-light" style={{ ['--icon-family' as string]: 'lucide', ['--icon-stroke-width' as string]: '1.5' }}>
+        <Icon name="flame" />
+      </div>,
+    );
+    await waitFor(() => expect(strokeStyleOf(container)).toContain('--icon-stroke-width'));
+  });
+
+  it('G-UI-033 edge: switching the scoped theme re-evaluates the stroke', async () => {
+    themed('lucide', '1.5');
+    const { container } = render(
+      <div data-theme="linear-clean-light" style={{ ['--icon-family' as string]: 'lucide' }}>
+        <Icon name="flame" />
+      </div>,
+    );
+    await waitFor(() => expect(strokeStyleOf(container)).toContain('--icon-stroke-width'));
+    const scope = container.firstElementChild as HTMLElement;
+    scope.style.setProperty('--icon-family', 'fa-solid');
+    scope.setAttribute('data-theme', 'kiosk-light');
+    await waitFor(() => expect(strokeStyleOf(container)).not.toContain('--icon-stroke-width'));
+  });
+
   it('edge: an explicit strokeWidth prop always wins', () => {
     themed('fa-solid', '0');
     const { container } = render(<Icon name="flame" strokeWidth={3} />);

@@ -1229,7 +1229,7 @@ export const Form: React.FC<FormProps> = ({
                 src={imageUrl}
                 alt=""
                 aria-hidden="true"
-                className="h-24 w-full max-w-xs rounded-md border border-border object-cover"
+                className="h-24 w-full max-w-xs rounded-container border border-border object-cover"
                 data-testid={`image-preview-${fieldName}`}
               />
             ) : null}

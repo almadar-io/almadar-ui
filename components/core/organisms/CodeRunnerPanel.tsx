@@ -137,7 +137,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
         <HStack
           gap="xs"
           align="center"
-          className="absolute top-2 right-2 z-10 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity bg-[var(--color-card)]/90 backdrop-blur-sm rounded-md p-1 shadow-sm border border-border"
+          className="absolute top-2 right-2 z-10 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity bg-[var(--color-card)]/90 backdrop-blur-sm rounded-container p-1 shadow-elevation-popover border border-border"
         >
           <Button
             variant="ghost"
@@ -169,7 +169,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
       </Box>
 
       {hasOutput && (
-        <Box className="rounded-lg border border-border bg-foreground overflow-hidden">
+        <Box className="rounded-container border border-border bg-foreground overflow-hidden">
           <HStack
             gap="sm"
             align="center"

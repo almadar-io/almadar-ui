@@ -151,7 +151,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
   return (
     <Box
       className={cn(
-        "p-4 rounded-lg border",
+        "p-4 rounded-container border",
         bgColor,
         className,
       )}

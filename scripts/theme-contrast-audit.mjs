@@ -43,6 +43,8 @@ const PAIRS = [
   ['--color-success-foreground', '--color-success'],
   ['--color-warning-foreground', '--color-warning'],
   ['--color-info-foreground', '--color-info'],
+  // Surfaces with no *-foreground token of their own carry page text.
+  ['--color-foreground', '--color-surface'],
 ];
 
 function parseColor(raw) {

@@ -13,6 +13,7 @@ import { useAuthContext } from "../../../hooks/useAuthContext";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useCurrentPagePath } from "../../../providers/CurrentPagePathContext";
+import { PageTransition } from "../molecules/PageTransition";
 import type { AssetUrl, EventEmit, EventKey } from "@almadar/core";
 
 export interface NavItem {
@@ -280,7 +281,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       // `@container/dashboard` is kept for descendant grid components that opt
       // into container queries; the sidebar's own responsiveness is JS-driven
       // (see isMobile above) so it never depends on those classes being emitted.
-      className="@container/dashboard min-h-screen w-full bg-background dark:bg-background flex flex-row items-stretch"
+      className="@container/dashboard min-h-screen w-full bg-background dark:bg-background surface-page flex flex-row items-stretch"
     >
       {showSidebar && isMobile && sidebarOpen && (
         <Box
@@ -458,19 +459,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {/* Search hidden on phones; capped width on `xl+`. */}
               {searchEnabled && (
                 <Box className="hidden @sm/dashboard:block flex-1 min-w-0 @xl/dashboard:max-w-md">
-                  <Box className="relative">
-                    <AlmadarIcon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder={t('common.search')}
-                      className="pl-10 w-full"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSearchSubmit((e.target as HTMLInputElement).value);
-                        }
-                      }}
-                    />
-                  </Box>
+                  <Input
+                    type="search"
+                    icon="search"
+                    placeholder={t('common.search')}
+                    className="w-full"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearchSubmit((e.target as HTMLInputElement).value);
+                      }
+                    }}
+                  />
                 </Box>
               )}
               {!searchEnabled && <Box className="flex-1" />}
@@ -608,7 +607,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             showBottomNav && "pb-20",
           )}
         >
-          {children}
+          <PageTransition locationKey={activePath}>{children}</PageTransition>
         </Box>
 
         {/* Bottom nav — only in bottomnav mode. Fixed to viewport bottom

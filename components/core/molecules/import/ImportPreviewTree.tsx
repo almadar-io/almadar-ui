@@ -149,7 +149,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
         }
         const label = entityDisplay[entity]?.plural ?? entity;
         return (
-          <Box key={entity} border className="rounded-md border-border bg-card p-3">
+          <Box key={entity} border className="rounded-container border-border bg-card p-3">
             <Box className="flex items-center gap-2 pb-2">
               <Typography variant="label">{label}</Typography>
               <Badge amount={groupUnits.length} />
@@ -159,7 +159,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
         );
       })}
       {skipped.length > 0 ? (
-        <Box border className="rounded-md border-border bg-card p-3">
+        <Box border className="rounded-container border-border bg-card p-3">
           <Box className="flex items-center gap-2 pb-2">
             <Typography variant="label">Skipped</Typography>
             <Badge amount={skipped.length} />

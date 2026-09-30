@@ -120,7 +120,7 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
         {variant === "buttons" ? (
           <Box
             className={cn(
-              "inline-flex w-full items-stretch rounded-sm overflow-hidden",
+              "inline-flex w-full items-stretch rounded-interactive overflow-hidden",
               "border-[length:var(--border-width)] border-border",
               "bg-surface",
             )}

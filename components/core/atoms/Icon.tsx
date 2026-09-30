@@ -172,7 +172,8 @@ export const Icon: React.FC<IconProps> = ({
   // default is 0, and a literal 0 would zero the stroke and hide the icon.
   const effectiveStrokeWidth = strokeWidth != null && strokeWidth > 0 ? strokeWidth : undefined;
   const family = useIconFamily();
-  const themeStroke = useThemeIconStrokeApplies();
+  const svgRef = React.useRef<SVGSVGElement>(null);
+  const themeStroke = useThemeIconStrokeApplies(svgRef);
   const RenderedComponent = React.useMemo(() => {
     if (directIcon) return null;
     return effectiveName ? resolveIconForFamily(effectiveName, family) : null;
@@ -200,6 +201,7 @@ export const Icon: React.FC<IconProps> = ({
     const Direct = directIcon;
     return (
       <Direct
+        ref={svgRef}
         className={composedClassName}
         strokeWidth={effectiveStrokeWidth}
         style={inlineStyle}
@@ -209,6 +211,7 @@ export const Icon: React.FC<IconProps> = ({
   if (RenderedComponent) {
     return (
       <RenderedComponent
+        ref={svgRef}
         className={composedClassName}
         strokeWidth={effectiveStrokeWidth}
         style={inlineStyle}
@@ -219,6 +222,7 @@ export const Icon: React.FC<IconProps> = ({
   const Fallback = LucideIcons.HelpCircle;
   return (
     <Fallback
+      ref={svgRef}
       className={composedClassName}
       strokeWidth={effectiveStrokeWidth}
       style={inlineStyle}

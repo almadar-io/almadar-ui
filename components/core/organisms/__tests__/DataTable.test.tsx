@@ -44,3 +44,16 @@ describe('DataTable relation columns', () => {
     expect(screen.queryByText('staff-42')).not.toBeInTheDocument();
   });
 });
+
+describe('DataTable search icon (G-UI-034)', () => {
+  it('renders the search icon inside the Input wrapper, not as an overlay the input paints over', () => {
+    renderWithProvider(<DataTable entity={rows} fields={columns} searchable />);
+    const input = screen.getByRole('searchbox');
+    expect(input.parentElement?.querySelector('svg.lucide-search')).not.toBeNull();
+  });
+
+  it('control: not searchable renders no searchbox', () => {
+    renderWithProvider(<DataTable entity={rows} fields={columns} />);
+    expect(screen.queryByRole('searchbox')).toBeNull();
+  });
+});

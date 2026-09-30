@@ -10,6 +10,6 @@ export const THEME_SCALE_KEYS = {
   width: ['icon-default'],
   fontSize: ['display-1', 'display-2'],
   borderRadius: ['container', 'interactive', 'pill'],
-  boxShadow: ['elevation-card', 'elevation-popover', 'elevation-dialog', 'elevation-toast'],
+  boxShadow: ['elevation-card', 'elevation-popover', 'elevation-dialog', 'elevation-toast', 'elevation-interactive', 'elevation-pressed'],
   spacing: ['card-sm', 'card-md', 'card-lg', 'dialog', 'section'],
 } as const;

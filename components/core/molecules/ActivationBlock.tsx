@@ -44,20 +44,20 @@ export const ActivationBlock: React.FC<ActivationBlockProps> = ({
   return (
     <div
       className={cn(
-        'bg-primary/10 border-2 border-primary rounded-lg p-5 mb-6',
+        'bg-primary/10 border-2 border-primary rounded-container p-5 mb-6',
         className,
       )}
     >
       <div className="flex items-start gap-3">
         <Lightbulb className="text-primary flex-shrink-0 mt-1" size={24} />
         <div className="flex-1">
-          <h4 className="font-semibold text-primary mb-2">Before You Begin...</h4>
+          <h4 className="heading-voice text-primary mb-2">Before You Begin...</h4>
           <p className="text-foreground mb-3 text-sm md:text-base">{question}</p>
 
           {isExpanded ? (
             <>
               <textarea
-                className="w-full p-3 border border-input rounded-md bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
+                className="w-full p-3 border border-input rounded-interactive bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
                 placeholder="Jot down your thoughts..."
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
@@ -66,7 +66,7 @@ export const ActivationBlock: React.FC<ActivationBlockProps> = ({
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={handleSubmit}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary-hover text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-interactive hover:bg-primary-hover text-sm font-medium transition-colors"
                 >
                   Continue to Lesson →
                 </button>

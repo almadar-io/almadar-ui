@@ -37,6 +37,10 @@ export type DrawerSize = "sm" | "md" | "lg" | "xl" | "full";
 export interface DrawerProps {
   /** Whether the drawer is open (defaults to true when rendered by slot wrapper) */
   isOpen?: boolean;
+  /** Fires after the exit animation completes (the drawer is about to unmount). */
+  onExited?: () => void;
+  /** Render inside the nearest positioned ancestor (a preview frame) instead of over the window. */
+  contained?: boolean;
   /** Callback when drawer should close (injected by slot wrapper) */
   onClose?: () => void;
   /** Drawer title (text or any node, e.g. a brand logo + name). */
@@ -83,6 +87,8 @@ const sizeWidths: Record<DrawerSize, string> = {
 
 export const Drawer: React.FC<DrawerProps> = ({
   isOpen = true,
+  onExited,
+  contained = false,
   onClose = () => {},
   title,
   children = null,
@@ -131,10 +137,11 @@ export const Drawer: React.FC<DrawerProps> = ({
 
   // Enter/exit motion (token-driven). The slide direction is flipped per
   // side via the --motion-drawer-sign CSS var consumed by the drawer keyframes.
-  const { mounted, className: drawerAnim, onAnimationEnd } = usePresence(isOpen, { animation: "drawer" });
+  const { mounted, className: drawerAnim, onAnimationEnd } = usePresence(isOpen, { animation: "drawer", onExited });
 
   // Prevent body scroll when open
   useEffect(() => {
+    if (contained) return;
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -143,7 +150,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isOpen]);
+  }, [isOpen, contained]);
 
   if (!mounted) return null;
 
@@ -180,7 +187,7 @@ export const Drawer: React.FC<DrawerProps> = ({
       <Overlay
         isVisible={isOpen}
         onClick={handleOverlayClick}
-        className="z-[60]"
+        className={contained ? "absolute z-50" : "z-[60]"}
       />
 
       {/* Drawer */}
@@ -191,8 +198,9 @@ export const Drawer: React.FC<DrawerProps> = ({
         shadow="xl"
         className={cn(
           // Above the page's floating chrome (tool strips, chat pills: z-50), like SidePanel.
-          "fixed top-0 bottom-0 z-[60]",
-          "flex flex-col max-h-screen",
+          contained ? "absolute top-0 bottom-0 z-50 surface-material" : "fixed top-0 bottom-0 z-[60] surface-material",
+          "flex flex-col",
+          contained ? "max-h-full" : "max-h-screen",
           positionClasses,
           widthClass,
           drawerAnim,
@@ -223,6 +231,8 @@ export const Drawer: React.FC<DrawerProps> = ({
                 size="sm"
                 icon="x"
                 onClick={handleClose}
+                data-event="CLOSE"
+                data-testid="action-CLOSE"
                 aria-label={t('aria.closeDrawer')}
                 className={cn(!title && "ml-auto")}
               />

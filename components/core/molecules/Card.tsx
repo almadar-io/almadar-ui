@@ -114,7 +114,7 @@ export function Card({
     >
       {/* Image */}
       {image && (
-        <div className="aspect-video w-full overflow-hidden rounded-t-lg">
+        <div className="aspect-video w-full overflow-hidden rounded-t-container">
           <img
             src={image}
             alt={title || t('card.imageAlt')}
@@ -129,7 +129,7 @@ export function Card({
         {(title || subtitle) && (
           <div className="mb-3">
             {title && (
-              <h3 className="text-lg font-semibold text-card-foreground">
+              <h3 className="heading-voice text-lg text-card-foreground">
                 {title}
               </h3>
             )}
@@ -159,7 +159,7 @@ export function Card({
                 }}
                 disabled={action.disabled}
                 className={`
-                  px-3 py-1.5 text-sm font-medium rounded-sm
+                  px-3 py-1.5 text-sm font-medium rounded-interactive
                   transition-colors
                   ${
                     action.variant === "primary"

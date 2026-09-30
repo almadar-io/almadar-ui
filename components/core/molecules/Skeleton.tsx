@@ -22,7 +22,7 @@ export interface SkeletonProps {
   className?: string;
 }
 
-const pulseClass = 'almadar-shimmer animate-shimmer rounded';
+const pulseClass = 'almadar-shimmer animate-shimmer rounded-container';
 
 function SkeletonLine({ className }: { className?: string }) {
   return <Box className={cn(pulseClass, 'h-4', className)} />;
@@ -40,8 +40,8 @@ function HeaderSkeleton({ className }: { className?: string }) {
         <SkeletonLine className="w-64" />
       </VStack>
       <HStack gap="sm">
-        <SkeletonBlock className="h-9 w-24 rounded-md" />
-        <SkeletonBlock className="h-9 w-32 rounded-md" />
+        <SkeletonBlock className="h-9 w-24 rounded-interactive" />
+        <SkeletonBlock className="h-9 w-32 rounded-interactive" />
       </HStack>
     </HStack>
   );
@@ -49,7 +49,7 @@ function HeaderSkeleton({ className }: { className?: string }) {
 
 function TableSkeleton({ rows = 5, columns = 4, className }: { rows?: number; columns?: number; className?: string }) {
   return (
-    <VStack gap="none" className={cn('border border-border rounded-lg overflow-hidden', className)}>
+    <VStack gap="none" className={cn('border border-border rounded-container overflow-hidden', className)}>
       {/* Table header */}
       <HStack className="px-4 py-3 bg-muted/30 border-b border-border">
         {Array.from({ length: columns }).map((_, i) => (
@@ -83,13 +83,13 @@ function FormSkeleton({ fields = 4, className }: { fields?: number; className?: 
       {Array.from({ length: fields }).map((_, i) => (
         <VStack key={i} gap="sm">
           <SkeletonBlock className="h-4 w-24" />
-          <SkeletonBlock className="h-10 w-full rounded-md" />
+          <SkeletonBlock className="h-10 w-full rounded-interactive" />
         </VStack>
       ))}
       {/* Form actions */}
       <HStack gap="md" className="justify-end pt-2">
-        <SkeletonBlock className="h-10 w-20 rounded-md" />
-        <SkeletonBlock className="h-10 w-24 rounded-md" />
+        <SkeletonBlock className="h-10 w-20 rounded-interactive" />
+        <SkeletonBlock className="h-10 w-24 rounded-interactive" />
       </HStack>
     </VStack>
   );
@@ -100,7 +100,7 @@ function CardSkeleton({ className }: { className?: string }) {
     <VStack
       gap="md"
       className={cn(
-        'p-5 border border-border rounded-lg',
+        'p-5 border border-border rounded-container',
         className,
       )}
     >

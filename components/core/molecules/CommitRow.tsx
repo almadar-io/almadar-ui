@@ -18,7 +18,7 @@ import { Icon } from '../atoms/Icon';
 import { Typography } from '../atoms/Typography';
 import { VStack, HStack } from '../atoms/Stack';
 
-export type CommitKind = 'user' | 'agent' | 'restore' | 'undo' | 'redo' | 'snapshot';
+export type CommitKind = 'user' | 'agent' | 'restore' | 'undo' | 'redo' | 'snapshot' | 'merge';
 
 const KIND_ICONS: Record<CommitKind, string> = {
   user: 'user',
@@ -27,6 +27,7 @@ const KIND_ICONS: Record<CommitKind, string> = {
   undo: 'undo-2',
   redo: 'redo-2',
   snapshot: 'camera',
+  merge: 'git-merge',
 };
 
 /**
@@ -42,7 +43,7 @@ export interface CommitRowProps {
   author?: string;
   /** Display time (already formatted, e.g. "2 min ago"). */
   timestamp?: string;
-  /** What made this version (a user save, an agent turn, a restore, an undo/redo, a snapshot). */
+  /** What made this version (a user save, an agent turn, a restore, an undo/redo, a snapshot, a merge of a teammate's work). */
   kind?: CommitKind;
   additions?: number;
   deletions?: number;
@@ -80,7 +81,7 @@ export const CommitRow: React.FC<CommitRowProps> = ({
   }, [eventBus, selectEvent, sha]);
 
   return (
-    <HStack gap="sm" align="start" className={cn('rounded-sm px-2 py-1.5', selected ? 'bg-muted' : 'hover:bg-muted', className)}>
+    <HStack gap="sm" align="start" className={cn('rounded-interactive px-2 py-1.5', selected ? 'bg-muted' : 'hover:bg-muted', className)}>
       <Box
         role="button"
         tabIndex={0}

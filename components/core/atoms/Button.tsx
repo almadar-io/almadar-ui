@@ -61,9 +61,9 @@ const variantStyles = {
   primary: [
     "bg-primary text-primary-foreground",
     "border-none",
-    "shadow-sm",
+    "shadow-elevation-interactive",
     "hover:bg-primary-hover hover:shadow-lg",
-    "active:scale-[var(--active-scale)] active:shadow-sm",
+    "active:scale-[var(--active-scale)] active:shadow-elevation-pressed",
   ].join(" "),
   secondary: [
     "bg-transparent text-accent",
@@ -80,23 +80,23 @@ const variantStyles = {
   danger: [
     "bg-surface text-error",
     "border-[length:var(--border-width)] border-error",
-    "shadow-sm",
+    "shadow-elevation-interactive",
     "hover:bg-error hover:text-error-foreground hover:shadow-lg",
-    "active:scale-[var(--active-scale)] active:shadow-sm",
+    "active:scale-[var(--active-scale)] active:shadow-elevation-pressed",
   ].join(" "),
   success: [
     "bg-surface text-success",
     "border-[length:var(--border-width)] border-success",
-    "shadow-sm",
+    "shadow-elevation-interactive",
     "hover:bg-success hover:text-success-foreground hover:shadow-lg",
-    "active:scale-[var(--active-scale)] active:shadow-sm",
+    "active:scale-[var(--active-scale)] active:shadow-elevation-pressed",
   ].join(" "),
   warning: [
     "bg-surface text-warning",
     "border-[length:var(--border-width)] border-warning",
-    "shadow-sm",
+    "shadow-elevation-interactive",
     "hover:bg-warning hover:text-warning-foreground hover:shadow-lg",
-    "active:scale-[var(--active-scale)] active:shadow-sm",
+    "active:scale-[var(--active-scale)] active:shadow-elevation-pressed",
   ].join(" "),
   // "default" is an alias for secondary
   default: [
@@ -207,7 +207,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const classes = cn(
       "relative inline-flex items-center justify-center gap-2",
       "font-medium",
-      "rounded-sm",
+      "rounded-interactive interactive-border",
       "cursor-pointer",
       variant !== "link" && "chrome-button",
       "transition-all duration-normal",

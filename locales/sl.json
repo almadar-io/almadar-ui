@@ -777,5 +777,6 @@
   "avl.flow.traitsCount": "{{count}} lastnosti",
   "avl.flow.piecesCount": "{{count}} izrisov",
   "avl.flow.traitsCountOne": "1 lastnost",
-  "avl.flow.piecesCountOne": "1 izris"
+  "avl.flow.piecesCountOne": "1 izris",
+  "gantt.datesReversed": "Konča se pred začetkom — preverite datuma"
 }

@@ -243,7 +243,7 @@ export const Header: React.FC<HeaderProps> = ({
           {brandName && (
             <Typography
               variant="h5"
-              className="text-lg font-bold text-foreground"
+              className="text-lg text-foreground"
             >
               {brandName}
             </Typography>

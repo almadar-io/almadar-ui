@@ -521,7 +521,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
           )}
         </Box>
 
-        <Box className="flex items-center gap-1 rounded-sm border border-border bg-card p-0.5">
+        <Box className="flex items-center gap-1 rounded-container border border-border bg-card p-0.5">
           <Button
             variant={view === 'edit' ? 'primary' : 'ghost'}
             size="sm"

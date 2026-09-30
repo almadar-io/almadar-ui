@@ -70,9 +70,9 @@ function getShapeClasses(shape: CanvasItemShape): string {
         case 'round':
             return "rounded-full w-24 h-24";
         case 'square':
-            return "rounded-md w-24 h-24";
+            return "rounded-container w-24 h-24";
         case 'rectangle':
-            return "rounded-md w-36 h-20";
+            return "rounded-container w-36 h-20";
     }
 }
 
@@ -196,7 +196,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
         // {width × height} coordinate system (items are positioned by
         // absolute item.x/item.y), so a phone-sized viewport pans inside
         // the larger logical canvas rather than busting the layout.
-        <Box className={cn("max-w-full overflow-auto rounded-md", className)}>
+        <Box className={cn("max-w-full overflow-auto rounded-container", className)}>
         <Box
             ref={containerRef}
             data-testid="positioned-canvas"
@@ -229,8 +229,8 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
                             STATUS_CLASSES[status],
                             getShapeClasses(shape),
                             editable ? "cursor-move" : "cursor-pointer",
-                            isSelected && "outline outline-2 outline-offset-2 outline-primary shadow-md",
-                            isDragging && "shadow-lg z-10",
+                            isSelected && "outline outline-2 outline-offset-2 outline-primary shadow-elevation-card",
+                            isDragging && "shadow-elevation-popover z-10",
                         )}
                         style={{ left: x, top: y, touchAction: 'none' }}
                         onPointerDown={(e) => handlePointerDown(e, item)}

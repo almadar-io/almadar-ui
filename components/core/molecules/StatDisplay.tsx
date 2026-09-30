@@ -213,7 +213,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   // Card mode (default)
   return (
     <Card
-      className={cn(padSizes[size], lookStyles[look], clickEvent && 'cursor-pointer hover:shadow-md transition-shadow', className)}
+      className={cn(padSizes[size], lookStyles[look], clickEvent && 'cursor-pointer hover:shadow-elevation-dialog transition-shadow', className)}
       onClick={clickEvent ? handleClick : undefined}
     >
       <HStack align="start" justify="between">
@@ -243,7 +243,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
         </VStack>
         <VStack gap="xs" align="end">
           {ResolvedIcon && (
-            <Box className={cn('p-3 rounded-md', iconBg)}>
+            <Box className={cn('p-3 rounded-container', iconBg)}>
               <ResolvedIcon className={cn(iconSizes[size], iconColor)} />
             </Box>
           )}

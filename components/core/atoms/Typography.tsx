@@ -76,14 +76,14 @@ export interface TypographyProps {
 
 // Using CSS variables for theme-aware styling
 const variantStyles: Record<TypographyVariant, string> = {
-  h1: "text-4xl font-bold tracking-tight text-foreground",
-  h2: "text-3xl font-bold tracking-tight text-foreground",
-  h3: "text-2xl font-bold text-foreground",
-  h4: "text-xl font-bold text-foreground",
-  h5: "text-lg font-bold text-foreground",
-  h6: "text-base font-bold text-foreground",
-  heading: "text-2xl font-bold text-foreground",
-  subheading: "text-lg font-semibold text-foreground",
+  h1: "text-4xl heading-voice text-foreground",
+  h2: "text-3xl heading-voice text-foreground",
+  h3: "text-2xl heading-voice text-foreground",
+  h4: "text-xl heading-voice text-foreground",
+  h5: "text-lg heading-voice text-foreground",
+  h6: "text-base heading-voice text-foreground",
+  heading: "text-2xl heading-voice text-foreground",
+  subheading: "text-lg heading-voice text-foreground",
   body1: "text-base font-normal text-foreground",
   body2: "text-sm font-normal text-foreground",
   body: "text-base font-normal text-foreground",

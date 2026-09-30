@@ -10,6 +10,7 @@ import type { EventKey, EventPayload, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTapReveal } from "../../../hooks/useTapReveal";
+import { useThemeScope } from "../../../providers/ThemeContext";
 
 export type BoxPadding = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 export type BoxMargin =
@@ -253,6 +254,10 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
     ref,
   ) => {
     const eventBus = useEventBus();
+    // A host theme override replaces a declared data-theme (never adds one).
+    const { override: themeOverride } = useThemeScope();
+    const declaredTheme = rest['data-theme'];
+    const dataTheme = declaredTheme !== undefined && themeOverride ? themeOverride : declaredTheme;
 
     const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
       if (action) {
@@ -328,6 +333,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
         onPointerDown: ((hoverEvent && tapReveal) || onPointerDown) ? handlePointerDown : undefined,
         style: maxWidth ? { maxWidth, ...rest.style } : rest.style,
         ...rest,
+        'data-theme': dataTheme,
       },
       children,
     );

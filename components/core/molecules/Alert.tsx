@@ -114,7 +114,7 @@ export const Alert: React.FC<AlertProps> = ({
             type="button"
             onClick={handleDismiss}
             className={cn(
-              "flex-shrink-0 p-1 transition-colors rounded-sm",
+              "flex-shrink-0 p-1 transition-colors rounded-interactive",
               "hover:bg-muted",
             )}
             aria-label={t('aria.closeAlert')}

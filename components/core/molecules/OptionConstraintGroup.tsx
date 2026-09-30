@@ -213,7 +213,7 @@ export const OptionConstraintGroup: React.FC<OptionConstraintGroupProps> = ({
                 <Typography
                   variant="caption"
                   color="warning"
-                  className="rounded border border-warning/40 px-1.5 py-0.5"
+                  className="rounded-interactive border border-warning/40 px-1.5 py-0.5"
                 >
                   {t('optionConstraint.outOfStock')}
                 </Typography>

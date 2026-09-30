@@ -1788,7 +1788,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           <HStack
             justify="between"
             align="center"
-            className="px-3 py-2 bg-[var(--color-card)] rounded-t-lg border-b border-border"
+            className="px-3 py-2 bg-[var(--color-card)] rounded-t-container border-b border-border"
           >
             {showLanguageBadge && (
               <Badge variant="default" size="sm">
@@ -2150,7 +2150,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               <Box
                 data-testid="code-completions"
                 role="listbox"
-                className="rounded border border-border shadow-lg"
+                className="rounded-container border border-border shadow-elevation-popover"
                 style={{
                   position: 'absolute',
                   zIndex: 2,
@@ -2252,7 +2252,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 role="button"
                 tabIndex={0}
                 onClick={() => assist.accept(s)}
-                className="mt-1 cursor-pointer rounded border border-border px-2 py-1 hover:bg-muted/50"
+                className="mt-1 cursor-pointer rounded-interactive border border-border px-2 py-1 hover:bg-muted/50"
                 data-testid={`code-assist-fix-${i}`}
               >
                 <Typography variant="caption" color="secondary">

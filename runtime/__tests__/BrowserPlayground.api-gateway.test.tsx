@@ -52,10 +52,11 @@ describe('std-api-gateway — Create Route button opens the form', () => {
     const schema = await resolveGateway();
     render(
       <MemoryRouter>
-        <BrowserPlayground schema={schema} fit />
+        <BrowserPlayground schema={schema} viewer={{ id: 'gw-admin', role: 'admin' }} fit />
       </MemoryRouter>,
     );
 
+    // Create Route is admin-only (`roles: ["admin"]`), so the viewer is an admin.
     // The catalog toolbar's create Button (`action=CREATE`) — addressed by its
     // action test id, never by position.
     const createButton = await screen.findByTestId('action-CREATE', {}, { timeout: 15_000 });
@@ -63,5 +64,16 @@ describe('std-api-gateway — Create Route button opens the form', () => {
 
     fireEvent.click(createButton);
     await waitFor(() => expect(screen.queryByText('New Route')).not.toBeNull(), { timeout: 5_000 });
+  }, 60_000);
+
+  it('a viewer-role user gets no Create Route button', async () => {
+    const schema = await resolveGateway();
+    render(
+      <MemoryRouter>
+        <BrowserPlayground schema={schema} viewer={{ id: 'gw-viewer', role: 'viewer' }} fit />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Routes', {}, { timeout: 15_000 });
+    expect(screen.queryByTestId('action-CREATE')).toBeNull();
   }, 60_000);
 });

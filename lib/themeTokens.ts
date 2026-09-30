@@ -41,7 +41,9 @@ import type {
   MotionEasingKey,
   MotionIntent,
   MotionIntentMap,
+  MotionShapeTokens,
   MotionTokens,
+  SurfaceTokens,
   ThemeDefinition,
   ThemeRef,
   ThemeTokens,
@@ -122,6 +124,15 @@ export const TYPE_FAMILY_VARS: ReadonlyArray<FlatVarEntry<TypeScaleTokens>> = [
   { cssVar: '--font-family-mono', key: 'monoFamily' },
 ];
 
+/** Type axis — heading voice (weight/case/tracking/style/shadow of every heading). */
+export const TYPE_HEADING_VARS: ReadonlyArray<FlatVarEntry<TypeScaleTokens>> = [
+  { cssVar: '--heading-weight', key: 'headingWeight' },
+  { cssVar: '--heading-transform', key: 'headingTransform' },
+  { cssVar: '--heading-tracking', key: 'headingTracking' },
+  { cssVar: '--heading-style', key: 'headingStyle' },
+  { cssVar: '--heading-shadow', key: 'headingShadow' },
+];
+
 /** Type axis — size scale keys, ordered exactly as emitted. Each pairs `--text-<k>` / `--leading-<k>`. */
 export const TYPE_SIZE_KEYS: ReadonlyArray<TypeSizeKey> = [
   'xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', 'display-1', 'display-2',
@@ -158,6 +169,17 @@ export const MOTION_INTENT_VARS: ReadonlyArray<{ key: keyof MotionIntentMap & st
   { key: 'transition', cssName: 'transition' },
 ];
 
+/** Motion axis — per-surface shapes (the enter-from / exit-to transform endpoints). */
+export const MOTION_SHAPE_VARS: ReadonlyArray<FlatVarEntry<MotionShapeTokens>> = [
+  { cssVar: '--motion-modal-enter-from-transform', key: 'modalEnter' },
+  { cssVar: '--motion-modal-exit-to-transform', key: 'modalExit' },
+  { cssVar: '--motion-popover-enter-from-transform', key: 'popoverEnter' },
+  { cssVar: '--motion-popover-exit-to-transform', key: 'popoverExit' },
+  { cssVar: '--motion-toast-enter-from-transform', key: 'toastEnter' },
+  { cssVar: '--motion-toast-exit-to-transform', key: 'toastExit' },
+  { cssVar: '--motion-page-enter-from-transform', key: 'pageEnter' },
+];
+
 /** Iconography axis — flat fields. */
 export const ICONOGRAPHY_VARS: ReadonlyArray<FlatVarEntry<IconographyTokens>> = [
   { cssVar: '--icon-family', key: 'family' },
@@ -171,6 +193,8 @@ export const ELEVATION_VARS: ReadonlyArray<FlatVarEntry<ElevationTokens>> = [
   { cssVar: '--elevation-popover', key: 'popoverElevation' },
   { cssVar: '--elevation-dialog', key: 'dialogElevation' },
   { cssVar: '--elevation-toast', key: 'toastElevation' },
+  { cssVar: '--elevation-interactive', key: 'interactiveElevation' },
+  { cssVar: '--elevation-pressed', key: 'pressedElevation' },
 ];
 
 /** Geometry axis — flat fields. */
@@ -181,6 +205,18 @@ export const GEOMETRY_VARS: ReadonlyArray<FlatVarEntry<GeometryTokens>> = [
   { cssVar: '--border-hairline', key: 'borderHairline' },
   { cssVar: '--border-standard', key: 'borderStandard' },
   { cssVar: '--border-heavy', key: 'borderHeavy' },
+  { cssVar: '--corner-shape', key: 'cornerShape' },
+  { cssVar: '--corner-shape-pill', key: 'cornerShapePill' },
+  { cssVar: '--border-style', key: 'borderStyle' },
+  { cssVar: '--border-style-interactive', key: 'borderStyleInteractive' },
+];
+
+/** Surface axis — panel/page material. */
+export const SURFACE_VARS: ReadonlyArray<FlatVarEntry<SurfaceTokens>> = [
+  { cssVar: '--surface-backdrop', key: 'backdrop' },
+  { cssVar: '--surface-card-image', key: 'cardImage' },
+  { cssVar: '--surface-page-image', key: 'pageImage' },
+  { cssVar: '--surface-page-image-size', key: 'pageImageSize' },
 ];
 
 /** Legacy free-form map prefixes (`ThemeTokens.colors`/`radii`/`spacing`/`shadows`). `typography` has no prefix — see below. */
@@ -284,6 +320,9 @@ export function themeTokensToCssVars(
   const pickGeometry = isDark && darkVariant?.geometry ? darkVariant.geometry : tokens.geometry;
   emitGeometry(pickGeometry, vars);
 
+  const pickSurface = isDark && darkVariant?.surface ? darkVariant.surface : tokens.surface;
+  applyFlat(pickSurface, SURFACE_VARS, vars);
+
   return vars;
 }
 
@@ -316,6 +355,7 @@ function emitTypeIntent(name: string, intent: TypeIntent, vars: Record<string, s
 function emitTypeScale(ts: TypeScaleTokens | undefined, vars: Record<string, string>): void {
   if (!ts) return;
   applyFlat(ts, TYPE_FAMILY_VARS, vars);
+  applyFlat(ts, TYPE_HEADING_VARS, vars);
   if (ts.scale) {
     const s = ts.scale;
     for (const k of TYPE_SIZE_KEYS) {
@@ -363,6 +403,7 @@ function emitMotion(m: MotionTokens | undefined, vars: Record<string, string>): 
       if (intent) emitMotionIntent(cssName, intent, vars);
     }
   }
+  applyFlat(m.shapes, MOTION_SHAPE_VARS, vars);
 }
 
 function emitIconography(i: IconographyTokens | undefined, vars: Record<string, string>): void {

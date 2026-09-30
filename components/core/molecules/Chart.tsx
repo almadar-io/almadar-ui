@@ -18,6 +18,7 @@
 
 import React, { useMemo, useCallback } from "react";
 import { cn } from "../../../lib/cn";
+import { formatValue } from "../../../lib/format";
 import { Card, Typography, Badge, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
@@ -126,6 +127,8 @@ export interface ChartProps {
     stack?: ChartStackMode;
     /** Format X-axis labels as time (ISO date in → "Mar 2026"-style label out) */
     timeAxis?: boolean;
+    /** Bucket granularity of a time axis — labels read "Oct 2", "Week of Sep 28", "Oct 2026", "Q4 2026" or "2026" */
+    period?: ChartTimePeriod;
     /** Event name emitted as `UI:{drillEvent}` with `{ label, value, seriesLabel? }` on data-point click */
     drillEvent?: string;
     /** Top-level chart actions (export, refresh, etc.) */
@@ -162,15 +165,31 @@ const barColor = (
     series.color ??
     CHART_COLORS[(seriesCount === 1 ? catIdx : sIdx) % CHART_COLORS.length];
 
-const monthFormatter = new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    year: "2-digit",
-});
+/** Granularity of a time-axis bucket — the `period` a bucketing atom grouped by. */
+export type ChartTimePeriod = "day" | "week" | "month" | "quarter" | "year";
 
-const formatTimeLabel = (raw: string): string => {
-    const parsed = new Date(raw);
+// Buckets start at 00:00 UTC, so labels read in UTC: a local-time reading
+// west of UTC would name the previous day or month.
+const dayFormatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const monthFormatter = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+
+/** A time-axis label at the granularity of its bucket (an ISO date, or an epoch-ms key when `period` is set); a non-date label passes through. */
+export const formatTimeLabel = (raw: string, period: ChartTimePeriod | undefined): string => {
+    // A bucketing atom (it declares `period`) keys buckets by their epoch-ms start.
+    const parsed = new Date(period !== undefined && /^-?\d+$/.test(raw) ? Number(raw) : raw);
     if (Number.isNaN(parsed.getTime())) return raw;
-    return monthFormatter.format(parsed);
+    switch (period) {
+        case "day":
+            return dayFormatter.format(parsed);
+        case "week":
+            return `Week of ${dayFormatter.format(parsed)}`;
+        case "quarter":
+            return `Q${Math.floor(parsed.getUTCMonth() / 3) + 1} ${parsed.getUTCFullYear()}`;
+        case "year":
+            return String(parsed.getUTCFullYear());
+        default:
+            return monthFormatter.format(parsed);
+    }
 };
 
 /** Bar chart renderer — multi-series + stack modes */
@@ -180,10 +199,11 @@ const BarChart: React.FC<{
     showValues: boolean;
     stack: ChartStackMode;
     timeAxis: boolean;
+    period?: ChartTimePeriod;
     histogram?: boolean;
     horizontal?: boolean;
     onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
-}> = ({ series, height, showValues, stack, timeAxis, histogram = false, horizontal = false, onPointClick }) => {
+}> = ({ series, height, showValues, stack, timeAxis, period, histogram = false, horizontal = false, onPointClick }) => {
     const categories = useMemo(() => {
         const set: string[] = [];
         const seen = new Set<string>();
@@ -229,7 +249,7 @@ const BarChart: React.FC<{
         return (
             <VStack gap="xs" align="stretch" className="w-full" style={{ minHeight: height }}>
                 {categories.map((label, catIdx) => {
-                    const displayLabel = timeAxis ? formatTimeLabel(label) : label;
+                    const displayLabel = timeAxis ? formatTimeLabel(label, period) : label;
                     const total = columnTotals?.[catIdx] ?? 1;
                     return (
                         <HStack key={label} gap="sm" align="center" className="w-full">
@@ -300,7 +320,7 @@ const BarChart: React.FC<{
             style={{ height }}
         >
             {categories.map((label, catIdx) => {
-                const displayLabel = timeAxis ? formatTimeLabel(label) : label;
+                const displayLabel = timeAxis ? formatTimeLabel(label, period) : label;
                 if (stack === "none") {
                     return (
                         <VStack
@@ -534,8 +554,9 @@ const LineChart: React.FC<{
     showValues: boolean;
     fill?: boolean;
     timeAxis: boolean;
+    period?: ChartTimePeriod;
     onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
-}> = ({ series, height, showValues, fill = false, timeAxis, onPointClick }) => {
+}> = ({ series, height, showValues, fill = false, timeAxis, period, onPointClick }) => {
     const width = 400;
     const padding = { top: 20, right: 20, bottom: 30, left: 40 };
     const chartWidth = width - padding.left - padding.right;
@@ -563,11 +584,22 @@ const LineChart: React.FC<{
         return m;
     }, [series]);
 
+    // A lone category has no line to draw: it sits mid-plot and carries its value.
     const xFor = useCallback(
         (idx: number) =>
-            padding.left + (idx / Math.max(labels.length - 1, 1)) * chartWidth,
+            labels.length === 1
+                ? padding.left + chartWidth / 2
+                : padding.left + (idx / (labels.length - 1)) * chartWidth,
         [labels.length, chartWidth, padding.left],
     );
+    const valueTicks = useMemo(() => {
+        const ticks: number[] = [];
+        for (const frac of [0, 0.5, 1]) {
+            const v = Math.round(maxValue * frac);
+            if (ticks[ticks.length - 1] !== v) ticks.push(v);
+        }
+        return ticks;
+    }, [maxValue]);
 
     const yFor = useCallback(
         (value: number) =>
@@ -611,7 +643,7 @@ const LineChart: React.FC<{
                 const linePath = points
                     .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
                     .join(" ");
-                const areaPath = `${linePath} L ${points[points.length - 1]?.x ?? 0} ${padding.top + chartHeight} L ${padding.left} ${padding.top + chartHeight} Z`;
+                const areaPath = `${linePath} L ${points[points.length - 1]?.x ?? 0} ${padding.top + chartHeight} L ${points[0]?.x ?? padding.left} ${padding.top + chartHeight} Z`;
                 return (
                     <g key={s.name}>
                         {fill && (
@@ -647,7 +679,7 @@ const LineChart: React.FC<{
                                         )
                                     }
                                 />
-                                {showValues && series.length === 1 && (
+                                {(showValues || labels.length === 1) && series.length === 1 && (
                                     <text
                                         x={p.x}
                                         y={p.y - 10}
@@ -656,7 +688,7 @@ const LineChart: React.FC<{
                                         fontSize="10"
                                         fontWeight="500"
                                     >
-                                        {p.value}
+                                        {formatValue(p.value, "number")}
                                     </text>
                                 )}
                             </g>
@@ -664,6 +696,18 @@ const LineChart: React.FC<{
                     </g>
                 );
             })}
+            {valueTicks.map((v) => (
+                <text
+                    key={`tick-${v}`}
+                    x={padding.left - 6}
+                    y={yFor(v) + 3}
+                    textAnchor="end"
+                    fill="var(--color-muted-foreground)"
+                    fontSize="9"
+                >
+                    {formatValue(v, "number")}
+                </text>
+            ))}
             {labels.map((label, idx) => (
                 <text
                     key={label}
@@ -673,7 +717,7 @@ const LineChart: React.FC<{
                     fill="var(--color-muted-foreground)"
                     fontSize="9"
                 >
-                    {timeAxis ? formatTimeLabel(label) : label}
+                    {timeAxis ? formatTimeLabel(label, period) : label}
                 </text>
             ))}
         </svg>
@@ -807,6 +851,7 @@ export const Chart: React.FC<ChartProps> = ({
     showValues = false,
     stack = "none",
     timeAxis = false,
+    period,
     drillEvent,
     actions,
     isLoading = false,
@@ -912,6 +957,7 @@ export const Chart: React.FC<ChartProps> = ({
                             showValues={showValues}
                             stack={stack}
                             timeAxis={timeAxis}
+                            period={period}
                             onPointClick={handlePointClick}
                         />
                     )}
@@ -922,6 +968,7 @@ export const Chart: React.FC<ChartProps> = ({
                             showValues={showValues}
                             stack={stack}
                             timeAxis={timeAxis}
+                            period={period}
                             horizontal
                             onPointClick={handlePointClick}
                         />
@@ -943,6 +990,7 @@ export const Chart: React.FC<ChartProps> = ({
                             height={height}
                             showValues={showValues}
                             timeAxis={timeAxis}
+                            period={period}
                             onPointClick={handlePointClick}
                         />
                     )}
@@ -952,6 +1000,7 @@ export const Chart: React.FC<ChartProps> = ({
                             height={height}
                             showValues={showValues}
                             timeAxis={timeAxis}
+                            period={period}
                             fill
                             onPointClick={handlePointClick}
                         />

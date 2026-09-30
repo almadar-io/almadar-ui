@@ -77,7 +77,7 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
   return (
     <div
       className={cn(
-        'border border-border rounded-lg p-2 md:p-4 overflow-x-auto space-y-6',
+        'border border-border rounded-container p-2 md:p-4 overflow-x-auto space-y-6',
         containerClassName,
         className,
       )}

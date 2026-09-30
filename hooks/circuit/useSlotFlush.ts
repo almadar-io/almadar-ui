@@ -79,7 +79,7 @@ export function useSlotFlush(
     const rawProps: SlotProps | string = bareTraitRef !== undefined
       ? bareTraitRef
       : { ...(unwrapped ?? {}), ...(last.props as SlotProps) };
-    const props = convertFnFormLambdasInProps(rawProps);
+    const props = convertFnFormLambdasInProps(rawProps, typeof patternType === "string" ? patternType : undefined);
     // An embedded trait's frame holds its inline renders; a portal slot
     // (toast, modal, drawer, …) renders in that slot like any trait's.
     const isEmbedded = (embedded?.has(traitName) ?? false) && !isNotificationSlot(slot);

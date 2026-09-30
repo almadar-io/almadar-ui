@@ -167,7 +167,7 @@ export const Tabs: React.FC<TabsProps> = ({
       'data-[active=true]:border-primary',
     ].join(' '),
     pills: [
-      'rounded-sm',
+      'rounded-interactive',
       'data-[active=true]:bg-primary',
       'data-[active=true]:text-primary-foreground',
     ].join(' '),
@@ -191,7 +191,7 @@ export const Tabs: React.FC<TabsProps> = ({
           orientation === 'horizontal'
             ? 'flex-row border-b-[length:var(--border-width)] border-border overflow-x-auto snap-x snap-mandatory [&::-webkit-scrollbar]:hidden'
             : 'flex-col border-r-[length:var(--border-width)] border-border',
-          variant === 'pills' && 'gap-1 p-1 bg-muted border-0 rounded-md',
+          variant === 'pills' && 'gap-1 p-1 bg-muted border-0 rounded-interactive',
           variant === 'underline' && orientation === 'vertical' && 'border-b-0'
         )}
       >

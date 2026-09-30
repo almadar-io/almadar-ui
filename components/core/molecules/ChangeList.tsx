@@ -91,13 +91,13 @@ export const ChangeList: React.FC<ChangeListProps> = ({ changes, inspectEvent, c
               {change.type === 'modified' && (change.before || change.after) && (
                 <HStack gap="sm" align="stretch">
                   {change.before && (
-                    <Box className="flex-1 rounded-sm border border-error/20 bg-error/5 p-2">
+                    <Box className="flex-1 rounded-container border border-error/20 bg-error/5 p-2">
                       <Typography variant="caption" color="muted" weight="semibold">{t('changeList.before')}</Typography>
                       <Typography variant="caption" className="block font-mono whitespace-pre-wrap">{change.before}</Typography>
                     </Box>
                   )}
                   {change.after && (
-                    <Box className="flex-1 rounded-sm border border-success/20 bg-success/5 p-2">
+                    <Box className="flex-1 rounded-container border border-success/20 bg-success/5 p-2">
                       <Typography variant="caption" color="muted" weight="semibold">{t('changeList.after')}</Typography>
                       <Typography variant="caption" className="block font-mono whitespace-pre-wrap">{change.after}</Typography>
                     </Box>

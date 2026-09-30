@@ -148,7 +148,7 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                         leftIcon={isCollapsed ? "chevron-right" : "chevron-down"}
                         className={cn(
                             "w-6 h-6 p-0 min-w-0",
-                            "rounded-sm text-muted-foreground",
+                            "rounded-interactive text-muted-foreground",
                             "hover:bg-muted hover:text-foreground",
                         )}
                     />

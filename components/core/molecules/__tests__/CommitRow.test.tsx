@@ -32,6 +32,11 @@ describe('CommitRow', () => {
     expect(screen.getByText('-1')).toBeTruthy();
   });
 
+  it('a merge of a teammate\'s work is its own kind of version', () => {
+    render(<Wrapper><CommitRow {...commit} kind="merge" /></Wrapper>);
+    expect(screen.getByTestId('commit-row-kind').getAttribute('data-kind')).toBe('merge');
+  });
+
   it('clicking the row emits UI:{selectEvent} with the sha', () => {
     const listener = vi.fn();
     const Listener = listen('UI:HISTORY_SELECT', listener);

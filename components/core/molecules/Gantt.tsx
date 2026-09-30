@@ -100,7 +100,10 @@ interface PlacedTask {
   status: string;
   group: string;
   start: Date;
+  /** Exclusive: the day after the last covered day. */
   end: Date;
+  /** The row's end is before its start; the bar spans the two dates it carries. */
+  reversed: boolean;
 }
 
 function parseDay(value: FieldValue | Date | undefined): Date | null {
@@ -139,16 +142,22 @@ export function Gantt({
     const rows = Array.isArray(tasks) ? tasks : tasks ? [tasks] : [];
     const out: PlacedTask[] = [];
     rows.forEach((row, idx) => {
-      const start = parseDay(getNestedValue(row, startField));
-      if (!start) return;
-      let end = parseDay(getNestedValue(row, endField));
-      if (!end && durationField) {
-        const days = Number(getNestedValue(row, durationField));
-        if (Number.isFinite(days) && days > 0) {
-          end = new Date(start.getTime() + days * DAY_MS);
-        }
+      const declaredEnd = parseDay(getNestedValue(row, endField));
+      // A row with only an end is a milestone on its end day.
+      const declaredStart = parseDay(getNestedValue(row, startField)) ?? declaredEnd;
+      if (!declaredStart) return;
+      let start = declaredStart;
+      let end: Date;
+      let reversed = false;
+      if (declaredEnd) {
+        reversed = declaredEnd.getTime() < declaredStart.getTime();
+        if (reversed) start = declaredEnd;
+        // The axis is in days, so a bar covers its last day too.
+        end = new Date((reversed ? declaredStart : declaredEnd).getTime() + DAY_MS);
+      } else {
+        const days = durationField ? Number(getNestedValue(row, durationField)) : NaN;
+        end = new Date(start.getTime() + (Number.isFinite(days) && days > 0 ? days : 1) * DAY_MS);
       }
-      if (!end || end.getTime() < start.getTime()) end = new Date(start.getTime() + DAY_MS);
       out.push({
         row,
         id: String(row.id ?? idx),
@@ -157,6 +166,7 @@ export function Gantt({
         group: groupField ? String(getNestedValue(row, groupField) ?? '') : '',
         start,
         end,
+        reversed,
       });
     });
     return out;
@@ -242,7 +252,7 @@ export function Gantt({
 
   return (
     <Box
-      className={cn('w-full overflow-auto rounded-md border border-border bg-card', className)}
+      className={cn('w-full overflow-auto rounded-container border border-border bg-card', className)}
     >
       <Box className="relative" style={{ width: LABEL_WIDTH + chartWidth, minWidth: '100%' }}>
         {/* Day header */}
@@ -301,13 +311,18 @@ export function Gantt({
                   <Box
                     className={cn(
                       'absolute top-1/2 -translate-y-1/2 h-4 rounded-sm transition-colors',
-                      STATUS_BAR[item.task.status] ?? 'bg-primary/80 hover:bg-primary',
+                      item.task.reversed
+                        ? 'bg-error/30 border border-dashed border-error'
+                        : STATUS_BAR[item.task.status] ?? 'bg-primary/80 hover:bg-primary',
                       barClickEvent ? 'cursor-pointer' : undefined,
                     )}
                     style={{
                       left: dayOffset(item.task.start),
-                      width: Math.max(dayOffset(item.task.end) - dayOffset(item.task.start), dayWidth / 2),
+                      width: dayOffset(item.task.end) - dayOffset(item.task.start),
                     }}
+                    data-gantt-bar={item.task.id}
+                    data-dates-reversed={item.task.reversed ? 'true' : undefined}
+                    title={item.task.reversed ? t('gantt.datesReversed') : undefined}
                     action={barClickEvent}
                     actionPayload={{ id: item.task.id }}
                   />

@@ -66,3 +66,20 @@ describe('LineChart numeric x-axis', () => {
     expect(cx).toEqual([20, 80]);
   });
 });
+
+describe('LineChart single point', () => {
+  it('a lone point sits in the middle of the plot and shows its value', () => {
+    const { container } = render(<LineChart data={[{ value: 799, label: 'Sep' }]} width={100} height={100} />);
+    const circle = container.querySelector('circle');
+    expect(Number(circle?.getAttribute('cx'))).toBe(50);
+    expect(Number(circle?.getAttribute('cy'))).toBe(50);
+    expect(Array.from(container.querySelectorAll('text')).map((t) => t.textContent)).toContain('Sep: 799');
+  });
+
+  it('control: two points keep the edges and show no values unless asked', () => {
+    const { container } = render(<LineChart data={[{ value: 1 }, { value: 2 }]} width={100} height={100} />);
+    const cx = Array.from(container.querySelectorAll('circle')).map((c) => Number(c.getAttribute('cx')));
+    expect(cx).toEqual([20, 80]);
+    expect(container.querySelectorAll('text')).toHaveLength(0);
+  });
+});

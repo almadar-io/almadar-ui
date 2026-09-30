@@ -198,7 +198,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
     <div
       className={cn(
         "relative flex flex-col items-center justify-center",
-        "p-8 rounded-sm",
+        "p-8 rounded-interactive",
         "border-2 border-dashed",
         "transition-colors duration-fast",
         "cursor-pointer",

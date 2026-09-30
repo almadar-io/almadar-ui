@@ -777,5 +777,6 @@
   "avl.flow.traitsCount": "{{count}} سمات",
   "avl.flow.piecesCount": "{{count}} قطع عرض",
   "avl.flow.traitsCountOne": "سمة واحدة",
-  "avl.flow.piecesCountOne": "قطعة عرض واحدة"
+  "avl.flow.piecesCountOne": "قطعة عرض واحدة",
+  "gantt.datesReversed": "ينتهي قبل أن يبدأ — تحقّق من التواريخ"
 }

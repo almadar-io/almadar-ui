@@ -355,7 +355,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
   return (
     <Box
       ref={containerRef}
-      className={cn('relative overflow-hidden rounded-lg border border-border bg-card', className)}
+      className={cn('relative overflow-hidden rounded-container border border-border bg-card', className)}
       style={{ width: propWidth ?? '100%', height: h }}
     >
       <svg

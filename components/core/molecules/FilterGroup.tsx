@@ -26,6 +26,7 @@ import { RangeSlider } from "../atoms/RangeSlider";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useQuerySingleton } from "../../../hooks/useQuerySingleton";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useMediaQuery } from "../../../hooks/useMediaQuery";
 
 /**
  * Layer 2 visual treatment for the filter-group pattern — orthogonal to the
@@ -258,7 +259,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
             </span>
             <HStack
               gap="none"
-              className="rounded-sm overflow-hidden border-[length:var(--border-width)] border-border"
+              className="rounded-interactive overflow-hidden border-[length:var(--border-width)] border-border"
             >
               <button
                 type="button"
@@ -577,13 +578,11 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
     );
   }
 
-  // Default variant - labeled selects with clear visual hierarchy
+  // Default variant - one toolbar row: each label beside its control, so the
+  // row is control-height and lines up with a search input next to it.
   return (
     <div
       className={cn(
-        "p-4 rounded-container",
-        "bg-card",
-        "border-[length:var(--border-width)] border-border",
         lookStyles[look],
         className,
       )}
@@ -604,8 +603,8 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
 
         {/* Filter selects and date inputs */}
         {filters.map((filter) => (
-          <div key={filter.field} className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+          <div key={filter.field} className="flex items-center gap-2">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide whitespace-nowrap">
               {filter.label}
             </label>
             {resolveFilterType(filter) === "date" ? (
@@ -774,7 +773,7 @@ const FilterGroupPopover: React.FC<FilterGroupProps> = (props) => {
         </HStack>
       </Button>
       {open && (
-        <div className="absolute left-0 z-50 mt-2 min-w-[16rem] rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-card-md shadow-main">
+        <div className="absolute left-0 z-50 mt-2 min-w-[16rem] rounded-container border border-[var(--color-border)] bg-[var(--color-card)] p-card-md shadow-elevation-popover surface-material">
           <FilterGroupControls
             {...props}
             className={undefined}
@@ -790,9 +789,16 @@ const FilterGroupPopover: React.FC<FilterGroupProps> = (props) => {
 
 FilterGroupPopover.displayName = "FilterGroupPopover";
 
-export const FilterGroup: React.FC<FilterGroupProps> = (props) =>
-  props.look === "popover-trigger"
+/** Below md the default toolbar collapses behind its trigger, so a phone
+ *  toolbar row keeps room for the search beside it. */
+const NARROW_QUERY = "(max-width: 767px)";
+
+export const FilterGroup: React.FC<FilterGroupProps> = (props) => {
+  const narrow = useMediaQuery(NARROW_QUERY);
+  const defaultToolbar = (props.look ?? "toolbar") === "toolbar" && (props.variant ?? "default") === "default";
+  return props.look === "popover-trigger" || (defaultToolbar && narrow)
     ? <FilterGroupPopover {...props} />
     : <FilterGroupControls {...props} />;
+};
 
 FilterGroup.displayName = "FilterGroup";

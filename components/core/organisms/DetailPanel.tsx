@@ -38,6 +38,8 @@ import { humanizeFieldName, humanizeEnumValue } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { relationDisplayLabels } from "../../../lib/relationLabel";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useRowActions } from "../../../hooks/useRowActions";
+import type { RowActionCondition } from "../../../lib/row-action-when";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useNavStack } from "../../../providers/NavStackContext";
 import { useRenderSlot } from "../../../providers/RenderSlotContext";
@@ -153,7 +155,7 @@ function renderRichFieldValue(
           <img
             src={str}
             alt={formatFieldLabel(fieldName)}
-            className="max-w-full max-h-64 rounded-md object-contain"
+            className="max-w-full max-h-64 rounded-container object-contain"
             loading="lazy"
           />
         </Box>
@@ -168,7 +170,7 @@ function renderRichFieldValue(
             <img
               src={str}
               alt={formatFieldLabel(fieldName)}
-              className="max-w-full max-h-64 rounded-md object-contain"
+              className="max-w-full max-h-64 rounded-container object-contain"
               loading="lazy"
             />
           </Box>
@@ -217,7 +219,7 @@ function renderRichFieldValue(
 
     case "code":
       return (
-        <Box className="mt-1 rounded-md bg-muted p-3 overflow-x-auto">
+        <Box className="mt-1 rounded-container bg-muted p-3 overflow-x-auto">
           <pre className="text-sm font-mono whitespace-pre-wrap break-words m-0">
             <code>{str}</code>
           </pre>
@@ -304,7 +306,7 @@ function renderRichFieldValue(
           <a
             href={typeof file.url === "string" ? file.url : undefined}
             download={label}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-sm text-foreground no-underline hover:bg-accent"
+            className="inline-flex items-center gap-1.5 rounded-interactive border border-border bg-muted px-2 py-1 text-sm text-foreground no-underline hover:bg-accent"
           >
             <Icon icon={FileText} size="sm" className="text-muted-foreground" />
             {label}
@@ -398,6 +400,8 @@ export interface DetailPanelAction {
   navigatesTo?: string;
   /** Button variant (primary for main action, others for secondary) */
   variant?: "primary" | "secondary" | "ghost" | "danger";
+  /** Condition over the panel's record, authored as `(fn row <bool>)`: the button is drawn only when it returns true. Omit = always shown. */
+  when?: RowActionCondition;
 }
 
 /**
@@ -558,6 +562,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   relationsData,
 }) => {
   const eventBus = useEventBus();
+  const rowActions = useRowActions();
   const { t } = useTranslate();
   // Inside a contained preview (playground/builder canvas card) a portaled
   // slide-over would dock to the host viewport instead of the preview box.
@@ -862,10 +867,11 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   // action — a routed detail page declares none and gets no dismiss
   // affordance (the shell's Back owns navigation there). Viewers,
   // slide-overs and modals keep their declared Close, wired to its event.
-  const closeAction = actions?.find(
+  const shownActions = rowActions(actions ?? [], data ?? {});
+  const closeAction = shownActions.find(
     (a) => a.event === "CLOSE" || a.event === "CANCEL" || a.label?.toLowerCase() === "close",
   );
-  const otherActions = actions?.filter((a) => a !== closeAction) ?? [];
+  const otherActions = shownActions.filter((a) => a !== closeAction);
 
   const statusBadges = (
     <>
@@ -913,7 +919,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         value={titleDraft}
         autoFocus
         aria-label={t("common.title")}
-        className="h-auto py-1 text-3xl font-bold tracking-tight"
+        className="h-auto py-1 heading-voice text-3xl"
         onChange={(e) => setTitleDraft(e.target.value)}
         onBlur={commitTitle}
         onKeyDown={(e) => {
@@ -931,7 +937,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       <Box
         role="button"
         tabIndex={0}
-        className="cursor-text rounded px-1 -mx-1 transition-colors hover:bg-muted/40"
+        className="cursor-text rounded-interactive px-1 -mx-1 transition-colors hover:bg-muted/40"
         onClick={() => setTitleDraft(title ?? "")}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -1127,7 +1133,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   // hand-authored slide-over showed it identically, while a non-slide-over
   // DetailPanel rendered fine, which is how it was isolated.
   const panel = (
-    <Box className={cn(contained ? "absolute" : "fixed", "inset-y-0 right-0 w-full max-w-2xl bg-card shadow-lg z-50 overflow-y-auto p-6", className)}>
+    <Box className={cn(contained ? "absolute" : "fixed", "inset-y-0 right-0 w-full max-w-2xl bg-card surface-material shadow-elevation-dialog z-50 overflow-y-auto p-6", className)}>
       {content}
     </Box>
   );

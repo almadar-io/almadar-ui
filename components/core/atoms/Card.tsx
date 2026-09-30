@@ -43,21 +43,21 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 // Using CSS variables for theme-aware styling
 const variantStyles = {
   default: [
-    "bg-card",
+    "bg-card surface-material",
     "border-[length:var(--border-width)] border-border",
     "shadow-elevation-card",
     "transition-all duration-normal",
     "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
   bordered: [
-    "bg-card",
+    "bg-card surface-material",
     "border-[length:var(--border-width)] border-border",
     "shadow-elevation-card",
     "transition-all duration-normal",
     "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
   elevated: [
-    "bg-card",
+    "bg-card surface-material",
     "border-[length:var(--border-width)] border-border",
     "shadow",
     "transition-all duration-normal",
@@ -65,7 +65,7 @@ const variantStyles = {
   ].join(" "),
   // Interactive variant with theme-specific hover effects
   interactive: [
-    "bg-card",
+    "bg-card surface-material",
     "border-[length:var(--border-width)] border-border",
     "shadow",
     "cursor-pointer",

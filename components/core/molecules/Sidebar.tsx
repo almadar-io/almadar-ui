@@ -100,7 +100,7 @@ const SidebarNavItem: React.FC<{
       onClick={item.onClick}
       className={cn(
         'w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-fast group relative',
-        'rounded-sm border-[length:var(--border-width-thin)] border-transparent',
+        'rounded-interactive border-[length:var(--border-width-thin)] border-transparent',
         isActive
           ? [
             'bg-primary text-primary-foreground',
@@ -136,7 +136,7 @@ const SidebarNavItem: React.FC<{
           'pointer-events-none whitespace-nowrap z-50 transition-opacity',
           'bg-primary text-primary-foreground',
           'border-[length:var(--border-width-thin)] border-border',
-          'rounded-sm'
+          'rounded-interactive'
         )}>
           {item.label}
         </Box>
@@ -220,14 +220,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
              
             <img src={logoSrc} alt={brandName} className="h-8 w-8" />
           ) : (
-            <Box className="h-8 w-8 bg-primary flex items-center justify-center rounded-sm">
+            <Box className="h-8 w-8 bg-primary flex items-center justify-center rounded-interactive">
               <Typography variant="small" className="text-primary-foreground font-bold text-sm">K</Typography>
             </Box>
           )}
 
           {/* Brand name */}
           {!collapsed && (
-            <Typography variant="body" className="text-xl font-bold text-foreground">
+            <Typography variant="body" className="heading-voice text-xl text-foreground">
               {brandName}
             </Typography>
           )}
@@ -240,7 +240,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={handleToggle}
             className={cn(
               'p-1.5 hover:bg-muted text-foreground hidden lg:block',
-              'rounded-sm',
+              'rounded-interactive',
               collapsed && 'mx-auto'
             )}
             title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
@@ -254,7 +254,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Button
             variant="ghost"
             onClick={handleClose}
-            className="p-1.5 hover:bg-muted text-foreground lg:hidden rounded-sm"
+            className="p-1.5 hover:bg-muted text-foreground lg:hidden rounded-interactive"
             aria-label={t('sidebar.close')}
           >
             <X size={18} />

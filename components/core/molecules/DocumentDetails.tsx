@@ -174,7 +174,7 @@ export function DocumentDetails({
           src={url}
           alt={label}
           loading="lazy"
-          className="max-h-32 w-full rounded-md border border-border object-cover"
+          className="max-h-32 w-full rounded-container border border-border object-cover"
           data-testid={`document-property-image-${name}`}
         />
       );
@@ -255,7 +255,7 @@ export function DocumentDetails({
         role="button"
         tabIndex={0}
         className={cn(
-          'cursor-text rounded px-1 -mx-1 transition-colors hover:bg-muted/40',
+          'cursor-text rounded-interactive px-1 -mx-1 transition-colors hover:bg-muted/40',
           (raw === undefined || raw === null || raw === '') && 'text-muted-foreground',
         )}
         onClick={() => setFieldDraft({ name, value: raw !== undefined && raw !== null ? String(raw) : '' })}

@@ -54,4 +54,24 @@ describe('cn merges the preset custom scales', () => {
     expect(custom('boxShadow', ['sm', 'DEFAULT', 'lg', 'inner'])).toEqual([...THEME_SCALE_KEYS.boxShadow].sort());
     expect(custom('spacing', ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'])).toEqual([...THEME_SCALE_KEYS.spacing].sort());
   });
+
+  it('every plugin utility the preset adds survives a merge with stock utilities of every group', () => {
+    const require = createRequire(import.meta.url);
+    const preset = require('../../tailwind-preset.cjs') as {
+      plugins: readonly { handler: (api: { addUtilities: (u: Record<string, object>) => void }) => void }[];
+    };
+    const names: string[] = [];
+    for (const plugin of preset.plugins) {
+      plugin.handler({ addUtilities: (u) => names.push(...Object.keys(u).map((k) => k.slice(1))) });
+    }
+    expect(names).toContain('interactive-border');
+    const stock = 'border border-accent border-dashed text-lg text-primary bg-card bg-none rounded-md shadow-sm font-bold';
+    for (const name of names) {
+      expect(cn(name, stock).split(' '), name).toContain(name);
+    }
+  });
+
+  it('control: a utility spelled in the border-* namespace IS merged away (why interactive-border avoids it)', () => {
+    expect(cn('border-interactive', 'border-accent')).toBe('border-accent');
+  });
 });

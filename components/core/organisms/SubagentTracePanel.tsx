@@ -1043,8 +1043,8 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
     : subagents;
 
   const wrapperClass = isRichMode
-    ? `absolute inset-x-3 bottom-3 sm:inset-x-auto sm:top-3 sm:right-3 sm:bottom-3 w-full sm:w-[28rem] max-w-[calc(100vw-1.5rem)] max-h-[60vh] sm:max-h-none bg-[var(--color-card)] border border-[var(--color-border)] rounded-md shadow-lg overflow-hidden flex flex-col ${className ?? ''}`
-    : `absolute inset-x-3 bottom-3 sm:inset-x-auto sm:top-3 sm:right-3 sm:bottom-3 w-full sm:w-80 max-w-[calc(100vw-1.5rem)] max-h-[60vh] sm:max-h-none bg-[var(--color-card)] border border-[var(--color-border)] rounded-md shadow-lg overflow-hidden flex flex-col ${className ?? ''}`;
+    ? `absolute inset-x-3 bottom-3 sm:inset-x-auto sm:top-3 sm:right-3 sm:bottom-3 w-full sm:w-[28rem] max-w-[calc(100vw-1.5rem)] max-h-[60vh] sm:max-h-none bg-[var(--color-card)] border border-[var(--color-border)] rounded-container shadow-elevation-popover surface-material overflow-hidden flex flex-col ${className ?? ''}`
+    : `absolute inset-x-3 bottom-3 sm:inset-x-auto sm:top-3 sm:right-3 sm:bottom-3 w-full sm:w-80 max-w-[calc(100vw-1.5rem)] max-h-[60vh] sm:max-h-none bg-[var(--color-card)] border border-[var(--color-border)] rounded-container shadow-elevation-popover surface-material overflow-hidden flex flex-col ${className ?? ''}`;
   const wrapperStyle = { zIndex: 20 };
 
   // Empty state

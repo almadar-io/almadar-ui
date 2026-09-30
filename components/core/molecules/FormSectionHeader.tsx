@@ -68,7 +68,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
   return (
     <Box
       className={cn(
-        "px-5 py-4 bg-muted/60 rounded-lg",
+        "px-5 py-4 bg-muted/60 rounded-container",
         "border border-border border-l-4 border-l-primary",
         isClickable &&
           "cursor-pointer hover:bg-muted transition-colors",

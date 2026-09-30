@@ -46,7 +46,7 @@ export const ReflectionBlock: React.FC<ReflectionBlockProps> = ({
   return (
     <div
       className={cn(
-        'my-6 border-l-4 border-warning bg-warning/10 rounded-r-lg p-4',
+        'my-6 border-l-4 border-warning bg-warning/10 rounded-r-container p-4',
         className,
       )}
     >
@@ -59,7 +59,7 @@ export const ReflectionBlock: React.FC<ReflectionBlockProps> = ({
           {isExpanded ? (
             <>
               <textarea
-                className="w-full p-2 border border-input rounded text-sm bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
+                className="w-full p-2 border border-input rounded-interactive text-sm bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
                 placeholder="Your thoughts..."
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -67,7 +67,7 @@ export const ReflectionBlock: React.FC<ReflectionBlockProps> = ({
               />
               <button
                 onClick={handleSave}
-                className="mt-2 text-sm px-3 py-1 bg-warning text-warning-foreground rounded hover:opacity-90 transition-colors"
+                className="mt-2 text-sm px-3 py-1 bg-warning text-warning-foreground rounded-interactive hover:opacity-90 transition-colors"
               >
                 Save & Continue
               </button>

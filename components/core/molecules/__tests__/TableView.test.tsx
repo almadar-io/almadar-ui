@@ -68,3 +68,40 @@ describe('TableView relation columns', () => {
     expect(screen.queryByText('staff-42')).not.toBeInTheDocument();
   });
 });
+
+describe('TableView narrow (stacked) layout — G-CROSS-019', () => {
+  const cols: readonly TableViewColumn[] = [
+    { key: 'path', header: 'Path' },
+    { key: 'method', header: 'Method', format: 'badge' },
+    { key: 'owner', header: 'Owner' },
+  ];
+  const data = [{ id: 'r1', path: '/orders', method: 'GET', owner: 'Isle Zenith' }];
+
+  it('is its own size container, so rows respond to the table width, not the viewport', () => {
+    const { container } = renderWithProvider(<TableView entity={data} columns={cols} />);
+    expect(container.querySelector('[role="table"]')?.className).toContain('@container/table');
+  });
+
+  it('labels every non-title cell with its column for the stacked view', () => {
+    renderWithProvider(<TableView entity={data} columns={cols} />);
+    const cells = screen.getAllByRole('cell');
+    const labels = cells.map((c) => c.querySelector('[data-stacked-label]')?.textContent ?? null);
+    expect(labels).toEqual([null, 'Method', 'Owner']);
+  });
+
+  it('control: the column header row still carries every label for the wide view', () => {
+    renderWithProvider(<TableView entity={data} columns={cols} />);
+    expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Path', 'Method', 'Owner']);
+  });
+
+  it('edge: a single-column table has no stacked labels at all', () => {
+    renderWithProvider(<TableView entity={data} columns={[cols[0]]} />);
+    expect(document.querySelectorAll('[data-stacked-label]')).toHaveLength(0);
+  });
+
+  it('edge: a render-prop row keeps its own layout and gets no stacked labels', () => {
+    renderWithProvider(<TableView entity={data} columns={cols}>{(row) => <span>{String(row.path)}</span>}</TableView>);
+    expect(document.querySelectorAll('[data-stacked-label]')).toHaveLength(0);
+    expect(screen.getByText('/orders')).toBeTruthy();
+  });
+});

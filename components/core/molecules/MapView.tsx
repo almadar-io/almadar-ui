@@ -196,7 +196,7 @@ const MapViewImpl = lazy(async () => {
 
     return (
       <Box
-        className={cn('relative isolate z-0 w-full overflow-hidden rounded-lg', className)}
+        className={cn('relative isolate z-0 w-full overflow-hidden rounded-container', className)}
         style={{ height }}
         data-testid="map-view"
       >
@@ -274,7 +274,7 @@ export function MapView(props: MapViewProps) {
     <Suspense
       fallback={
         <Box
-          className={cn('relative w-full overflow-hidden rounded-lg bg-muted/20', props.className)}
+          className={cn('relative w-full overflow-hidden rounded-container bg-muted/20', props.className)}
           style={{ height: props.height ?? '400px' }}
           data-testid="map-view"
         />

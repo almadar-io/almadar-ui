@@ -26,6 +26,8 @@ export interface ConfirmDialogProps {
   isOpen?: boolean;
   /** Callback when dialog is closed (injected by slot wrapper) */
   onClose?: () => void;
+  /** Fires after the exit animation completes (the dialog is about to unmount). */
+  onExited?: () => void;
   /** Callback when action is confirmed (injected by slot wrapper) */
   onConfirm?: () => void;
   /** Dialog title */
@@ -87,6 +89,7 @@ const variantConfig = {
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   isOpen = true,
   onClose = () => {},
+  onExited,
   onConfirm = () => {},
   title,
   message,
@@ -116,6 +119,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   return (
     <Modal
       isOpen={isOpen}
+      onExited={onExited}
       onClose={onClose}
       size={size}
       showCloseButton={false}

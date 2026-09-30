@@ -132,7 +132,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       <Box
         className={cn(
           "flex-1 flex items-center justify-center p-6 sm:p-12",
-          "bg-background",
+          "bg-background surface-page",
         )}
       >
         <Box className="w-full max-w-md">

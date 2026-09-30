@@ -1,3 +1,4 @@
+import { LOADING_STATE_MARKER } from "@almadar/core";
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { Icon } from "./Icon";
@@ -25,6 +26,7 @@ export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
       return (
         <div
           ref={ref}
+          {...{ [LOADING_STATE_MARKER]: "" }}
           className={cn(
             "absolute inset-0 z-10 flex items-center justify-center",
             "bg-background/60 backdrop-blur-sm",
@@ -39,6 +41,7 @@ export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
     return (
       <div
         ref={ref}
+        {...{ [LOADING_STATE_MARKER]: "" }}
         className={cn("text-foreground", className)}
         {...props}
       >

@@ -53,7 +53,7 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
           gap="sm"
           align="center"
           className={cn(
-            'cursor-pointer select-none rounded-sm px-2 py-1.5',
+            'cursor-pointer select-none rounded-interactive px-2 py-1.5',
             'hover:bg-muted',
             depth > 0 && 'pl-4',
           )}
@@ -95,7 +95,7 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
   return (
     <Box
       className={cn(
-        'block rounded-sm px-3 py-1.5 text-sm transition-colors no-underline cursor-pointer',
+        'block rounded-interactive px-3 py-1.5 text-sm transition-colors no-underline cursor-pointer',
         'hover:bg-muted',
         depth > 0 && 'ml-2',
         item.active

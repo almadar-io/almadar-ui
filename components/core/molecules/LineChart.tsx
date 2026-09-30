@@ -107,6 +107,12 @@ export const LineChart: React.FC<LineChartProps> = ({
     const minX = hasNumericX ? Math.min(...xValues) : 0;
     const xRange = hasNumericX ? Math.max(...xValues) - minX || 1 : 1;
 
+    // A lone point has no line or scale to place it by: it sits mid-plot and carries its value.
+    if (sortedData.length === 1) {
+      const only = sortedData[0];
+      return [{ x: width / 2, y: height / 2, value: only.value, label: only.label }];
+    }
+
     return sortedData.map((point, index) => ({
       x: hasNumericX
         ? padding + ((point.x ?? 0) - minX) / xRange * chartWidth
@@ -190,7 +196,19 @@ export const LineChart: React.FC<LineChartProps> = ({
           />
         ))}
 
-        {showValues &&
+        {points.length === 1 && (
+          <text
+            x={points[0].x}
+            y={points[0].y - 12}
+            textAnchor="middle"
+            fontSize="12"
+            fill="var(--color-foreground, currentColor)"
+          >
+            {points[0].label !== undefined ? `${points[0].label}: ${points[0].value}` : points[0].value}
+          </text>
+        )}
+
+        {showValues && points.length > 1 &&
           points.map((point, index) => (
             <text
               key={`label-${index}`}

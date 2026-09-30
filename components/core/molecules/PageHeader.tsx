@@ -9,6 +9,8 @@ import type { IconInput } from "../atoms/index";
 import { Typography } from "../atoms/Typography";
 import { ArrowLeft } from "lucide-react";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
+import { Menu } from "./Menu";
 import type { UiError } from '../atoms/types';
 
 export interface PageBreadcrumb {
@@ -41,6 +43,8 @@ export interface PageHeaderStatus {
 export interface PageHeaderProps {
   /** Page title - accepts string or number from generated code accessing dynamic entity data */
   title?: string | number;
+  /** Icon shown before the title. */
+  icon?: IconInput;
   /** Optional subtitle/description */
   subtitle?: string | number;
   /** Show back button */
@@ -71,8 +75,12 @@ export interface PageHeaderProps {
   className?: string;
 }
 
+/** Almadar_UX.md §2.1: no more than 2 primary actions visible. */
+const MAX_VISIBLE_ACTIONS = 2;
+
 export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
+  icon,
   subtitle,
   showBack = false,
   backEvent = "BACK",
@@ -87,6 +95,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   className,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const statusBadge: PageHeaderStatus | undefined =
     typeof status === "string" ? (status ? { label: status } : undefined) : status;
 
@@ -119,7 +128,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   };
 
   return (
-    <Box className={cn("mb-6", className)}>
+    <Box className={cn("w-full min-w-0", className)}>
       {/* Breadcrumbs */}
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Box as="nav" className="mb-4">
@@ -151,20 +160,25 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       )}
 
       {/* Main header row */}
-      <Box className="flex items-start justify-between gap-4">
-        <Box className="flex items-start gap-4">
+      <Box className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <Box className="flex items-start gap-4 min-w-0">
           {showBack && (
             <Button
               variant="ghost"
               onClick={handleBack}
-              className="mt-1 p-2 rounded-lg"
+              className="mt-1 p-2 rounded-container"
             >
               <ArrowLeft className="h-5 w-5 text-muted-foreground" />
             </Button>
           )}
-          <Box>
+          <Box className="min-w-0">
             <Box className="flex items-center gap-3">
-              <Typography variant="h1" className="text-2xl font-bold text-foreground">
+              {icon && (
+                typeof icon === "string"
+                  ? <Icon name={icon} size="lg" className="shrink-0 text-muted-foreground" />
+                  : <Icon icon={icon} size="lg" className="shrink-0 text-muted-foreground" />
+              )}
+              <Typography variant="h1" className="text-2xl text-foreground">
                 {title != null ? String(title) : ""}
               </Typography>
               {statusBadge && (
@@ -187,23 +201,65 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           </Box>
         </Box>
 
-        {/* Actions */}
-        <Box className="flex items-center gap-2 shrink-0">
-          {actions?.map((action, idx) => (
-            <Button
-              key={`action-${idx}`}
-              data-event={action.event}
-              data-testid={action.event ? `action-${action.event}` : undefined}
-              variant={action.variant || (idx === 0 ? "primary" : "secondary")}
-              leftIcon={action.icon || undefined}
-              onClick={createActionHandler(action)}
-              isLoading={action.loading || isLoading}
-              disabled={action.disabled || isLoading}
-            >
-              {action.label}
-            </Button>
-          ))}
-        </Box>
+        {/* Actions: up to MAX_VISIBLE_ACTIONS inline, the rest in an overflow
+            menu; a narrow header keeps only the first inline. */}
+        {actions && actions.length > 0 && (
+          <Box className="flex items-center gap-2 shrink-0">
+            {actions.slice(0, MAX_VISIBLE_ACTIONS).map((action, idx) => (
+              <Button
+                key={`action-${idx}`}
+                data-event={action.event}
+                data-testid={action.event ? `action-${action.event}` : undefined}
+                variant={action.variant || (idx === 0 ? "primary" : "secondary")}
+                leftIcon={action.icon || undefined}
+                onClick={createActionHandler(action)}
+                isLoading={action.loading || isLoading}
+                disabled={action.disabled || isLoading}
+                className={idx > 0 ? "hidden sm:inline-flex" : undefined}
+              >
+                {action.label}
+              </Button>
+            ))}
+            {actions.length > 1 && (
+              <Box className="sm:hidden">
+                <Menu
+                  position="bottom-end"
+                  trigger={
+                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="page-header-overflow-compact">
+                      <Icon name="more-horizontal" size="sm" />
+                    </Button>
+                  }
+                  items={actions.slice(1).map((action) => ({
+                    label: action.label,
+                    icon: action.icon,
+                    disabled: action.disabled || isLoading,
+                    variant: action.variant === "danger" ? "danger" : "default",
+                    onClick: createActionHandler(action),
+                  }))}
+                />
+              </Box>
+            )}
+            {actions.length > MAX_VISIBLE_ACTIONS && (
+              <Box className="hidden sm:block">
+                <Menu
+                  position="bottom-end"
+                  trigger={
+                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="page-header-overflow">
+                      <Icon name="more-horizontal" size="sm" />
+                    </Button>
+                  }
+                  items={actions.slice(MAX_VISIBLE_ACTIONS).map((action) => ({
+                    label: action.label,
+                    icon: action.icon,
+                    disabled: action.disabled || isLoading,
+                    variant: action.variant === "danger" ? "danger" : "default",
+                    onClick: createActionHandler(action),
+                  }))}
+                />
+              </Box>
+            )}
+          </Box>
+        )}
       </Box>
 
       {/* Tabs */}

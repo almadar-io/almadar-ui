@@ -509,6 +509,9 @@ module.exports = {
         'elevation-popover': 'var(--elevation-popover, var(--shadow-main))',
         'elevation-dialog': 'var(--elevation-dialog, var(--shadow-lg))',
         'elevation-toast': 'var(--elevation-toast, var(--shadow-main))',
+        //   Button resting / pressed → shadow-elevation-interactive / shadow-elevation-pressed
+        'elevation-interactive': 'var(--elevation-interactive, var(--shadow-sm))',
+        'elevation-pressed': 'var(--elevation-pressed, var(--shadow-sm))',
       },
       fontWeight: {
         normal: 'var(--font-weight-normal, 400)',
@@ -790,6 +793,31 @@ module.exports = {
           'border-image-slice': 'var(--game-panel-border-image-slice, 30 fill)',
           'border-image-width': 'var(--game-panel-border-image-width, 30px)',
           'border-image-repeat': 'stretch',
+        },
+        // Heading voice: every heading reads the theme's display family + voice tokens.
+        '.heading-voice': {
+          'font-family': 'var(--font-family-display, var(--font-family))',
+          'font-weight': 'var(--heading-weight, var(--font-weight-bold, 700))',
+          'text-transform': 'var(--heading-transform, none)',
+          'letter-spacing': 'var(--heading-tracking, var(--letter-spacing, normal))',
+          'font-style': 'var(--heading-style, normal)',
+          'text-shadow': 'var(--heading-shadow, none)',
+        },
+        // Surface material on panels (cards, dialogs, popovers, drawers).
+        '.surface-material': {
+          'background-image': 'var(--surface-card-image, none)',
+          'backdrop-filter': 'var(--surface-backdrop, none)',
+          '-webkit-backdrop-filter': 'var(--surface-backdrop, none)',
+        },
+        // Surface material on the page background (app shell / themed root).
+        '.surface-page': {
+          'background-image': 'var(--surface-page-image, none)',
+          'background-size': 'var(--surface-page-image-size, auto)',
+          'background-attachment': 'fixed',
+        },
+        // Interactive-control border style (outset bevel for Win95-style chrome).
+        '.interactive-border': {
+          'border-style': 'var(--border-style-interactive, var(--border-style, solid))',
         },
         '.chrome-button': {
           'background-image': 'var(--game-button-bg-image, none)',

@@ -148,7 +148,7 @@ export function DocumentPanel({
         value={titleDraft}
         autoFocus
         aria-label={t('common.title')}
-        className="h-auto py-1 text-3xl font-bold tracking-tight"
+        className="h-auto py-1 heading-voice text-3xl"
         onFocus={(e) => e.currentTarget.select()}
         onChange={(e) => setTitleDraft(e.target.value)}
         onBlur={commitTitle}
@@ -167,7 +167,7 @@ export function DocumentPanel({
       <Box
         role="button"
         tabIndex={0}
-        className="cursor-text rounded px-1 -mx-1 transition-colors hover:bg-muted/40"
+        className="cursor-text rounded-interactive px-1 -mx-1 transition-colors hover:bg-muted/40"
         onClick={() => setTitleDraft(title ?? '')}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -280,7 +280,7 @@ export function DocumentPanel({
           <Box
             onClick={emitWithId(editEvent)}
             className={cn(
-              'rounded-md px-1 -mx-1 min-h-[16rem]',
+              'rounded-interactive px-1 -mx-1 min-h-[16rem]',
               editEvent && 'cursor-text transition-colors hover:bg-muted/30',
             )}
             data-testid="document-body"

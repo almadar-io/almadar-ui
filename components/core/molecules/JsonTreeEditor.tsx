@@ -109,7 +109,7 @@ function KindSelect({
       onChange={(e) => onChange(e.target.value as Kind)}
       aria-label="Value type"
       className={cn(
-        'h-6 rounded-sm bg-muted text-muted-foreground text-[10px] font-mono px-1',
+        'h-6 rounded-interactive bg-muted text-muted-foreground text-[10px] font-mono px-1',
         'border-[length:var(--border-width-thin)] border-border',
         'hover:bg-card focus:outline-none focus:ring-1 focus:ring-ring',
       )}
@@ -179,7 +179,7 @@ function Row({
       <HStack gap="xs" align="center" className="py-0.5 w-max">
         {readonly ? (
           <span className={cn(
-            'h-6 rounded-sm bg-muted text-muted-foreground text-[10px] font-mono px-1 flex items-center',
+            'h-6 rounded-interactive bg-muted text-muted-foreground text-[10px] font-mono px-1 flex items-center',
             'border-[length:var(--border-width-thin)] border-border',
           )}>
             {TYPE_LABEL[kindOf(value)]}
@@ -351,7 +351,7 @@ export interface JsonTreeEditorProps {
 export const JsonTreeEditor: React.FC<JsonTreeEditorProps> = ({ value, onChange, className, readonly }) => {
   const root = value ?? '';
   return (
-    <div className={cn('w-full overflow-x-auto rounded-sm bg-card/40 p-2 border-[length:var(--border-width-thin)] border-border', className)}>
+    <div className={cn('w-full overflow-x-auto rounded-container bg-card/40 p-2 border-[length:var(--border-width-thin)] border-border', className)}>
       <ValueNode value={root} onChange={onChange} depth={0} readonly={readonly} />
     </div>
   );

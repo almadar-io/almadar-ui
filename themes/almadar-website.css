@@ -60,6 +60,9 @@
     --shadow-none: none;
     --shadow-hover: 0 12px 40px rgba(15, 23, 42, 0.15);
     --shadow-active: 0 2px 8px rgba(15, 23, 42, 0.1);
+    --font-family-display: "Crimson Pro", Georgia, serif;
+    --heading-weight: 600;
+    --heading-tracking: -0.01em;
     --duration-instant: 0ms;
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
@@ -144,6 +147,9 @@
     --shadow-none: none;
     --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.5);
     --shadow-active: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --font-family-display: "Crimson Pro", Georgia, serif;
+    --heading-weight: 600;
+    --heading-tracking: -0.01em;
     --duration-instant: 0ms;
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);

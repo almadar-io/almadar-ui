@@ -270,7 +270,10 @@ export function useEventBus(): EventBusContextType {
               chainDepth: chain.length,
             });
           }
-          for (const key of keys) baseBus.emit(key, payload, source);
+          // One physical emit: every key carries the same `source` object, the
+          // identity ingress uses to deliver it to a host trait at most once.
+          const physical = keys.size > 1 ? (source ?? {}) : source;
+          for (const key of keys) baseBus.emit(key, payload, physical);
           return;
         }
         baseBus.emit(type, payload, source);

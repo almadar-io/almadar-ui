@@ -247,7 +247,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                           onMouseEnter={() => !command.disabled && setHighlightIndex(index)}
                           onClick={() => handleSelect(command)}
                           className={cn(
-                            'w-full flex items-center gap-3 px-3 py-2 text-start rounded-sm',
+                            'w-full flex items-center gap-3 px-3 py-2 text-start rounded-interactive',
                             'text-sm transition-colors',
                             'focus:outline-none',
                             isHighlighted && 'bg-muted',

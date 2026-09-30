@@ -113,7 +113,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       <Aside
         className={cn(
           "fixed top-16 lg:top-0 bottom-0 z-[60]",
-          "bg-card",
+          "bg-card surface-material",
           "border-l-2 border-border",
           position === "left" && "border-l-0 border-r-2",
           "flex flex-col",

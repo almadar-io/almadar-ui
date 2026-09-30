@@ -135,13 +135,13 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
   const eventBus = useSafeEventBus();
   const variantClasses = {
     default: 'gap-0',
-    segmented: 'gap-0 [&>button]:rounded-none [&>button:first-child]:rounded-l-lg [&>button:last-child]:rounded-r-lg [&>button:not(:first-child)]:border-l-0',
-    toggle: 'gap-0 [&>button]:rounded-none [&>button:first-child]:rounded-l-lg [&>button:last-child]:rounded-r-lg [&>button:not(:first-child)]:border-l-0',
+    segmented: 'gap-0 [&>button]:rounded-none [&>button:first-child]:rounded-l-interactive [&>button:last-child]:rounded-r-interactive [&>button:not(:first-child)]:border-l-0',
+    toggle: 'gap-0 [&>button]:rounded-none [&>button:first-child]:rounded-l-interactive [&>button:last-child]:rounded-r-interactive [&>button:not(:first-child)]:border-l-0',
   };
 
   const orientationClasses = {
     horizontal: 'flex-row',
-    vertical: 'flex-col [&>button:first-child]:rounded-t-lg [&>button:last-child]:rounded-b-lg [&>button:not(:first-child)]:border-t-0 [&>button:not(:first-child)]:border-l',
+    vertical: 'flex-col [&>button:first-child]:rounded-t-interactive [&>button:last-child]:rounded-b-interactive [&>button:not(:first-child)]:border-t-0 [&>button:not(:first-child)]:border-l',
   };
 
   // Handle action button click

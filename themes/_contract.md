@@ -212,6 +212,39 @@ instantly regardless of theme.
 | `--border-standard` | `var(--border-width)` |
 | `--border-heavy` | `var(--border-width-thick)` |
 
+### Range axes — heading voice, corner/border style, interactive elevation, surface, fonts
+
+These separate artistic styles (Art Deco vs Win95 vs wabi-sabi) along dimensions color cannot. Every consumer carries its own fallback, so a theme that omits them renders exactly as before.
+
+| Typed field (`@almadar/core`) | CSS variable | Consumed by | Fallback |
+|---|---|---|---|
+| `typeScale.displayFamily` | `--font-family-display` | every h1–h6, `Typography` heading variants (`.heading-voice`) | `--font-family` |
+| `typeScale.headingWeight` | `--heading-weight` | `.heading-voice`, `[data-theme] h1–h6` | `--font-weight-bold` |
+| `typeScale.headingTransform` | `--heading-transform` | same | `none` |
+| `typeScale.headingTracking` | `--heading-tracking` | same | `--letter-spacing` |
+| `typeScale.headingStyle` | `--heading-style` | same | `normal` |
+| `typeScale.headingShadow` | `--heading-shadow` | same (text-shadow: glow, emboss, misregistration) | `none` |
+| `typeScale.fontImport` | — (not a var) | preset: generated `_fonts.css` `@import`; inline: `OrbitalThemeProvider` `<link>`; compiled: `@import` atop the theme CSS | — |
+| `geometry.cornerShape` | `--corner-shape` | every element inside `[data-theme]` (CSS `corner-shape`; Chromium 139+, other engines render plain round corners) | `round` |
+| `geometry.cornerShapePill` | `--corner-shape-pill` | `.rounded-full` / `.rounded-pill` | `round` |
+| `geometry.borderStyle` | `--border-style` | every bordered element (scoped reset) | `solid` |
+| `geometry.borderStyleInteractive` | `--border-style-interactive` | `Button` (`.interactive-border`) | `--border-style` |
+| `elevation.interactiveElevation` | `--elevation-interactive` | `Button` resting (`shadow-elevation-interactive`) | `--shadow-sm` |
+| `elevation.pressedElevation` | `--elevation-pressed` | `Button` `:active` (`shadow-elevation-pressed`) | `--shadow-sm` |
+| `surface.backdrop` | `--surface-backdrop` | `.surface-material` (cards, overlays): `backdrop-filter` | `none` |
+| `surface.cardImage` | `--surface-card-image` | `.surface-material`: `background-image` over the card color | `none` |
+| `surface.pageImage` | `--surface-page-image` | `.surface-page` (app shells, themed orbital roots) | `none` |
+| `surface.pageImageSize` | `--surface-page-image-size` | `.surface-page` | `auto` |
+
+| `motion.shapes.modalEnter` / `modalExit` | `--motion-modal-enter-from-transform` / `--motion-modal-exit-to-transform` | `Modal` (every modal slot: runtime, contained preview, compiled) | `scale(.96) translateY(8px)` / `scale(.92) translateY(16px)` |
+| `motion.shapes.popoverEnter` / `popoverExit` | `--motion-popover-enter-from-transform` / `--motion-popover-exit-to-transform` | `Popover`, menus | `scale(.95)` |
+| `motion.shapes.toastEnter` / `toastExit` | `--motion-toast-enter-from-transform` / `--motion-toast-exit-to-transform` | `Toast` | `translateY(16px)` |
+| `motion.shapes.pageEnter` | `--motion-page-enter-from-transform` | `PageTransition` (pages animate in only) | `translateY(8px)` |
+
+**Where motion plays.** Modal/drawer slots stay mounted through their exit animation (a cleared slot keeps its last content until `onExited`). Page content animates in on navigation through `PageTransition`: `UISlotRenderer`'s `pageKey` (OrbPreview) and the compiled `App.tsx` host wrap the routed content, and a layout's content region (`DashboardLayout`'s `<main>`) claims the transition so its chrome stays still. `--motion-enable: off` and `prefers-reduced-motion` disable all of it.
+
+`.lolo` inline themes author these under `tokens { typeScale { … } geometry { … } elevation { … } surface { … } motion { … } }` (flat camelCase keys, parse-checked; `motion` takes the shape keys). A frosted-glass theme needs a translucent `card` color (`rgba`) for `backdrop` to show. `double` / `groove` / `ridge` borders need a border width of 3px or more to read.
+
 ---
 
 ## Authoring rules

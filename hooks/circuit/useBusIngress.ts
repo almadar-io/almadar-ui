@@ -70,12 +70,32 @@ export function useBusIngress(
     const deliveredHere = (source: BusEventSource | undefined): boolean =>
       source?.dispatched === true && source.trait !== undefined && traitIndex.byName.has(source.trait);
 
+    // One physical emit inside an embedded trait fans to a key per scope on the
+    // embed chain (`useEventBus`), all sharing one `source` object. A host trait
+    // hears it on its own key AND through a same-name listen route from the
+    // embedded child; the first delivery to a (trait, event) claims it, the rest are the same event again.
+    const claims = new WeakMap<BusEventSource, Set<string>>();
+    const claim = (source: BusEventSource | undefined, traitName: string, eventKey: string): boolean => {
+      if (source === undefined) return true;
+      const key = `${traitName}\u0000${eventKey}`;
+      const seen = claims.get(source);
+      if (seen === undefined) {
+        claims.set(source, new Set([key]));
+        return true;
+      }
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    };
+
     const dispatch = (
       traitName: string,
       eventKey: string,
       payload: EventPayload | undefined,
-      tick: string | undefined,
+      source: BusEventSource | undefined,
     ): void => {
+      if (!claim(source, traitName, eventKey)) return;
+      const tick = source?.tick;
       void settle(traitName, eventKey, payload, tick).catch((err: Error) => {
         log.error('dispatch:failed', { trait: traitName, event: eventKey, error: String(err) });
       });
@@ -96,7 +116,7 @@ export function useBusIngress(
           const unsub = eventBus.on(qualifiedKey, (event) => {
             if (deliveredHere(event.source)) return;
             log.debug('qualified:fire', { key: qualifiedKey });
-            dispatch(traitName, eventKey, event.payload, event.source?.tick);
+            dispatch(traitName, eventKey, event.payload, event.source);
           });
           unsubscribes.push(unsub);
         }
@@ -116,7 +136,7 @@ export function useBusIngress(
               if (!entry.traitDef.transitions.some((t: { event: string }) => t.event === eventKey)) continue;
               if (routed?.has(name) === true) continue;
               log.debug('bare:fire', { key: bareKey, trait: name });
-              dispatch(name, eventKey, event.payload, event.source?.tick);
+              dispatch(name, eventKey, event.payload, event.source);
             }
           });
           unsubscribes.push(unsub);
@@ -167,7 +187,7 @@ export function useBusIngress(
             route.listenerTrait,
             route.triggers,
             applyListenPayloadMapping(route.payloadMapping, event.payload, evaluateListenPayloadExpr),
-            event.source?.tick,
+            event.source,
           );
         }
       });

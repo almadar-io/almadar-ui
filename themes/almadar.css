@@ -60,6 +60,9 @@
     --shadow-none: none;
     --shadow-hover: 0 12px 40px rgba(20, 184, 166, 0.2);
     --shadow-active: 0 2px 8px rgba(20, 184, 166, 0.15);
+    --font-family-display: "Inter", "Noto Sans Arabic", system-ui, sans-serif;
+    --heading-weight: 800;
+    --heading-tracking: -0.03em;
     --duration-instant: 0ms;
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
@@ -76,12 +79,14 @@
     --elevation-popover: var(--shadow-main);
     --elevation-dialog: var(--shadow-lg);
     --elevation-toast: var(--shadow-main);
-    --radius-container: var(--radius-md);
+    --radius-container: 16px;
     --radius-interactive: var(--radius-md);
     --radius-pill: var(--radius-full);
     --border-hairline: 1px;
     --border-standard: var(--border-width);
     --border-heavy: var(--border-width-thick);
+    --corner-shape: squircle;
+    --surface-card-image: linear-gradient(160deg, rgba(20,184,166,0.07), rgba(20,184,166,0) 55%);
 }
 
 [data-theme="almadar-dark"] {
@@ -140,6 +145,9 @@
     --shadow-none: none;
     --shadow-hover: 0 12px 40px rgba(20, 184, 166, 0.35), 0 4px 12px rgba(6, 182, 212, 0.2);
     --shadow-active: 0 2px 8px rgba(20, 184, 166, 0.2);
+    --font-family-display: "Inter", "Noto Sans Arabic", system-ui, sans-serif;
+    --heading-weight: 800;
+    --heading-tracking: -0.03em;
     --duration-instant: 0ms;
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
@@ -156,10 +164,12 @@
     --elevation-popover: var(--shadow-main);
     --elevation-dialog: var(--shadow-lg);
     --elevation-toast: var(--shadow-main);
-    --radius-container: var(--radius-md);
+    --radius-container: 16px;
     --radius-interactive: var(--radius-md);
     --radius-pill: var(--radius-full);
     --border-hairline: 1px;
     --border-standard: var(--border-width);
     --border-heavy: var(--border-width-thick);
+    --corner-shape: squircle;
+    --surface-card-image: linear-gradient(160deg, rgba(20,184,166,0.07), rgba(20,184,166,0) 55%);
 }

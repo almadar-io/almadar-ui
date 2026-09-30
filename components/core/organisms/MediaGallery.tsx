@@ -236,7 +236,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                 <Box
                                     key={item.id}
                                     className={cn(
-                                        "group relative overflow-hidden rounded-md cursor-pointer",
+                                        "group relative overflow-hidden rounded-container cursor-pointer",
                                         "border-2 transition-all duration-fast",
                                         isSelected
                                             ? "border-primary ring-2 ring-primary/30"
@@ -325,7 +325,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                         <img
                             src={lightboxItem.src}
                             alt={lightboxItem.alt || lightboxItem.caption || ""}
-                            className="max-w-full max-h-[80vh] object-contain rounded-md"
+                            className="max-w-full max-h-[80vh] object-contain rounded-container"
                         />
                         {lightboxItem.caption && (
                             <Typography variant="body" className="text-foreground mt-3 text-center">

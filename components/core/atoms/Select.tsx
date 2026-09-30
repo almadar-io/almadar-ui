@@ -109,7 +109,7 @@ function NativeSelect({
         onChange={handleChange}
         value={value as string | undefined}
         className={cn(
-          "block w-full border-[length:var(--border-width)] shadow-sm appearance-none",
+          "block w-full rounded-interactive border-[length:var(--border-width)] shadow-elevation-interactive interactive-border appearance-none",
           "px-3 py-2 pr-10 text-sm text-foreground font-medium",
           "bg-card",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-ring",
@@ -268,9 +268,9 @@ function RichSelect({
         disabled={disabled}
         onClick={() => !disabled && setOpen((o) => !o)}
         className={cn(
-          "block w-full border-[length:var(--border-width)] shadow-sm",
+          "block w-full rounded-interactive border-[length:var(--border-width)] shadow-elevation-interactive interactive-border",
           "px-3 py-2 pr-10 text-sm text-start font-medium",
-          "bg-card rounded-sm",
+          "bg-card rounded-interactive",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-ring",
           "disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
           error ? "border-error focus:border-error" : "border-border focus:border-primary",
@@ -295,7 +295,7 @@ function RichSelect({
         <div className={cn(
           "absolute z-50 mt-1 w-full",
           "bg-card border-[length:var(--border-width)] border-border",
-          "rounded-sm shadow-elevation-popover py-1 max-h-60 overflow-y-auto",
+          "surface-material rounded-container shadow-elevation-popover py-1 max-h-60 overflow-y-auto",
         )}>
           {searchable && (
             <div className="px-2 pb-1 border-b border-border">

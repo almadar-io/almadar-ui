@@ -55,8 +55,8 @@ export const InputGroup: React.FC<InputGroupProps> = ({
             "bg-muted dark:bg-muted",
             "border border-border dark:border-border",
             position === "left"
-              ? "rounded-l-lg border-r-0"
-              : "rounded-r-lg border-l-0",
+              ? "rounded-l-interactive border-r-0"
+              : "rounded-r-interactive border-l-0",
           )}
         >
           <Icon icon={addon as LucideIcon} size="sm" />
@@ -73,8 +73,8 @@ export const InputGroup: React.FC<InputGroupProps> = ({
           "border border-border dark:border-border",
           "text-foreground dark:text-foreground",
           position === "left"
-            ? "rounded-l-lg border-r-0"
-            : "rounded-r-lg border-l-0",
+            ? "rounded-l-interactive border-r-0"
+            : "rounded-r-interactive border-l-0",
         )}
       >
         {typeof addon === "string" ? (

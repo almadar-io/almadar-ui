@@ -40,144 +40,9 @@ export interface UIThemeDefinition {
   hasDarkMode?: boolean;
 }
 
-/** Built-in themes available in the design system */
-export const BUILT_IN_THEMES: UIThemeDefinition[] = [
-  {
-    name: "wireframe",
-    displayName: "Wireframe",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "minimalist",
-    displayName: "Minimalist",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "almadar",
-    displayName: "Almadar",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "trait-wars",
-    displayName: "Trait Wars",
-    hasLightMode: false,
-    hasDarkMode: true,
-  },
-  {
-    name: "game-sci-fi",
-    displayName: "Game: Sci-Fi",
-    hasLightMode: false,
-    hasDarkMode: true,
-  },
-  {
-    name: "game-ui-pack",
-    displayName: "Game: Flat UI",
-    hasLightMode: false,
-    hasDarkMode: true,
-  },
-  {
-    name: "game-adventure",
-    displayName: "Game: Adventure",
-    hasLightMode: false,
-    hasDarkMode: true,
-  },
-  {
-    name: "game-rpg",
-    displayName: "Game: RPG",
-    hasLightMode: false,
-    hasDarkMode: true,
-  },
-  // Extended themes
-  {
-    name: "neon",
-    displayName: "Neon",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  // Layer 1 skin axes — truly-unique themes (compact tech / editorial / brutalist dense / display-heavy / touch-first)
-  {
-    name: "prism",
-    displayName: "Prism",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "gazette",
-    displayName: "Gazette",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "terminal",
-    displayName: "Terminal",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "atelier",
-    displayName: "Atelier",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "kiosk",
-    displayName: "Kiosk",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "linear-clean",
-    displayName: "Linear Clean",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "notion-editorial",
-    displayName: "Notion Editorial",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "bloomberg-dense",
-    displayName: "Bloomberg Dense",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  // Personality themes — high-demand web styles (glassmorphism / claymorphism / retro / enterprise)
-  {
-    name: "glass",
-    displayName: "Glass",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "clay",
-    displayName: "Clay",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "retro",
-    displayName: "Retro",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "corporate",
-    displayName: "Corporate",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "comic",
-    displayName: "Comic Studio",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-];
+/** Built-in themes available in the design system — generated from the core presets. */
+export { BUILT_IN_THEMES } from './builtInThemes';
+import { BUILT_IN_THEMES } from './builtInThemes';
 
 /** Theme context value */
 interface ThemeContextValue {
@@ -210,6 +75,12 @@ export interface ThemeScope {
   theme?: string;
   mode?: ResolvedMode;
   vars?: Readonly<Record<string, string>>;
+  /**
+   * A host's explicit theme pick (e.g. the playground picker): every
+   * `data-theme` a component declares inside this scope renders this key
+   * instead. Set only by `OrbitalThemeProvider`'s `override`.
+   */
+  override?: string;
 }
 
 export const ThemeScopeContext = createContext<ThemeScope>({});

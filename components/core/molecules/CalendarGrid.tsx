@@ -409,7 +409,7 @@ export function CalendarGrid({
       padding="xs"
       border
       className={cn(
-        "cursor-pointer hover:shadow-sm transition-shadow text-xs truncate",
+        "cursor-pointer hover:shadow-elevation-card transition-shadow text-xs truncate",
         color
           ? color
           : "bg-primary/10 border-primary/30 text-primary",
