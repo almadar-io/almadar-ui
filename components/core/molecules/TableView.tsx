@@ -116,11 +116,9 @@ export interface TableViewProps extends DataDndProps, EmptyStateSlotProps {
   maxInlineActions?: number;
   /** When set, the whole row is clickable and emits UI:{itemClickEvent} with
    *  { id, row } (action-button clicks stopPropagation so they still win).
-   *  Mirrors DataList's contract. When OMITTED and `itemActions` exist, the
-   *  row click defaults to the first non-danger item action (the view/open
-   *  action by authoring convention) — a danger action never becomes the row
-   *  default (destructive actions require intentional reach). */
-  itemClickEvent?: EventKey;
+   *  Mirrors DataList's contract. Omit = rows are not clickable. */
+  /** @entityRow row */
+  itemClickEvent?: EventEmit<ItemActionPayload>;
   /** Render a leading checkbox column. Selection changes emit `selectEvent`. */
   selectable?: boolean;
   /** Event emitted on selection change: UI:{selectEvent} with { selectedIds }. */
@@ -267,7 +265,7 @@ export function TableView({
   columns,
   fields,
   itemActions,
-  itemClickEvent = '',
+  itemClickEvent,
   selectable = false,
   selectEvent,
   selectedIds,

@@ -17,17 +17,19 @@
  *   of the concrete path becomes an ancestor entry — so the trail is never
  *   empty and back always has a target on nested paths.
  * - Entry label = the `crumb` carried by the navigate effect when one was
- *   staged for this href, else the page's declared name humanized.
+ *   staged for this href, else the page's declared label, else its name as written.
  */
 
 import type { NavStackEntry } from "@almadar/core";
 import { matchPathAmong, matchPath } from "../providers/navigation";
 
-/** One declared page as the nav stack needs it: path pattern + name + owning orbital. */
+/** One declared page as the nav stack needs it: path pattern + name + owning orbital + declared label. */
 export interface NavPageDecl {
   path: string;
   name: string;
   orbital: string;
+  /** Declared nav label (`@label`); absent = the page name as written. */
+  label?: string;
 }
 
 /** Per-orbital stacks. */
@@ -39,15 +41,9 @@ export interface PendingCrumb {
   crumb: string;
 }
 
-/**
- * Humanize a declared page name into a default stack label:
- * strip the `Page` suffix, then space the PascalCase words
- * (`ContractDetailPage` → `Contract Detail`). Mirrors the compiler's
- * `derive_nav_label` name convention, plus display spacing.
- */
-export function derivePageLabel(name: string): string {
-  const stripped = name.endsWith("Page") && name.length > 4 ? name.slice(0, -4) : name;
-  return stripped.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+/** A page's entry label: its declared label, else its name as written (never derived). */
+export function pageEntryLabel(page: NavPageDecl): string {
+  return page.label ?? page.name;
 }
 
 function normalizePath(p: string): string {
@@ -83,7 +79,7 @@ function seedAncestors(
     const prefix = "/" + segments.slice(0, depth).join("/");
     const page = matchNavPage(pages, prefix);
     if (page) {
-      ancestors.push({ href: prefix, label: derivePageLabel(page.name) });
+      ancestors.push({ href: prefix, label: pageEntryLabel(page) });
     }
   }
   return ancestors;
@@ -107,7 +103,7 @@ export function syncNavStack(
   const label =
     pending && normalizePath(pending.href) === normalized
       ? pending.crumb
-      : derivePageLabel(page.name);
+      : pageEntryLabel(page);
 
   const prior = state[page.orbital];
   const stack: NavStackEntry[] =

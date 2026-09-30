@@ -461,7 +461,7 @@ export interface DetailPanelProps extends DisplayStateProps {
   footer?: React.ReactNode;
   slideOver?: boolean;
 
-  /** Fields to display - accepts string[], {key, header}[], or DetailField[] */
+  /** Fields to display: field names, or declared fields ({ name, label, variant, format, colorMap, labels }) */
   fields: readonly (FieldDef | DetailField)[];
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];

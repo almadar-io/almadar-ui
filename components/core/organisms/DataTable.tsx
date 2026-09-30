@@ -27,6 +27,8 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { DisplayStateProps, EntityDisplayEvents } from "./types";
+import type { ItemActionPayload } from '@almadar/core/patterns';
+import type { EventEmit } from '@almadar/core';
 import type { EntityRow, FieldValue } from "@almadar/core";
 import { pressableProps, rowActivationProps } from "../../../lib/pressable";
 import type { DisplayFieldFormat } from "../atoms/types";
@@ -111,7 +113,8 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
   /** Columns can be Column objects or simple string field names */
   columns?: readonly Column<T>[] | readonly string[];
   /** When set, rows are activatable and emit UI:{itemClickEvent} with { id, row } */
-  itemClickEvent?: EventKey;
+  /** @entityRow row */
+  itemClickEvent?: EventEmit<ItemActionPayload>;
   /** Item actions from generated code - maps to rowActions */
   itemActions?: readonly {
     label: string;

@@ -168,12 +168,12 @@ export const Modal: React.FC<ModalProps> = ({
     <div
       className={cn(
         contained ? "absolute inset-0 z-50" : "fixed inset-0 z-[1000]",
+        "bg-scrim",
         "flex items-start justify-center px-4 pb-4",
         contained ? "pt-[10%]" : "pt-[10vh]",
         "max-sm:items-end max-sm:p-0 max-sm:pt-0",
         overlayAnim,
       )}
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
       onClick={handleOverlayClick}
     >
         <Dialog

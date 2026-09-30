@@ -864,7 +864,7 @@ export function OrbPreview({
     () =>
       pages
         .filter((p) => typeof p.page.path === 'string' && p.page.path.length > 0)
-        .map((p) => ({ path: p.page.path as string, name: p.page.name, orbital: p.orbitalName })),
+        .map((p) => ({ path: p.page.path as string, name: p.page.name, orbital: p.orbitalName, label: p.page.label })),
     [pages],
   );
   const concreteCurrentPath = useMemo(() => {

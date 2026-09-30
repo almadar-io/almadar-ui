@@ -454,6 +454,8 @@ module.exports = {
           foreground: withOpacity('--color-card-foreground'),
         },
         surface: withOpacity('--color-surface'),
+        // Backdrop dimming behind modals/drawers; themes set --color-scrim.
+        scrim: 'var(--color-scrim, rgba(0, 0, 0, 0.6))',
         border: withOpacity('--color-border'),
         input: withOpacity('--color-input'),
         ring: withOpacity('--color-ring'),

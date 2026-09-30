@@ -140,7 +140,7 @@ export interface ListProps extends DisplayStateProps {
   /** Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field. */
   renderItem?: (item: ListItem, index: number) => React.ReactNode;
   children?: React.ReactNode;
-  /** Fields to display - accepts string[] or {key, header}[] for unified interface */
+  /** Fields to display: field names, or declared fields ({ name, label, variant, format, colorMap, labels }) */
   fields: readonly FieldDef[];
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];

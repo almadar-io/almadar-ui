@@ -286,7 +286,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     >
       {showSidebar && isMobile && sidebarOpen && (
         <Box
-          className="fixed inset-0 bg-foreground/50 z-20"
+          className="fixed inset-0 bg-scrim z-20"
           onClick={() => setSidebarOpen(false)}
         />
       )}

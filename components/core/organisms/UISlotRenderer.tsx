@@ -489,8 +489,7 @@ function renderContainedPortal(
         return (
           <Box
             id={slotId}
-            className="absolute inset-0 z-50 overflow-hidden"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+            className="absolute inset-0 z-50 overflow-hidden bg-scrim"
             onClick={onDismiss}
           >
             <Box
@@ -534,8 +533,7 @@ function renderContainedPortal(
       return (
         <Box
           id={slotId}
-          className="absolute inset-0 z-50 flex items-center justify-center overflow-auto"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          className="absolute inset-0 z-50 flex items-center justify-center overflow-auto bg-scrim"
           onClick={onDismiss}
         >
           <Box className="max-h-full overflow-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -1118,7 +1116,7 @@ function SlotPortal({
       wrapper = (
         <Box
           id={slotId}
-          className="fixed inset-0 z-50 bg-foreground/50 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-scrim flex items-center justify-center"
           onClick={onDismiss}
         >
           <Box onClick={(e: React.MouseEvent) => e.stopPropagation()}>

@@ -31,7 +31,7 @@ export interface OnboardingSpotlightProps {
   cutoutPadding?: number;
 }
 
-const DIM = "fixed z-[45] bg-black/60";
+const DIM = "fixed z-[45] bg-scrim";
 
 export const OnboardingSpotlight: React.FC<OnboardingSpotlightProps> = ({
   steps,
