@@ -37,6 +37,9 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
+      - name: Verify dist loads under Node ESM
+        run: pnpm --if-present verify:dist-esm
+
       - name: Test
         run: pnpm --if-present test
 

@@ -11,8 +11,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:game:model-loader');

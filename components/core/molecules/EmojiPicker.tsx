@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from 'react';
-import { lib, ordered } from 'emojilib';
+import emojilib from 'emojilib';
 import type { EventEmit } from '@almadar/core';
 import type { EmojiPickPayload } from '@almadar/core/patterns';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -19,6 +19,8 @@ import { Button } from '../atoms/Button';
 import type { IconInput } from '../atoms/index';
 import { GridPicker, type PickerItem } from './GridPicker';
 import { Popover } from './Popover';
+
+const { lib, ordered } = emojilib;
 
 /**
  * Build the item list once at module scope (mirrors IconPicker's lucide

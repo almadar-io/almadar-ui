@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "6.51.1",
+  "version": "6.51.2",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -93,11 +93,6 @@
       "import": "./dist/avl/index.js",
       "require": "./dist/avl/index.cjs"
     },
-    "./flow": {
-      "types": "./dist/flow/index.d.ts",
-      "import": "./dist/flow/index.js",
-      "require": "./dist/flow/index.cjs"
-    },
     "./themes/*.css": "./themes/*.css",
     "./locales": {
       "types": "./dist/locales/index.d.ts",
@@ -138,7 +133,8 @@
     "test": "vitest run",
     "lint": "eslint --no-warn-ignored --max-warnings 0 .",
     "verify:themes": "node scripts/theme-contrast-audit.mjs && node scripts/theme-distinctness-audit.mjs",
-    "verify:safelist": "tsx scripts/audit-tailwind-safelist.ts"
+    "verify:safelist": "tsx scripts/audit-tailwind-safelist.ts",
+    "verify:dist-esm": "node scripts/verify-dist-esm.mjs"
   },
   "dependencies": {
     "@almadar/core": "^10.113.0",
