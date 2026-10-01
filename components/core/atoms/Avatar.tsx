@@ -5,8 +5,9 @@
  * A versatile avatar component supporting images, initials, icons, and status indicators.
  */
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from "react";
-import type { AssetUrl, EventKey, EventPayload } from "@almadar/core";
+import type { A11yProps, AssetUrl, EventKey, EventPayload } from "@almadar/core";
 import { Icon, resolveIcon, type IconInput } from "./Icon";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -16,7 +17,8 @@ import { useTranslate } from "../../../hooks/useTranslate";
 export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 export type AvatarStatus = "online" | "offline" | "away" | "busy";
 
-export interface AvatarProps {
+/** @accessibleName alt name */
+export interface AvatarProps extends A11yProps {
   /**
    * Image source URL
    */
@@ -143,6 +145,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   onClick,
   action,
   actionPayload,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -180,7 +183,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   const press = pressableProps(isClickable ? handleClick : undefined);
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block" {...domPassthrough(rest)}>
       <div
         className={cn(
           "relative inline-flex items-center justify-center",

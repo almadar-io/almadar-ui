@@ -13,7 +13,8 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import type { EventKey, EventEmit, EventPayload } from "@almadar/core";
+import type { A11yProps, EventKey, EventEmit, EventPayload } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Badge, Button, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
@@ -77,7 +78,9 @@ export interface GraphAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
-export interface GraphCanvasProps {
+export interface GraphCanvasProps extends A11yProps {
+    /** Text alternative for the graph, rendered as visually hidden text and linked by aria-describedby. */
+    description?: string;
     /** Graph title */
     title?: string;
     /** Graph nodes */
@@ -249,7 +252,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     isLoading = false,
     error,
     className,
+    description,
+    ...rest
 }) => {
+    const descId = React.useId();
     const eventBus = useEventBus();
     const { t } = useTranslate();
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1029,9 +1035,9 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         <HStack gap="xs" align="center">
                             {interactive && (
                                 <>
-                                    <Button variant="ghost" size="sm" icon={ZoomOut} onClick={handleZoomOut} />
-                                    <Button variant="ghost" size="sm" icon={ZoomIn} onClick={handleZoomIn} />
-                                    <Button variant="ghost" size="sm" icon={RotateCcw} onClick={handleReset} />
+                                    <Button variant="ghost" size="sm" icon={ZoomOut} onClick={handleZoomOut} aria-label={t('avl.zoomOut')} />
+                                    <Button variant="ghost" size="sm" icon={ZoomIn} onClick={handleZoomIn} aria-label={t('avl.zoomIn')} />
+                                    <Button variant="ghost" size="sm" icon={RotateCcw} onClick={handleReset} aria-label={t('common.reset')} />
                                 </>
                             )}
                             {actions?.map((action, idx) => (
@@ -1062,7 +1068,12 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         onPointerCancel={gestureHandlers.onPointerCancel}
                         onPointerLeave={handlePointerLeave}
                         onDoubleClick={handleDoubleClick}
+                        role="img"
+                        aria-label={title ?? t('aria.graphCanvas')}
+                        aria-describedby={description ? descId : undefined}
+                        {...domPassthrough(rest)}
                     />
+                    {description && <Box id={descId} className="sr-only">{description}</Box>}
                     {typeof window !== "undefined" && showLabelTooltip && labelTooltipStyle && (<ThemedPortal>{
                         <div
                             className={cn(

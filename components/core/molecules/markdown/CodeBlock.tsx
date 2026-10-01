@@ -384,7 +384,8 @@ import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { createLogger } from '@almadar/logger';
-import type { EventEmit, EventKey, EventListen } from "@almadar/core";
+import type { A11yProps, EventEmit, EventKey, EventListen } from "@almadar/core";
+import { domPassthrough } from "../../../../lib/domPassthrough";
 import { useEditorCapabilities } from './useEditorCapabilities';
 import { computeLineDiff } from '../../../../lib/lineDiff';
 
@@ -531,7 +532,7 @@ export interface CodeViewerFile {
   language?: CodeLanguage;
 }
 
-export interface CodeBlockProps {
+export interface CodeBlockProps extends A11yProps {
   /** The code content to display */
   code?: string;
   /** Programming language for syntax highlighting (any Prism id; loaded on demand if not pre-registered) */
@@ -928,6 +929,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       'dedent',
       'replace',
     ],
+    ...a11yRest
   }) => {
     // `motions`/`operators` document the vocabulary this instance accepts;
     // enforcement lives at the emitting plugin, not here (P1 E3).
@@ -1702,7 +1704,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       }));
 
       return (
-        <Card className={cn('overflow-hidden', className)}>
+        <Card {...domPassthrough(a11yRest)} className={cn('overflow-hidden', className)}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {naturalTabStrip}
             {tabItems && tabItems.length > 1 && (
@@ -1739,6 +1741,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                   variant="ghost"
                   size="sm"
                   icon={WrapText}
+                  aria-label={t('aria.wrapLines')}
+                  aria-pressed={wrap}
                   onClick={() => setWrap(!wrap)}
                   className={cn(wrap && 'text-primary')}
                 />
@@ -1747,6 +1751,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                     variant="ghost"
                     size="sm"
                     icon={copied ? Check : Copy}
+                    aria-label={t('aria.copyCode')}
                     onClick={handleCopy}
                     className={cn(copied && 'text-success')}
                   />
@@ -1783,7 +1788,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const hasHeader = showLanguageBadge || effectiveCopy;
 
     return (
-      <Box className={`relative group not-prose ${className || ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box {...domPassthrough(a11yRest)} className={`relative group not-prose ${className || ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {hasHeader && (
           <HStack
             justify="between"

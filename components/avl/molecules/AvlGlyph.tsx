@@ -6,10 +6,12 @@
  * surface for every AVL atom (a symbol legend, a docs callout, a key).
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { AvlApplication } from '../atoms/AvlApplication';
 import { AvlOrbital } from '../atoms/AvlOrbital';
 import { AvlEntity } from '../atoms/AvlEntity';
@@ -40,7 +42,7 @@ export const AVL_GLYPH_KINDS = [
 
 export type AvlGlyphKind = (typeof AVL_GLYPH_KINDS)[number];
 
-export interface AvlGlyphProps {
+export interface AvlGlyphProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Which notation symbol to draw.
    * @example "state"
    */
@@ -65,7 +67,7 @@ export interface AvlGlyphProps {
 const HEIGHT = { sm: 32, md: 56, lg: 88 } as const;
 const PAD = 6;
 
-function Symbol({ kind, label, effectType, fieldType, persistence, namespace }: Omit<AvlGlyphProps, 'size' | 'showCaption' | 'className'>): React.ReactElement {
+function Symbol({ kind, label, effectType, fieldType, persistence, namespace }: Pick<AvlGlyphProps, 'kind' | 'label' | 'effectType' | 'fieldType' | 'persistence' | 'namespace'>): React.ReactElement {
   switch (kind) {
     case 'application': return <AvlApplication width={120} height={80} />;
     case 'orbital': return <AvlOrbital r={36} />;
@@ -88,7 +90,8 @@ function Symbol({ kind, label, effectType, fieldType, persistence, namespace }: 
   }
 }
 
-export const AvlGlyph: React.FC<AvlGlyphProps> = ({ kind, label, size = 'md', showCaption = true, className, ...variant }) => {
+export const AvlGlyph: React.FC<AvlGlyphProps> = ({ kind, label, size = 'md', showCaption = true, className, effectType, fieldType, persistence, namespace, ...rest }) => {
+  const variant = { effectType, fieldType, persistence, namespace };
   const { t } = useTranslate();
   const groupRef = useRef<SVGGElement>(null);
   const [box, setBox] = useState({ x: -50, y: -50, w: 100, h: 100 });
@@ -102,7 +105,7 @@ export const AvlGlyph: React.FC<AvlGlyphProps> = ({ kind, label, size = 'md', sh
 
   const height = HEIGHT[size];
   return (
-    <Box data-testid="avl-glyph" data-kind={kind} className={`inline-flex flex-col items-center gap-1 ${className ?? ''}`}>
+    <Box {...domPassthrough(rest)} data-testid="avl-glyph" data-kind={kind} className={`inline-flex flex-col items-center gap-1 ${className ?? ''}`}>
       <svg height={height} width={(height * box.w) / box.h} viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`} role="img" aria-label={label ?? t(`avl.glyph.${kind}`)}>
         <g ref={groupRef}>
           <Symbol kind={kind} label={label} {...variant} />

@@ -1,17 +1,24 @@
 import React from "react";
-import type { EventEmit } from "@almadar/core";
+import type { A11yProps, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { Label } from "./Label";
+import { Typography } from "./Typography";
 
-export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
+/** @accessibleName label */
+export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange' | keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
+  /** Visible label naming the field. */
+  label?: string;
   /** Placeholder text */
   placeholder?: string;
   /** Number of visible rows */
   rows?: number;
   /** Declarative event: fires on ⌘/Ctrl+Enter with `{ value }`. */
   action?: EventEmit<{ value: string }>;
+  /** Helper text describing the field. */
+  helperText?: string;
   /** Error message */
   error?: string;
   /** onChange handler or declarative event key for trait dispatch */
@@ -19,8 +26,12 @@ export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTex
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, error, onChange, action, onKeyDown, ...props }, ref) => {
+  ({ className, label, helperText, error, onChange, action, onKeyDown, id, required, ...props }, ref) => {
     const eventBus = useEventBus();
+    const generatedId = React.useId();
+    const fieldId = id ?? generatedId;
+    const descriptionId = error || helperText ? `${fieldId}-description` : undefined;
+    const describedBy = [props['aria-describedby'], descriptionId].filter(Boolean).join(' ') || undefined;
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       if (typeof onChange === 'string') {
@@ -37,7 +48,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       eventBus.emit(`UI:${action}`, { value: e.currentTarget.value });
     };
 
-    return (
+    const field = (
       <textarea
         ref={ref}
         onChange={handleChange}
@@ -56,7 +67,26 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className,
         )}
         {...props}
+        id={fieldId}
+        required={required}
+        aria-required={required ? true : undefined}
+        aria-invalid={error ? true : props['aria-invalid']}
+        aria-describedby={describedBy}
       />
+    );
+
+    if (!label && !descriptionId) return field;
+
+    return (
+      <div className="w-full">
+        {label && <Label htmlFor={fieldId} className="mb-1">{label}</Label>}
+        {field}
+        {descriptionId && (
+          <Typography id={descriptionId} variant="caption" color={error ? "error" : "muted"} className="mt-1">
+            {error ?? helperText}
+          </Typography>
+        )}
+      </div>
     );
   },
 );

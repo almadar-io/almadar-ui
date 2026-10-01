@@ -4,9 +4,11 @@
  * A CSS Grid wrapper with responsive column support.
  * Useful for creating multi-column layouts.
  */
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type GridCols = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 'none';
 export type GridGap = 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 export type GridAlign = 'start' | 'center' | 'end' | 'stretch' | 'baseline';
@@ -25,7 +27,7 @@ export interface ResponsiveGridCols {
   xl?: GridCols;
 }
 
-export interface GridProps {
+export interface GridProps extends A11yProps {
   /** Number of columns (can be responsive object) */
   cols?: GridCols | ResponsiveGridCols;
   /** Number of rows */
@@ -162,6 +164,7 @@ export const Grid: React.FC<GridProps> = ({
   style,
   children,
   as: Component = 'div',
+  ...rest
 }) => {
   const mergedStyle = rows
     ? { gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`, ...style }
@@ -173,6 +176,7 @@ export const Grid: React.FC<GridProps> = ({
   return React.createElement(
     Component,
     {
+      ...domPassthrough(rest),
       className: cn(
         'grid',
         getColsClass(cols),

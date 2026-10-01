@@ -13,8 +13,9 @@ import { Button } from '../atoms/index';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { createLogger } from '@almadar/logger';
 import type { FilterDefinition } from './FilterGroup';
-import type { EventKey } from "@almadar/core";
+import type { EventKey, A11yProps } from "@almadar/core";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 const log = createLogger('almadar:ui:button-group');
 
 export type ButtonGroupVariant = 'default' | 'segmented' | 'toggle';
@@ -41,7 +42,7 @@ export interface ActionButton {
   variant?: string;
 }
 
-export interface ButtonGroupProps {
+export interface ButtonGroupProps extends A11yProps {
   /**
    * Button group content (Button components) - use this OR primary/secondary
    */
@@ -131,6 +132,7 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
   entity: _entity,
   filters,
   look = 'right-aligned-buttons',
+  ...rest
 }) => {
   const eventBus = useSafeEventBus();
   const variantClasses = {
@@ -218,6 +220,7 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
 
   return (
     <div
+      {...domPassthrough(rest)}
       className={cn(
         'inline-flex gap-2',
         variantClasses[variant],

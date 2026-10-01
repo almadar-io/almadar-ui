@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback } from "react";
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, A11yProps } from '@almadar/core';
 import { cn } from "../../../lib/cn";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
@@ -9,6 +9,7 @@ import { Radio } from "../atoms/Radio";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface MatrixRow {
   id: string;
   label: string;
@@ -19,7 +20,7 @@ export interface MatrixColumn {
   label: string;
 }
 
-export interface MatrixQuestionProps {
+export interface MatrixQuestionProps extends A11yProps {
   /** Optional title rendered above the matrix */
   title?: string;
   /** Question rows */
@@ -71,6 +72,7 @@ export const MatrixQuestion: React.FC<MatrixQuestionProps> = ({
   disabled = false,
   size = "md",
   className,
+  ...rest
 }) => {
   const styles = sizeStyles[size];
   const safeRows = rows ?? [];
@@ -92,7 +94,7 @@ export const MatrixQuestion: React.FC<MatrixQuestionProps> = ({
   );
 
   return (
-    <Box className={cn("w-full", className)}>
+    <Box {...domPassthrough(rest)} className={cn("w-full", className)}>
       {title && (
         <Typography variant="h4" className="mb-3">
           {title}

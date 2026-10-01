@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useCallback } from "react";
-import type { EventKey, AssetUrl } from "@almadar/core";
+import type { A11yProps, EventKey, AssetUrl } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Button, Badge, Icon, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
@@ -23,6 +23,7 @@ import { EmptyState } from "./EmptyState";
 import { Tabs, type TabItem } from "./Tabs";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import {
     FileText,
     Download,
@@ -51,7 +52,7 @@ export interface DocumentItem {
     documentType?: DocumentType;
 }
 
-export interface DocumentViewerProps {
+export interface DocumentViewerProps extends A11yProps {
     /** Document title */
     title?: string;
     /** Document URL (for PDF/external documents) */
@@ -100,6 +101,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     isLoading = false,
     error,
     className,
+    ...rest
 }) => {
     const eventBus = useEventBus();
     const { t } = useTranslate();
@@ -224,7 +226,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     };
 
     return (
-        <Card className={cn("overflow-hidden", className)}>
+        <Card {...domPassthrough(rest)} className={cn("overflow-hidden", className)}>
             <VStack gap="none">
                 {/* Tabs for multiple documents */}
                 {tabItems && tabItems.length > 1 && (
@@ -259,31 +261,31 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
                         <HStack gap="xs" align="center">
                             {/* Zoom controls */}
-                            <Button variant="ghost" size="sm" icon={ZoomOut} onClick={handleZoomOut} />
+                            <Button variant="ghost" size="sm" icon={ZoomOut} onClick={handleZoomOut} aria-label={t("aria.zoomOut")} />
                             <Typography variant="caption" color="secondary" className="tabular-nums w-10 text-center">
                                 {zoom}%
                             </Typography>
-                            <Button variant="ghost" size="sm" icon={ZoomIn} onClick={handleZoomIn} />
+                            <Button variant="ghost" size="sm" icon={ZoomIn} onClick={handleZoomIn} aria-label={t("aria.zoomIn")} />
 
                             {/* Page navigation */}
                             {totalPages && totalPages > 1 && (
                                 <>
                                     <Box className="w-px h-4 bg-border mx-1" />
-                                    <Button variant="ghost" size="sm" icon={ChevronLeft} onClick={handlePagePrev} disabled={currentPage <= 1} />
+                                    <Button variant="ghost" size="sm" icon={ChevronLeft} onClick={handlePagePrev} disabled={currentPage <= 1} aria-label={t("aria.previousPage")} />
                                     <Typography variant="caption" color="secondary" className="tabular-nums">
                                         {currentPage} / {totalPages}
                                     </Typography>
-                                    <Button variant="ghost" size="sm" icon={ChevronRight} onClick={handlePageNext} disabled={currentPage >= totalPages} />
+                                    <Button variant="ghost" size="sm" icon={ChevronRight} onClick={handlePageNext} disabled={currentPage >= totalPages} aria-label={t("aria.nextPage")} />
                                 </>
                             )}
 
                             {/* Utility actions */}
                             <Box className="w-px h-4 bg-border mx-1" />
                             {showDownload && (
-                                <Button variant="ghost" size="sm" icon={Download} onClick={handleDownload} />
+                                <Button variant="ghost" size="sm" icon={Download} onClick={handleDownload} aria-label={t("aria.downloadDocument")} />
                             )}
                             {showPrint && (
-                                <Button variant="ghost" size="sm" icon={Printer} onClick={handlePrint} />
+                                <Button variant="ghost" size="sm" icon={Printer} onClick={handlePrint} aria-label={t("aria.printDocument")} />
                             )}
                             {actions?.map((action, idx) => (
                                 <Badge

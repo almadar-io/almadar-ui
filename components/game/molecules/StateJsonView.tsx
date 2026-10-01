@@ -9,6 +9,8 @@
  * @packageDocumentation
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React, { useState } from 'react';
 import { VStack, HStack, Box, Typography, Button } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
@@ -24,7 +26,7 @@ export interface StateJsonTransition {
     event: string;
 }
 
-export interface StateJsonViewProps {
+export interface StateJsonViewProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Machine name */
     name: string;
     /** Initial state */
@@ -49,6 +51,7 @@ export function StateJsonView({
     label,
     defaultExpanded = false,
     className,
+    ...rest
 }: StateJsonViewProps): React.JSX.Element {
     const { t } = useTranslate();
     const [expanded, setExpanded] = useState(defaultExpanded);
@@ -59,7 +62,7 @@ export function StateJsonView({
     );
 
     return (
-        <VStack className={cn('rounded-container border border-border overflow-hidden', className)} gap="none">
+        <VStack {...domPassthrough(rest)} className={cn('rounded-container border border-border overflow-hidden', className)} gap="none">
             <HStack className="items-center justify-between p-2 bg-muted" gap="sm">
                 <Typography variant="caption" className="text-muted-foreground font-medium">
                     {label ?? t('stateArchitect.viewCode')}

@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { A11yProps, AssetUrl, EventEmit } from '@almadar/core';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
@@ -22,6 +22,7 @@ import type { IconInput } from '../atoms/index';
 import { Typography } from '../atoms/Typography';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import type { UiError } from '../atoms/types';
@@ -51,7 +52,7 @@ export interface SidebarItem {
   subItems?: SidebarItem[];
 }
 
-export interface SidebarProps {
+export interface SidebarProps extends A11yProps {
   /** Additional CSS classes */
   className?: string;
   /** Loading state indicator */
@@ -115,6 +116,7 @@ const SidebarNavItem: React.FC<{
           ].join(' ')
       )}
       title={collapsed ? item.label : undefined}
+      aria-current={isActive ? 'page' : undefined}
     >
       {item.icon && (
         typeof item.icon === 'string'
@@ -161,6 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   closeEvent,
   logoClickEvent,
   className,
+  ...rest
 }) => {
   const { emit } = useEventBus();
   const { t } = useTranslate();
@@ -192,6 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <Box
       as="aside"
+      {...domPassthrough(rest)}
       className={cn(
         'flex flex-col h-full',
         'bg-card border-e border-border',

@@ -52,6 +52,7 @@ import { validateWire } from '../../../lib/wire-validation';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { isEditableTarget } from '../../../lib/keyMapEvent';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion';
 import { createLogger } from '@almadar/logger';
 import { perfStart, perfEnd, profilerOnRender } from '../../../lib/perf';
 import { type ViewLevel, type PreviewNodeData, type EventEdgeData, type ScreenSize, SCREEN_SIZE_PRESETS, detectScreenSize } from '../../../lib/avl-preview-converter';
@@ -563,6 +564,7 @@ function FlowCanvasInner({
   const [edges, setEdges, onEdgesChange] = useEdgesState(activeEdges);
 
   const reactFlow = useReactFlow();
+  const cameraMs = usePrefersReducedMotion() ? 0 : 300;
 
   // Persisted-position overlay. Held in a ref and read only when the node SET
   // changes, so a consumer updating its store mid-drag never clobbers the
@@ -610,8 +612,8 @@ function FlowCanvasInner({
     const pending = pendingFitRef.current;
     if (!nodesInitialized || !pending) return;
     pendingFitRef.current = null;
-    void reactFlow.fitView({ duration: 300, padding: fitPadding, ...(pending.centreOn ? { nodes: [{ id: pending.centreOn }] } : {}) });
-  }, [nodesInitialized, nodes, reactFlow, fitPadding]);
+    void reactFlow.fitView({ duration: cameraMs, padding: fitPadding, ...(pending.centreOn ? { nodes: [{ id: pending.centreOn }] } : {}) });
+  }, [nodesInitialized, nodes, reactFlow, fitPadding, cameraMs]);
 
 
   // Defense in depth: never render an edge whose source/target isn't in the
@@ -812,7 +814,7 @@ function FlowCanvasInner({
   const applyScreenSize = (size: ScreenSize) => {
     pickScreenSize(size);
     requestAnimationFrame(() => {
-      reactFlow.fitView({ duration: 300, padding: 0.25 });
+      reactFlow.fitView({ duration: cameraMs, padding: 0.25 });
     });
   };
 
@@ -1094,7 +1096,7 @@ function FlowCanvasInner({
           keeps its width when the inspector opens, so the cards never shift. */}
       <Box className="flex flex-1 min-h-0">
       <Box
-        className="relative flex-1 min-w-0 h-full outline-none flex flex-col"
+        className="relative flex-1 min-w-0 h-full outline-none focus-visible:ring-[length:var(--focus-ring-width)] focus-visible:ring-ring focus-visible:ring-inset flex flex-col"
         tabIndex={0}
         onKeyDown={handleCanvasKeyDown}
         data-testid="flow-canvas"

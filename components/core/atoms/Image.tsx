@@ -1,12 +1,14 @@
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from 'react';
-import type { AssetUrl } from '@almadar/core';
+import type { A11yProps, AssetUrl } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 
 export type ImageFit = 'cover' | 'contain' | 'fill' | 'none';
 export type ImageAspect = 'auto' | '1/1' | '4/3' | '3/2' | '16/9' | '21/9';
 export type ImageRounded = 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
 
-export interface ImageProps {
+/** @accessibleName alt */
+export interface ImageProps extends A11yProps {
   /** Image source URL */
   src: AssetUrl;
   /** Alternative text; empty string marks the image decorative */
@@ -60,13 +62,15 @@ export const Image: React.FC<ImageProps> = ({
   bordered = false,
   loading = 'lazy',
   className,
+  ...rest
 }) => {
   if (!src) return null;
   return (
     <img
       src={src}
       alt={alt}
-      role={alt === '' ? 'presentation' : undefined}
+      {...domPassthrough(rest)}
+      role={alt === '' ? 'presentation' : rest.role}
       loading={loading}
       decoding="async"
       className={cn(

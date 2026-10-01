@@ -30,7 +30,6 @@ import {
   type SlotPropValue,
   type SlotCallback,
   type SlotRenderConfig,
-  type SlotAnimation,
   type SlotChangeCallback,
 } from '../hooks/useUISlots';
 
@@ -145,6 +144,5 @@ export {
   type SlotPropValue,
   type SlotCallback,
   type SlotRenderConfig,
-  type SlotAnimation,
   type SlotChangeCallback,
 };

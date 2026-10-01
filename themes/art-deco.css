@@ -5,7 +5,7 @@
  */
 
 [data-theme="art-deco-light"] {
-    --color-primary: #7a5a00;
+    --color-primary: #7d6024;
     --color-primary-foreground: #fff6d8;
     --color-secondary: #0f5a45;
     --color-secondary-hover: #0b4937;
@@ -36,7 +36,8 @@
     --color-warning-foreground: #1a1200;
     --color-info: #1f4a8a;
     --color-info-foreground: #ffffff;
-    --color-primary-hover: #634900;
+    --color-primary-hover: #664e1c;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 4px;
     --radius-md: 8px;
@@ -52,7 +53,7 @@
     --font-weight-bold: 700;
     --letter-spacing: 0.02em;
     --line-height: 1.55;
-    --icon-color: #7a5a00;
+    --icon-color: #7d6024;
     --transition-fast: 240ms;
     --transition-normal: 420ms;
     --transition-slow: 700ms;
@@ -221,6 +222,7 @@
     --color-warning-foreground: #1a1200;
     --color-info: #79a8f2;
     --color-info-foreground: #051226;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 4px;
     --radius-md: 8px;

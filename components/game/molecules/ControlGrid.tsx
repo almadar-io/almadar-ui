@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
-import type { EventEmit, EventKey, Asset } from '@almadar/core';
+import type { A11yProps, EventEmit, EventKey, Asset } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -24,7 +25,7 @@ export interface ControlGridButton {
 
 export type DPadDirection = 'up' | 'down' | 'left' | 'right';
 
-export interface ControlGridProps {
+export interface ControlGridProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   kind: ControlGridKind;
   /** action buttons (kind="actions") */
   buttons?: ControlGridButton[];
@@ -97,6 +98,7 @@ export function ControlGrid({
   disabled,
   visibility = 'auto',
   className,
+  ...rest
 }: ControlGridProps): React.JSX.Element | null {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -173,7 +175,7 @@ export function ControlGrid({
     const cell = (d: DPadDirection) =>
       !usesSemantic || directionEvents?.[d] ? dir(d) : <Box key={d} />;
     return (
-      <Box className={cn('inline-grid grid-cols-3', ds.gap, ds.container, className)}>
+      <Box {...domPassthrough(rest)} className={cn('inline-grid grid-cols-3', ds.gap, ds.container, className)}>
         <Box />{cell('up')}<Box />
         {cell('left')}
         <Box className="flex items-center justify-center">
@@ -189,7 +191,7 @@ export function ControlGrid({
   if (layout === 'diamond' && buttons.length === 4) {
     const [top, right, bottom, left] = buttons;
     return (
-      <Box className={cn(layoutClass.diamond, className)}>
+      <Box {...domPassthrough(rest)} className={cn(layoutClass.diamond, className)}>
         <Box />
         <ControlButton icon={top.icon} assetUrl={top.assetUrl} label={top.label} size={sizeKey[size]} variant={top.variant}
           pressed={active.has(top.id)} onPress={() => handlePress(top.id)} onRelease={() => handleRelease(top.id)} disabled={disabled} />
@@ -208,7 +210,7 @@ export function ControlGrid({
   }
 
   return (
-    <Box className={cn(layoutClass[layout], className)}>
+    <Box {...domPassthrough(rest)} className={cn(layoutClass[layout], className)}>
       {buttons.map((button) => (
         <ControlButton
           key={button.id}

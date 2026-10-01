@@ -1,4 +1,5 @@
 'use client';
+import type { A11yProps } from '@almadar/core';
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { Card } from "../atoms/index";
@@ -12,7 +13,8 @@ import { useTranslate } from "../../../hooks/useTranslate";
 import { useEventBus } from "../../../hooks/useEventBus";
 import type { DisplayStateProps } from "../organisms/types";
 
-export interface FormSectionProps extends DisplayStateProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface FormSectionProps extends Omit<DisplayStateProps, keyof A11yProps>, A11yProps {
   /** Section title */
   title?: string;
   /** Section description */
@@ -38,6 +40,7 @@ export const FormSection: React.FC<FormSectionProps> = ({
   card = false,
   columns = 1,
   className,
+  ...rest
 }) => {
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
   const { t } = useTranslate();
@@ -102,10 +105,10 @@ export const FormSection: React.FC<FormSectionProps> = ({
   );
 
   if (card) {
-    return <Card className={cn("p-6", className)}>{content}</Card>;
+    return <Card {...domPassthrough(rest)} className={cn("p-6", className)}>{content}</Card>;
   }
 
-  return <Box className={className}>{content}</Box>;
+  return <Box {...domPassthrough(rest)} className={className}>{content}</Box>;
 };
 
 FormSection.displayName = "FormSection";
@@ -113,7 +116,7 @@ FormSection.displayName = "FormSection";
 /**
  * Form layout with multiple sections
  */
-export interface FormLayoutProps extends DisplayStateProps {
+export interface FormLayoutProps extends Omit<DisplayStateProps, keyof A11yProps>, A11yProps {
   children: React.ReactNode;
   /** Show section dividers */
   dividers?: boolean;
@@ -123,9 +126,11 @@ export const FormLayout: React.FC<FormLayoutProps> = ({
   children,
   dividers = true,
   className,
+  ...rest
 }) => {
   return (
     <VStack
+      {...domPassthrough(rest)}
       gap="lg"
       className={cn(
         dividers &&
@@ -143,7 +148,7 @@ FormLayout.displayName = "FormLayout";
 /**
  * Form actions bar (submit/cancel buttons)
  */
-export interface FormActionsProps extends DisplayStateProps {
+export interface FormActionsProps extends Omit<DisplayStateProps, keyof A11yProps>, A11yProps {
   children: React.ReactNode;
   /** Sticky at bottom */
   sticky?: boolean;
@@ -156,6 +161,7 @@ export const FormActions: React.FC<FormActionsProps> = ({
   sticky = false,
   align = "right",
   className,
+  ...rest
 }) => {
   const alignClass = {
     left: "justify-start",
@@ -166,6 +172,7 @@ export const FormActions: React.FC<FormActionsProps> = ({
 
   return (
     <HStack
+      {...domPassthrough(rest)}
       gap="sm"
       align="center"
       className={cn(

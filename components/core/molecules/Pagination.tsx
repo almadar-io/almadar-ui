@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, A11yProps } from "@almadar/core";
 // Icons resolved by string name via Button's resolveIconProp
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
@@ -19,7 +19,8 @@ import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
-export interface PaginationProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface PaginationProps extends A11yProps {
   /**
    * Current page (1-indexed)
    */
@@ -106,6 +107,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   className,
   pageChangeEvent,
   pageSizeChangeEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -171,7 +173,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   const pageNumbers = getPageNumbers();
 
   return (
-    <Box as="nav" aria-label={t('pagination.label')} className={cn("@container w-full", className)}>
+    <Box {...domPassthrough(rest)} as="nav" aria-label={rest['aria-label'] ?? t('pagination.label')} className={cn("@container w-full", className)}>
     <HStack align="center" className="flex-wrap justify-between gap-x-4 gap-y-2">
       <HStack align="center" gap="sm" className="flex-wrap">
         {showTotal && totalItems !== undefined && (

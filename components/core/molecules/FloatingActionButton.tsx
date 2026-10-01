@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EventKey, EventPayload, A11yProps } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
 import type { IconInput } from "../atoms/index";
@@ -22,6 +22,7 @@ import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface FloatingAction {
   /**
    * Action ID
@@ -52,7 +53,8 @@ export interface FloatingAction {
   variant?: "primary" | "secondary" | "success" | "danger" | "warning";
 }
 
-export interface FloatingActionButtonProps {
+/** @accessibleName label */
+export interface FloatingActionButtonProps extends A11yProps {
   /**
    * Declarative event name. When set, clicking the FAB emits `UI:{action}`
    * via the event bus and (if also provided) calls `onClick`. Mirrors the
@@ -123,6 +125,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   label,
   position = "bottom-right",
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -171,12 +174,13 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     return (
       <Box className={cn("fixed z-50", positionClasses[position], className)}>
         <Button
+          {...domPassthrough(rest)}
           variant={resolvedAction.variant || "primary"}
           size="lg"
           icon={resolvedAction.icon}
           onClick={resolvedAction.onClick}
           className="rounded-full shadow-elevation-popover"
-          aria-label={resolvedAction.label || t('fab.action')}
+          aria-label={rest['aria-label'] ?? (resolvedAction.label || t('fab.action'))}
         >
           {resolvedAction.label && (
             <Typography as="span" className="sr-only">{resolvedAction.label}</Typography>
@@ -258,12 +262,13 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
 
         {/* Main FAB Button */}
         <Button
+          {...domPassthrough(rest)}
           variant={isExpanded ? "secondary" : "primary"}
           size="lg"
           icon={isExpanded ? "x" : "plus"}
           onClick={handleMainClick}
           className="rounded-full shadow-elevation-popover transition-all duration-normal"
-          aria-label={isExpanded ? t('fab.closeActions') : t('fab.openActions')}
+          aria-label={rest['aria-label'] ?? (isExpanded ? t('fab.closeActions') : t('fab.openActions'))}
           aria-expanded={isExpanded}
         >
           <Typography as="span" className="sr-only">{isExpanded ? t('common.close') : t('common.open')}</Typography>

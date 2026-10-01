@@ -8,7 +8,7 @@
  * Uses wireframe theme styling (high contrast, sharp edges).
  */
 import React from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, A11yProps } from "@almadar/core";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
@@ -17,6 +17,7 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Button } from "../atoms/Button";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /**
  * Step info needed by WizardProgress.
  * Compatible with WizardContainer's WizardStep (subset of fields).
@@ -30,7 +31,7 @@ export interface WizardProgressStep {
   description?: string;
 }
 
-export interface WizardProgressProps {
+export interface WizardProgressProps extends A11yProps {
   /** Step definitions (compatible with WizardContainer's WizardStep). A string is shorthand for `{ id: str, title: str }`. */
   steps?: (WizardProgressStep | string)[];
   /** Current step index (0-based) */
@@ -63,6 +64,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
   compact = false,
   className,
   stepClickEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -81,6 +83,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       border
       className={cn(
         "@container border-b-heavy border-x-0 border-t-0 border-border",

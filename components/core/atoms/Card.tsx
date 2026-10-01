@@ -1,5 +1,5 @@
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { A11yProps, EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { Spinner } from "./Spinner";
@@ -20,7 +20,7 @@ export type CardLook =
   | "chip"
   | "tile-image-first";
 
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   variant?: "default" | "bordered" | "elevated" | "interactive";

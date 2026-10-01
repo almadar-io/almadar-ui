@@ -31,7 +31,8 @@
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLogger } from '@almadar/logger';
-import type { Asset, AssetUrl, EventEmit, EventKey, ScenePos } from '@almadar/core';
+import type { A11yProps, Asset, AssetUrl, EventEmit, EventKey, ScenePos } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -125,7 +126,9 @@ export interface SidePlayer {
     frame?: number;
 }
 
-export interface Canvas2DProps {
+export interface Canvas2DProps extends A11yProps {
+    /** Text alternative for the scene, rendered as visually hidden text and linked by aria-describedby. */
+    description?: string;
     // --- Closed-circuit ---
     /** Additional CSS classes */
     className?: string;
@@ -304,7 +307,10 @@ export function Canvas2D({
     cameraPos,
     bgColor,
     children,
+    description,
+    ...rest
 }: Canvas2DProps): React.JSX.Element {
+    const descId = React.useId();
     const instanceId = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
     // -- Drawable registration (JSX children path) --
@@ -968,7 +974,12 @@ export function Canvas2D({
                     width: viewportSize.width,
                     height: viewportSize.height,
                 }}
+                role="img"
+                aria-label={t('aria.canvasScene')}
+                aria-describedby={description ? descId : undefined}
+                {...domPassthrough(rest)}
             />
+            {description && <Box id={descId} className="sr-only">{description}</Box>}
             {/* Test bridge: hidden action buttons for Playwright to trigger tile/unit events. */}
             {process.env.NODE_ENV !== 'production' && (tileClickEvent || unitClickEvent) && (
                 <Box data-game-actions="" className="sr-only" aria-hidden="true">

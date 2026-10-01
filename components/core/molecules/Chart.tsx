@@ -19,6 +19,8 @@
 import React, { useMemo, useCallback } from "react";
 import { cn } from "../../../lib/cn";
 import { pressableProps } from "../../../lib/pressable";
+import type { A11yProps } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { formatValue } from "../../../lib/format";
 import { Card, Typography, Badge, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
@@ -95,7 +97,7 @@ export interface ChartAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
-export interface ChartProps {
+export interface ChartProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Chart title */
     title?: string;
     /** Chart subtitle / description */
@@ -141,6 +143,12 @@ export interface ChartProps {
     /** Additional CSS classes */
     className?: string;
 }
+
+function pointName(label: string, seriesName: string, value: number): string {
+    return seriesName === "default" ? `${label}: ${value}` : `${label}, ${seriesName}: ${value}`;
+}
+
+const FOCUS_SVG = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
 
 const CHART_COLORS = [
     "var(--color-primary)",
@@ -299,8 +307,8 @@ const BarChart: React.FC<{
                                                     ? () => onPointClick({ label, value, color }, s.name)
                                                     : undefined,
                                             )}
-                                            aria-label={`${s.name}: ${value}`}
-                                            title={`${s.name}: ${value}`}
+                                            {...(onPointClick ? { "aria-label": pointName(label, s.name, value) } : undefined)}
+                                            title={pointName(label, s.name, value)}
                                         />
                                     );
                                 })}
@@ -364,8 +372,8 @@ const BarChart: React.FC<{
                                                     ? () => onPointClick({ label, value, color }, s.name)
                                                     : undefined,
                                             )}
-                                            aria-label={`${s.name}: ${value}`}
-                                            title={`${s.name}: ${value}`}
+                                            {...(onPointClick ? { "aria-label": pointName(label, s.name, value) } : undefined)}
+                                            title={pointName(label, s.name, value)}
                                         />
                                     );
                                 })}
@@ -419,8 +427,8 @@ const BarChart: React.FC<{
                                                 ? () => onPointClick({ label, value, color }, s.name)
                                                 : undefined,
                                         )}
-                                        aria-label={`${s.name}: ${value}`}
-                                        title={`${s.name}: ${value}`}
+                                        {...(onPointClick ? { "aria-label": pointName(label, s.name, value) } : undefined)}
+                                        title={pointName(label, s.name, value)}
                                     />
                                 );
                             })}
@@ -516,13 +524,13 @@ const PieChart: React.FC<{
                         fill={seg.color}
                         stroke="var(--color-card)"
                         strokeWidth="2"
-                        className="transition-opacity duration-fast hover:opacity-80 cursor-pointer"
-                        onClick={() =>
-                            onPointClick?.(
-                                { label: seg.label, value: seg.value, color: seg.color },
-                                "default",
-                            )
-                        }
+                        className={cn("transition-opacity duration-fast hover:opacity-80 cursor-pointer", FOCUS_SVG)}
+                        {...pressableProps<SVGPathElement>(
+                            onPointClick
+                                ? () => onPointClick({ label: seg.label, value: seg.value, color: seg.color }, "default")
+                                : undefined,
+                        )}
+                        {...(onPointClick ? { "aria-label": pointName(seg.label, "default", seg.value) } : undefined)}
                     />
                 ))}
                 {donut && (
@@ -683,13 +691,13 @@ const LineChart: React.FC<{
                                     fill="var(--color-card)"
                                     stroke={color}
                                     strokeWidth="2"
-                                    className="cursor-pointer"
-                                    onClick={() =>
-                                        onPointClick?.(
-                                            { label: p.label, value: p.value, color },
-                                            s.name,
-                                        )
-                                    }
+                                    className={cn("cursor-pointer", FOCUS_SVG)}
+                                    {...pressableProps<SVGCircleElement>(
+                                        onPointClick
+                                            ? () => onPointClick({ label: p.label, value: p.value, color }, s.name)
+                                            : undefined,
+                                    )}
+                                    {...(onPointClick ? { "aria-label": pointName(p.label, s.name, p.value) } : undefined)}
                                 />
                                 {(showValues || labels.length === 1) && series.length === 1 && (
                                     <text
@@ -805,17 +813,13 @@ const ScatterChart: React.FC<{
                         r={r}
                         fill={color}
                         opacity={0.7}
-                        className="cursor-pointer hover:opacity-100"
-                        onClick={() =>
-                            onPointClick?.(
-                                {
-                                    label: p.label ?? `(${p.x}, ${p.y})`,
-                                    value: p.y,
-                                    color,
-                                },
-                                "default",
-                            )
-                        }
+                        className={cn("cursor-pointer hover:opacity-100", FOCUS_SVG)}
+                        {...pressableProps<SVGCircleElement>(
+                            onPointClick
+                                ? () => onPointClick({ label: p.label ?? `(${p.x}, ${p.y})`, value: p.y, color }, "default")
+                                : undefined,
+                        )}
+                        {...(onPointClick ? { "aria-label": pointName(p.label ?? `(${p.x}, ${p.y})`, "default", p.y) } : undefined)}
                     >
                         <title>{p.label ?? `(${p.x}, ${p.y})`}</title>
                     </circle>
@@ -871,6 +875,7 @@ export const Chart: React.FC<ChartProps> = ({
     isLoading = false,
     error,
     className,
+    ...rest
 }) => {
     const resolvedLook: ChartLook =
         look ?? (chartType ? LOOK_FROM_CHART_TYPE[chartType] : "bar-vertical");
@@ -930,7 +935,7 @@ export const Chart: React.FC<ChartProps> = ({
     }
 
     return (
-        <Card className={cn("p-6", className)}>
+        <Card className={cn("p-6", className)} {...domPassthrough(rest)}>
             <VStack gap="md">
                 {(title || subtitle || (actions && actions.length > 0)) && (
                     <HStack justify="between" align="start">

@@ -12,8 +12,10 @@
  */
 
 import React from 'react';
+import type { A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
+import { domPassthrough, type DomPassthrough } from '../../../lib/domPassthrough';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
@@ -40,7 +42,7 @@ export type TraitStateMachineDefinition = {
     description?: string;
 };
 
-export interface TraitStateViewerProps {
+export interface TraitStateViewerProps extends A11yProps {
     /** The trait / state machine to visualize */
     trait: TraitStateMachineDefinition;
     /** Display variant */
@@ -75,11 +77,12 @@ function LinearView({
     trait,
     size = 'md',
     className,
-}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'className'>): React.JSX.Element {
+    passthrough,
+}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'className'> & { passthrough: DomPassthrough }): React.JSX.Element {
     const currentIdx = trait.states.indexOf(trait.currentState);
 
     return (
-        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm">
+        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm" {...passthrough}>
             {trait.description && (
                 <Typography variant="caption" className="text-muted-foreground">
                     {trait.description}
@@ -104,6 +107,7 @@ function LinearView({
                             )}
                             <Box
                                 display="inline-flex"
+                                aria-current={isCurrent ? 'step' : undefined}
                                 className={cn(
                                     'items-center justify-center rounded-pill px-3 py-1 border-heavy transition-all',
                                     SIZE_CONFIG[size || 'md'].fontSize,
@@ -134,13 +138,14 @@ function CompactView({
     size = 'md',
     stateStyles,
     className,
-}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'stateStyles' | 'className'>): React.JSX.Element {
+    passthrough,
+}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'stateStyles' | 'className'> & { passthrough: DomPassthrough }): React.JSX.Element {
     const { t } = useTranslate();
     const config = SIZE_CONFIG[size || 'md'];
     const currentTransitions = trait.transitions.filter(t => t.from === trait.currentState);
 
     return (
-        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm">
+        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm" {...passthrough}>
             <HStack className="items-center justify-between">
                 <Typography variant="body2" className="text-foreground font-bold">
                     {trait.name}
@@ -196,13 +201,14 @@ function FullView({
     onStateClick,
     stateStyles,
     className,
-}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'showTransitions' | 'onStateClick' | 'stateStyles' | 'className'>): React.JSX.Element {
+    passthrough,
+}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'showTransitions' | 'onStateClick' | 'stateStyles' | 'className'> & { passthrough: DomPassthrough }): React.JSX.Element {
     const { t } = useTranslate();
     const config = SIZE_CONFIG[size || 'md'];
     const currentTransitions = trait.transitions.filter(t => t.from === trait.currentState);
 
     return (
-        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm">
+        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm" {...passthrough}>
             {/* Header */}
             <HStack className="items-center justify-between">
                 <Typography variant="body2" className="text-foreground font-bold">
@@ -227,6 +233,7 @@ function FullView({
                         <Box
                             key={state}
                             display="flex"
+                            aria-current={isCurrent ? 'true' : undefined}
                             className={cn(
                                 'items-center justify-center rounded-container border-heavy transition-all px-2',
                                 config.nodeSize,
@@ -336,10 +343,12 @@ export function TraitStateViewer({
     onStateClick,
     stateStyles,
     className,
+    ...rest
 }: TraitStateViewerProps): React.JSX.Element {
+    const passthrough = domPassthrough(rest);
     switch (variant) {
         case 'linear':
-            return <LinearView trait={trait} size={size} className={className} />;
+            return <LinearView trait={trait} size={size} className={className} passthrough={passthrough} />;
         case 'compact':
             return (
                 <CompactView
@@ -347,6 +356,7 @@ export function TraitStateViewer({
                     size={size}
                     stateStyles={stateStyles}
                     className={className}
+                    passthrough={passthrough}
                 />
             );
         case 'full':
@@ -358,6 +368,7 @@ export function TraitStateViewer({
                     onStateClick={onStateClick}
                     stateStyles={stateStyles}
                     className={className}
+                    passthrough={passthrough}
                 />
             );
     }

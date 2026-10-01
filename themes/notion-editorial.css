@@ -5,13 +5,13 @@
  */
 
 [data-theme="notion-editorial-light"] {
-    --color-primary: #c2410c;
-    --color-primary-hover: #9a3412;
+    --color-primary: #1f6fc5;
+    --color-primary-hover: #195ca4;
     --color-primary-foreground: #fefdf9;
     --color-secondary: #f4f1ea;
     --color-secondary-hover: #ebe7dc;
     --color-secondary-foreground: #191919;
-    --color-accent: #d13f0a;
+    --color-accent: #b5462a;
     --color-accent-foreground: #fefdf9;
     --color-muted: #f4f1ea;
     --color-muted-foreground: #6b6660;
@@ -22,7 +22,7 @@
     --color-surface: #f9f6ef;
     --color-border: #e8e3d6;
     --color-input: #d8d2c2;
-    --color-ring: #ff6b35;
+    --color-ring: #1f6fc5;
     --color-table-header: #f4f1ea;
     --color-table-border: #e8e3d6;
     --color-table-row-hover: #f9f6ef;
@@ -37,6 +37,7 @@
     --color-warning-foreground: #fefdf9;
     --color-info: #1849a9;
     --color-info-foreground: #fefdf9;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 2px;
     --radius-md: 4px;
@@ -65,7 +66,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 3px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #ff6b35;
+    --focus-ring-color: #1f6fc5;
     --shadow-main: 0 1px 2px rgba(25, 25, 25, 0.06);
     --shadow-sm: 0 1px 1px rgba(25, 25, 25, 0.05);
     --shadow-lg: 0 8px 20px rgba(25, 25, 25, 0.12);
@@ -187,13 +188,13 @@
 }
 
 [data-theme="notion-editorial-dark"] {
-    --color-primary: #ff8557;
-    --color-primary-hover: #ff9a73;
+    --color-primary: #529cca;
+    --color-primary-hover: #6aaedb;
     --color-primary-foreground: #1a1a17;
     --color-secondary: #26241f;
     --color-secondary-hover: #2f2d27;
     --color-secondary-foreground: #f5f1e6;
-    --color-accent: #ff8557;
+    --color-accent: #e07a5f;
     --color-accent-foreground: #1a1a17;
     --color-muted: #26241f;
     --color-muted-foreground: #a39c8f;
@@ -204,7 +205,7 @@
     --color-surface: #26241f;
     --color-border: #3a3730;
     --color-input: #45413a;
-    --color-ring: #ff8557;
+    --color-ring: #529cca;
     --color-table-header: #26241f;
     --color-table-border: #3a3730;
     --color-table-row-hover: #201f1b;
@@ -219,6 +220,7 @@
     --color-warning-foreground: #1a1a17;
     --color-info: #84caff;
     --color-info-foreground: #1a1a17;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 2px;
     --radius-md: 4px;
@@ -247,7 +249,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 3px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #ff8557;
+    --focus-ring-color: #529cca;
     --shadow-main: 0 1px 2px rgba(0, 0, 0, 0.30);
     --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.25);
     --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.45);

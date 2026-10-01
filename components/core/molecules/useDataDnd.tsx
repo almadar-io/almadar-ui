@@ -39,6 +39,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { EntityRow, EventKey } from '@almadar/core';
+import { isAriaRole } from '@almadar/core';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useAlmadarDndSensors, almadarDndCollisionDetection } from '../../../hooks/useAlmadarDndCollision';
 import { Box } from '../atoms/Box';
@@ -409,6 +410,7 @@ export function useDataDnd(
         transition,
         isDragging,
       } = useSortable({ id, data: sortableData });
+      const { role: dndRole, ...dndAttributes } = attributes;
       const style: React.CSSProperties = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -424,7 +426,8 @@ export function useDataDnd(
           className="touch-none"
           ref={setNodeRef as React.Ref<HTMLDivElement>}
           style={style}
-          {...attributes}
+          role={isAriaRole(dndRole) ? dndRole : undefined}
+          {...dndAttributes}
           {...listeners}
         >
           {children}

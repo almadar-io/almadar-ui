@@ -8,9 +8,11 @@
  * Uses wireframe theme styling (high contrast, sharp edges).
  */
 import React, { useState, useRef, useCallback } from "react";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
+import { domPassthrough } from "../../../../lib/domPassthrough";
 
-export interface SplitPaneProps {
+export interface SplitPaneProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Direction of the split */
   direction?: "horizontal" | "vertical";
   /** Initial ratio (0-100, percentage of first pane) */
@@ -50,6 +52,7 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
   leftClassName,
   rightClassName,
   onRatioChange,
+  ...rest
 }) => {
   const [uncontrolledRatio, setUncontrolledRatio] = useState(ratioProp);
   // Controlled when `onRatioChange` is passed — `ratio` always tracks the
@@ -114,6 +117,7 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
   return (
     <div
       ref={containerRef}
+      {...domPassthrough(rest)}
       className={cn(
         "flex w-full h-full",
         isHorizontal ? "flex-row" : "flex-col",

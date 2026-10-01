@@ -23,7 +23,7 @@ export interface DragReorderResult<T> {
     onPointerDown: (e: React.PointerEvent) => void;
     style: React.CSSProperties;
     'aria-grabbed': boolean;
-    role: string;
+    role: 'button';
   };
   /** Props to spread on each list item for a given index */
   getItemProps: (index: number) => {

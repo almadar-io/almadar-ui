@@ -8,6 +8,7 @@
  * dropdown of its children instead; the parent reads as active when it or one
  * of its children is the active page.
  */
+import type { A11yProps } from '@almadar/core';
 import React, { useState } from 'react';
 import { cn } from '../../../lib/cn';
 import { followHref } from '../../../lib/followHref';
@@ -19,6 +20,7 @@ import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { Typography } from '../atoms/Typography';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface TopNavItemData {
   label: string;
   href?: string;
@@ -32,7 +34,7 @@ export interface TopNavItemData {
   children?: TopNavItemData[];
 }
 
-export interface TopNavItemProps {
+export interface TopNavItemProps extends A11yProps {
   item: TopNavItemData;
   /** The href of the active page, used to mark the item (or its parent) active. */
   activeHref?: string;
@@ -45,7 +47,7 @@ function ItemIcon({ icon }: { icon: IconInput }): React.ReactElement {
   return typeof icon === 'string' ? <Icon name={icon} className="h-4 w-4" /> : <Icon icon={icon} className="h-4 w-4" />;
 }
 
-export function TopNavItem({ item, activeHref, tone = 'solid', className }: TopNavItemProps): React.ReactElement {
+export function TopNavItem({ item, activeHref, tone = 'solid', className, ...rest }: TopNavItemProps): React.ReactElement {
   const navStack = useNavStack();
   const [open, setOpen] = useState(false);
   const children = item.children ?? [];
@@ -83,15 +85,23 @@ export function TopNavItem({ item, activeHref, tone = 'solid', className }: TopN
   );
 
   if (!hasChildren) {
+    const current = isActive ? 'page' : undefined;
+    if (item.href !== undefined && !item.onClick) {
+      return (
+        <Button {...domPassthrough(rest)} variant="ghost" href={item.href} aria-current={current ?? rest['aria-current']} data-active={isActive ? 'true' : 'false'} className={triggerClass}>
+          {content}
+        </Button>
+      );
+    }
     return (
-      <Button variant="ghost" data-active={isActive ? 'true' : 'false'} className={triggerClass} onClick={() => follow(item)}>
+      <Button {...domPassthrough(rest)} variant="ghost" aria-current={current ?? rest['aria-current']} data-active={isActive ? 'true' : 'false'} className={triggerClass} onClick={() => follow(item)}>
         {content}
       </Button>
     );
   }
 
   return (
-    <Box className="relative">
+    <Box {...domPassthrough(rest)} className="relative">
       <Button
         variant="ghost"
         aria-expanded={open}
@@ -117,6 +127,7 @@ export function TopNavItem({ item, activeHref, tone = 'solid', className }: TopN
                   key={child.href ?? child.label}
                   role="menuitem"
                   variant="ghost"
+                  aria-current={childActive ? 'page' : undefined}
                   data-active={childActive ? 'true' : 'false'}
                   onClick={() => {
                     setOpen(false);

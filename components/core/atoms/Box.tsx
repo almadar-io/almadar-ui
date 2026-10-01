@@ -6,7 +6,7 @@
  * Think of it as a styled div with consistent design tokens.
  */
 import React, { useCallback } from "react";
-import type { EventKey, EventPayload, EventEmit } from "@almadar/core";
+import type { A11yProps, EventKey, EventPayload, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTapReveal } from "../../../hooks/useTapReveal";
@@ -34,13 +34,11 @@ export type BoxBg =
 export type BoxRounded = "none" | "sm" | "md" | "lg" | "xl" | "2xl" | "full";
 export type BoxShadow = "none" | "sm" | "md" | "lg" | "xl";
 
-export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface BoxProps extends Omit<React.HTMLAttributes<HTMLDivElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** Data-theme attribute applied to the root element for CSS theme scoping (e.g. almadar-website-dark). */
   'data-theme'?: string;
-  /** Text direction for this subtree: "ltr", "rtl" (Arabic/Hebrew content) or "auto" */
-  dir?: string;
   /**
    * Padding on all sides
    * @example md

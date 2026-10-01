@@ -19,7 +19,7 @@
  */
 
 import React, { useMemo } from "react";
-import type { AssetUrl, EventKey, EventEmit, EventPayload, FieldValue, EntityRow } from "@almadar/core";
+import type { A11yProps, AssetUrl, EventKey, EventEmit, EventPayload, FieldValue, EntityRow } from "@almadar/core";
 import type { ItemActionPayload } from "@almadar/core/patterns";
 import { Icon, type IconInput } from "../atoms/Icon";
 import { Badge } from "../atoms/Badge";
@@ -39,11 +39,12 @@ import { ErrorState } from "../molecules/ErrorState";
 import { cn } from "../../../lib/cn";
 import { formatValue } from "../../../lib/format";
 import { rowActivationProps } from "../../../lib/pressable";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { normalizeDisplayFields, badgeVariantFor, titleFieldOf, valueLabelFor } from "../../../lib/displayField";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { useEventBus } from "../../../hooks/useEventBus";
-import { useRowActions } from "../../../hooks/useRowActions";
-import type { RowActionCondition } from "../../../lib/row-action-when";
+import { useRowActions, useRowActionPayload, useRowActionFire } from "../../../hooks/useRowActions";
+import type { RowActionCondition, RowActionPayload, RowConditionalAction } from "../../../lib/row-action-when";
 import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
 import type { DisplayStateProps } from "./types";
 import { EntityDisplayEvents } from "./types";
@@ -80,6 +81,8 @@ export interface SchemaItemAction {
   onClick?: (row: EntityRow) => void;
   /** Per-row condition, authored as `(fn row <bool>)`: the row's action is drawn only when it returns true. Omit = always shown. */
   when?: RowActionCondition;
+  /** Extra data the action sends, authored as `(fn row { key: <expr> })`; it emits `{ id, row }` plus these keys. */
+  payload?: RowActionPayload;
 }
 
 /** A field is a plain name or a declared {@link DisplayField}. */
@@ -126,7 +129,7 @@ function entityFieldsFromListItem(item: ListItem): EventPayload {
   return result;
 }
 
-export interface ListProps extends DisplayStateProps {
+export interface ListProps extends DisplayStateProps, A11yProps {
   /** Entity data (single record or collection). */
   entity?: EntityRow | readonly EntityRow[];
   /** Entity type name for display */
@@ -199,9 +202,12 @@ export const List: React.FC<ListProps> = ({
   completedField,
   disabledField,
   entityType,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const rowActions = useRowActions();
+  const actionPayload = useRowActionPayload();
+  const { fire: fireRowAction, isRowPending } = useRowActionFire<SchemaItemAction>();
   const { t } = useTranslate();
   const fmt = useFormatContext();
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noData');
@@ -218,14 +224,14 @@ export const List: React.FC<ListProps> = ({
   }, [entity]);
 
   const getItemActions = React.useCallback(
-    (item: ListItem, row: EntityRow): MenuItem[] => {
+    (item: ListItem, entityRow: EntityRow): MenuItem[] => {
       if (!itemActions) return [];
 
       if (typeof itemActions === "function") {
         return itemActions(item);
       }
 
-      return rowActions(itemActions as readonly SchemaItemAction[], row).map((action, idx) => ({
+      return rowActions(itemActions as readonly SchemaItemAction[], entityRow).map((action, idx) => ({
         id: `${item.id}-action-${idx}`,
         label: action.label,
         icon: action.icon,
@@ -246,12 +252,12 @@ export const List: React.FC<ListProps> = ({
           }
           // Dispatch event via event bus if defined (for trait state machine integration)
           if (action.event) {
-            eventBus.emit(`UI:${action.event}`, { row });
+            fireRowAction(action, entityRow, String(entityRow.id ?? ""));
           }
         },
       }));
     },
-    [itemActions, eventBus, rowActions],
+    [itemActions, eventBus, rowActions, fireRowAction],
   );
 
   const normalizedItemActions = itemActions ? getItemActions : undefined;
@@ -353,6 +359,8 @@ export const List: React.FC<ListProps> = ({
     return (
       <Box key={item.id}>
         <Box
+          data-row-pending={isRowPending(String(item.id ?? "")) || undefined}
+          aria-busy={isRowPending(String(item.id ?? "")) || undefined}
           className={cn(
             "group flex items-center gap-5 px-6 py-5",
             "transition-all duration-normal ease-standard",
@@ -364,6 +372,7 @@ export const List: React.FC<ListProps> = ({
             isDisabled && "opacity-50",
           )}
           aria-disabled={isDisabled || undefined}
+          aria-current={isSelected ? 'true' : undefined}
           {...rowActivationProps(hasExplicitClick ? () => eventBus.emit(`UI:${itemClickEvent}`, rowActionPayload) : undefined)}
         >
           {/* Checkbox if selectable */}
@@ -376,6 +385,7 @@ export const List: React.FC<ListProps> = ({
             >
               <Checkbox
                 checked={isSelected}
+                aria-label={t('table.selectRow', { id: item.id })}
                 onChange={(e) => handleSelect(item.id, e.target.checked)}
                 className={cn(
                   "transition-transform active:scale-95",
@@ -535,6 +545,7 @@ export const List: React.FC<ListProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         // Container with refined styling
         "bg-card backdrop-blur-sm",

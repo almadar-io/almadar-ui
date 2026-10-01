@@ -9,13 +9,14 @@
  */
 
 import React from "react";
-import type { EventEmit } from "@almadar/core";
+import type { A11yProps, EventEmit } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 
 export type HighlightType = "question" | "note";
 
-export interface TextHighlightProps {
+export interface TextHighlightProps extends A11yProps {
   /**
    * Type of highlight (determines color)
    */
@@ -78,6 +79,7 @@ export const TextHighlight: React.FC<TextHighlightProps> = ({
   children,
   action,
   hoverEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const baseStyles = "cursor-pointer transition-all duration-fast";
@@ -123,6 +125,8 @@ export const TextHighlight: React.FC<TextHighlightProps> = ({
       }}
       role="button"
       tabIndex={0}
+      aria-pressed={isActive}
+      {...domPassthrough(rest)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();

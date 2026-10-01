@@ -1,6 +1,7 @@
 'use client';
 import React from "react";
-import type { AssetUrl } from "@almadar/core";
+import type { A11yProps, AssetUrl } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { Outlet, Link } from "react-router-dom";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -8,7 +9,7 @@ import { Box } from "../atoms/Box";
 import { VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 
-export interface AuthLayoutProps {
+export interface AuthLayoutProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** App name */
   appName?: string;
   /** Logo component or URL */
@@ -27,12 +28,13 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   backgroundImage,
   showBranding = true,
   brandingContent,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const appName = appNameProp ?? t("auth.defaultAppName");
 
   return (
-    <Box className="min-h-screen flex">
+    <Box {...domPassthrough(rest)} className="min-h-screen flex">
       {/* Branding panel (desktop only) */}
       {showBranding && (
         <VStack

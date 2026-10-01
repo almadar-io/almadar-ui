@@ -5,6 +5,8 @@
  * Calendar day header atom. Renders day abbreviation and date number
  * with optional today highlight.
  */
+import { domPassthrough } from '../../../lib/domPassthrough';
+import type { A11yProps } from '@almadar/core';
 import React, { useCallback } from "react";
 import { cn } from "../../../lib/cn";
 import { Box } from "./Box";
@@ -12,7 +14,7 @@ import { Typography } from "./Typography";
 import { pressableProps } from "../../../lib/pressable";
 import { useTranslate } from "../../../hooks/useTranslate";
 
-export interface DayCellProps {
+export interface DayCellProps extends A11yProps {
   /** The date this cell represents. Optional at the dynamic render edge: an
    *  unbound `@config.date` arrives as `undefined`, so the cell falls back to today. */
   date?: Date;
@@ -29,6 +31,7 @@ export function DayCell({
   isToday = false,
   onClick,
   className,
+  ...rest
 }: DayCellProps): React.JSX.Element {
   const { locale } = useTranslate();
   const safeDate =
@@ -47,8 +50,9 @@ export function DayCell({
         isToday && "bg-primary/10",
         className,
       )}
+      {...domPassthrough(rest)}
       {...press}
-      aria-label={onClick ? new Intl.DateTimeFormat(locale, { dateStyle: "full" }).format(safeDate) : undefined}
+      aria-label={rest['aria-label'] ?? (onClick ? new Intl.DateTimeFormat(locale, { dateStyle: "full" }).format(safeDate) : undefined)}
     >
       <Typography
         variant="small"

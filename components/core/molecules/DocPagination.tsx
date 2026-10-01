@@ -6,8 +6,11 @@
  * Composed from HStack, Box, VStack, Icon, and Typography atoms.
  */
 import React from 'react';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
+import { Button } from '../atoms/Button';
 import { HStack } from '../atoms/Stack';
 import { VStack } from '../atoms/Stack';
 import { Icon } from '../atoms/Icon';
@@ -19,7 +22,7 @@ export interface DocPaginationLink {
   category?: string;
 }
 
-export interface DocPaginationProps {
+export interface DocPaginationProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Previous page link */
   prev?: DocPaginationLink;
   /** Next page link */
@@ -41,11 +44,12 @@ const linkCardStyles = [
   'cursor-pointer',
 ].join(' ');
 
-export function DocPagination({ prev, next, className }: DocPaginationProps) {
+export function DocPagination({ prev, next, className, ...rest }: DocPaginationProps) {
   if (!prev && !next) return null;
 
   return (
     <HStack
+      {...domPassthrough(rest)}
       justify="between"
       align="stretch"
       gap="md"
@@ -53,11 +57,10 @@ export function DocPagination({ prev, next, className }: DocPaginationProps) {
     >
       {/* Previous link */}
       {prev ? (
-        <Box
-          className={cn(linkCardStyles, 'group')}
-          onClick={() => { window.location.href = prev.href; }}
-          role="link"
-          tabIndex={0}
+        <Button
+          variant="ghost"
+          href={prev.href}
+          className={cn(linkCardStyles, 'group', 'h-auto justify-start whitespace-normal font-normal')}
         >
           <HStack align="center" gap="sm">
             <Icon name="arrow-left" size="md" className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
@@ -75,18 +78,17 @@ export function DocPagination({ prev, next, className }: DocPaginationProps) {
               </Typography>
             </VStack>
           </HStack>
-        </Box>
+        </Button>
       ) : (
         <Box className="flex-1" />
       )}
 
       {/* Next link */}
       {next ? (
-        <Box
-          className={cn(linkCardStyles, 'group text-right')}
-          onClick={() => { window.location.href = next.href; }}
-          role="link"
-          tabIndex={0}
+        <Button
+          variant="ghost"
+          href={next.href}
+          className={cn(linkCardStyles, 'group text-right', 'h-auto justify-end whitespace-normal font-normal')}
         >
           <HStack align="center" justify="end" gap="sm">
             <VStack gap="none" align="end">
@@ -104,7 +106,7 @@ export function DocPagination({ prev, next, className }: DocPaginationProps) {
             </VStack>
             <Icon name="arrow-right" size="md" className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
           </HStack>
-        </Box>
+        </Button>
       ) : (
         <Box className="flex-1" />
       )}

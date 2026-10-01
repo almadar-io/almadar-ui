@@ -5,7 +5,7 @@ import { cn } from "../../../lib/cn";
 import { Icon, type IconInput } from "./Icon";
 import { AtlasImage } from "./AtlasImage";
 import { useTranslate } from "../../../hooks/useTranslate";
-import type { Asset } from "@almadar/core";
+import type { A11yProps, Asset } from "@almadar/core";
 
 export type BadgeVariant =
   | "default"
@@ -19,7 +19,7 @@ export type BadgeVariant =
   | "neutral";
 export type BadgeSize = "sm" | "md" | "lg";
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+export interface BadgeProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   variant?: BadgeVariant;
@@ -86,7 +86,7 @@ const sizeStyles: Record<BadgeSize, string> = {
 };
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className, variant = "default", size = "sm", amount, label, icon, iconAsset, children, onRemove, removeLabel, ...props }, ref) => {
+  ({ className, variant = "default", size = "sm", amount, label, icon, iconAsset, children, onRemove, removeLabel, onClick, ...props }, ref) => {
     const { t } = useTranslate();
     const iconSizes: Record<BadgeSize, string> = {
       sm: "h-icon-default w-icon-default",
@@ -103,6 +103,22 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     // colored pill (schema-driven trees bind label to optional fields).
     const hasText = Boolean(children) || amount != null || (label !== undefined && label !== null && label !== '');
     if (!hasText && !resolvedIcon && !onRemove) return null;
+    const text = typeof children === "string" || typeof children === "number"
+      ? String(children)
+      : amount != null
+        ? `${label ? `${label} ` : ""}${amount}`
+        : label !== undefined && label !== null ? String(label) : "";
+    const removeName = removeLabel ?? `${t("common.remove")}${text ? `: ${text}` : ""}`;
+    const body = (
+      <>
+        {resolvedIcon}
+        {children || (amount != null
+          ? `${label ? `${label} ` : ''}${amount}`
+          : label
+            ? <span {...{ [INLINE_TEXT_ATTR]: 'label' }}>{label}</span>
+            : label)}
+      </>
+    );
     return (
       <span
         ref={ref}
@@ -115,16 +131,19 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
         )}
         {...props}
       >
-        {resolvedIcon}
-        {children || (amount != null
-          ? `${label ? `${label} ` : ''}${amount}`
-          : label
-            ? <span {...{ [INLINE_TEXT_ATTR]: 'label' }}>{label}</span>
-            : label)}
+        {onClick ? (
+          <button
+            type="button"
+            onClick={onClick}
+            className="inline-flex items-center gap-1 rounded-pill focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {body}
+          </button>
+        ) : body}
         {onRemove ? (
           <button
             type="button"
-            aria-label={removeLabel ?? t("common.remove")}
+            aria-label={removeName}
             onClick={(e) => {
               e.stopPropagation();
               onRemove();

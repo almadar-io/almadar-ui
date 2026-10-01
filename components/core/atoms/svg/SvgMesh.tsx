@@ -1,8 +1,10 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import React from 'react';
 
-export interface SvgMeshProps {
+export interface SvgMeshProps extends A11yProps {
   cx?: number;
   cy?: number;
   nodes?: number;
@@ -61,12 +63,14 @@ export const SvgMesh: React.FC<SvgMeshProps> = ({
   asRoot = true,
   width = 120,
   height = 120,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   const positions = getNodePositions(cx, cy, nodes, radius);
   const connections = getConnections(nodes, connectionDensity);
 
   const inner = (
-    <g className={className} opacity={opacity}>
+    <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
       {connections.map(([a, b]) => (
         <line
           key={`${a}-${b}`}
@@ -93,7 +97,7 @@ export const SvgMesh: React.FC<SvgMeshProps> = ({
 
   if (asRoot) {
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...a11y}>
         {inner}
       </svg>
     );

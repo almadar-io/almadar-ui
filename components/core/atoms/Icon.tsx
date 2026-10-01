@@ -13,6 +13,8 @@
  */
 
 'use client';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -111,7 +113,7 @@ function doResolve(name: string): LucideIcon {
   return LucideIcons.HelpCircle;
 }
 
-export interface IconProps {
+export interface IconProps extends A11yProps {
   /**
    * Lucide icon component (preferred for type-safe usage), OR a canonical
    * kebab-case icon name string — a string is treated exactly like `name` so
@@ -157,6 +159,7 @@ export const Icon: React.FC<IconProps> = ({
   className,
   strokeWidth,
   style,
+  ...rest
 }) => {
   // The `icon` prop bypasses the family resolver (caller already chose a specific
   // component reference, usually a direct lucide import). The `name` prop dispatches
@@ -205,6 +208,7 @@ export const Icon: React.FC<IconProps> = ({
         className={composedClassName}
         strokeWidth={effectiveStrokeWidth}
         style={inlineStyle}
+        {...domPassthrough(rest)}
       />
     );
   }
@@ -215,6 +219,7 @@ export const Icon: React.FC<IconProps> = ({
         className={composedClassName}
         strokeWidth={effectiveStrokeWidth}
         style={inlineStyle}
+        {...domPassthrough(rest)}
       />
     );
   }
@@ -226,6 +231,7 @@ export const Icon: React.FC<IconProps> = ({
       className={composedClassName}
       strokeWidth={effectiveStrokeWidth}
       style={inlineStyle}
+      {...domPassthrough(rest)}
     />
   );
 };

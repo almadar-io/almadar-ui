@@ -33,7 +33,24 @@ export interface FlushSlotSource {
   entity?: string;
 }
 
+/** What the flush last wrote for one (slot, trait): a slot render or an embedded trait frame. */
+type WrittenSlot =
+  | { kind: 'render'; config: Parameters<ReturnType<typeof useUISlots>['render']>[0] }
+  | { kind: 'trait'; trait: string; content: Parameters<ReturnType<typeof useUISlots>['updateTraitContent']>[1] }
+  | { kind: 'clear'; slot: string; trait: string };
+
+/** Opaque point-in-time record of every (slot, trait) write, for `rollback`. */
+export type SlotCheckpoint = ReadonlyMap<string, WrittenSlot>;
+
 export interface SlotFlushHandle {
+  /** Snapshot of what the flush has written so far (synchronous — no React state lag). */
+  checkpoint: () => SlotCheckpoint;
+  /**
+   * Undo every write made since `checkpoint`: re-apply what each (slot, trait)
+   * held then, or clear it when it held nothing. Used when a locally-painted
+   * dispatch's server leg fails.
+   */
+  rollback: (checkpoint: SlotCheckpoint) => void;
   flushSlot: (traitName: string, slot: string, patterns: SlotPatternEntry[], source?: FlushSlotSource) => void;
   applyClientEffects: (
     clientEffects: readonly ClientEffectTuple[],
@@ -60,6 +77,8 @@ export function useSlotFlush(
   uiSlotsRef.current = uiSlots;
   const embeddedTraitsRef = useRef(embeddedTraits);
   embeddedTraitsRef.current = embeddedTraits;
+  const writtenRef = useRef(new Map<string, WrittenSlot>());
+  const keyOf = (slot: string, trait: string): string => `${slot}\u0000${trait}`;
 
   const flushSlot = useCallback((
     traitName: string,
@@ -72,6 +91,7 @@ export function useSlotFlush(
     if (patterns.length === 0) {
       flushLog.debug('clear', { traitName, slot });
       slots.clearBySource(slot as Parameters<typeof slots.clearBySource>[0], traitName);
+      writtenRef.current.set(keyOf(slot, traitName), { kind: 'clear', slot, trait: traitName });
       return;
     }
     const last = patterns[patterns.length - 1];
@@ -84,19 +104,20 @@ export function useSlotFlush(
     // (toast, modal, drawer, …) renders in that slot like any trait's.
     const isEmbedded = (embedded?.has(traitName) ?? false) && !isNotificationSlot(slot);
     if (isEmbedded) {
-      slots.updateTraitContent(traitName, {
+      const content = {
         pattern: patternType as string,
         props,
         slot,
         priority: 0,
-        animation: 'fade',
         transitionEvent: source?.event,
         fromState: source?.state,
         entity: source?.entity,
-      });
+      };
+      slots.updateTraitContent(traitName, content);
+      writtenRef.current.set(keyOf(slot, traitName), { kind: 'trait', trait: traitName, content });
       return;
     }
-    slots.render({
+    const config = {
       target: slot as Parameters<typeof slots.render>[0]['target'],
       pattern: patternType as string,
       props,
@@ -104,7 +125,9 @@ export function useSlotFlush(
       transitionEvent: source?.event,
       fromState: source?.state,
       entity: source?.entity,
-    });
+    };
+    slots.render(config);
+    writtenRef.current.set(keyOf(slot, traitName), { kind: 'render', config });
   }, []);
 
   const applyClientEffects = useCallback((
@@ -142,13 +165,18 @@ export function useSlotFlush(
         const propsValue: SlotProps | string = bareTraitRef !== undefined
           ? bareTraitRef
           : { ...(unwrapped ?? {}), ...(rawProps as SlotProps | undefined) };
-        const props = convertFnFormLambdasInProps(propsValue);
+        const props = convertFnFormLambdasInProps(propsValue, typeof patternType === "string" ? patternType : undefined);
         if (pattern === null) {
           slots.clearBySource(slot as Parameters<typeof slots.clearBySource>[0], sourceTrait);
+          writtenRef.current.set(keyOf(slot, sourceTrait), { kind: 'clear', slot, trait: sourceTrait });
         } else if (isEmbedded) {
-          slots.updateTraitContent(sourceTrait, { pattern: patternType as string, props, slot, priority: 0, animation: 'fade', transitionEvent: event, fromState });
+          const content = { pattern: patternType as string, props, slot, priority: 0, transitionEvent: event, fromState };
+          slots.updateTraitContent(sourceTrait, content);
+          writtenRef.current.set(keyOf(slot, sourceTrait), { kind: 'trait', trait: sourceTrait, content });
         } else {
-          slots.render({ target: slot as Parameters<typeof slots.render>[0]['target'], pattern: patternType as string, props, sourceTrait, transitionEvent: event, fromState });
+          const config = { target: slot as Parameters<typeof slots.render>[0]['target'], pattern: patternType as string, props, sourceTrait, transitionEvent: event, fromState };
+          slots.render(config);
+          writtenRef.current.set(keyOf(slot, sourceTrait), { kind: 'render', config });
         }
       } else if (kind === 'navigate') {
         const [, route, params, options] = effect;
@@ -164,7 +192,30 @@ export function useSlotFlush(
   // dispatchAndSettle — a fresh object per render refires INIT forever
   // (INIT → fetch → notify → re-render → refire storm, verified live
   // 2026-09-23 via init:lifecycle-storm instrumentation).
-  return useMemo(() => ({ flushSlot, applyClientEffects }), [flushSlot, applyClientEffects]);
+  const checkpoint = useCallback((): SlotCheckpoint => new Map(writtenRef.current), []);
+
+  const rollback = useCallback((cp: SlotCheckpoint): void => {
+    const slots = uiSlotsRef.current;
+    for (const [key, now] of writtenRef.current) {
+      const then = cp.get(key);
+      if (then === now) continue;
+      if (then === undefined || then.kind === 'clear') {
+        if (now.kind === 'render') slots.clearBySource(now.config.target, now.config.sourceTrait ?? 'kernel');
+        else if (now.kind === 'trait') {
+          // An embedded frame that held nothing before has no clear API; the
+          // trait's next render replaces it.
+          flushLog.warn('rollback:embedded-frame-kept', { trait: now.trait });
+        }
+      } else if (then.kind === 'render') {
+        slots.render(then.config);
+      } else {
+        slots.updateTraitContent(then.trait, then.content);
+      }
+    }
+    writtenRef.current = new Map(cp);
+  }, []);
+
+  return useMemo(() => ({ flushSlot, applyClientEffects, checkpoint, rollback }), [flushSlot, applyClientEffects, checkpoint, rollback]);
 }
 
 export type { SlotSource, EventPayload };

@@ -4,13 +4,15 @@
  * A simplified grid that automatically adjusts columns based on available space.
  * Perfect for card layouts and item collections.
  */
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { Box } from '../atoms/Box';
 import { cn } from '../../../lib/cn';
+import { domPassthrough } from '../../../lib/domPassthrough';
 
 export type SimpleGridGap = 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
-export interface SimpleGridProps {
+export interface SimpleGridProps extends A11yProps {
   /** Minimum width of each child (e.g., 200, "200px", "15rem") */
   minChildWidth?: number | string;
   /** Maximum number of columns */
@@ -23,6 +25,10 @@ export interface SimpleGridProps {
   className?: string;
   /** Children elements */
   children: React.ReactNode;
+  /** Element id forwarded to the grid element. */
+  id?: string;
+  /** DOM attributes forwarded to the grid element (aria-*, data-*, role, id). */
+  [attr: `aria-${string}` | `data-${string}`]: string | number | boolean | undefined;
 }
 
 const gapStyles: Record<SimpleGridGap, string> = {
@@ -32,6 +38,16 @@ const gapStyles: Record<SimpleGridGap, string> = {
   md: 'gap-4',
   lg: 'gap-6',
   xl: 'gap-8',
+};
+
+/** The same gaps as CSS lengths, for the column-cap track. */
+const gapLengths: Record<SimpleGridGap, string> = {
+  none: '0px',
+  xs: '0.25rem',
+  sm: '0.5rem',
+  md: '1rem',
+  lg: '1.5rem',
+  xl: '2rem',
 };
 
 // Responsive column ladders. Every multi-column entry climbs through
@@ -65,11 +81,13 @@ export const SimpleGrid: React.FC<SimpleGridProps> = ({
   gap = 'md',
   className,
   children,
+  ...rest
 }) => {
+  const passthrough = domPassthrough(rest);
   // If exact cols specified, use fixed grid
   if (cols) {
     return (
-      <Box className={cn('grid', colStyles[cols], gapStyles[gap], className)}>
+      <Box className={cn('grid', colStyles[cols], gapStyles[gap], className)} {...passthrough}>
         {children}
       </Box>
     );
@@ -80,19 +98,19 @@ export const SimpleGrid: React.FC<SimpleGridProps> = ({
     ? `${minChildWidth}px`
     : minChildWidth;
 
-  // Calculate max column constraint if provided
+  // maxCols caps the COLUMN COUNT: each track is at least 1/maxCols of the row
+  // (minus the gaps), so the grid still fills its container — capping the
+  // grid's width instead left wide cards with an empty right third.
   const templateColumns = maxCols
-    ? `repeat(auto-fit, minmax(min(${minWidth}, 100%), 1fr))`
+    ? `repeat(auto-fit, minmax(max(min(${minWidth}, 100%), calc((100% - ${maxCols - 1} * ${gapLengths[gap]}) / ${maxCols})), 1fr))`
     : `repeat(auto-fit, minmax(${minWidth}, 1fr))`;
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn('grid', gapStyles[gap], className)}
-      style={{
-        gridTemplateColumns: templateColumns,
-        // Limit max columns if specified
-        ...(maxCols && { maxWidth: `calc(${maxCols} * (${minWidth} + var(--gap, 1rem)))` }),
-      }}
+      style={{ gridTemplateColumns: templateColumns }}
+      {...passthrough}
     >
       {children}
     </Box>

@@ -15,7 +15,7 @@
  * Renders nothing when `fields` is empty.
  */
 import React, { useState } from 'react';
-import type { EntityRow, EventEmit, FieldValue } from '@almadar/core';
+import type { EntityRow, EventEmit, FieldValue, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { formatValue } from '../../../lib/format';
 import { getNestedValue } from '../../../lib/getNestedValue';
@@ -34,6 +34,7 @@ import { Switch } from '../atoms/Switch';
 import type { IconInput } from '../atoms/index';
 import { valueLabelFor } from '../../../lib/displayField';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface DocumentDetailsField {
   /** Entity field name (dot-notation supported for read-only display) */
   name?: string;
@@ -67,7 +68,7 @@ export interface DocumentDetailsField {
  * @capabilities document settings, page details, post settings sidebar, metadata panel, document properties, publish settings
  * @fieldsContract display
  */
-export interface DocumentDetailsProps {
+export interface DocumentDetailsProps extends A11yProps {
   /** The loaded record — supplies the id every commit carries and the
    *  values the rows read. */
   entity?: EntityRow;
@@ -118,6 +119,7 @@ export function DocumentDetails({
   relationEvent,
   title,
   className,
+  ...rest
 }: DocumentDetailsProps): React.ReactElement | null {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -277,7 +279,7 @@ export function DocumentDetails({
   };
 
   return (
-    <Card variant="bordered" className={cn('w-full', className)}>
+    <Card {...domPassthrough(rest)} variant="bordered" className={cn('w-full', className)}>
       <VStack gap="sm" className="p-4">
         <Typography variant="caption" color="secondary" weight="medium" className="uppercase tracking-wide">
           {title ?? t('documentDetails.title')}

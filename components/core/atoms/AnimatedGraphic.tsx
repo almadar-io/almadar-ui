@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import type { AssetUrl } from '@almadar/core';
+import type { A11yProps, AssetUrl } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 
 export type GraphicAnimation = 'draw' | 'fill' | 'pulse' | 'morph';
 
-export interface AnimatedGraphicProps extends React.HTMLAttributes<HTMLDivElement> {
+/** @accessibleName alt */
+export interface AnimatedGraphicProps extends Omit<React.HTMLAttributes<HTMLDivElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** URL to an SVG file. Fetched and inlined to enable stroke/fill animations. */

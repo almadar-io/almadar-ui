@@ -17,13 +17,14 @@
  */
 
 import React, { lazy, Suspense } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, A11yProps } from '@almadar/core';
 import { Box } from '../atoms/Box';
 import { cn } from '../../../lib/cn';
 
 // Type-only import is erased at compile time and never pulls leaflet at runtime.
 import type { LeafletMouseEvent } from 'leaflet';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type MapMarkerData = {
   /** Unique marker identifier */
   id: string | number;
@@ -59,7 +60,7 @@ export interface MapRouteData {
   label?: string;
 }
 
-export interface MapViewProps {
+export interface MapViewProps extends A11yProps {
   /** Array of markers to display */
   markers?: MapMarkerData[];
   /** Routes (polylines with optional popups) drawn over the tile layer */
@@ -173,6 +174,7 @@ const MapViewImpl = lazy(async () => {
     showClickedPin = false,
     className,
     showAttribution = true,
+    ...rest
   }: MapViewProps) {
     const eventBus = useEventBus();
     const [clickedPosition, setClickedPosition] = useState<{ lat: number; lng: number } | null>(null);
@@ -196,6 +198,7 @@ const MapViewImpl = lazy(async () => {
 
     return (
       <Box
+        {...domPassthrough(rest)}
         className={cn('relative isolate z-0 w-full overflow-hidden rounded-container', className)}
         style={{ height }}
         data-testid="map-view"
@@ -274,6 +277,7 @@ export function MapView(props: MapViewProps) {
     <Suspense
       fallback={
         <Box
+          {...domPassthrough(props)}
           className={cn('relative w-full overflow-hidden rounded-container bg-muted/20', props.className)}
           style={{ height: props.height ?? '400px' }}
           data-testid="map-view"

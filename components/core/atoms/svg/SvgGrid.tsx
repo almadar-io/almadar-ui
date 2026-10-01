@@ -1,8 +1,10 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import React from 'react';
 
-export interface SvgGridProps {
+export interface SvgGridProps extends A11yProps {
   x?: number;
   y?: number;
   cols?: number;
@@ -33,11 +35,13 @@ export const SvgGrid: React.FC<SvgGridProps> = ({
   asRoot = true,
   width = 100,
   height = 100,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   const highlightSet = new Set(highlights);
 
   const inner = (
-    <g className={className} opacity={opacity}>
+    <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
       {Array.from({ length: rows }).map((_, row) =>
         Array.from({ length: cols }).map((_, col) => {
           const index = row * cols + col;
@@ -62,7 +66,7 @@ export const SvgGrid: React.FC<SvgGridProps> = ({
 
   if (asRoot) {
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...a11y}>
         {inner}
       </svg>
     );

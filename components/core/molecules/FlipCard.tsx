@@ -5,9 +5,11 @@
  * absolute face positioning, and `front`/`back` ReactNode props for lolo consumers.
  */
 import React from 'react';
+import type { A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
 import { FlipContainer } from '../atoms/FlipContainer';
+import { domPassthrough } from '../../../lib/domPassthrough';
 
 /**
  * FlipCard — flip card that reveals a hidden back face on tap or click,
@@ -15,7 +17,7 @@ import { FlipContainer } from '../atoms/FlipContainer';
  *
  * @capabilities flashcard, study deck, spaced-repetition review card, memorization drill, quiz reveal card, question/answer card, before/after reveal, term-and-definition card
  */
-export interface FlipCardProps {
+export interface FlipCardProps extends A11yProps {
   /** Content rendered on the front face */
   front: React.ReactNode;
   /** Content rendered on the back face */
@@ -37,9 +39,11 @@ export const FlipCard = ({
   onFlip,
   className,
   height = 'h-64',
+  ...rest
 }: FlipCardProps) => {
   return (
     <FlipContainer
+      {...domPassthrough(rest)}
       flipped={flipped}
       className={cn(height, className)}
       onClick={onFlip}

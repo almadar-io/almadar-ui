@@ -6,6 +6,7 @@
  * Composes Card, VStack, Icon, Typography, and Button atoms.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -16,13 +17,14 @@ import { Icon, type IconInput } from '../atoms/Icon';
 import { Typography } from '../atoms/Typography';
 import { Button } from '../atoms/Button';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /**
  * FeatureCard — an icon-led card pairing a title and description to call out a
  * single product feature.
  *
  * @capabilities feature highlight, benefit callout, product capability card, feature-grid tile
  */
-export interface FeatureCardProps {
+export interface FeatureCardProps extends A11yProps {
   icon?: IconInput;
   /** Feature title */
   title: string;
@@ -61,6 +63,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   variant = 'bordered',
   size = 'md',
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const renderIcon = () => {
@@ -83,6 +86,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
 
   return (
     <Card
+      {...domPassthrough(rest)}
       variant={variant}
       padding={size}
       className={cn(

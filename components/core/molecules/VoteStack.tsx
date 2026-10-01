@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useCallback } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type VoteStackSize = "sm" | "md" | "lg";
 export type VoteStackVariant = "vertical" | "horizontal";
 /**
@@ -18,7 +19,7 @@ export type VoteStackVariant = "vertical" | "horizontal";
  */
 export type VoteValue = "up" | "down" | "none" | null;
 
-export interface VoteStackProps {
+export interface VoteStackProps extends A11yProps {
   /** Current tally */
   count: number;
   /** Current user's vote (null = no vote cast) */
@@ -67,6 +68,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
   variant = "vertical",
   className,
   label,
+  ...rest
 }) => {
   const styles = sizeStyles[size];
   const isUp = userVote === "up";
@@ -92,6 +94,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
 
   return (
     <div
+      {...domPassthrough(rest)}
       className={cn(
         "inline-flex items-center justify-center",
         // Shrink-wrap in stretch contexts (slot/sidecar wrappers are
@@ -107,7 +110,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
         className,
       )}
       role="group"
-      aria-label={label ?? t('voteStack.ariaLabel')}
+      aria-label={rest['aria-label'] ?? label ?? t('voteStack.ariaLabel')}
     >
       <button
         type="button"

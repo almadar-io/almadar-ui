@@ -1,7 +1,9 @@
 'use client';
 import * as React from 'react';
 import { getAtlas, subRectFor, isAtlasAsset, type SpriteRef } from '../../../lib/atlasSlice';
+import type { A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
+import { domPassthrough } from '../../../lib/domPassthrough';
 
 /** Asset-compatible input: sheet url + optional atlas sub-texture reference. */
 export interface AtlasImageAsset extends SpriteRef {
@@ -9,7 +11,8 @@ export interface AtlasImageAsset extends SpriteRef {
     category?: string;
 }
 
-export interface AtlasImageProps {
+/** @accessibleName alt */
+export interface AtlasImageProps extends Omit<A11yProps, 'aria-hidden'> {
     asset?: AtlasImageAsset;
     /** Square pixel size (icon usage). Ignored when `fill`. */
     size?: number;
@@ -55,7 +58,7 @@ export function useAtlasSliceDataUrl(asset: AtlasImageAsset | undefined): string
     return url;
 }
 
-export interface AtlasPanelProps {
+export interface AtlasPanelProps extends Omit<A11yProps, 'aria-hidden'> {
     asset?: AtlasImageAsset;
     /** Border thickness (source pixels) for the 9-slice cut. */
     borderSlice?: number;
@@ -74,7 +77,7 @@ export interface AtlasPanelProps {
  * is cropped once to a dataURL; CSS border-image / background-repeat does the scaling. Falls back
  * to a plain container while the sheet/atlas load.
  */
-export function AtlasPanel({ asset, borderSlice = 16, borderWidth = 16, mode = 'nineSlice', className, style, children, 'aria-hidden': ariaHidden }: AtlasPanelProps) {
+export function AtlasPanel({ asset, borderSlice = 16, borderWidth = 16, mode = 'nineSlice', className, style, children, 'aria-hidden': ariaHidden, ...rest }: AtlasPanelProps) {
     const dataUrl = useAtlasSliceDataUrl(asset);
     const skin: React.CSSProperties = !dataUrl ? {} : mode === 'repeat'
         ? { backgroundImage: `url(${dataUrl})`, backgroundRepeat: 'repeat' }
@@ -88,7 +91,7 @@ export function AtlasPanel({ asset, borderSlice = 16, borderWidth = 16, mode = '
             imageRendering: 'pixelated',
         };
     return (
-        <span aria-hidden={ariaHidden} className={cn('inline-block', className)} style={{ ...skin, ...style }}>
+        <span {...domPassthrough(rest)} aria-hidden={ariaHidden} className={cn('inline-block', className)} style={{ ...skin, ...style }}>
             {children}
         </span>
     );
@@ -134,6 +137,7 @@ export function AtlasImage({
     className,
     style,
     'aria-hidden': ariaHidden,
+    ...rest
 }: AtlasImageProps) {
     const [, bump] = React.useReducer((x: number) => x + 1, 0);
     const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
@@ -179,6 +183,7 @@ export function AtlasImage({
                 role={ariaHidden ? undefined : 'img'}
                 aria-hidden={ariaHidden}
                 aria-label={ariaHidden ? undefined : (alt ?? asset.name ?? asset.category ?? '')}
+                {...domPassthrough(rest)}
                 className={cn('flex-shrink-0', className)}
                 style={boxStyle}
             />
@@ -190,6 +195,7 @@ export function AtlasImage({
             src={asset.url}
             alt={alt ?? asset.name ?? asset.category ?? ''}
             aria-hidden={ariaHidden}
+            {...domPassthrough(rest)}
             {...(typeof w === 'number' ? { width: w } : {})}
             {...(typeof h === 'number' ? { height: h } : {})}
             className={cn('flex-shrink-0', className)}

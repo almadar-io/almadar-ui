@@ -1,8 +1,10 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import React from 'react';
 
-export interface SvgFlowProps {
+export interface SvgFlowProps extends A11yProps {
   points?: Array<[number, number]>;
   color?: string;
   strokeWidth?: number;
@@ -29,7 +31,9 @@ export const SvgFlow: React.FC<SvgFlowProps> = ({
   asRoot = true,
   width = 100,
   height = 100,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   const markerId = React.useMemo(() => {
     flowIdCounter += 1;
     return `almadar-flow-arrow-${flowIdCounter}`;
@@ -44,7 +48,7 @@ export const SvgFlow: React.FC<SvgFlowProps> = ({
     .join(' ');
 
   const inner = (
-    <g className={className} opacity={opacity}>
+    <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
       <defs>
         <marker
           id={markerId}
@@ -74,7 +78,7 @@ export const SvgFlow: React.FC<SvgFlowProps> = ({
 
   if (asRoot) {
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...a11y}>
         {inner}
       </svg>
     );

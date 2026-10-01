@@ -8,13 +8,15 @@
  * @packageDocumentation
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from "react";
 import { Icon } from "./Icon";
 import { cn } from "../../../lib/cn";
 import { useTheme } from "../../../providers/ThemeContext";
 import { useTranslate } from "../../../hooks/useTranslate";
 
-export interface ThemeToggleProps {
+export interface ThemeToggleProps extends A11yProps {
   /** Additional CSS classes */
   className?: string;
   /** Size variant */
@@ -54,6 +56,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   className,
   size = "md",
   showLabel = false,
+  ...rest
 }) => {
   const { resolvedMode, toggleMode } = useTheme();
   const { t } = useTranslate();
@@ -73,7 +76,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         sizeClasses[size],
         className,
       )}
-      aria-label={switchLabel}
+      {...domPassthrough(rest)}
+      aria-label={rest['aria-label'] ?? switchLabel}
       title={switchLabel}
     >
       {isDark ? (

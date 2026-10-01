@@ -22,6 +22,8 @@ import { CodeBlock } from '../molecules/markdown/CodeBlock';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 
 export interface CodeSimulationOutput {
   stdout: string;
@@ -35,7 +37,7 @@ export interface CodeSimulationOutput {
   }>;
 }
 
-export interface CodeRunnerPanelProps {
+export interface CodeRunnerPanelProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Initial code content */
   code: string;
   /** Programming language for syntax highlighting */
@@ -61,6 +63,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
   onRun,
   runEvent = 'RUN_CODE',
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -109,7 +112,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
 
   if (!runnable || !onRun) {
     return (
-      <Box className={className}>
+      <Box {...domPassthrough(rest)} className={className}>
         <CodeBlock language={language as Parameters<typeof CodeBlock>[0]['language']} code={code} />
       </Box>
     );
@@ -118,7 +121,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
   const hasOutput = output !== null || error !== null;
 
   return (
-    <Box className={cn('space-y-3', className)}>
+    <Box {...domPassthrough(rest)} className={cn('space-y-3', className)}>
       {/* editable CodeBlock sizes via height:100% + flex:1; needs a concrete parent height */}
       <Box className="group relative" style={{ height: 360 }}>
         <CodeBlock
@@ -159,7 +162,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
             variant="primary"
             size="sm"
             onClick={handleRun}
-            disabled={isRunning}
+            isLoading={isRunning}
             icon={isRunning ? RotateCcw : Play}
             className={isRunning ? '[&_svg]:animate-spin' : ''}
           >

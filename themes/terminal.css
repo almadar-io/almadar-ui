@@ -5,9 +5,9 @@
  */
 
 [data-theme="terminal-light"] {
-    --color-primary: #00ff66;
-    --color-primary-hover: #00cc52;
-    --color-primary-foreground: #000000;
+    --color-primary: #067a3c;
+    --color-primary-hover: #05642f;
+    --color-primary-foreground: #ffffff;
     --color-secondary: #000000;
     --color-secondary-hover: #1a1a1a;
     --color-secondary-foreground: #ffffff;
@@ -22,7 +22,7 @@
     --color-surface: #f2f2f2;
     --color-border: #000000;
     --color-input: #000000;
-    --color-ring: #00ff66;
+    --color-ring: #067a3c;
     --color-table-header: #000000;
     --color-table-border: #000000;
     --color-table-row-hover: #f2f2f2;
@@ -37,6 +37,7 @@
     --color-warning-foreground: #000000;
     --color-info: #00aaff;
     --color-info-foreground: #000000;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 0px;
     --radius-md: 0px;
@@ -64,7 +65,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 0px;
-    --focus-ring-color: #00ff66;
+    --focus-ring-color: #067a3c;
     --shadow-main: none;
     --shadow-sm: none;
     --shadow-lg: none;
@@ -220,6 +221,7 @@
     --color-warning-foreground: #000000;
     --color-info: #00ccff;
     --color-info-foreground: #000000;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 0px;
     --radius-md: 0px;
@@ -247,7 +249,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 0px;
-    --focus-ring-color: #00ff66;
+    --focus-ring-color: #067a3c;
     --shadow-main: none;
     --shadow-sm: none;
     --shadow-lg: none;

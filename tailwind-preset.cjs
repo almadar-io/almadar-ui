@@ -46,6 +46,10 @@ module.exports = {
   'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4',
   'sm:grid-cols-2', 'md:grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-3', 'lg:grid-cols-4',
   'text-center', 'text-left', 'text-right',
+  // Split composes its column widths as `${breakpoint}${ratio}` at runtime
+  ...['sm:', 'md:', 'lg:', 'xl:'].flatMap((bp) => [
+    'w-1/2', 'w-1/3', 'w-2/3', 'w-1/4', 'w-3/4', 'w-1/5', 'w-4/5', 'w-2/5', 'w-3/5', 'flex-row-reverse',
+  ].map((cls) => `${bp}${cls}`)),
   // Non-theme CSS variable classes (no semantic equivalent in theme config)
   'active:scale-[var(--active-scale)]',
   'border-b-[length:var(--border-width)]',
@@ -440,6 +444,12 @@ module.exports = {
   'pt-[env(safe-area-inset-top)]',
   'rounded-[calc(var(--radius-xl)*1.5)]',
   'text-primary-foreground/80',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-10-01)
+  'max-w-[18rem]',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-10-01)
+  'lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]',
 ],
   theme: {
     fontFamily: {
@@ -452,6 +462,15 @@ module.exports = {
       body: ['var(--font-family-body, var(--font-family))', 'ui-sans-serif', 'system-ui', 'sans-serif'],
     },
     extend: {
+      // MarkdownContent draws its own inline-code chip; drop the plugin's literal backticks
+      typography: {
+        DEFAULT: {
+          css: {
+            'code::before': { content: 'none' },
+            'code::after': { content: 'none' },
+          },
+        },
+      },
       colors: {
         primary: {
           DEFAULT: withOpacity('--color-primary'),
@@ -809,6 +828,8 @@ module.exports = {
     },
   },
   plugins: [
+    // MarkdownContent styles itself with `prose`, themed via its --tw-prose-* vars
+    require('@tailwindcss/typography'),
     // Chrome-skin utilities: sprite-driven panel/button chrome, opt-in per theme.
     // No-op (`none`) unless the active theme defines the backing --game-* vars —
     // zero visual change for every theme that doesn't set them.
@@ -841,9 +862,11 @@ module.exports = {
           'background-size': 'var(--surface-page-image-size, auto)',
           'background-attachment': 'fixed',
         },
-        // Interactive-control border style (outset bevel for Win95-style chrome).
+        // Interactive-control geometry: border style (outset bevel for Win95-style
+        // chrome) and corner shape (round controls inside a scoop/notch frame).
         '.interactive-border': {
           'border-style': 'var(--border-style-interactive, var(--border-style, solid))',
+          'corner-shape': 'var(--corner-shape-interactive, var(--corner-shape, round))',
         },
         '.chrome-button': {
           'background-image': 'var(--game-button-bg-image, none)',

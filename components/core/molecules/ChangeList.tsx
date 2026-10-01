@@ -6,7 +6,7 @@
  * modified or removed thing, with before/after for a modification.
  */
 import React from 'react';
-import type { EventEmit, EventPayloadValue } from '@almadar/core';
+import type { EventEmit, EventPayloadValue, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -18,6 +18,7 @@ import { Icon } from '../atoms/Icon';
 import { Typography } from '../atoms/Typography';
 import { VStack, HStack } from '../atoms/Stack';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type ChangeType = 'added' | 'modified' | 'removed';
 
 export interface ChangeListItem {
@@ -33,7 +34,7 @@ export interface ChangeListItem {
  *
  * @capabilities change summary, what changed, version changes, diff summary, release notes list, modification list
  */
-export interface ChangeListProps {
+export interface ChangeListProps extends A11yProps {
   /** The changes. Accepts a typed list or a render-ui payload binding. */
   changes: readonly ChangeListItem[] | EventPayloadValue;
   /** Emitted by a change's Inspect button. Payload: { title, type }. */
@@ -62,21 +63,21 @@ function toItems(value: readonly ChangeListItem[] | EventPayloadValue): readonly
   return out;
 }
 
-export const ChangeList: React.FC<ChangeListProps> = ({ changes, inspectEvent, className }) => {
+export const ChangeList: React.FC<ChangeListProps> = ({ changes, inspectEvent, className, ...rest }) => {
   const { t } = useTranslate();
   const eventBus = useEventBus();
   const items = toItems(changes);
 
   if (items.length === 0) {
     return (
-      <Box className={cn('py-6', className)} data-testid="change-list-empty">
+      <Box {...domPassthrough(rest)} className={cn('py-6', className)} data-testid="change-list-empty">
         <Typography variant="body2" color="muted" align="center">{t('changeList.empty')}</Typography>
       </Box>
     );
   }
 
   return (
-    <VStack gap="sm" className={className}>
+    <VStack {...domPassthrough(rest)} gap="sm" className={className}>
       {items.map((change, idx) => {
         const style = TYPE_STYLE[change.type];
         return (

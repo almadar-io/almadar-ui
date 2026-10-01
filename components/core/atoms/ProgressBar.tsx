@@ -4,6 +4,8 @@
  * A progress bar component with linear, circular, and stepped variants.
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from "react";
 import { cn } from "../../../lib/cn";
 import type { ColorToken } from "./types";
@@ -20,7 +22,7 @@ export type ProgressBarVariant =
   | "danger"; // backward-compat alias for 'error'
 export type ProgressBarColor = ProgressBarVariant;
 
-export interface ProgressBarProps {
+export interface ProgressBarProps extends A11yProps {
   /**
    * Progress value (0-100)
    */
@@ -111,6 +113,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   size = "md",
   steps = 5,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const fmt = useFormatContext();
@@ -121,10 +124,18 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   // Use showLabel as alias for showPercentage
   const effectiveShowPercentage = showPercentage || showLabel;
 
+  const progressSemantics = {
+    role: "progressbar" as const,
+    "aria-valuenow": value,
+    "aria-valuemin": 0,
+    "aria-valuemax": max,
+    "aria-label": rest["aria-label"] ?? (label || t("progressBar.ariaLabel", { percent: percentText })),
+  };
+
   if (progressType === "linear") {
     const showHeader = label || effectiveShowPercentage;
     return (
-      <div className={cn("w-full", className)}>
+      <div className={cn("w-full", className)} {...domPassthrough(rest)} {...progressSemantics}>
         {showHeader && (
           <div className="flex items-center justify-between mb-1.5">
             {label && (
@@ -146,11 +157,6 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
               colorClasses[effectiveColor],
             )}
             style={{ width: `${percentage}%` }}
-            role="progressbar"
-            aria-valuenow={value}
-            aria-valuemin={0}
-            aria-valuemax={max}
-            aria-label={label || t("progressBar.ariaLabel", { percent: percentText })}
           />
         </div>
       </div>
@@ -168,6 +174,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           "relative inline-flex items-center justify-center",
           className,
         )}
+        {...domPassthrough(rest)}
+        {...progressSemantics}
       >
         <svg
           className={cn("transform -rotate-90", circularSizeClasses[size])}
@@ -218,7 +226,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
     const showStepHeader = label || effectiveShowPercentage;
     return (
-      <div className={cn("w-full", className)}>
+      <div className={cn("w-full", className)} {...domPassthrough(rest)} {...progressSemantics}>
         {showStepHeader && (
           <div className="flex items-center justify-between mb-2">
             {label && (

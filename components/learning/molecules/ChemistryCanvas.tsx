@@ -12,7 +12,8 @@
 import * as React from 'react';
 import { useMemo } from 'react';
 import { createLogger } from '@almadar/logger';
-import type { Camera } from '@almadar/core';
+import type { A11yProps, Camera } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { LearningCanvas } from '../atoms/LearningCanvas';
@@ -172,7 +173,7 @@ export interface ChemistryLattice3D {
   selectedColor?: string;
 }
 
-export interface ChemistryCanvasProps {
+export interface ChemistryCanvasProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   className?: string;
   width?: number;
   height?: number;
@@ -265,6 +266,7 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
   onShapeClick,
   isLoading,
   error,
+  ...rest
 }) => {
   const derivedShapes: LearningShape[] = useMemo(() => {
     const out: LearningShape[] = [];
@@ -562,6 +564,7 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
   if (mode === '3d') {
     return (
       <LearningScene3D
+        {...domPassthrough(rest)}
         className={className}
         width={width}
         height={height}
@@ -582,7 +585,7 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
   }
 
   return (
-    <Card className={className}>
+    <Card {...domPassthrough(rest)} className={className}>
       <VStack gap="sm">
         {title ? <Typography variant="h4">{title}</Typography> : null}
         <LearningCanvas

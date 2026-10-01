@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
-import type { EventKey, Asset } from "@almadar/core";
+import type { A11yProps, EventKey, Asset } from "@almadar/core";
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
@@ -9,7 +10,7 @@ import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { GameIcon } from '../../core/atoms/GameIcon';
 
-export interface ControlButtonProps {
+export interface ControlButtonProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Sprite asset — takes precedence over icon when provided */
   assetUrl?: Asset;
   /** Button label text */
@@ -71,6 +72,7 @@ export function ControlButton({
   pressed,
   disabled,
   className,
+  ...rest
 }: ControlButtonProps) {
   const eventBus = useEventBus();
   const [isPressed, setIsPressed] = React.useState(false);
@@ -111,6 +113,7 @@ export function ControlButton({
 
   return (
     <Button
+      {...domPassthrough(rest)}
       variant={variant as 'primary' | 'secondary' | 'ghost'}
       disabled={disabled}
       onPointerDown={handlePointerDown}

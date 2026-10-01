@@ -8,8 +8,10 @@
 
 import React from 'react';
 import { cn } from '../../../lib/cn';
-import { pressableProps } from '../../../lib/pressable';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { Box } from '../atoms/Box';
+import { Button } from '../atoms/Button';
 import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -23,7 +25,7 @@ export interface DocTOCItem {
   level: number;
 }
 
-export interface DocTOCProps {
+export interface DocTOCProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Table of contents items */
   items: DocTOCItem[];
   /** Currently active section id */
@@ -36,6 +38,7 @@ export const DocTOC: React.FC<DocTOCProps> = ({
   items,
   activeId,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   return (
@@ -43,6 +46,7 @@ export const DocTOC: React.FC<DocTOCProps> = ({
       className={cn('w-full', className)}
       role="navigation"
       aria-label={t('aria.tableOfContents')}
+      {...domPassthrough(rest)}
     >
       <VStack gap="none">
         {items.map((item) => {
@@ -50,21 +54,19 @@ export const DocTOC: React.FC<DocTOCProps> = ({
           const indent = item.level >= 3 ? 'pl-4' : 'pl-0';
 
           return (
-            <Box
+            <Button
               key={item.id}
+              variant="ghost"
+              href={`#${item.id}`}
+              aria-current={isActive ? 'location' : undefined}
               className={cn(
-                'block py-1.5 no-underline transition-colors border-l-heavy cursor-pointer',
+                'h-auto w-full justify-start rounded-none py-1.5 pr-0 font-normal border-l-heavy',
                 'pl-3',
                 indent,
                 isActive
                   ? 'border-l-primary'
                   : 'border-l-transparent hover:border-l-[var(--color-muted)]',
               )}
-              {...pressableProps(() => {
-                const el = document.getElementById(item.id);
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              })}
-              role="link"
             >
               <Typography
                 variant="caption"
@@ -78,7 +80,7 @@ export const DocTOC: React.FC<DocTOCProps> = ({
               >
                 {item.label}
               </Typography>
-            </Box>
+            </Button>
           );
         })}
       </VStack>

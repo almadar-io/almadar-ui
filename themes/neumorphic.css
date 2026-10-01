@@ -37,6 +37,7 @@
     --color-surface-hover: #d8dde7;
     --color-border-hover: #4353b8;
     --color-placeholder: #5f6b7e;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 12px;
     --radius-md: 16px;
@@ -218,6 +219,7 @@
     --color-surface-hover: #313647;
     --color-border-hover: #9aabff;
     --color-placeholder: #8f98b2;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 12px;
     --radius-md: 16px;

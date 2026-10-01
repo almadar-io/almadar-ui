@@ -111,8 +111,10 @@ export function IconButtonPattern({
 }: IconButtonPatternProps): React.ReactElement {
   const resolvedAction = action ?? onClick ?? event;
   // A named icon button is the one icon-only control (label + tooltip); an unnamed one has nothing to show.
-  if (ariaLabel) {
-    return <IconButton {...rest} variant={variant} action={resolvedAction} icon={icon} label={ariaLabel} />;
+  const name = ariaLabel ?? rest['aria-label'] ?? rest.label;
+  if (name) {
+    const { label: _label, 'aria-label': _ariaLabel, ...named } = rest;
+    return <IconButton {...named} variant={variant} action={resolvedAction} icon={icon} label={name} />;
   }
   return <Button {...rest} variant={variant} action={resolvedAction} icon={icon} />;
 }

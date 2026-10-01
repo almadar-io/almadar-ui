@@ -5,10 +5,11 @@ import { Button } from '../../core/atoms/Button';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { GameIcon } from '../../core/atoms/GameIcon';
-import type { Asset, EventKey } from '@almadar/core';
+import type { A11yProps, Asset, EventKey } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { useTranslate } from '../../../hooks/useTranslate';
 
-export interface ChoiceButtonProps {
+export interface ChoiceButtonProps extends A11yProps {
   /** Choice text content */
   text: string;
   /** Choice index number (displayed as prefix) */
@@ -42,6 +43,7 @@ export function ChoiceButton({
   action,
   payload,
   className,
+  ...rest
 }: ChoiceButtonProps) {
   const { t } = useTranslate();
   const text = textProp ?? t('choiceButton.defaultText');
@@ -52,6 +54,8 @@ export function ChoiceButton({
       action={action}
       actionPayload={payload}
       onClick={onClick}
+      aria-pressed={selected}
+      {...domPassthrough(rest)}
       className={cn(
         'w-full text-left px-4 py-2.5 rounded-interactive border transition-all duration-150',
         'flex items-center gap-2',

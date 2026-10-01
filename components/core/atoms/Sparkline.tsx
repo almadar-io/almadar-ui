@@ -6,6 +6,8 @@
  * include a trend visualization without compositing the whole card.
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from "react";
 import { cn } from "../../../lib/cn";
 
@@ -18,7 +20,7 @@ export type SparklineColor =
   | "info"
   | "muted";
 
-export interface SparklineProps {
+export interface SparklineProps extends A11yProps {
   /** Numeric series to plot. Length < 2 renders nothing. */
   data: readonly number[];
   /**
@@ -56,6 +58,7 @@ export const Sparkline: React.FC<SparklineProps> = ({
   strokeWidth = 2,
   fill = false,
   className,
+  ...rest
 }) => {
   if (data.length < 2) return null;
 
@@ -89,7 +92,8 @@ export const Sparkline: React.FC<SparklineProps> = ({
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       className={cn("flex-shrink-0", className)}
-      aria-hidden="true"
+      {...domPassthrough(rest)}
+      aria-hidden={rest['aria-hidden'] ?? true}
     >
       {areaPath && <path d={areaPath} fill={resolvedColor} opacity={0.15} />}
       <polyline

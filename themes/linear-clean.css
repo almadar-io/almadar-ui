@@ -5,13 +5,13 @@
  */
 
 [data-theme="linear-clean-light"] {
-    --color-primary: #0066ff;
-    --color-primary-hover: #0052cc;
+    --color-primary: #5e6ad2;
+    --color-primary-hover: #4e59b8;
     --color-primary-foreground: #ffffff;
     --color-secondary: #f4f4f2;
     --color-secondary-hover: #ececea;
     --color-secondary-foreground: #0a0a0a;
-    --color-accent: #0066ff;
+    --color-accent: #5e6ad2;
     --color-accent-foreground: #ffffff;
     --color-muted: #f4f4f2;
     --color-muted-foreground: #6b6b66;
@@ -22,7 +22,7 @@
     --color-surface: #f7f7f5;
     --color-border: #e6e6e2;
     --color-input: #d8d8d4;
-    --color-ring: #0066ff;
+    --color-ring: #5e6ad2;
     --color-table-header: #f7f7f5;
     --color-table-border: #e6e6e2;
     --color-table-row-hover: #f4f4f2;
@@ -37,6 +37,7 @@
     --color-warning-foreground: #ffffff;
     --color-info: #0066ff;
     --color-info-foreground: #ffffff;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 6px;
     --radius-md: 8px;
@@ -65,7 +66,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #0066ff;
+    --focus-ring-color: #5e6ad2;
     --shadow-main: 0 0 0 1px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9);
     --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.9);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -187,13 +188,13 @@
 }
 
 [data-theme="linear-clean-dark"] {
-    --color-primary: #4d8bff;
-    --color-primary-hover: #6ea2ff;
+    --color-primary: #8b93e8;
+    --color-primary-hover: #a1a8ee;
     --color-primary-foreground: #0a0a0c;
     --color-secondary: #18181b;
     --color-secondary-hover: #222226;
     --color-secondary-foreground: #fafafa;
-    --color-accent: #4d8bff;
+    --color-accent: #8b93e8;
     --color-accent-foreground: #0a0a0c;
     --color-muted: #18181b;
     --color-muted-foreground: #8b8b90;
@@ -204,7 +205,7 @@
     --color-surface: #18181b;
     --color-border: #26262b;
     --color-input: #2e2e34;
-    --color-ring: #4d8bff;
+    --color-ring: #8b93e8;
     --color-table-header: #18181b;
     --color-table-border: #26262b;
     --color-table-row-hover: #161618;
@@ -219,6 +220,7 @@
     --color-warning-foreground: #0a0a0c;
     --color-info: #4d8bff;
     --color-info-foreground: #0a0a0c;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 6px;
     --radius-md: 8px;
@@ -247,7 +249,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #4d8bff;
+    --focus-ring-color: #8b93e8;
     --shadow-main: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);

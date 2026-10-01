@@ -13,9 +13,11 @@ import { useAuthContext } from "../../../hooks/useAuthContext";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useCurrentPagePath } from "../../../providers/CurrentPagePathContext";
+import { useNavStack } from "../../../providers/NavStackContext";
 import { PageTransition } from "../molecules/PageTransition";
 import type { AssetUrl, EventEmit, EventKey } from "@almadar/core";
 import { Menu } from "../molecules/Menu";
+import { Drawer } from "../molecules/Drawer";
 
 export interface NavItem {
   label: string;
@@ -254,6 +256,23 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const ctxPagePath = useCurrentPagePath();
   const activePath = (currentPath || undefined) ?? ctxPagePath ?? location.pathname;
   const activeHref = useMemo(() => resolveActiveNavHref(navItems, activePath), [navItems, activePath]);
+  const [topNavMenuOpen, setTopNavMenuOpen] = useState(false);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const navigatedFrom = useRef(activePath);
+  useEffect(() => {
+    setTopNavMenuOpen(false);
+    // A route change moves focus to the new page's content (not on first render).
+    if (navigatedFrom.current !== activePath) {
+      navigatedFrom.current = activePath;
+      mainRef.current?.focus({ preventScroll: true });
+    }
+  }, [activePath]);
+
+  // The declared navItems label the pages they reach in the breadcrumb trail.
+  const { registerNavItems } = useNavStack();
+  useEffect(() => {
+    registerNavItems(navItems);
+  }, [navItems, registerNavItems]);
 
   // Get user and signOut from auth context (with prop overrides)
   const { user: authUser, signOut: authSignOut } = useAuthContext();
@@ -284,6 +303,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       // (see isMobile above) so it never depends on those classes being emitted.
       className="@container/dashboard min-h-screen w-full bg-background surface-page flex flex-row items-stretch"
     >
+      <Button
+        variant="link"
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-50 focus:px-3 focus:py-2 focus:bg-card focus:shadow-elevation-popover"
+      >
+        {t('aria.skipToContent')}
+      </Button>
       {showSidebar && isMobile && sidebarOpen && (
         <Box
           className="fixed inset-0 bg-scrim z-20"
@@ -295,6 +321,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {showSidebar && (
         <Box
           as="aside"
+          inert={isMobile && !sidebarOpen ? true : undefined}
           className={cn(
             "z-30 flex-shrink-0 bg-card surface-material border-e-[length:var(--border-width)] border-border",
             isRail ? "w-16" : "w-64",
@@ -359,6 +386,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {/* Navigation */}
           <VStack
             as="nav"
+            aria-label={t('aria.mainNavigation')}
             gap="none"
             className={cn(
               "py-4 space-y-1 overflow-y-auto",
@@ -419,20 +447,33 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </Button>
               )}
 
+              {isTopNav && isMobile && (
+                <Button
+                  variant="ghost"
+                  className="p-2 rounded-interactive hover:bg-muted text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  onClick={() => setTopNavMenuOpen(true)}
+                  aria-label={t('aria.openMenu')}
+                  aria-expanded={topNavMenuOpen}
+                >
+                  <AlmadarIcon name="menu" className="h-5 w-5" />
+                </Button>
+              )}
+
               {/* Phone app bar names the app; it gives way to an open search. */}
-              {isMobile && !isTopNav && !searchOpen && (
+              {isMobile && !searchOpen && (
                 <Typography variant="label" weight="medium" truncate className="flex-1 min-w-0 text-foreground">
                   {appName}
                 </Typography>
               )}
 
               {/* Topnav horizontal nav — replaces sidebar. */}
-              {isTopNav && (
+              {isTopNav && !isMobile && (
                 <HStack
                   as="nav"
+                  aria-label={t('aria.mainNavigation')}
                   align="center"
                   gap="none"
-                  className="hidden @md/dashboard:flex items-center gap-1 overflow-x-auto"
+                  className="flex items-center gap-1 overflow-x-auto"
                 >
                   <Link to="/" className="flex items-center gap-2 mr-3 shrink-0">
                     {logo || (
@@ -590,10 +631,28 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Box>
         )}
 
+        {isTopNav && isMobile && (
+          <Drawer
+            isOpen={topNavMenuOpen}
+            onClose={() => setTopNavMenuOpen(false)}
+            title={appName}
+            position="left"
+          >
+            <VStack as="nav" aria-label={t('aria.mainNavigation')} gap="none" className="space-y-1">
+              {navItems.map((item) => (
+                <NavLink key={item.href} item={item} activeHref={activeHref} />
+              ))}
+            </VStack>
+          </Drawer>
+        )}
+
         <Box
           as="main"
+          ref={mainRef}
+          id="main-content"
+          tabIndex={-1}
           className={cn(
-            "flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6",
+            "flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6 focus:outline-none",
             // Reserve space for the fixed bottom nav so content isn't
             // hidden under the tab bar.
             showBottomNav && "pb-[calc(5rem+env(safe-area-inset-bottom))]",
@@ -610,6 +669,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {showBottomNav && (
           <Box
             as="nav"
+            aria-label={t('aria.mainNavigation')}
             className="fixed bottom-0 inset-x-0 z-20 pb-[env(safe-area-inset-bottom)] bg-card surface-material border-t-[length:var(--border-width)] border-border"
           >
             <HStack align="center" justify="around" className="h-16 px-2">
@@ -702,6 +762,7 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
                     <Link
                       key={child.href}
                       to={child.href}
+                      aria-current={child.href === activeHref ? "page" : undefined}
                       onClick={() => setOpen(false)}
                       className={cn(
                         "flex items-center gap-2 px-3 py-2 text-sm transition-colors",
@@ -736,6 +797,7 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
     return (
       <Link
         to={item.href}
+        aria-current={item.href === activeHref ? "page" : undefined}
         title={item.label}
         aria-label={item.label}
         className={cn(
@@ -818,6 +880,7 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
                 <Link
                   key={child.href}
                   to={child.href}
+                  aria-current={child.href === activeHref ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-2 px-3 py-1.5 rounded-interactive text-sm transition-colors",
                     childIsActive
@@ -855,6 +918,7 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
   return (
     <Link
       to={item.href}
+      aria-current={item.href === activeHref ? "page" : undefined}
       className={cn(
         "flex items-center gap-3 px-3 py-2 rounded-interactive text-sm font-medium transition-colors",
         isActive
@@ -906,6 +970,7 @@ const NavLinkBottom: React.FC<{ item: NavItem; activeHref?: string }> = ({
   return (
     <Link
       to={item.href}
+      aria-current={item.href === activeHref ? "page" : undefined}
       className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-interactive transition-colors flex-1 min-w-0"
     >
       {item.icon && (

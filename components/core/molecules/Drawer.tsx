@@ -17,7 +17,7 @@
  */
 
 import React, { useEffect, useId, useRef } from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, A11yProps } from "@almadar/core";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
@@ -28,6 +28,7 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 // ============================================================================
 // Types
 // ============================================================================
@@ -35,7 +36,7 @@ import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 export type DrawerPosition = "left" | "right";
 export type DrawerSize = "sm" | "md" | "lg" | "xl" | "full";
 
-export interface DrawerProps {
+export interface DrawerProps extends A11yProps {
   /** Whether the drawer is open (defaults to true when rendered by slot wrapper) */
   isOpen?: boolean;
   /** Fires after the exit animation completes (the drawer is about to unmount). */
@@ -101,6 +102,7 @@ export const Drawer: React.FC<DrawerProps> = ({
   closeOnEscape = true,
   className,
   closeEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -181,10 +183,11 @@ export const Drawer: React.FC<DrawerProps> = ({
           className,
         )}
         style={{ ...widthStyle, "--motion-drawer-sign": drawerSign, "--motion-drawer-enter-from-transform": slideTransform, "--motion-drawer-exit-to-transform": slideTransform } as React.CSSProperties}
+        {...domPassthrough(rest)}
         role="dialog"
         aria-modal="true"
         onAnimationEnd={onAnimationEnd}
-        {...(title && { "aria-labelledby": titleId })}
+        {...(title && !rest['aria-labelledby'] && { "aria-labelledby": titleId })}
       >
         {/* Header */}
         {(title || showCloseButton) && (

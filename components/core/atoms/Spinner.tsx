@@ -1,11 +1,13 @@
 import { LOADING_STATE_MARKER } from "@almadar/core";
+import type { A11yProps } from '@almadar/core';
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { Icon } from "./Icon";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 export type SpinnerSize = "xs" | "sm" | "md" | "lg";
 
-export interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface SpinnerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   size?: SpinnerSize;
@@ -22,10 +24,13 @@ const sizeStyles: Record<SpinnerSize, string> = {
 
 export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
   ({ className, size = "md", overlay, ...props }, ref) => {
+    const { t } = useTranslate();
     if (overlay) {
       return (
         <div
           ref={ref}
+          role="status"
+          aria-label={t("aria.loading")}
           {...{ [LOADING_STATE_MARKER]: "" }}
           className={cn(
             "absolute inset-0 z-10 flex items-center justify-center",
@@ -41,6 +46,8 @@ export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
     return (
       <div
         ref={ref}
+        role="status"
+        aria-label={t("aria.loading")}
         {...{ [LOADING_STATE_MARKER]: "" }}
         className={cn("text-foreground", className)}
         {...props}

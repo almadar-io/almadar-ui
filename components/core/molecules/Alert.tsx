@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
@@ -18,9 +18,10 @@ import { useTranslate } from "../../../hooks/useTranslate";
 import { HStack } from "../atoms/Stack";
 import { Button } from "../atoms/Button";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type AlertVariant = "info" | "success" | "warning" | "error";
 
-export interface AlertProps {
+export interface AlertProps extends A11yProps {
   /** Alert content (children or message) */
   children?: React.ReactNode;
   /** Alert message (alias for children) */
@@ -71,6 +72,7 @@ export const Alert: React.FC<AlertProps> = ({
   icon,
   className,
   dismissEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -87,6 +89,7 @@ export const Alert: React.FC<AlertProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       bg="surface"
       border
       padding="md"

@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { A11yProps, EventEmit } from '@almadar/core';
 import { Search } from 'lucide-react';
 import { Input } from '../atoms/Input';
 import { Spinner } from '../atoms/Spinner';
@@ -22,7 +22,7 @@ import { useTranslate } from '../../../hooks/useTranslate';
 /**
  * @minWidth 160
  */
-export interface SearchInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface SearchInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | keyof A11yProps>, A11yProps {
   /**
    * Search value (controlled mode)
    */

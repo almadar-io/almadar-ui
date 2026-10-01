@@ -5,6 +5,7 @@
  * Provides consistent styling and interaction for section headers.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { Box } from "../atoms/Box";
@@ -15,7 +16,8 @@ import { Icon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/index";
 import { pressableProps } from "../../../lib/pressable";
 
-export interface FormSectionHeaderProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface FormSectionHeaderProps extends A11yProps {
   /** Section title */
   title: string;
   /** Section subtitle */
@@ -49,6 +51,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
   hasErrors = false,
   isComplete = false,
   className,
+  ...rest
 }) => {
   const isClickable = !!onToggle;
 
@@ -68,6 +71,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         "px-5 py-4 bg-muted/60 rounded-container",
         "border border-border border-s-heavy border-s-primary",
@@ -76,7 +80,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
         className,
       )}
       {...pressableProps(onToggle)}
-      aria-expanded={isClickable ? !isCollapsed : undefined}
+      aria-expanded={isClickable ? !isCollapsed : rest['aria-expanded']}
     >
       <HStack justify="between" align="center">
         <HStack gap="sm" align="center">

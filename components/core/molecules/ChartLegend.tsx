@@ -6,16 +6,18 @@
  * Pure UI molecule with no entity binding.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box, HStack, VStack, Typography } from '../atoms/index';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface ChartLegendItem {
   label: string;
   color: string;
 }
 
-export interface ChartLegendProps {
+export interface ChartLegendProps extends A11yProps {
   /** Legend items with label and color */
   items: ChartLegendItem[];
   /** Additional CSS classes */
@@ -28,11 +30,12 @@ export const ChartLegend: React.FC<ChartLegendProps> = ({
   items,
   className,
   direction = 'horizontal',
+  ...rest
 }) => {
   const Wrapper = direction === 'horizontal' ? HStack : VStack;
 
   return (
-    <Wrapper gap="md" className={cn('flex-wrap', className)}>
+    <Wrapper {...domPassthrough(rest)} gap="md" className={cn('flex-wrap', className)}>
       {items.map((item) => (
         <HStack key={item.label} gap="xs" align="center">
           <Box

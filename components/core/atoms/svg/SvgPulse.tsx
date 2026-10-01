@@ -1,8 +1,10 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import React from 'react';
 
-export interface SvgPulseProps {
+export interface SvgPulseProps extends A11yProps {
   cx?: number;
   cy?: number;
   rings?: number;
@@ -42,9 +44,11 @@ export const SvgPulse: React.FC<SvgPulseProps> = ({
   asRoot = true,
   width = 140,
   height = 140,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   const inner = (
-    <g className={className} opacity={opacity}>
+    <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
       {animated && <style>{PULSE_KEYFRAMES}</style>}
       {Array.from({ length: rings }).map((_, i) => {
         const ringRadius = ((i + 1) / rings) * maxRadius;
@@ -78,7 +82,7 @@ export const SvgPulse: React.FC<SvgPulseProps> = ({
 
   if (asRoot) {
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...a11y}>
         {inner}
       </svg>
     );

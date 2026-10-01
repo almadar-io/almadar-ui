@@ -4,13 +4,14 @@
  *
  * A fixed backdrop for modals and drawers.
  */
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { A11yProps, EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { usePresence } from "./Presence";
 
-export interface OverlayProps {
+export interface OverlayProps extends A11yProps {
   isVisible?: boolean;
   onClick?: (e: React.MouseEvent) => void;
   className?: string;
@@ -25,6 +26,7 @@ export const Overlay: React.FC<OverlayProps> = ({
   className,
   blur = false,
   action,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { mounted, className: animClass, onAnimationEnd } = usePresence(isVisible, { animation: "overlay" });
@@ -48,6 +50,7 @@ export const Overlay: React.FC<OverlayProps> = ({
       )}
       onClick={(action || onClick) ? handleClick : undefined}
       onAnimationEnd={onAnimationEnd}
+      {...domPassthrough(rest)}
       aria-hidden="true"
     />
   );

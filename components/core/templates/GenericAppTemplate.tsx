@@ -7,7 +7,9 @@
  */
 
 import React from "react";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { Box } from "../atoms/Box";
 import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
@@ -17,7 +19,7 @@ import type { TemplateProps } from "./types";
 // Entity data flows in as the canonical `EntityRow` (the compiler binds the
 // generic `EntityRow[]`). This template doesn't read entity fields, so it uses
 // the default `TemplateProps` entity type rather than a narrow local shape.
-export interface GenericAppTemplateProps extends TemplateProps {
+export interface GenericAppTemplateProps extends TemplateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Page title */
   title: string;
   /** Subtitle or description */
@@ -40,9 +42,10 @@ export const GenericAppTemplate: React.FC<GenericAppTemplateProps> = ({
   headerActions,
   footer,
   className,
+  ...rest
 }) => {
   return (
-    <Box display="flex" fullHeight className={cn("flex-col", className)}>
+    <Box display="flex" fullHeight {...domPassthrough(rest)} className={cn("flex-col", className)}>
       {/* Header */}
       <Box
         padding="md"

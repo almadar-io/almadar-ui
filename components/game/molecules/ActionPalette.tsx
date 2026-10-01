@@ -7,6 +7,8 @@
  * @packageDocumentation
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from 'react';
 import { HStack, Typography, VStack } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
@@ -14,7 +16,7 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import type { SlotItemData } from './TraitSlot';
 import { ActionTile } from './ActionTile';
 
-export interface ActionPaletteProps {
+export interface ActionPaletteProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Available actions */
     actions: SlotItemData[];
     /** IDs of actions that are already used (shown as disabled) */
@@ -39,11 +41,12 @@ export function ActionPalette({
     size = 'md',
     label,
     className,
+    ...rest
 }: ActionPaletteProps): React.JSX.Element {
     const { t } = useTranslate();
 
     return (
-        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm">
+        <VStack {...domPassthrough(rest)} className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm">
             <Typography variant="body2" className="text-muted-foreground font-medium">
                 {label ?? t('sequencer.actions')}
             </Typography>

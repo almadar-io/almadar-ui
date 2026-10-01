@@ -31,6 +31,7 @@
     --color-warning-foreground: #241608;
     --color-info: #b5793a;
     --color-info-foreground: #241608;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 8px;
     --radius-md: 10px;

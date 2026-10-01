@@ -5,18 +5,20 @@
  * **Atomic Design**: Composed using Label and Typography atoms.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { Label } from '../atoms/Label';
 import { Typography } from '../atoms/Typography';
 import { VStack } from '../atoms/Stack';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 interface FieldChildProps {
   id?: string;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
 }
 
-export interface FormFieldProps {
+export interface FormFieldProps extends A11yProps {
   label: string;
   required?: boolean;
   error?: string;
@@ -32,6 +34,7 @@ export const FormField: React.FC<FormFieldProps> = ({
   hint,
   className,
   children,
+  ...rest
 }) => {
   // A single field child is named by the label (its own id kept when given)
   // and described by the hint or error.
@@ -47,7 +50,7 @@ export const FormField: React.FC<FormFieldProps> = ({
     .filter(Boolean)
     .join(' ') || undefined;
   return (
-    <VStack gap="xs" className={className}>
+    <VStack {...domPassthrough(rest)} gap="xs" className={className}>
       <Label required={required} htmlFor={fieldId}>{label}</Label>
       {field
         ? React.cloneElement(field, {

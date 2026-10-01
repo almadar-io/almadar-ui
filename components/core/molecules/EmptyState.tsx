@@ -1,6 +1,6 @@
 'use client';
 import React from "react";
-import type { EventEmit, EventKey } from "@almadar/core";
+import type { EventEmit, EventKey, A11yProps } from "@almadar/core";
 import { EMPTY_STATE_MARKER } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "../../../lib/cn";
@@ -13,6 +13,7 @@ import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /**
  * String aliases for canonical kebab-case icon names.
  * The Icon atom resolves canonical names directly; this map only handles
@@ -52,7 +53,7 @@ const lookStyles: Record<EmptyStateLook, string> = {
   mascot: "[&_svg]:w-24 [&_svg]:h-24 [&_svg]:rounded-pill",
 };
 
-export interface EmptyStateProps {
+export interface EmptyStateProps extends A11yProps {
   /**
    * Icon to display. Accepts either:
    * - A Lucide icon component (LucideIcon)
@@ -89,6 +90,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   variant,
   actionEvent,
   look = "icon-only",
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -114,7 +116,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   // Support both title and message (message is alias for title)
   const displayText = title || message || t('empty.noItems');
   return (
-    <Box className="contents" {...{ [EMPTY_STATE_MARKER]: "" }}>
+    <Box {...domPassthrough(rest)} className="contents" {...{ [EMPTY_STATE_MARKER]: "" }}>
       <VStack
         align="center"
         className={cn(

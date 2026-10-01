@@ -141,7 +141,7 @@ describe('Chart bars', () => {
         <Chart chartType="bar" data={data} drillEvent="DRILL" />
       </>,
     );
-    fireEvent.keyDown(screen.getByRole('button', { name: 'default: 5' }), { key: 'Enter' });
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Jan: 5' }), { key: 'Enter' });
     expect(spy).toHaveBeenCalledWith({ label: 'Jan', value: 5, seriesLabel: undefined });
   });
 

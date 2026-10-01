@@ -9,7 +9,7 @@
  * Uses wireframe theme styling (high contrast, sharp edges).
  */
 import React from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, A11yProps } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
@@ -19,6 +19,7 @@ import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /**
  * Safe event bus hook that works outside EventBusProvider context.
  * Returns a no-op emit function if not in EventBusProvider context.
@@ -32,7 +33,7 @@ function useSafeEventBus() {
   }
 }
 
-export interface WizardNavigationProps {
+export interface WizardNavigationProps extends A11yProps {
   /** Current step index (0-based) */
   currentStep: number;
   /** Total number of steps */
@@ -90,6 +91,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
   onCompleteClick,
   compact = false,
   className,
+  ...rest
 }) => {
   const eventBus = useSafeEventBus();
   const { t } = useTranslate();
@@ -127,6 +129,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       border
       className={cn(
         // `flex-wrap gap-2` lets the Back / Step / Next trio reflow on

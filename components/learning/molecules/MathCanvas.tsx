@@ -23,7 +23,8 @@ import type { LearningShape, LearningPoint, LearningReadout, LearningTracePanel 
 import type { UiError } from '../../core/atoms/types';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import type { Projector } from '../../../lib/drawable/contract';
-import type { EventKey, ScenePos } from '@almadar/core';
+import type { A11yProps, EventKey, ScenePos } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 
 export interface MathCurve {
   label?: string;
@@ -140,7 +141,7 @@ function formatTick(v: number): string {
   return v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 }
 
-export interface MathCanvasProps {
+export interface MathCanvasProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   className?: string;
   width?: number;
   height?: number;
@@ -243,6 +244,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   keyUpMap,
   isLoading,
   error,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const fontFamily = resolveGameFontFamily(fontFamilyProp);
@@ -617,7 +619,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   }, [drawables?.length, width, height, xMin, xMax, yMin, yMax]);
 
   return (
-    <Card className={className}>
+    <Card {...domPassthrough(rest)} className={className}>
       <VStack gap="sm">
         {title ? <Typography variant="h4">{title}</Typography> : null}
         <LearningCanvas

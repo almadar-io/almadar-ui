@@ -41,9 +41,57 @@ export interface PendingCrumb {
   crumb: string;
 }
 
-/** A page's entry label: its declared label, else its name as written (never derived). */
-export function pageEntryLabel(page: NavPageDecl): string {
-  return page.label ?? page.name;
+/** A page's entry label: its declared label, else the declared navItem label for it, else its name as written (never derived). */
+export function pageEntryLabel(page: NavPageDecl, navLabels?: NavItemLabels): string {
+  return page.label ?? navLabels?.[page.path] ?? page.name;
+}
+
+/** Declared navItem labels keyed by the page path each item's href resolves to. */
+export type NavItemLabels = Readonly<Record<string, string>>;
+
+/** A declared navigation item (the app shell's `navItems`), children included. */
+export interface NavItemDecl {
+  href: string;
+  label: string;
+  children?: readonly NavItemDecl[];
+}
+
+/** Map every navItem (children too) to the declared page its href resolves to; hrefs matching no page are skipped. */
+export function navLabelsFromItems(
+  pages: readonly NavPageDecl[],
+  items: readonly NavItemDecl[],
+): Record<string, string> {
+  const labels: Record<string, string> = {};
+  const visit = (list: readonly NavItemDecl[]) => {
+    for (const item of list) {
+      const page = matchNavPage(pages, item.href);
+      if (page && item.label) labels[page.path] = item.label;
+      if (item.children) visit(item.children);
+    }
+  };
+  visit(items);
+  return labels;
+}
+
+/**
+ * Entries whose label is still their page's own fallback (declared label or
+ * name) take the page's navItem label; a staged record crumb is left alone.
+ */
+export function resolveEntryLabels(
+  entries: readonly NavStackEntry[],
+  pages: readonly NavPageDecl[],
+  navLabels: NavItemLabels,
+): readonly NavStackEntry[] {
+  let changed = false;
+  const resolved = entries.map((entry) => {
+    const page = matchNavPage(pages, entry.href);
+    if (!page || entry.label !== pageEntryLabel(page)) return entry;
+    const label = pageEntryLabel(page, navLabels);
+    if (label === entry.label) return entry;
+    changed = true;
+    return { ...entry, label };
+  });
+  return changed ? resolved : entries;
 }
 
 function normalizePath(p: string): string {

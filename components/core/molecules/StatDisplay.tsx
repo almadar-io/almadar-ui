@@ -6,6 +6,7 @@
  * Molecule-level replacement for the stats (StatCard) organism in behavior schemas.
  * No entity prop, no data fetching, no hooks beyond icon resolution.
  */
+import type { A11yProps } from '@almadar/core';
 import React, { useCallback } from 'react';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
@@ -21,6 +22,7 @@ import type { UiError } from '../atoms/types';
 import { formatValue, type FormatContext } from "../../../lib/format";
 import { useFormatContext } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type StatDisplayLook =
   | 'elevated'
   | 'flat'
@@ -36,7 +38,7 @@ const lookStyles: Record<StatDisplayLook, string> = {
   sparkline: '',
 };
 
-export interface StatDisplayProps {
+export interface StatDisplayProps extends A11yProps {
   /** Display label (e.g., "Total", "Remaining") */
   label: string;
   /** Primary value (number or formatted string) */
@@ -131,6 +133,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   className,
   isLoading = false,
   error = null,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const fmt = useFormatContext();
@@ -158,7 +161,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
 
   if (error) {
     return (
-      <Card className={cn(padSizes[size], className)}>
+      <Card {...domPassthrough(rest)} className={cn(padSizes[size], className)}>
         <Typography variant="small" color="error">{error.message}</Typography>
       </Card>
     );
@@ -166,7 +169,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
 
   if (isLoading) {
     return (
-      <Card className={cn(padSizes[size], className)}>
+      <Card {...domPassthrough(rest)} className={cn(padSizes[size], className)}>
         <VStack gap="sm" className="animate-pulse">
           <Box className="h-3 bg-muted rounded w-16" />
           <Box className="h-6 bg-muted rounded w-12" />
@@ -179,6 +182,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   if (compact) {
     return (
       <HStack
+        {...domPassthrough(rest)}
         gap="sm"
         className={cn('items-center', clickEvent && 'cursor-pointer hover:opacity-80', className)}
         {...pressableProps(clickEvent ? handleClick : undefined)}
@@ -203,6 +207,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   // Card mode (default)
   return (
     <Card
+      {...domPassthrough(rest)}
       className={cn(padSizes[size], lookStyles[look], clickEvent && 'cursor-pointer hover:shadow-elevation-dialog transition-shadow', className)}
       {...pressableProps(clickEvent ? handleClick : undefined)}
     >

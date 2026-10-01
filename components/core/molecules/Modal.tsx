@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useId, useRef, useState } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, A11yProps } from "@almadar/core";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Dialog } from "../atoms/Dialog";
@@ -19,6 +19,7 @@ import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 import { usePresence } from "../atoms/Presence";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
 /**
@@ -31,7 +32,7 @@ export type ModalLook =
   | "side-drawer"
   | "full-screen";
 
-export interface ModalProps {
+export interface ModalProps extends A11yProps {
   /** Whether the modal is open (defaults to true when rendered by slot wrapper) */
   isOpen?: boolean;
   /** Callback when modal should close (injected by slot wrapper) */
@@ -109,6 +110,7 @@ export const Modal: React.FC<ModalProps> = ({
   swipeDownToClose = true,
   look = "centered-card",
   contained = false,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -178,6 +180,7 @@ export const Modal: React.FC<ModalProps> = ({
     >
         <Dialog
           ref={modalRef}
+          {...domPassthrough(rest)}
           open
           className={cn(
             // Reset browser-default dialog chrome — we own styling. `static`
@@ -205,7 +208,7 @@ export const Modal: React.FC<ModalProps> = ({
             transform: `translateY(${dragY}px)`,
             transition: isDragging.current ? 'none' : 'transform 200ms ease-out',
           } : undefined}
-          {...(title && { "aria-labelledby": titleId })}
+          {...(title && !rest['aria-labelledby'] && { "aria-labelledby": titleId })}
         >
           {/* Drag handle (mobile bottom sheet) */}
           <Box

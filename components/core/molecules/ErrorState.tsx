@@ -1,6 +1,6 @@
 'use client';
 import React from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Button } from "../atoms/index";
 import { Box } from "../atoms/Box";
@@ -10,7 +10,8 @@ import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
-export interface ErrorStateProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface ErrorStateProps extends A11yProps {
   title?: string;
   /** Error message to display */
   message?: string;
@@ -29,6 +30,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   onRetry,
   className,
   retryEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -42,6 +44,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   const resolvedMessage = message ?? description ?? t('error.occurred');
   return (
     <VStack
+      {...domPassthrough(rest)}
       align="center"
       className={cn(
         "justify-center py-12 text-center",

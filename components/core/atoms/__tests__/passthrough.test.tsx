@@ -4,6 +4,8 @@ import { render, screen } from '@testing-library/react';
 import { EventBusProvider } from '../../../../providers/EventBusProvider';
 import { HStack, VStack } from '../Stack';
 import { Typography } from '../Typography';
+import { Box } from '../Box';
+import { Button } from '../Button';
 
 const wrap = (ui: React.ReactElement) => render(<EventBusProvider debug={false}>{ui}</EventBusProvider>);
 
@@ -27,6 +29,21 @@ describe('primitives forward accessibility and data attributes', () => {
     const deco = screen.getByText('…');
     expect(deco.getAttribute('aria-hidden')).toBe('true');
     expect(deco.getAttribute('data-x')).toBe('1');
+  });
+
+  it('Stack and Typography forward lang, dir and tabIndex (A11yProps global attributes)', () => {
+    wrap(<><VStack role="region" aria-label="Quote" lang="ar" dir="rtl" tabIndex={-1}>نص</VStack><Typography lang="sl" dir="ltr">besedilo</Typography></>);
+    const region = screen.getByRole('region', { name: 'Quote' });
+    expect(region.getAttribute('lang')).toBe('ar');
+    expect(region.getAttribute('dir')).toBe('rtl');
+    expect(region.getAttribute('tabindex')).toBe('-1');
+    expect(screen.getByText('besedilo').getAttribute('lang')).toBe('sl');
+  });
+
+  it('Box and Button forward aria-current and aria-pressed', () => {
+    wrap(<><Box as="nav" aria-label="Main" aria-current="page">x</Box><Button aria-pressed={true}>Bold</Button></>);
+    expect(screen.getByRole('navigation', { name: 'Main' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('button', { name: 'Bold' }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it('control: layout classes still apply alongside forwarded attributes', () => {

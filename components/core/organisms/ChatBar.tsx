@@ -24,14 +24,15 @@ import { Spinner } from '../atoms/Spinner';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import type { DisplayStateProps } from './types';
-import type { EditFocus } from '@almadar/core';
+import type { A11yProps, EditFocus } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { ELEMENT_SELECTED_EVENT, parseEditFocus } from './trace-edit-focus';
 
 // ─── Types ─────────────────────────────────────────────────
 
 export type ChatBarStatus = 'idle' | 'running' | 'paused' | 'complete' | 'error';
 
-export interface ChatBarProps extends DisplayStateProps {
+export interface ChatBarProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Pipeline status */
   status?: ChatBarStatus;
   /** Currently active gate label, e.g. "Gate 2: State machines" */
@@ -64,6 +65,7 @@ export function ChatBar({
   placeholder,
   context,
   className,
+  ...rest
 }: ChatBarProps): React.ReactElement {
   const { t } = useTranslate();
   const eventBus = useEventBus();
@@ -172,7 +174,7 @@ export function ChatBar({
     );
 
   return (
-    <Box className={`border-t border-[var(--color-border)] bg-[var(--color-card)] ${className ?? ''}`}>
+    <Box {...domPassthrough(rest)} className={`border-t border-[var(--color-border)] bg-[var(--color-card)] ${className ?? ''}`}>
       {/* Contextual-edit focus chip — the picked canvas element. Sending a
           message applies the edit to it; the ✕ clears the selection. */}
       {focus && (

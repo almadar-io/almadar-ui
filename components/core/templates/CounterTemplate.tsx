@@ -6,7 +6,8 @@
  */
 
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { A11yProps, EventKey } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { cn } from "../../../lib/cn";
 import { Container } from "../molecules/Container";
 import { VStack, HStack } from "../atoms/Stack";
@@ -35,7 +36,7 @@ export interface CounterEntity {
   rangeText?: string;
 }
 
-export interface CounterTemplateProps extends TemplateProps<CounterEntity> {
+export interface CounterTemplateProps extends TemplateProps<CounterEntity>, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Called when increment is clicked */
   onIncrement?: () => void;
   /** Called when decrement is clicked */
@@ -75,11 +76,12 @@ function CounterMinimal({
   decrementEvent,
   incrementEvent,
   className,
+  ...rest
 }: CounterTemplateProps): React.JSX.Element | null {
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
   if (!resolved) return null;
   return (
-    <HStack gap="lg" align="center" justify="center" className={className}>
+    <HStack gap="lg" align="center" justify="center" {...domPassthrough(rest)} className={className}>
       <Button
         variant="secondary"
         size={sizeStyles[size].button}
@@ -126,13 +128,14 @@ function CounterStandard({
   incrementEvent,
   resetEvent,
   className,
+  ...rest
 }: CounterTemplateProps): React.JSX.Element | null {
   const { t } = useTranslate();
   const title = titleProp ?? t("counter.title");
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
   if (!resolved) return null;
   return (
-    <Container size="sm" padding="lg" className={className}>
+    <Container size="sm" padding="lg" {...domPassthrough(rest)} className={className}>
       <VStack gap="lg" align="center">
         <Typography
           variant="h2"
@@ -196,13 +199,14 @@ function CounterFull({
   incrementEvent,
   resetEvent,
   className,
+  ...rest
 }: CounterTemplateProps): React.JSX.Element | null {
   const { t } = useTranslate();
   const title = titleProp ?? t("counter.title");
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
   if (!resolved) return null;
   return (
-    <Container size="sm" padding="lg" className={className}>
+    <Container size="sm" padding="lg" {...domPassthrough(rest)} className={className}>
       <VStack gap="xl" align="center">
         <Typography
           variant="h2"

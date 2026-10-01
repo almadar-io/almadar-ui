@@ -13,7 +13,8 @@
  */
 
 import React, { useState, useCallback } from "react";
-import type { EventKey, AssetUrl, EventEmit } from "@almadar/core";
+import type { A11yProps, EventKey, AssetUrl, EventEmit } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { resolveImageUrl } from "../../../lib/getNestedValue";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Badge, Button, Icon, Box } from "../atoms/index";
@@ -52,7 +53,7 @@ export interface MediaGalleryAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
-export interface MediaGalleryProps extends DisplayStateProps {
+export interface MediaGalleryProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Entity rows to display (collection cardinality). */
     entity?: readonly EntityRow[];
     /** Gallery title */
@@ -109,6 +110,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     isLoading = false,
     error,
     className,
+    ...rest
 }) => {
     const eventBus = useEventBus();
     const { t } = useTranslate();
@@ -161,33 +163,41 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     }, [propItems, entityData, srcField, captionField]);
 
     if (isLoading) {
-        return <LoadingState message={t('common.loading')} className={className} />;
+        return (
+            <Box {...domPassthrough(rest)}>
+                <LoadingState message={t('common.loading')} className={className} />
+            </Box>
+        );
     }
 
     if (error) {
         return (
-            <ErrorState
-                title={t('display.galleryError')}
-                message={error.message}
-                className={className}
-            />
+            <Box {...domPassthrough(rest)}>
+                <ErrorState
+                    title={t('display.galleryError')}
+                    message={error.message}
+                    className={className}
+                />
+            </Box>
         );
     }
 
     if (items.length === 0 && !showUpload) {
         return (
-            <EmptyState
-                icon={ImageIcon}
-                title={t('display.noMedia')}
-                description={t('mediaGallery.noMediaDescription')}
-                className={className}
-            />
+            <Box {...domPassthrough(rest)}>
+                <EmptyState
+                    icon={ImageIcon}
+                    title={t('display.noMedia')}
+                    description={t('mediaGallery.noMediaDescription')}
+                    className={className}
+                />
+            </Box>
         );
     }
 
     return (
         <>
-            <Card className={cn("p-6", className)}>
+            <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
                 <VStack gap="md">
                     {/* Header */}
                     {(title || showUpload || (actions && actions.length > 0)) && (

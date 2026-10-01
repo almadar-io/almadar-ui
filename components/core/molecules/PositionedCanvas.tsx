@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
-import type { EventEmit, EntityRow, EntityWith } from "@almadar/core";
+import type { A11yProps, EventEmit, EntityRow, EntityWith } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -25,7 +26,7 @@ export interface CanvasItemRow {
     shape?: CanvasItemShape;
 }
 
-export interface PositionedCanvasProps {
+export interface PositionedCanvasProps extends A11yProps {
     /**
      * Items to render. The molecule narrows non-array values to `[]` and reads
      * each row's `id` / `x` / `y` / `label` fields at render time.
@@ -101,6 +102,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
     selectEvent,
     moveEvent,
     className,
+    ...rest
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const dragRef = useRef<DragState | null>(null);
@@ -154,6 +156,19 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
         [width, height, onMove, moveEvent, eventBus],
     );
 
+    const toggleSelect = useCallback(
+        (itemId: string) => {
+            const next = selectedId === itemId ? null : itemId;
+            onSelect?.(next);
+            if (selectEvent) {
+                eventBus.emit(`UI:${selectEvent}`, { id: next });
+            }
+        },
+        [selectedId, onSelect, selectEvent, eventBus],
+    );
+
+    const selectable = onSelect !== undefined || selectEvent !== undefined;
+
     const handlePointerUp = useCallback(
         (e: React.PointerEvent<HTMLDivElement>, item: EntityRow) => {
             const drag = dragRef.current;
@@ -168,16 +183,9 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
             dragRef.current = null;
             setDraggingId(null);
 
-            if (!wasDrag) {
-                const itemId = item.id as string;
-                const next = selectedId === itemId ? null : itemId;
-                onSelect?.(next);
-                if (selectEvent) {
-                    eventBus.emit(`UI:${selectEvent}`, { id: next });
-                }
-            }
+            if (!wasDrag) toggleSelect(item.id as string);
         },
-        [selectedId, onSelect, selectEvent, eventBus],
+        [toggleSelect],
     );
 
     const handleContainerClick = useCallback(
@@ -198,7 +206,12 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
         // {width × height} coordinate system (items are positioned by
         // absolute item.x/item.y), so a phone-sized viewport pans inside
         // the larger logical canvas rather than busting the layout.
-        <Box className={cn("max-w-full overflow-auto rounded-container", className)}>
+        <Box
+            role="group"
+            aria-label={t('aria.positionedCanvas')}
+            {...domPassthrough(rest)}
+            className={cn("max-w-full overflow-auto rounded-container", className)}
+        >
         <Box
             ref={containerRef}
             data-testid="positioned-canvas"
@@ -235,6 +248,16 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
                             isDragging && "shadow-elevation-popover z-10",
                         )}
                         style={{ left: x, top: y, touchAction: 'none' }}
+                        {...(selectable ? {
+                            role: 'button' as const,
+                            tabIndex: 0,
+                            'aria-pressed': isSelected,
+                            onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+                                if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+                                e.preventDefault();
+                                toggleSelect(itemId);
+                            },
+                        } : {})}
                         onPointerDown={(e) => handlePointerDown(e, item)}
                         onPointerMove={handlePointerMove}
                         onPointerUp={(e) => handlePointerUp(e, item)}
@@ -250,6 +273,9 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
                             {partySize !== undefined && status === 'seated'
                                 ? `${partySize}/${capacity}`
                                 : t('positionedCanvas.capacity', { count: capacity })}
+                        </Typography>
+                        <Typography variant="caption" className="sr-only">
+                            {t(statusBadge.labelKey)}
                         </Typography>
                         {status === 'seated' && serverName && (
                             <Typography variant="caption" color="secondary" className="truncate max-w-[80%]">

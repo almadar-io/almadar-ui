@@ -6,6 +6,7 @@
  * Uses Button, Typography, and Icon atoms.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useState, useRef, useEffect, useLayoutEffect, useId } from "react";
 import { Typography } from "../atoms/Typography";
 import { usePresence } from "../atoms/Presence";
@@ -14,10 +15,11 @@ import { useTapReveal } from "../../../hooks/useTapReveal";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type PopoverPosition = "top" | "bottom" | "left" | "right";
 export type PopoverTrigger = "click" | "hover";
 
-export interface PopoverProps {
+export interface PopoverProps extends A11yProps {
   /**
    * Popover content
    */
@@ -121,6 +123,7 @@ export const Popover: React.FC<PopoverProps> = ({
   open,
   onOpenChange,
   className,
+  ...rest
 }) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isOpen = open !== undefined ? open : uncontrolledOpen;
@@ -308,9 +311,10 @@ export const Popover: React.FC<PopoverProps> = ({
         top: placement.top,
         ...(popoverWidth === 0 ? { visibility: 'hidden' as const } : undefined),
       }}
+      {...domPassthrough(rest)}
       id={panelId}
       role="dialog"
-      aria-label={typeof content === "string" ? content : undefined}
+      aria-label={rest['aria-label'] ?? (typeof content === "string" ? content : undefined)}
       onAnimationEnd={onAnimationEnd}
       onMouseEnter={trigger === "hover" ? handleOpen : undefined}
       onMouseLeave={trigger === "hover" ? handleClose : undefined}

@@ -69,7 +69,7 @@ export type BadgeColor = BadgeVariant | 'destructive';
 export type DisplayFieldVariant = 'h3' | 'h4' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
 
 /** How a display field's value is formatted. */
-export type DisplayFieldFormat = 'date' | 'currency' | 'number' | 'boolean' | 'percent';
+export type DisplayFieldFormat = 'date' | 'datetime' | 'currency' | 'number' | 'boolean' | 'percent';
 
 /**
  * One field of a record shown by a data display (DataGrid, DataList, List,

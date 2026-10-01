@@ -19,10 +19,11 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useNavStack } from "../../../providers/NavStackContext";
 import { followHref } from "../../../lib/followHref";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, A11yProps } from "@almadar/core";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface MenuItem {
   /** `divider` renders a separator line instead of an item */
   type?: "item" | "divider";
@@ -77,7 +78,7 @@ interface MenuTriggerProps {
   "aria-controls"?: string;
 }
 
-export interface MenuProps {
+export interface MenuProps extends A11yProps {
   /** Menu trigger element */
   trigger: React.ReactNode;
   /** Menu items */
@@ -410,6 +411,7 @@ export const Menu: React.FC<MenuProps> = ({
   className,
   header,
   footer,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const navStack = useNavStack();
@@ -608,6 +610,7 @@ export const Menu: React.FC<MenuProps> = ({
   const panel = isOpen && triggerRect ? (
     <div
       ref={menuRef}
+      {...domPassthrough(rest)}
       className={cn("fixed z-50", menuContainerStyles, className)}
       style={computeMenuStyle(effectivePosition, triggerRect)}
       id={menuId}

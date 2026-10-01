@@ -13,7 +13,7 @@
  */
 
 import React, { useRef, useState, useCallback, useEffect } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { A11yProps, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Button, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
@@ -21,6 +21,7 @@ import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { Eraser, Check } from "lucide-react";
 import type { UiError } from '../atoms/types';
 
@@ -30,7 +31,7 @@ import type { UiError } from '../atoms/types';
  *
  * @capabilities e-signature capture, sign-here field, consent signature, initial-here field, wet-signature substitute
  */
-export interface SignaturePadProps {
+export interface SignaturePadProps extends A11yProps {
     /** Label above the pad */
     label?: string;
     /** Helper text */
@@ -73,6 +74,7 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
     isLoading = false,
     error,
     className,
+    ...rest
 }) => {
     const eventBus = useEventBus();
     const { t } = useTranslate();
@@ -219,6 +221,9 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
                         height={height}
                         className="w-full touch-none"
                         style={{ height }}
+                        role="img"
+                        aria-label={resolvedLabel || t('signaturePad.label')}
+                        {...domPassthrough(rest)}
                         onMouseDown={startDrawing}
                         onMouseMove={draw}
                         onMouseUp={stopDrawing}

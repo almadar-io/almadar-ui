@@ -1,20 +1,29 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack } from '../atoms/Stack';
 import { HStack } from '../atoms/Stack';
+import { SimpleGrid } from './SimpleGrid';
 
-export type SkeletonVariant = 'header' | 'table' | 'form' | 'card' | 'text';
+import { domPassthrough } from '../../../lib/domPassthrough';
+/**
+ * Each variant mirrors the geometry of the component that replaces it, so the
+ * swap from placeholder to content does not move the layout: `table` → TableView,
+ * `list` → DataList, `grid` → DataGrid cards, `detail` → DetailPanel, `stats` →
+ * stat tiles, `form` → Form, `card` / `header` / `text` for the rest.
+ */
+export type SkeletonVariant = 'header' | 'table' | 'list' | 'grid' | 'detail' | 'stats' | 'form' | 'card' | 'text';
 
-export interface SkeletonProps {
+export interface SkeletonProps extends A11yProps {
   /** The skeleton variant to render */
   variant?: SkeletonVariant;
-  /** Number of rows for table/text variants */
+  /** Rows for table/list/text, cards for grid, field pairs for detail */
   rows?: number;
-  /** Number of columns for table variant */
+  /** Columns for table, tiles for stats */
   columns?: number;
   /** Number of fields for form variant */
   fields?: number;
@@ -134,11 +143,80 @@ function TextSkeleton({ rows = 3, className }: { rows?: number; className?: stri
   );
 }
 
+function ListSkeleton({ rows = 5, className }: { rows?: number; className?: string }) {
+  return (
+    <VStack gap="none" className={cn('border border-border rounded-container overflow-hidden', className)}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <HStack key={i} gap="md" className={cn('items-center px-4 py-3', i < rows - 1 && 'border-b border-border')}>
+          <SkeletonBlock className="h-10 w-10 rounded-full shrink-0" />
+          <VStack gap="xs" className="flex-1 min-w-0">
+            <SkeletonBlock className="h-4 w-1/3" />
+            <SkeletonLine className="w-2/3 h-3" />
+          </VStack>
+          <SkeletonBlock className="h-6 w-16 rounded-full" />
+        </HStack>
+      ))}
+    </VStack>
+  );
+}
+
+function GridSkeleton({ rows = 6, className }: { rows?: number; className?: string }) {
+  return (
+    <SimpleGrid minChildWidth="260px" gap="md" className={className}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <CardSkeleton key={i} />
+      ))}
+    </SimpleGrid>
+  );
+}
+
+function StatsSkeleton({ columns = 4, className }: { columns?: number; className?: string }) {
+  return (
+    <SimpleGrid minChildWidth="180px" gap="md" className={className}>
+      {Array.from({ length: columns }).map((_, i) => (
+        <VStack key={i} gap="sm" className="p-4 border border-border rounded-container">
+          <SkeletonLine className="w-1/2 h-3" />
+          <SkeletonBlock className="h-7 w-2/3" />
+        </VStack>
+      ))}
+    </SimpleGrid>
+  );
+}
+
+function DetailSkeleton({ rows = 6, className }: { rows?: number; className?: string }) {
+  return (
+    <VStack gap="lg" className={cn('p-6 border border-border rounded-container', className)}>
+      <HStack className="items-start justify-between" gap="md">
+        <HStack gap="sm" className="items-center">
+          <SkeletonBlock className="h-8 w-56" />
+          <SkeletonBlock className="h-6 w-20 rounded-full" />
+        </HStack>
+        <HStack gap="sm">
+          <SkeletonBlock className="h-9 w-24 rounded-interactive" />
+          <SkeletonBlock className="h-9 w-9 rounded-interactive" />
+        </HStack>
+      </HStack>
+      <HStack gap="md">
+        <SkeletonBlock className="h-20 flex-1" />
+        <SkeletonBlock className="h-20 flex-1" />
+        <SkeletonBlock className="h-20 flex-1" />
+      </HStack>
+      <SimpleGrid minChildWidth="200px" maxCols={3} gap="md">
+        {Array.from({ length: rows }).map((_, i) => (
+          <VStack key={i} gap="xs">
+            <SkeletonLine className="w-1/3 h-3" />
+            <SkeletonBlock className="h-5 w-2/3" />
+          </VStack>
+        ))}
+      </SimpleGrid>
+      <TextSkeleton rows={3} />
+    </VStack>
+  );
+}
+
 /**
- * Skeleton — loading placeholder with 5 variants for Suspense fallbacks.
- *
- * Variants: `header`, `table`, `form`, `card`, `text`.
- * Used as fallback content inside `<Suspense>` boundaries.
+ * Skeleton — the loading placeholder. A loading state renders the variant shaped
+ * like the content it gives way to; announced as a busy status region.
  *
  * @example
  * ```tsx
@@ -157,20 +235,41 @@ export function Skeleton({
   columns,
   fields,
   className,
+  ...rest
 }: SkeletonProps): React.ReactElement {
-  const { t: _t } = useTranslate();
+  const { t } = useTranslate();
+  return (
+    <Box {...domPassthrough(rest)} role="status" aria-busy="true" aria-label={rest['aria-label'] ?? t('common.loading')} data-skeleton={variant} className="w-full">
+      {renderVariant(variant, rows, columns, fields, className)}
+    </Box>
+  );
+}
+
+function renderVariant(
+  variant: SkeletonVariant,
+  rows: number | undefined,
+  columns: number | undefined,
+  fields: number | undefined,
+  className: string | undefined,
+): React.ReactElement {
   switch (variant) {
     case 'header':
       return <HeaderSkeleton className={className} />;
     case 'table':
       return <TableSkeleton rows={rows} columns={columns} className={className} />;
+    case 'list':
+      return <ListSkeleton rows={rows} className={className} />;
+    case 'grid':
+      return <GridSkeleton rows={rows} className={className} />;
+    case 'detail':
+      return <DetailSkeleton rows={rows} className={className} />;
+    case 'stats':
+      return <StatsSkeleton columns={columns} className={className} />;
     case 'form':
       return <FormSkeleton fields={fields} className={className} />;
     case 'card':
       return <CardSkeleton className={className} />;
     case 'text':
-      return <TextSkeleton rows={rows} className={className} />;
-    default:
       return <TextSkeleton rows={rows} className={className} />;
   }
 }

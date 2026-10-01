@@ -8,7 +8,8 @@
 import * as React from 'react';
 import { Box } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
-import type { EventEmit } from '@almadar/core';
+import type { A11yProps, EventEmit } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { AvlStateMachine } from '../../avl/molecules/AvlStateMachine';
 import type { TraitLevelData } from '../../../lib/avl-schema-parser';
 
@@ -23,7 +24,7 @@ export interface StateGraphTransition {
     guardHint?: string;
 }
 
-export interface StateGraphProps {
+export interface StateGraphProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** All states in the machine (node labels). */
     states: string[];
     /** Player-built transitions rendered as arrows. */
@@ -56,6 +57,7 @@ export function StateGraph({
     height = 400,
     nodeClickEvent,
     className,
+    ...rest
 }: StateGraphProps): React.JSX.Element {
     const trait = React.useMemo<TraitLevelData>(() => ({
         name: 'StateGraph',
@@ -75,6 +77,7 @@ export function StateGraph({
 
     return (
         <Box
+            {...domPassthrough(rest)}
             position="relative"
             className={cn('rounded-container border border-border bg-background overflow-auto p-2', className)}
             style={{ width, height }}

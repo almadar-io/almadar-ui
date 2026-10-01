@@ -216,6 +216,23 @@
     --motion-page-exit-to-transform: translateY(-8px);
 
     /* ----------------------------------------------------------------
+     * Element entry — how a rendered element animates in when it mounts.
+     * --motion-enter-default is the keyframe every slot's content plays when
+     * it changes (`none` = off); a render-ui node's own `enter` overrides it.
+     * The shape tokens restyle what each named entry looks like; timing is
+     * the `enter` intent (--duration-normal / --easing-emphasized).
+     * ---------------------------------------------------------------- */
+    --motion-enter-default: almadar-enter-fade;
+    /* A busy control shows its spinner only once its action outlasts this
+     * (under it the action reads as instant — no flash on fast actions). */
+    --motion-busy-delay: 300ms;
+    --motion-enter-stagger: 40ms;
+    --motion-enter-rise-from-transform: translateY(12px);
+    --motion-enter-scale-from-transform: scale(0.96);
+    --motion-enter-slide-sign: 1;
+    --motion-enter-slide-from-transform: translateX(calc(16px * var(--motion-enter-slide-sign)));
+
+    /* ----------------------------------------------------------------
      * Skeleton shimmer — the loading-placeholder sweep. Two color stops
      * (base + highlight) drive the gradient; --duration-shimmer the loop.
      * Override per theme to restyle the placeholder tone.
@@ -224,6 +241,75 @@
     --skeleton-highlight: var(--color-surface, rgba(255, 255, 255, 0.55));
     --duration-shimmer: 1.5s;
 }
+
+[dir="rtl"] {
+    --motion-enter-slide-sign: -1;
+}
+
+@keyframes almadar-enter-fade {
+    from { opacity: 0; }
+}
+@keyframes almadar-enter-rise {
+    from { opacity: 0; transform: var(--motion-enter-rise-from-transform); }
+}
+@keyframes almadar-enter-scale {
+    from { opacity: 0; transform: var(--motion-enter-scale-from-transform); }
+}
+@keyframes almadar-enter-slide {
+    from { opacity: 0; transform: var(--motion-enter-slide-from-transform); }
+}
+
+/* Busy control: the label gives way to the spinner only after --motion-busy-delay. */
+@keyframes almadar-busy-hide {
+    to { visibility: hidden; }
+}
+@keyframes almadar-busy-show {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.almadar-busy-content {
+    animation: almadar-busy-hide 0s linear var(--motion-busy-delay, 300ms) forwards;
+}
+.almadar-busy-indicator {
+    opacity: 0;
+    animation: almadar-busy-show var(--duration-fast, 150ms) var(--easing-standard, ease) var(--motion-busy-delay, 300ms) forwards;
+}
+
+/* A row whose own action is in flight: dims after --motion-busy-delay, never re-clickable. */
+@keyframes almadar-row-pending {
+    to { opacity: 0.55; }
+}
+[data-row-pending="true"] {
+    pointer-events: none;
+    animation: almadar-row-pending var(--duration-fast, 150ms) var(--easing-standard, ease) var(--motion-busy-delay, 300ms) forwards;
+}
+
+/* Slot content: plays the theme's default entry (restarted when the content changes). */
+.almadar-enter-slot {
+    animation-name: var(--motion-enter-default, none);
+}
+.almadar-enter-slot,
+.almadar-enter-fade,
+.almadar-enter-rise,
+.almadar-enter-scale,
+.almadar-enter-slide {
+    animation-duration: var(--duration-normal, 250ms);
+    animation-timing-function: var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1));
+    animation-fill-mode: both;
+    animation-delay: calc(var(--enter-index, 0) * var(--motion-enter-stagger, 40ms));
+}
+.almadar-enter-fade { animation-name: almadar-enter-fade; }
+.almadar-enter-rise { animation-name: almadar-enter-rise; }
+.almadar-enter-scale { animation-name: almadar-enter-scale; }
+.almadar-enter-slide { animation-name: almadar-enter-slide; }
+.almadar-enter-delay-1 { --enter-index: 1; }
+.almadar-enter-delay-2 { --enter-index: 2; }
+.almadar-enter-delay-3 { --enter-index: 3; }
+.almadar-enter-delay-4 { --enter-index: 4; }
+.almadar-enter-delay-5 { --enter-index: 5; }
+.almadar-enter-delay-6 { --enter-index: 6; }
+.almadar-enter-delay-7 { --enter-index: 7; }
+.almadar-enter-delay-8 { --enter-index: 8; }
 
 /* The shimmer gradient background. Pair with the `animate-shimmer` utility
  * (defined in tailwind-preset) which sweeps background-position. */

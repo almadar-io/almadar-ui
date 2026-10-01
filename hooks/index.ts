@@ -76,7 +76,6 @@ export {
   useUISlotManager,
   DEFAULT_SLOTS,
   type UISlot,
-  type SlotAnimation,
   type SlotContent,
   type SlotRenderConfig,
   type SlotChangeCallback,
@@ -166,6 +165,7 @@ export {
   type DragReorderResult,
 } from './useDragReorder';
 export { useMediaQuery } from './useMediaQuery';
+export { usePrefersReducedMotion } from './usePrefersReducedMotion';
 export {
   useInfiniteScroll,
   type InfiniteScrollOptions,

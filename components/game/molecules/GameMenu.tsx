@@ -1,6 +1,7 @@
 'use client';
 import * as React from "react";
-import type { EventKey, EventPayload, Asset } from "@almadar/core";
+import type { A11yProps, EventKey, EventPayload, Asset } from "@almadar/core";
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -27,7 +28,7 @@ export type MenuOption = EventPayload & {
   subLabel?: string;
 }
 
-export interface GameMenuProps {
+export interface GameMenuProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Menu title */
   title: string;
   /** Optional subtitle or version */
@@ -61,6 +62,7 @@ export function GameMenu({
   background,
   logo,
   className,
+  ...rest
 }: GameMenuProps) {
   // Resolve alias: menuItems → options. Empty arrays count as unset (the
   // ui-game-menu atom always forwards both config fields, defaulting to []).
@@ -97,6 +99,7 @@ export function GameMenu({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         "min-h-screen w-full flex flex-col items-center justify-center p-8",
         !background && "bg-background",

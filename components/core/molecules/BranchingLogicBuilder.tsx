@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import type { EventEmit, EventPayload, EventPayloadValue } from '@almadar/core';
+import type { EventEmit, EventPayload, EventPayloadValue, A11yProps } from '@almadar/core';
 import { Plus, Trash, ArrowRight, GitBranch, Eye, Pencil } from 'lucide-react';
 import { Select } from '../atoms/Select';
 import type { SelectOption } from '../atoms/Select';
@@ -16,6 +16,7 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface BranchingQuestion {
   id: string;
   label: string;
@@ -34,7 +35,7 @@ export interface BranchingRule extends EventPayload {
   targetQuestionId: string | typeof END_OF_SURVEY;
 }
 
-export interface BranchingLogicBuilderProps {
+export interface BranchingLogicBuilderProps extends A11yProps {
   questions: readonly BranchingQuestion[] | EventPayloadValue;
   /**
    * Rules. Accepts either a typed array (direct consumers) or the runtime
@@ -433,6 +434,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
   rulesChangeEvent,
   readOnly = false,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const eventBus = useEventBus();
@@ -496,7 +498,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
   const noQuestions = questions.length === 0;
 
   return (
-    <Box className={cn('flex flex-col gap-3', className)}>
+    <Box {...domPassthrough(rest)} className={cn('flex flex-col gap-3', className)}>
       <Box className="flex flex-wrap items-center justify-between gap-2">
         <Box className="flex items-center gap-2">
           <GitBranch className="h-5 w-5 text-foreground" />

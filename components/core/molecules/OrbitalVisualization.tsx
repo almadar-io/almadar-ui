@@ -15,12 +15,14 @@
  * - 4f (61+): Multi-lobe - Violet
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useMemo } from "react";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import type { UiError } from '../atoms/types';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 // ============ Types ============
 
 /** One page's contribution to {@link OrbitalVisualizationSchemaSummary} — only
@@ -43,7 +45,7 @@ export interface OrbitalVisualizationSchemaSummary {
   traits?: number;
 }
 
-export interface OrbitalVisualizationProps {
+export interface OrbitalVisualizationProps extends A11yProps {
   /** Complexity-scoring summary of a KFlow schema (counts only — see
    *  {@link OrbitalVisualizationSchemaSummary}). */
   schema?: OrbitalVisualizationSchemaSummary;
@@ -387,6 +389,7 @@ export const OrbitalVisualization: React.FC<OrbitalVisualizationProps> = ({
   animated = true,
   onClick,
   className = "",
+  ...rest
 }) => {
   // Calculate complexity and orbital type
   const complexity = useMemo(() => {
@@ -450,11 +453,12 @@ export const OrbitalVisualization: React.FC<OrbitalVisualizationProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn("relative flex flex-col items-center justify-center", className)}
       style={{ width: pixelSize, height: pixelSize + (showLabel ? 60 : 0) }}
       onClick={onClick}
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
+      role={onClick ? "button" : rest.role}
+      tabIndex={onClick ? 0 : rest.tabIndex}
     >
       {/* Orbital container */}
       <Box

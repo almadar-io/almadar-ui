@@ -18,11 +18,13 @@
  * @packageDocumentation
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../../../lib/cn";
 import { Box } from "../atoms/Box";
 import { isMotionEnabled } from "../atoms/Presence";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 const PAGE_IN = "animate-page-in";
 
 /** Registers a nested PageTransition with its enclosing one; returns the release. */
@@ -30,14 +32,14 @@ type ClaimPageTransition = () => () => void;
 
 const PageTransitionScopeContext = createContext<ClaimPageTransition | null>(null);
 
-export interface PageTransitionProps {
+export interface PageTransitionProps extends A11yProps {
   /** Value that changes on navigation (a page path). */
   locationKey: string;
   children: React.ReactNode;
   className?: string;
 }
 
-export const PageTransition: React.FC<PageTransitionProps> = ({ locationKey, children, className }) => {
+export const PageTransition: React.FC<PageTransitionProps> = ({ locationKey, children, className, ...rest }) => {
   const claimEnclosing = useContext(PageTransitionScopeContext);
   const [claims, setClaims] = useState(0);
   const claim = useCallback<ClaimPageTransition>(() => {
@@ -63,7 +65,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ locationKey, chi
 
   return (
     <PageTransitionScopeContext.Provider value={claim}>
-      <Box ref={ref} data-page-transition={owns ? "owner" : "claimed"} className={cn(owns && PAGE_IN, className)}>
+      <Box ref={ref} {...domPassthrough(rest)} data-page-transition={owns ? "owner" : "claimed"} className={cn(owns && PAGE_IN, className)}>
         {children}
       </Box>
     </PageTransitionScopeContext.Provider>

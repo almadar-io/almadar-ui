@@ -16,7 +16,8 @@ import { ErrorState } from "./ErrorState";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { UiError } from '../atoms/types';
-import type { EventKey } from "@almadar/core";
+import type { A11yProps, EventKey } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 
 export type MeterVariant = "linear" | "radial" | "segmented";
 
@@ -33,7 +34,7 @@ export interface MeterAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
-export interface MeterProps {
+export interface MeterProps extends A11yProps {
     /** Current value */
     value: number;
     /** Minimum value */
@@ -106,7 +107,10 @@ export const Meter: React.FC<MeterProps> = ({
     isLoading = false,
     error,
     className,
+    "aria-label": ariaLabel,
+    ...rest
 }) => {
+    const passthrough = domPassthrough(rest);
     const eventBus = useEventBus();
     const { t } = useTranslate();
 
@@ -137,6 +141,15 @@ export const Meter: React.FC<MeterProps> = ({
         return unit ? `${formatted}${unit}` : `${formatted}`;
     }, [safeVal, unit]);
 
+    const meterProps = {
+        role: "meter" as const,
+        "aria-label": ariaLabel ?? label,
+        "aria-valuemin": min,
+        "aria-valuemax": max,
+        "aria-valuenow": Math.min(Math.max(safeVal, min), max),
+        "aria-valuetext": displayValue,
+    };
+
     if (isLoading) {
         return <LoadingState message={t('common.loading')} className={className} />;
     }
@@ -159,14 +172,14 @@ export const Meter: React.FC<MeterProps> = ({
         const center = dims.size / 2;
 
         return (
-            <Card className={cn("p-4", className)}>
+            <Card className={cn("p-4", className)} {...passthrough}>
                 <VStack gap="sm" align="center">
                     {label && (
                         <Typography variant="small" color="secondary" weight="medium">
                             {label}
                         </Typography>
                     )}
-                    <Box className="relative inline-flex items-center justify-center">
+                    <Box className="relative inline-flex items-center justify-center" {...meterProps}>
                         <svg
                             width={dims.size}
                             height={dims.size}
@@ -230,7 +243,7 @@ export const Meter: React.FC<MeterProps> = ({
         const activeSegments = Math.round((percentage / 100) * segments);
 
         return (
-            <Card className={cn("p-4", className)}>
+            <Card className={cn("p-4", className)} {...passthrough}>
                 <VStack gap="sm">
                     {(label || showValue) && (
                         <HStack justify="between" align="center">
@@ -246,7 +259,7 @@ export const Meter: React.FC<MeterProps> = ({
                             )}
                         </HStack>
                     )}
-                    <HStack gap="xs" className="w-full">
+                    <HStack gap="xs" className="w-full" {...meterProps}>
                         {Array.from({ length: segments }).map((_, idx) => {
                             const isActive = idx < activeSegments;
                             const segColor = isActive
@@ -281,7 +294,7 @@ export const Meter: React.FC<MeterProps> = ({
 
     // Default: linear
     return (
-        <Card className={cn("p-4", className)}>
+        <Card className={cn("p-4", className)} {...passthrough}>
             <VStack gap="sm">
                 {(label || showValue) && (
                     <HStack justify="between" align="center">
@@ -297,7 +310,7 @@ export const Meter: React.FC<MeterProps> = ({
                         )}
                     </HStack>
                 )}
-                <Box className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                <Box className="w-full h-3 bg-muted rounded-full overflow-hidden" {...meterProps}>
                     <Box
                         className="h-full rounded-full transition-all duration-slow ease-emphasized"
                         style={{

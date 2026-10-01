@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useCallback } from "react";
-import type { EventEmit, EventPayload } from "@almadar/core";
+import type { A11yProps, EventEmit, EventPayload } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -18,7 +19,8 @@ function useSafeEventBus() {
 export type StarRatingSize = "sm" | "md" | "lg";
 export type StarRatingPrecision = "full" | "half";
 
-export interface StarRatingProps {
+/** @accessibleName label */
+export interface StarRatingProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Current rating value */
   value?: number;
   /** Maximum number of stars */
@@ -60,6 +62,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
   onChange,
   className,
   label,
+  ...rest
 }) => {
   const [hoverValue, setHoverValue] = useState<number | null>(null);
 
@@ -111,6 +114,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
 
   return (
     <div
+      {...domPassthrough(rest)}
       className={cn(
         "inline-flex items-center",
         styles.gap,
@@ -118,10 +122,11 @@ export const StarRating: React.FC<StarRatingProps> = ({
         className,
       )}
       role={readOnly ? "img" : "slider"}
-      aria-label={label ?? t("aria.ratingValue", { value, max })}
-      aria-valuemin={0}
-      aria-valuemax={max}
-      aria-valuenow={value}
+      aria-label={rest["aria-label"] ?? label ?? t("aria.ratingValue", { value, max })}
+      aria-valuemin={readOnly ? undefined : 0}
+      aria-valuemax={readOnly ? undefined : max}
+      aria-valuenow={readOnly ? undefined : value}
+      aria-valuetext={readOnly ? undefined : t("aria.ratingValue", { value, max })}
       tabIndex={readOnly ? undefined : 0}
       onKeyDown={handleKeyDown}
       onPointerLeave={() => setHoverValue(null)}
@@ -134,6 +139,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
         return (
           <span
             key={i}
+            aria-hidden="true"
             className="relative inline-block"
             onClick={() => handleStarClick(i, false)}
             onPointerMove={(e) => {

@@ -20,7 +20,8 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
-import type { Asset, EventEmit } from '@almadar/core';
+import type { A11yProps, Asset, EventEmit } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -52,7 +53,7 @@ export type SlotItemData = {
  *  Emits: UI:CLICK
  *  Emits: UI:REMOVE
  */
-export interface TraitSlotProps {
+export interface TraitSlotProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Slot index (1-based) */
     slotNumber: number;
     /** Currently equipped item, if any */
@@ -143,6 +144,7 @@ export function TraitSlot({
     clickEvent,
     removeEvent,
     dropEvent,
+    ...rest
 }: TraitSlotProps): React.JSX.Element {
     const { emit } = useEventBus();
     const { t } = useTranslate();
@@ -247,6 +249,7 @@ export function TraitSlot({
 
     return (
         <Box
+            {...domPassthrough(rest)}
             ref={slotRef}
             display="flex"
             position="relative"

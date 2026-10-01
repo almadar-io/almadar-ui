@@ -9,11 +9,13 @@
  */
 
 import React from 'react';
+import type { A11yProps } from '@almadar/core';
 import { Box } from '../../atoms/Box';
 import { Badge } from '../../atoms/Badge';
 import { Icon } from '../../atoms/Icon';
 import { Typography } from '../../atoms/Typography';
 import { cn } from '../../../../lib/cn';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import { useTranslate } from '../../../../hooks/useTranslate';
 
 export type ImportProgressStep =
@@ -30,7 +32,7 @@ export interface ImportProgressCounts {
   failed?: number;
 }
 
-export interface ImportProgressProps {
+export interface ImportProgressProps extends A11yProps {
   /** Current lifecycle step */
   step: ImportProgressStep;
   /** Unit counts */
@@ -62,13 +64,14 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({
   counts,
   labels,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const label = (key: ImportProgressStep) => labels?.[key] ?? t(DEFAULT_LABEL_KEYS[key]);
   const currentIndex = step === 'done' || step === 'failed' ? PIPELINE.length : PIPELINE.indexOf(step);
 
   return (
-    <Box className={cn('flex flex-col gap-3', className)}>
+    <Box className={cn('flex flex-col gap-3', className)} {...domPassthrough(rest)}>
       <Box className="flex items-center gap-2">
         {PIPELINE.map((key, index) => {
           const isComplete = index < currentIndex;
@@ -76,7 +79,11 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({
           return (
             <React.Fragment key={key}>
               {index > 0 ? <Box className="h-px w-4 bg-border" /> : null}
-              <Box className="flex items-center gap-1" data-testid={`import-progress-step-${key}`}>
+              <Box
+                className="flex items-center gap-1"
+                data-testid={`import-progress-step-${key}`}
+                aria-current={isActive ? 'step' : undefined}
+              >
                 <Icon
                   icon={isComplete ? 'check' : isActive ? 'loader' : 'circle'}
                   size="sm"

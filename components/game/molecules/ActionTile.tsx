@@ -9,6 +9,8 @@
  * @packageDocumentation
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React, { useCallback } from 'react';
 import { Box, Typography } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
@@ -16,7 +18,7 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../core/organisms/types';
 import type { SlotItemData } from './TraitSlot';
 
-export interface ActionTileProps extends DisplayStateProps {
+export interface ActionTileProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** The action data */
     action: SlotItemData;
     /** Size variant */
@@ -41,6 +43,7 @@ export function ActionTile({
     disabled = false,
     categoryColors,
     className,
+    ...rest
 }: ActionTileProps): React.JSX.Element {
     useTranslate(); // imported for i18n readiness — all visible text is data-driven
     const config = SIZE_CONFIG[size];
@@ -57,6 +60,7 @@ export function ActionTile({
 
     return (
         <Box
+            {...domPassthrough(rest)}
             display="flex"
             className={cn(
                 'flex-col items-center gap-1 rounded-container border-heavy transition-all select-none',

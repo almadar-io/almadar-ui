@@ -17,7 +17,7 @@
  * session with the cursor in the text.
  */
 import React, { useState } from 'react';
-import type { EventKey, EventEmit } from '@almadar/core';
+import type { EventKey, EventEmit, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -33,6 +33,7 @@ import type { IconInput } from '../atoms/index';
 import { Menu } from './Menu';
 import { RichTextEditor } from './RichTextEditor';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface DocumentPanelAction {
   label: string;
   event?: EventKey;
@@ -47,7 +48,7 @@ export interface DocumentPanelAction {
  *
  * @capabilities document page, note editor, wiki page, article editor, writing surface, rich text document, content editing canvas
  */
-export interface DocumentPanelProps {
+export interface DocumentPanelProps extends A11yProps {
   /** The record's id — carried on every commit and action event. */
   id?: string;
   /** Document title (falls back to "Untitled" for a blank draft) */
@@ -110,6 +111,7 @@ export function DocumentPanel({
   autosaveHint,
   placeholder,
   className,
+  ...rest
 }: DocumentPanelProps): React.ReactElement {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -193,7 +195,7 @@ export function DocumentPanel({
   };
 
   return (
-    <Card variant="elevated" className={cn('w-full overflow-hidden', className)}>
+    <Card {...domPassthrough(rest)} variant="elevated" className={cn('w-full overflow-hidden', className)}>
       {/* Cover banner: full-bleed above the header row, never between the
           title and the words. Object-cover so any aspect ratio reads as a
           deliberate hero, not a stretched thumbnail. */}

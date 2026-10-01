@@ -11,7 +11,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography.
  */
 import React, { useMemo } from 'react';
-import type { EntityRow, EventEmit, FieldValue } from '@almadar/core';
+import type { EntityRow, EventEmit, FieldValue, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -25,6 +25,7 @@ import { badgeVariantFor } from "../../../lib/displayField";
 import type { BadgeColor } from "../atoms/types";
 import type { BadgeVariant } from "../atoms/Badge";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /** A dependency between two task ids: `to` cannot start before `from` ends. */
 export interface GanttLink {
   /** Id of the predecessor task row */
@@ -57,7 +58,7 @@ const BAR_CLASS: Record<BadgeVariant, string> = {
  * @capabilities gantt chart, project timeline, schedule view, task bars, dependency arrows, roadmap, milestone plan
  * @fieldsContract display
  */
-export interface GanttProps {
+export interface GanttProps extends A11yProps {
   /**
    * Schema entity data — the task rows to place on the axis. pattern-sync tags
    * it `kind:"entity", cardinality:"collection"` so consumers bind the domain
@@ -142,6 +143,7 @@ export function Gantt({
   className,
   isLoading = false,
   error = null,
+  ...rest
 }: GanttProps): React.JSX.Element {
   const { t } = useTranslate();
 
@@ -235,12 +237,12 @@ export function Gantt({
   }, [axisStart, axisEnd, dayWidth]);
 
   if (isLoading) {
-    return <LoadingState message={t('common.loading')} className={className} />;
+    return <LoadingState {...domPassthrough(rest)} message={t('common.loading')} className={className} />;
   }
 
   if (error) {
     return (
-      <Box className={cn('p-4', className)}>
+      <Box {...domPassthrough(rest)} className={cn('p-4', className)}>
         <Typography variant="body" color="error">
           {error.message}
         </Typography>
@@ -251,6 +253,7 @@ export function Gantt({
   if (placed.length === 0) {
     return (
       <EmptyState
+        {...domPassthrough(rest)}
         title={t('empty.noData')}
         className={className}
       />
@@ -259,6 +262,7 @@ export function Gantt({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn('w-full overflow-auto rounded-container border border-border bg-card', className)}
     >
       <Box className="relative" style={{ width: LABEL_WIDTH + chartWidth, minWidth: '100%' }}>

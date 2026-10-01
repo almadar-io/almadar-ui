@@ -7,6 +7,7 @@
  * events out. Follows atomic design: composes Box, Icon, Typography atoms.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useRef } from 'react';
 import { Box } from '../../atoms/Box';
 import { Icon } from '../../atoms/Icon';
@@ -14,6 +15,7 @@ import type { IconInput } from '../../atoms/index';
 import { Typography } from '../../atoms/Typography';
 import { cn } from '../../../../lib/cn';
 
+import { domPassthrough } from '../../../../lib/domPassthrough';
 export interface ImportSourceOption {
   /** Source identifier passed to onSelect */
   id: string;
@@ -33,7 +35,7 @@ export interface ImportSourceOption {
   disabled?: boolean;
 }
 
-export interface ImportSourcePickerProps {
+export interface ImportSourcePickerProps extends A11yProps {
   /** Source options to render */
   sources: ImportSourceOption[];
   /** Called with the source id when an 'action' option is picked */
@@ -55,6 +57,7 @@ export const ImportSourcePicker: React.FC<ImportSourcePickerProps> = ({
   title,
   moreSources,
   className,
+  ...rest
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -78,7 +81,7 @@ export const ImportSourcePicker: React.FC<ImportSourcePickerProps> = ({
   };
 
   return (
-    <Box className={cn('flex flex-col gap-2', className)}>
+    <Box {...domPassthrough(rest)} className={cn('flex flex-col gap-2', className)}>
       {title ? <Typography variant="h4">{title}</Typography> : null}
       {sources.map((source) => (
         <Box

@@ -1,8 +1,10 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import React from 'react';
 
-export interface SvgNodeProps {
+export interface SvgNodeProps extends A11yProps {
   x?: number;
   y?: number;
   r?: number;
@@ -29,9 +31,11 @@ export const SvgNode: React.FC<SvgNodeProps> = ({
   asRoot = true,
   width = 100,
   height = 100,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   const inner = (
-    <g className={className} opacity={opacity}>
+    <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
       {variant === 'pulse' && (
         <circle
           cx={x}
@@ -69,7 +73,7 @@ export const SvgNode: React.FC<SvgNodeProps> = ({
 
   if (asRoot) {
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...a11y}>
         {inner}
       </svg>
     );

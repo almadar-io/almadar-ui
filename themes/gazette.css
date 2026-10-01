@@ -5,8 +5,8 @@
  */
 
 [data-theme="gazette-light"] {
-    --color-primary: #a85436;
-    --color-primary-hover: #8c4329;
+    --color-primary: #1f3a5a;
+    --color-primary-hover: #172c45;
     --color-primary-foreground: #fdfbf6;
     --color-secondary: #5c7a4d;
     --color-secondary-hover: #4f6c41;
@@ -22,7 +22,7 @@
     --color-surface: #f8f3e8;
     --color-border: #e6dccb;
     --color-input: #e6dccb;
-    --color-ring: #a85436;
+    --color-ring: #1f3a5a;
     --color-error: #b3402c;
     --color-error-foreground: #fdfbf6;
     --color-success: #5a7a4b;
@@ -31,6 +31,7 @@
     --color-warning-foreground: #1a1614;
     --color-info: #4a6b8a;
     --color-info-foreground: #fdfbf6;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 0px;
     --radius-md: 0px;
@@ -58,7 +59,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 3px;
-    --focus-ring-color: #a85436;
+    --focus-ring-color: #1f3a5a;
     --shadow-main: none;
     --shadow-sm: none;
     --shadow-lg: none;
@@ -180,8 +181,8 @@
 }
 
 [data-theme="gazette-dark"] {
-    --color-primary: #c0664a;
-    --color-primary-hover: #d57a5d;
+    --color-primary: #8fb0d0;
+    --color-primary-hover: #a5c0db;
     --color-primary-foreground: #14110d;
     --color-secondary: #8aac76;
     --color-secondary-hover: #9dbf89;
@@ -197,7 +198,7 @@
     --color-surface: #1a1612;
     --color-border: #2e2620;
     --color-input: #2e2620;
-    --color-ring: #c0664a;
+    --color-ring: #8fb0d0;
     --color-error: #d96650;
     --color-error-foreground: #14110d;
     --color-success: #8aac76;
@@ -206,6 +207,7 @@
     --color-warning-foreground: #14110d;
     --color-info: #7a9ec0;
     --color-info-foreground: #14110d;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 0px;
     --radius-md: 0px;
@@ -233,7 +235,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 3px;
-    --focus-ring-color: #c0664a;
+    --focus-ring-color: #8fb0d0;
     --shadow-main: none;
     --shadow-sm: none;
     --shadow-lg: none;

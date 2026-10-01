@@ -11,6 +11,8 @@ import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { Box } from '../atoms/Box';
 import type { IconInput } from '../atoms/index';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import type { UiError } from '../atoms/types';
 
@@ -61,7 +63,7 @@ export interface NavigationItem {
   subMenu?: NavigationItem[];
 }
 
-export interface NavigationProps {
+export interface NavigationProps extends A11yProps {
   /**
    * Navigation items
    */
@@ -90,6 +92,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   items,
   orientation = 'horizontal',
   className,
+  ...rest
 }) => {
   const renderNavigationItem = (item: NavigationItem, hasSubMenu: boolean) => {
     if (hasSubMenu) {
@@ -111,6 +114,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               size="sm"
               icon={item.icon}
               disabled={item.disabled}
+              aria-current={item.isActive ? 'page' : undefined}
             >
               {item.label}
               {item.badge !== undefined && (
@@ -134,6 +138,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         icon={item.icon}
         onClick={item.onClick}
         disabled={item.disabled}
+        aria-current={item.isActive ? 'page' : undefined}
         className="relative"
       >
         {item.label}
@@ -149,12 +154,12 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <Box
       as="nav"
+      {...domPassthrough(rest)}
       className={cn(
         'flex',
         orientation === 'horizontal' ? 'flex-row items-center gap-1' : 'flex-col gap-1',
         className
       )}
-      role="navigation"
     >
       {items.map((item) => {
         const hasSubMenu = !!(item.subMenu && item.subMenu.length > 0);

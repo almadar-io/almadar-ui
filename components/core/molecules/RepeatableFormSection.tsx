@@ -13,7 +13,7 @@
  */
 
 import React, { useCallback } from "react";
-import type { EventPayload, JsonValue } from "@almadar/core";
+import type { EventPayload, JsonValue, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Box } from "../atoms/Box";
 import { VStack, HStack } from "../atoms/Stack";
@@ -24,6 +24,7 @@ import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type RepeatableItem = {
   id: string;
   /** State in which this item was added (for audit trails). Optional — only
@@ -43,7 +44,7 @@ export type RepeatableItem = {
  *
  * @capabilities dynamic line items, repeatable field group, add/remove entry rows, multi-entry form block
  */
-export interface RepeatableFormSectionProps {
+export interface RepeatableFormSectionProps extends A11yProps {
   /** Section type identifier */
   sectionType: string;
   /** Section title */
@@ -100,6 +101,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
   trackAddedInState = false,
   currentState,
   showAuditInfo = false,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t, locale } = useTranslate();
@@ -149,7 +151,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
   );
 
   return (
-    <VStack gap="md" className={cn("w-full", className)}>
+    <VStack {...domPassthrough(rest)} gap="md" className={cn("w-full", className)}>
       {/* Header */}
       <HStack justify="between" align="center">
         <HStack gap="sm" align="center">

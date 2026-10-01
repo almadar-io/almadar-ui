@@ -8,7 +8,7 @@
  * Uses useSwipeGesture for gesture detection and useEventBus for event emission.
  */
 import React, { useCallback, useRef, useState } from 'react';
-import type { EntityRow, EventKey, EventPayload } from "@almadar/core";
+import type { EntityRow, EventKey, EventPayload, A11yProps } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useRowActions } from '../../../hooks/useRowActions';
@@ -20,6 +20,7 @@ import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
 import type { ButtonVariant } from '../atoms/Button';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface SwipeAction {
   label: string;
   icon?: IconInput;
@@ -32,7 +33,7 @@ export interface SwipeAction {
   when?: RowActionCondition;
 }
 
-export interface SwipeableRowProps {
+export interface SwipeableRowProps extends A11yProps {
   leftActions?: SwipeAction[];
   rightActions?: SwipeAction[];
   threshold?: number;
@@ -58,6 +59,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
   children,
   itemData,
   className,
+  ...rest
 }) => {
   const eventBus = useSafeEventBus();
   const rowActions = useRowActions();
@@ -209,6 +211,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       overflow="hidden"
       position="relative"
       className={cn(

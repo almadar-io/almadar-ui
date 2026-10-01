@@ -9,13 +9,15 @@
  * - entityAware: false
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useState } from 'react';
 import { PauseCircle } from 'lucide-react';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 
-export interface ReflectionBlockProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface ReflectionBlockProps extends A11yProps {
   /** The reflection prompt */
   prompt: string;
   /** Zero-based index of this block (used in the emitted event payload) */
@@ -34,6 +36,7 @@ export const ReflectionBlock: React.FC<ReflectionBlockProps> = ({
   savedNote,
   saveEvent = 'SAVE_REFLECTION',
   className,
+  ...rest
 }) => {
   const [note, setNote] = useState(savedNote ?? '');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -47,6 +50,7 @@ export const ReflectionBlock: React.FC<ReflectionBlockProps> = ({
 
   return (
     <div
+      {...domPassthrough(rest)}
       className={cn(
         'my-6 border-l-heavy border-warning bg-warning/10 rounded-r-container p-4',
         className,

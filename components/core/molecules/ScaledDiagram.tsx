@@ -13,12 +13,14 @@
  * - entityAware: false
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Box } from '../atoms/Box';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 
-export interface ScaledDiagramProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface ScaledDiagramProps extends A11yProps {
   children: React.ReactNode;
   className?: string;
 }
@@ -29,6 +31,7 @@ const MIN_DIAGRAM_WIDTH = 200;
 export const ScaledDiagram: React.FC<ScaledDiagramProps> = ({
   children,
   className,
+  ...rest
 }) => {
   const { t: _t } = useTranslate();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -114,6 +117,7 @@ export const ScaledDiagram: React.FC<ScaledDiagramProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       ref={wrapperRef}
       className={cn('w-full', className)}
       style={{

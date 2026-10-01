@@ -1,3 +1,4 @@
+import type { A11yProps } from '@almadar/core';
 import React from "react";
 import { Icon } from "./Icon";
 import { cn } from "../../../lib/cn";
@@ -6,7 +7,7 @@ import { useTranslate } from "../../../hooks/useTranslate";
 export type TrendDirection = "up" | "down" | "flat";
 export type TrendIndicatorSize = "sm" | "md" | "lg";
 
-export interface TrendIndicatorProps extends React.HTMLAttributes<HTMLSpanElement> {
+export interface TrendIndicatorProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** Numeric value to display (e.g., 12.5 for +12.5%) */

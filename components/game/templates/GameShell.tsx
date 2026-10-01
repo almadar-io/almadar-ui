@@ -8,7 +8,8 @@
  */
 
 import React from "react";
-import type { Asset } from "@almadar/core";
+import type { A11yProps, Asset } from "@almadar/core";
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from "../../../lib/cn";
 import { resolveGameFontFamily } from "../../../lib/gameFonts";
 import { Box } from "../../core/atoms/Box";
@@ -17,7 +18,7 @@ import { Typography } from "../../core/atoms/Typography";
 import { AtlasPanel } from "../../core/atoms/AtlasImage";
 import { useTranslate } from "../../../hooks/useTranslate";
 
-export interface GameShellProps {
+export interface GameShellProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Application / game title shown as a floating chip */
     appName?: string;
     /** Stat chips row — floats along the top edge. Legacy chrome surface: new behaviors emit HUD chrome via `render-ui "hud-top"` instead. */
@@ -56,12 +57,14 @@ export const GameShell: React.FC<GameShellProps> = ({
     backgroundAsset,
     fontFamily,
     "data-theme": dataTheme,
+    ...rest
 }) => {
     const { t } = useTranslate();
     const appName = appNameProp ?? t('gameShell.defaultName');
     const displayFont = resolveGameFontFamily(fontFamily);
     return (
         <Box
+            {...domPassthrough(rest)}
             data-theme={dataTheme || undefined}
             className={cn("game-shell", className)}
             style={{

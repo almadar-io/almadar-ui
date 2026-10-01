@@ -6,15 +6,17 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import type { A11yProps } from '@almadar/core';
+import React, { useState, useRef, useEffect, useLayoutEffect, useId } from 'react';
 import { Typography } from '../atoms/Typography';
 import { cn } from '../../../lib/cn';
 import { useTapReveal } from '../../../hooks/useTapReveal';
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
 
-export interface TooltipProps {
+export interface TooltipProps extends A11yProps {
   /** Tooltip content */
   content: React.ReactNode;
   /** Tooltip trigger element (ReactElement or ReactNode that will be wrapped in span) */
@@ -39,6 +41,7 @@ interface TriggerProps {
   onFocus?: (e: React.FocusEvent) => void;
   onBlur?: (e: React.FocusEvent) => void;
   onPointerDown?: (e: React.PointerEvent) => void;
+  'aria-describedby'?: string;
 }
 
 // Arrow colors use CSS variables
@@ -94,7 +97,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
   hideDelay = 0,
   showArrow = true,
   className,
+  ...rest
 }) => {
+  const tooltipId = useId();
   const [isVisible, setIsVisible] = useState(false);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
   const triggerRef = useRef<HTMLElement>(null);
@@ -142,6 +147,17 @@ export const Tooltip: React.FC<TooltipProps> = ({
   }, [isVisible]);
 
   useEffect(() => {
+    if (!isVisible) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
+      setIsVisible(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isVisible]);
+
+  useEffect(() => {
     return () => {
       if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
@@ -161,6 +177,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
   };
   const trigger = React.cloneElement(child, {
     ref: setTriggerRef,
+    'aria-describedby': isVisible
+      ? [child.props['aria-describedby'], tooltipId].filter(Boolean).join(' ')
+      : child.props['aria-describedby'],
     onMouseEnter: (e: React.MouseEvent) => { child.props.onMouseEnter?.(e); handleMouseEnter(); },
     onMouseLeave: (e: React.MouseEvent) => { child.props.onMouseLeave?.(e); handleMouseLeave(); },
     onFocus: (e: React.FocusEvent) => { child.props.onFocus?.(e); handleMouseEnter(); },
@@ -174,6 +193,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const tooltipContent = isVisible && triggerRect ? (
     <div
       ref={tooltipRef}
+      {...domPassthrough(rest)}
+      id={tooltipId}
       className={cn(
         'fixed z-50 px-3 py-2 max-w-xs',
         'bg-primary text-primary-foreground',

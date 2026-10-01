@@ -7,6 +7,8 @@
  */
 
 import React, { useCallback } from 'react';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -15,7 +17,7 @@ import { Box, HStack } from '../atoms/index';
 export type DotState = 'active' | 'complete' | 'pending';
 export type DotSize = 'sm' | 'md' | 'lg';
 
-export interface ProgressDotsProps {
+export interface ProgressDotsProps extends A11yProps {
   /** Total number of dots */
   count: number;
   /** Current active index (0-based) */
@@ -49,6 +51,7 @@ export const ProgressDots: React.FC<ProgressDotsProps> = ({
   onDotClick,
   className,
   size = 'md',
+  ...rest
 }) => {
   const { t } = useTranslate();
   const defaultGetState = useCallback(
@@ -63,7 +66,7 @@ export const ProgressDots: React.FC<ProgressDotsProps> = ({
   const dims = sizeMap[size];
 
   return (
-    <HStack gap="xs" align="center" className={cn(className)}>
+    <HStack gap="xs" align="center" className={cn(className)} {...domPassthrough(rest)}>
       {Array.from({ length: count }, (_, index) => {
         const state = resolveState(index);
         const isActive = state === 'active';
@@ -78,6 +81,7 @@ export const ProgressDots: React.FC<ProgressDotsProps> = ({
             )}
             style={onDotClick ? { minWidth: 24, minHeight: 24 } : undefined}
             {...pressableProps(onDotClick ? () => onDotClick(index) : undefined)}
+            aria-current={isActive ? 'step' : undefined}
             aria-label={onDotClick ? t('wizard.stepOf', { current: String(index + 1), total: String(count) }) : undefined}
           >
             <Box

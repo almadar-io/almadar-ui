@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import type { EventKey, EventEmit } from "@almadar/core";
+import type { EventKey, EventEmit, A11yProps } from "@almadar/core";
 import { Icon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/index";
 import { Typography } from "../atoms/Typography";
@@ -18,6 +18,7 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useNavStack } from "../../../providers/NavStackContext";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface BreadcrumbItem {
   /**
    * Item label
@@ -53,7 +54,7 @@ export interface BreadcrumbItem {
   event?: EventKey;
 }
 
-export interface BreadcrumbProps {
+export interface BreadcrumbProps extends A11yProps {
   /**
    * Breadcrumb items. Omit together with `fromNavStack` to render the
    * orbital-scoped navigation stack instead of an authored trail.
@@ -99,6 +100,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   separator = "chevron-right",
   maxItems,
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -144,7 +146,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   );
 
   return (
-    <Box as="nav" aria-label={t('aria.breadcrumb')} className={cn("min-w-0", className)}>
+    <Box {...domPassthrough(rest)} as="nav" aria-label={rest['aria-label'] ?? t('aria.breadcrumb')} className={cn("min-w-0", className)}>
       <Box as="ol" className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
         {crumbs.map((crumb, position) => {
           const isLast = position === crumbs.length - 1;

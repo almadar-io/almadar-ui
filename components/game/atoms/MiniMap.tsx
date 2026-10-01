@@ -1,9 +1,11 @@
 'use client';
 import * as React from 'react';
-import type { Asset } from '@almadar/core';
+import type { A11yProps, Asset } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import type { Rect } from '../../core/atoms/types';
+import { domPassthrough } from '../../../lib/domPassthrough';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface MiniMapTile {
   x: number;
@@ -18,7 +20,7 @@ export interface MiniMapUnit {
   isPlayer?: boolean;
 }
 
-export interface MiniMapProps {
+export interface MiniMapProps extends A11yProps {
   /** Tile data: each tile renders as a 1px dot at (x,y) with the given color */
   tiles?: MiniMapTile[];
   /** Unit positions: each unit renders as a 2px dot */
@@ -67,7 +69,9 @@ export function MiniMap({
   className,
   tileAssets,
   unitAssets,
+  ...rest
 }: MiniMapProps) {
+  const { t } = useTranslate();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   // Cache loaded Image objects so we don't reload on every frame.
@@ -168,6 +172,9 @@ export function MiniMap({
           height={height}
           className="block"
           style={{ width, height }}
+          role="img"
+          aria-label={t('aria.minimap')}
+          {...domPassthrough(rest)}
         />
         {playerLeft !== null && playerTop !== null && (
           <Box

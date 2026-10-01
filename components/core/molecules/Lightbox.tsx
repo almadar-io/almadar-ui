@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import type { AssetUrl } from "@almadar/core";
+import type { AssetUrl, A11yProps } from "@almadar/core";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
@@ -11,6 +11,7 @@ import { useTranslate } from "../../../hooks/useTranslate";
 import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 function useSafeEventBus() {
   try {
     return useEventBus();
@@ -25,7 +26,7 @@ export interface LightboxImage {
   caption?: string;
 }
 
-export interface LightboxProps {
+export interface LightboxProps extends A11yProps {
   /** Array of images to display */
   images: LightboxImage[];
   /** Current image index */
@@ -53,6 +54,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
   onClose,
   onIndexChange,
   className,
+  ...rest
 }) => {
   const safeImages = Array.isArray(images) ? images : [];
   const [index, setIndex] = useState(currentIndex);
@@ -137,6 +139,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
     <ThemedPortal>
       <Box
         ref={dialogRef}
+        {...domPassthrough(rest)}
         className={cn(
           "fixed inset-0 z-[1000] flex items-center justify-center",
           // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: lightbox scrim behind images
@@ -147,7 +150,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
         role="dialog"
         data-pattern="lightbox"
         aria-modal="true"
-        aria-label={currentImage?.alt || t("aria.imageViewer")}
+        aria-label={rest['aria-label'] ?? (currentImage?.alt || t("aria.imageViewer"))}
       >
         <Button
           variant="ghost"

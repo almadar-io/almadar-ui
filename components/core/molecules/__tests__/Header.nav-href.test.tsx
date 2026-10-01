@@ -24,7 +24,7 @@ function mount(items: React.ComponentProps<typeof Header>['navigationItems'], na
 describe('Header navigation items with an href', () => {
   it('an in-app path navigates through the nav stack', () => {
     const navigate = mount([{ label: 'Pricing', href: '/pricing' }]);
-    fireEvent.click(screen.getByRole('button', { name: /pricing/i }));
+    fireEvent.click(screen.getByRole('link', { name: /pricing/i }));
     expect(navigate).toHaveBeenCalledWith('/pricing');
   });
 
@@ -35,7 +35,7 @@ describe('Header navigation items with an href', () => {
     target.scrollIntoView = scroll;
     document.body.appendChild(target);
     const navigate = mount([{ label: 'Product', href: '#product' }]);
-    fireEvent.click(screen.getByRole('button', { name: /product/i }));
+    fireEvent.click(screen.getByRole('link', { name: /product/i }));
     expect(scroll).toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
     target.remove();
@@ -60,6 +60,6 @@ describe('Header navigation items with an href', () => {
 
   it('control: an item without children has no dropdown', () => {
     mount([{ label: 'Pricing', href: '/pricing' }]);
-    expect(screen.getByRole('button', { name: /pricing/i }).getAttribute('aria-expanded')).toBeNull();
+    expect(screen.getByRole('link', { name: /pricing/i }).getAttribute('aria-expanded')).toBeNull();
   });
 });

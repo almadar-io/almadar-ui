@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { A11yProps, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { pressableProps } from "../../../lib/pressable";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -17,7 +17,7 @@ export type FilterPillVariant =
   | "neutral";
 export type FilterPillSize = "sm" | "md" | "lg";
 
-export interface FilterPillProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick"> {
+export interface FilterPillProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick" | keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   variant?: FilterPillVariant;
@@ -95,6 +95,7 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
       clickEvent,
       removeEvent,
       children,
+      'aria-pressed': ariaPressed,
       ...props
     },
     ref,
@@ -119,6 +120,8 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
         ? <Icon name={icon} className={iconSizes[size]} />
         : icon ? <Icon icon={icon} className={iconSizes[size]} /> : null;
 
+    const pressable = onClick || clickEvent ? handleClick : undefined;
+
     return (
       <span
         ref={ref}
@@ -126,14 +129,18 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
           "inline-flex items-center gap-1 font-bold rounded-pill",
           variantStyles[variant],
           sizeStyles[size],
-          (onClick || clickEvent) && "cursor-pointer",
           className,
         )}
-        {...pressableProps<HTMLSpanElement>(onClick || clickEvent ? handleClick : undefined)}
         {...props}
       >
-        {resolvedIcon}
-        <span>{children ?? label}</span>
+        <span
+          className={cn("inline-flex items-center gap-1", pressable && "cursor-pointer")}
+          {...pressableProps<HTMLSpanElement>(pressable)}
+          aria-pressed={pressable ? ariaPressed : undefined}
+        >
+          {resolvedIcon}
+          <span>{children ?? label}</span>
+        </span>
         {removable && (onRemove || removeEvent) && (
           <button
             type="button"

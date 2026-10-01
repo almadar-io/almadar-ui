@@ -25,7 +25,9 @@
 import React, { createContext, useContext, useState } from "react";
 import { Box } from "../../atoms/Box";
 import { HStack, VStack } from "../../atoms/Stack";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
+import { domPassthrough, type DomPassthrough } from "../../../../lib/domPassthrough";
 import { SplitPane } from "./SplitPane";
 import { IconButton } from "../../molecules/IconButton";
 import { useTranslate } from "../../../../hooks/useTranslate";
@@ -95,7 +97,7 @@ const PanelToggle: React.FC<{ region: Region; collapsed: boolean; onToggle: () =
   );
 };
 
-export interface DockLayoutProps {
+export interface DockLayoutProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Fixed-width far-left vertical strip (e.g. an icon nav rail). */
   rail?: React.ReactNode;
   /** Collapsible, resizable left sidebar. */
@@ -196,7 +198,9 @@ export const DockLayout: React.FC<DockLayoutProps> = ({
   bottomPanelClassName,
   statusBarClassName,
   secondarySidebarClassName,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   const narrow = useCompactLayout();
   const compact = compactProp ?? narrow;
   if (compact) {
@@ -216,6 +220,7 @@ export const DockLayout: React.FC<DockLayoutProps> = ({
         className={className}
         mainClassName={mainClassName}
         statusBarClassName={statusBarClassName}
+        a11y={a11y}
       />
     );
   }
@@ -225,18 +230,18 @@ export const DockLayout: React.FC<DockLayoutProps> = ({
         sidebarCollapsedProp, onSidebarCollapsedChange, sidebarWidth, onSidebarWidthChange, sidebarMinSize,
         bottomPanelCollapsedProp, onBottomPanelCollapsedChange, bottomPanelHeight, onBottomPanelHeightChange, bottomPanelMinSize,
         secondarySidebarCollapsedProp, onSecondarySidebarCollapsedChange,
-        className, railClassName, sidebarClassName, mainClassName, bottomPanelClassName, statusBarClassName, secondarySidebarClassName }}
+        className, railClassName, sidebarClassName, mainClassName, bottomPanelClassName, statusBarClassName, secondarySidebarClassName, a11y }}
     />
   );
 };
 
 type CompactDockProps = Pick<DockLayoutProps, "rail" | "sidebar" | "main" | "bottomPanel" | "statusBar" | "secondarySidebar"
-  | "secondarySidebarLabel" | "secondarySidebarIcon" | "bottomPanelLabel" | "bottomPanelIcon" | "topBarActions" | "className" | "mainClassName" | "statusBarClassName">;
+  | "secondarySidebarLabel" | "secondarySidebarIcon" | "bottomPanelLabel" | "bottomPanelIcon" | "topBarActions" | "className" | "mainClassName" | "statusBarClassName"> & { a11y?: DomPassthrough };
 
 const CompactDock: React.FC<CompactDockProps> = ({
   rail, sidebar, main, bottomPanel, statusBar, secondarySidebar,
   secondarySidebarLabel, secondarySidebarIcon, bottomPanelLabel, bottomPanelIcon, topBarActions,
-  className, mainClassName, statusBarClassName,
+  className, mainClassName, statusBarClassName, a11y,
 }) => {
   const { t } = useTranslate();
   const [open, setOpen] = useState<"left" | "secondary" | "bottom" | null>(null);
@@ -262,7 +267,7 @@ const CompactDock: React.FC<CompactDockProps> = ({
 
   return (
     <DockLayoutContext.Provider value={context}>
-      <VStack gap="none" className={cn("w-full h-full overflow-hidden", className)}>
+      <VStack gap="none" {...a11y} className={cn("w-full h-full overflow-hidden", className)}>
         {(rail || sidebar || secondarySidebar || bottomPanel || topBarActions) && (
           <Box className="flex flex-shrink-0 items-center gap-1 px-2 py-1 border-b border-border bg-surface" data-testid="dock-top-bar">
             {(rail || sidebar) && (
@@ -306,6 +311,7 @@ interface DesktopDockProps extends Omit<DockLayoutProps, "sidebarCollapsed" | "b
   sidebarCollapsedProp?: boolean;
   bottomPanelCollapsedProp?: boolean;
   secondarySidebarCollapsedProp?: boolean;
+  a11y?: DomPassthrough;
 }
 
 const DesktopDock: React.FC<DesktopDockProps> = ({
@@ -314,7 +320,7 @@ const DesktopDock: React.FC<DesktopDockProps> = ({
   sidebarCollapsedProp, onSidebarCollapsedChange, sidebarWidth = 20, onSidebarWidthChange, sidebarMinSize = 160,
   bottomPanelCollapsedProp, onBottomPanelCollapsedChange, bottomPanelHeight = 30, onBottomPanelHeightChange, bottomPanelMinSize = 120,
   secondarySidebarCollapsedProp, onSecondarySidebarCollapsedChange,
-  className, railClassName, sidebarClassName, mainClassName, bottomPanelClassName, statusBarClassName, secondarySidebarClassName,
+  className, railClassName, sidebarClassName, mainClassName, bottomPanelClassName, statusBarClassName, secondarySidebarClassName, a11y,
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useCollapsed(sidebarCollapsedProp, onSidebarCollapsedChange);
   const [bottomPanelCollapsed, setBottomPanelCollapsed] = useCollapsed(bottomPanelCollapsedProp, onBottomPanelCollapsedChange);
@@ -429,7 +435,7 @@ const DesktopDock: React.FC<DesktopDockProps> = ({
 
   return (
     <DockLayoutContext.Provider value={DESKTOP_CONTEXT}>
-    <VStack gap="none" className={cn("w-full h-full overflow-hidden", className)}>
+    <VStack gap="none" {...a11y} className={cn("w-full h-full overflow-hidden", className)}>
       {bodyPlusBottom}
       {statusBar && (
         <Box

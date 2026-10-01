@@ -1,6 +1,7 @@
 'use client';
 import React from "react";
 import { LOADING_STATE_MARKER } from "@almadar/core";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Box } from "../atoms/Box";
 import { Spinner } from "../atoms/index";
@@ -8,7 +9,8 @@ import { VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { useTranslate } from "../../../hooks/useTranslate";
 
-export interface LoadingStateProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface LoadingStateProps extends A11yProps {
   title?: string;
   message?: string;
   className?: string;
@@ -21,11 +23,12 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   message,
   className,
   fullPage = false,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const displayMessage = message ?? t('common.loading');
   return (
-    <Box className="contents" {...{ [LOADING_STATE_MARKER]: "" }}>
+    <Box {...domPassthrough(rest)} className="contents" {...{ [LOADING_STATE_MARKER]: "" }}>
       <VStack
         align="center"
         className={cn(

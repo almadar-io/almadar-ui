@@ -5,10 +5,12 @@
  * Use DateRangePicker when the user needs to enter an arbitrary from/to range.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Button, HStack } from '../atoms/index';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface DateRangeSelectorOption {
   label: string;
   value: string;
@@ -21,7 +23,7 @@ const DEFAULT_OPTIONS: DateRangeSelectorOption[] = [
   { label: '1Y', value: 'year' },
 ];
 
-export interface DateRangeSelectorProps {
+export interface DateRangeSelectorProps extends A11yProps {
   /** Available range options */
   options?: DateRangeSelectorOption[];
   /** Currently selected value */
@@ -37,9 +39,10 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
   selected = 'month',
   onSelect,
   className,
+  ...rest
 }) => {
   return (
-    <HStack gap="xs" className={cn(className)}>
+    <HStack {...domPassthrough(rest)} gap="xs" className={cn(className)}>
       {options.map((option) => (
         <Button
           key={option.value}

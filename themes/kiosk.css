@@ -5,13 +5,13 @@
  */
 
 [data-theme="kiosk-light"] {
-    --color-primary: #dc2626;
-    --color-primary-hover: #b91c1c;
+    --color-primary: #0b57d0;
+    --color-primary-hover: #0946ab;
     --color-primary-foreground: #ffffff;
-    --color-secondary: #fff1ef;
-    --color-secondary-hover: #ffe1dd;
+    --color-secondary: #eef2f7;
+    --color-secondary-hover: #e1e7f0;
     --color-secondary-foreground: #1a1a1a;
-    --color-accent: #0f766e;
+    --color-accent: #b45309;
     --color-accent-foreground: #ffffff;
     --color-muted: #f5f5f4;
     --color-muted-foreground: #595959;
@@ -19,10 +19,10 @@
     --color-foreground: #1a1a1a;
     --color-card: #ffffff;
     --color-card-foreground: #1a1a1a;
-    --color-surface: #fff8f6;
+    --color-surface: #f6f8fb;
     --color-border: #8a8a8a;
     --color-input: #d4d4d4;
-    --color-ring: #ff5a4f;
+    --color-ring: #0b57d0;
     --color-error: #b91c1c;
     --color-error-foreground: #ffffff;
     --color-success: #15803d;
@@ -31,6 +31,7 @@
     --color-warning-foreground: #1a1a1a;
     --color-info: #0369a1;
     --color-info-foreground: #ffffff;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 14px;
     --radius-md: 20px;
@@ -58,7 +59,7 @@
     --active-translate-y: 1px;
     --focus-ring-width: 3px;
     --focus-ring-offset: 3px;
-    --focus-ring-color: #ff5a4f;
+    --focus-ring-color: #0b57d0;
     --intent-heading-major-size: 28px;
     --intent-heading-major-weight: var(--font-weight-bold);
     --intent-heading-major-leading: 36px;
@@ -180,14 +181,14 @@
 }
 
 [data-theme="kiosk-dark"] {
-    --color-primary: #ff6b5e;
-    --color-primary-hover: #ff8478;
-    --color-primary-foreground: #1a0606;
+    --color-primary: #6ea0ff;
+    --color-primary-hover: #8bb3ff;
+    --color-primary-foreground: #06142e;
     --color-secondary: #1c2a44;
     --color-secondary-hover: #2a3a5c;
     --color-secondary-foreground: #ffffff;
-    --color-accent: #2ee0d4;
-    --color-accent-foreground: #06231f;
+    --color-accent: #f5a524;
+    --color-accent-foreground: #1a1206;
     --color-muted: #16243c;
     --color-muted-foreground: #b8c4d8;
     --color-background: #0a1428;
@@ -197,7 +198,7 @@
     --color-surface: #16243c;
     --color-border: rgba(255, 255, 255, 0.38);
     --color-input: rgba(255, 255, 255, 0.16);
-    --color-ring: #ff6b5e;
+    --color-ring: #6ea0ff;
     --color-error: #ff7a7a;
     --color-error-foreground: #1a0606;
     --color-success: #4ade80;
@@ -206,6 +207,7 @@
     --color-warning-foreground: #1a1106;
     --color-info: #38bdf8;
     --color-info-foreground: #062235;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 14px;
     --radius-md: 20px;
@@ -233,7 +235,7 @@
     --active-translate-y: 1px;
     --focus-ring-width: 3px;
     --focus-ring-offset: 3px;
-    --focus-ring-color: #ff6b5e;
+    --focus-ring-color: #6ea0ff;
     --intent-heading-major-size: 28px;
     --intent-heading-major-weight: var(--font-weight-bold);
     --intent-heading-major-leading: 36px;

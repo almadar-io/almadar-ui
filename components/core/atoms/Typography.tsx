@@ -5,6 +5,7 @@
  */
 
 import React from "react";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { formatValue } from "../../../lib/format";
 import { INLINE_TEXT_ATTR } from "../../../lib/inlineText";
@@ -32,7 +33,7 @@ export type TypographyVariant =
 /** `none` = no size override — the variant's baked size applies. */
 export type TypographySize = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
 
-export interface TypographyProps extends React.AriaAttributes {
+export interface TypographyProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Typography variant */
   variant?: TypographyVariant;
   /** Heading level (1-6) - alternative to variant for headings */
@@ -64,8 +65,6 @@ export interface TypographyProps extends React.AriaAttributes {
   className?: string;
   /** Inline style */
   style?: React.CSSProperties;
-  /** Accessibility role */
-  role?: string;
   /**
    * Value formatting applied to string/number/Date content — `none` (the
    * default) renders content as-is. Covers the raw-ISO-date class: a bound

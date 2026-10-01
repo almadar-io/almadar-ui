@@ -23,11 +23,12 @@ import {
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 import type { DisplayStateProps } from '../organisms/types';
-import type { OrbitalSchema, StateMachine, Trait } from '@almadar/core';
+import type { OrbitalSchema, StateMachine, Trait, A11yProps } from '@almadar/core';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 type OrbitalOrMachine = OrbitalSchema | StateMachine;
 
-export interface ContentRendererProps extends DisplayStateProps {
+export interface ContentRendererProps extends Omit<DisplayStateProps, keyof A11yProps>, A11yProps {
   /** Raw content string — auto-parsed into segments */
   content?: string;
   /** Pre-parsed segments (overrides content) */
@@ -41,6 +42,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
   segments: segmentsProp,
   direction,
   className,
+  ...rest
 }) => {
   const { t: _t } = useTranslate();
 
@@ -52,7 +54,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
   if (segments.length === 0) return null;
 
   return (
-    <VStack gap="md" className={cn('w-full', className)}>
+    <VStack {...domPassthrough(rest)} gap="md" className={cn('w-full', className)}>
       {segments.map((segment, i) => {
         const key = `seg-${i}`;
 

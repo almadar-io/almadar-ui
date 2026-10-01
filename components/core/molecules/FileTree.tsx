@@ -10,7 +10,10 @@
  * Follows atomic design: composes Box, Icon, Typography atoms.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
+import { pressableProps } from '../../../lib/pressable';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
@@ -53,7 +56,7 @@ export interface FileTreeItem {
   icon?: string;
 }
 
-export interface FileTreeProps {
+export interface FileTreeProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** The tree data (pre-nested). Ignored when `items` is provided. */
   tree?: FileTreeNode[];
   /** Flat node list, nested by `parentId` at render time — takes precedence
@@ -120,6 +123,105 @@ function fileIcon(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Keyboard model (WAI-ARIA APG tree: roving tabindex + arrow keys)
+// ---------------------------------------------------------------------------
+
+interface TreeNavValue {
+  activeKey: string | undefined;
+  setActive: (key: string) => void;
+}
+
+const TreeNavContext = createContext<TreeNavValue>({ activeKey: undefined, setActive: () => {} });
+
+function levelOf(el: HTMLElement): number {
+  return Number(el.getAttribute('aria-level') ?? '1');
+}
+
+interface RowKeyState {
+  expanded: boolean | undefined;
+  toggle: () => void;
+}
+
+function treeRowKeyDown(e: React.KeyboardEvent<HTMLElement>, state: RowKeyState): void {
+  if (e.target !== e.currentTarget) return;
+  const row = e.currentTarget;
+  const tree = row.closest<HTMLElement>('[role="tree"]');
+  if (!tree) return;
+  const rows = Array.from(tree.querySelectorAll<HTMLElement>('[role="treeitem"]'));
+  const idx = rows.indexOf(row);
+  const focusRow = (target: HTMLElement | undefined) => {
+    if (!target) return;
+    e.preventDefault();
+    target.focus();
+  };
+  switch (e.key) {
+    case 'Enter':
+    case ' ':
+      e.preventDefault();
+      row.click();
+      return;
+    case 'ArrowDown':
+      focusRow(rows[idx + 1]);
+      return;
+    case 'ArrowUp':
+      focusRow(rows[idx - 1]);
+      return;
+    case 'Home':
+      focusRow(rows[0]);
+      return;
+    case 'End':
+      focusRow(rows[rows.length - 1]);
+      return;
+    case 'ArrowRight':
+      if (state.expanded === false) {
+        e.preventDefault();
+        state.toggle();
+      } else if (state.expanded === true) {
+        const next = rows[idx + 1];
+        if (next && levelOf(next) > levelOf(row)) focusRow(next);
+      }
+      return;
+    case 'ArrowLeft':
+      if (state.expanded === true) {
+        e.preventDefault();
+        state.toggle();
+      } else {
+        const level = levelOf(row);
+        focusRow(rows.slice(0, idx).reverse().find((r) => levelOf(r) < level));
+      }
+      return;
+    default:
+  }
+}
+
+function TreeRoot({
+  defaultKey,
+  className,
+  rest,
+  children,
+}: {
+  defaultKey: string | undefined;
+  className?: string;
+  rest: object;
+  children: React.ReactNode;
+}) {
+  const [active, setActive] = useState<string | undefined>(undefined);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (active === undefined) return;
+    if (!rootRef.current?.querySelector('[role="treeitem"][tabindex="0"]')) setActive(undefined);
+  });
+  const value = React.useMemo(() => ({ activeKey: active ?? defaultKey, setActive }), [active, defaultKey]);
+  return (
+    <TreeNavContext.Provider value={value}>
+      <Box ref={rootRef} className={`py-1 overflow-y-auto ${className ?? ''}`} {...domPassthrough(rest)} role="tree">
+        {children}
+      </Box>
+    </TreeNavContext.Provider>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // TreeNode (recursive)
 // ---------------------------------------------------------------------------
 
@@ -158,6 +260,16 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   }, [revealed, node.expandable, node.path, onNodeExpand]);
   const [expanded, setExpanded] = useState(isDir && (defaultExpanded || depth < 1));
   const isSelected = node.path === selectedPath;
+  const { t } = useTranslate();
+  const nav = useContext(TreeNavContext);
+
+  const toggleDerived = useCallback(() => {
+    if (!expanded && node.expandable === true && !askedRef.current) {
+      askedRef.current = true;
+      onNodeExpand?.(node.path);
+    }
+    setExpanded((prev) => !prev);
+  }, [expanded, node.expandable, node.path, onNodeExpand]);
 
   const handleClick = useCallback(() => {
     if (isDir) {
@@ -178,8 +290,16 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
         style={{ paddingLeft: depth * indent + 8 }}
         onClick={handleClick}
         role="treeitem"
+        tabIndex={nav.activeKey === node.path ? 0 : -1}
+        aria-level={depth + 1}
         aria-selected={isSelected}
-        aria-expanded={isDir ? expanded : undefined}
+        aria-expanded={isDir || hasDerived ? expanded : undefined}
+        onFocus={() => nav.setActive(node.path)}
+        onKeyDown={(e: React.KeyboardEvent<HTMLElement>) =>
+          treeRowKeyDown(e, {
+            expanded: isDir || hasDerived ? expanded : undefined,
+            toggle: isDir ? () => setExpanded((prev) => !prev) : toggleDerived,
+          })}
       >
         {isDir ? (
           <Icon
@@ -189,18 +309,15 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           />
         ) : hasDerived ? (
           <Box
-            role="button"
+            {...pressableProps((e: React.MouseEvent) => {
+              e.stopPropagation();
+              toggleDerived();
+            })}
+            tabIndex={-1}
             aria-expanded={expanded}
+            aria-label={expanded ? t('fileTree.collapse') : t('fileTree.expand')}
             data-testid={`file-tree-toggle-${node.path}`}
             className="flex-shrink-0 flex items-center"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              if (!expanded && node.expandable === true && !askedRef.current) {
-                askedRef.current = true;
-                onNodeExpand?.(node.path);
-              }
-              setExpanded((prev) => !prev);
-            }}
           >
             <Icon name={expanded ? 'chevron-down' : 'chevron-right'} size="xs" className="text-[var(--color-muted-foreground)]" />
           </Box>
@@ -314,6 +431,7 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
   const isSelected = selectedId !== undefined && selectedId !== '' && item.id === selectedId;
   const nav = look === 'nav';
   const rowRef = useRef<HTMLDivElement>(null);
+  const treeNav = useContext(TreeNavContext);
 
   const handleClick = useCallback(() => {
     if (hasChildren && !onNodeSelect) onToggle(item.id, expanded);
@@ -382,13 +500,21 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
         style={{ paddingLeft: depth * indent + 8 }}
         onClick={handleClick}
         role="treeitem"
+        tabIndex={treeNav.activeKey === item.id ? 0 : -1}
+        aria-level={depth + 1}
         aria-selected={isSelected}
         aria-expanded={hasChildren ? expanded : undefined}
+        onFocus={() => treeNav.setActive(item.id)}
+        onKeyDown={(e: React.KeyboardEvent<HTMLElement>) =>
+          treeRowKeyDown(e, {
+            expanded: hasChildren ? expanded : undefined,
+            toggle: () => onToggle(item.id, expanded),
+          })}
         {...dragProps}
         {...dropProps}
       >
         {hasChildren ? (
-          <Box onClick={handleChevron} className="flex items-center flex-shrink-0" role="button" aria-label={expanded ? t('fileTree.collapse') : t('fileTree.expand')}>
+          <Box {...pressableProps(handleChevron)} tabIndex={-1} className="flex items-center flex-shrink-0" aria-label={expanded ? t('fileTree.collapse') : t('fileTree.expand')}>
             <Icon
               name={expanded ? 'chevron-down' : 'chevron-right'}
               size="xs"
@@ -413,11 +539,11 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
         </Typography>
         {onNodeAction && (
           <Box
-            onClick={handleAction}
-            role="button"
+            {...pressableProps(handleAction)}
+            tabIndex={treeNav.activeKey === item.id ? 0 : -1}
             aria-label={nodeActionLabel ?? t('fileTree.nodeAction')}
             title={nodeActionLabel}
-            className={`ml-auto flex-shrink-0 rounded-interactive p-0.5 opacity-0 group-hover/treerow:opacity-100 transition-opacity ${
+            className={`ml-auto flex-shrink-0 rounded-interactive p-0.5 opacity-0 group-hover/treerow:opacity-100 group-focus-within/treerow:opacity-100 transition-opacity ${
               isSelected ? 'hover:bg-primary-foreground/20' : 'hover:bg-border'
             }`}
           >
@@ -479,6 +605,7 @@ const FlatFileTree: React.FC<Omit<FileTreeProps, 'tree' | 'selectedPath' | 'onFi
   onNodeReorder,
   className,
   indent = 16,
+  ...rest
 }) => {
   // Fold state: explicit per-node overrides on top of the derived default
   // (roots open, deeper closed, the selection's ancestors open). A changed
@@ -529,7 +656,7 @@ const FlatFileTree: React.FC<Omit<FileTreeProps, 'tree' | 'selectedPath' | 'onFi
   }
 
   return (
-    <Box className={`py-1 overflow-y-auto ${className ?? ''}`} role="tree">
+    <TreeRoot defaultKey={roots[0]?.id} className={className} rest={rest}>
       {roots.map(item => (
         <FlatTreeNodeItem
           key={item.id}
@@ -549,7 +676,7 @@ const FlatFileTree: React.FC<Omit<FileTreeProps, 'tree' | 'selectedPath' | 'onFi
           onToggle={onToggle}
         />
       ))}
-    </Box>
+    </TreeRoot>
   );
 };
 
@@ -569,10 +696,12 @@ export const FileTree: React.FC<FileTreeProps> = ({
   onNodeReorder,
   className,
   indent = 16,
+  ...rest
 }) => {
   if (items) {
     return (
       <FlatFileTree
+        {...rest}
         items={items}
         selectedId={selectedId}
         look={look}
@@ -593,7 +722,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
   if (!tree || tree.length === 0) return null;
 
   return (
-    <Box className={`py-1 overflow-y-auto ${className ?? ''}`} role="tree">
+    <TreeRoot defaultKey={tree[0]?.path} className={className} rest={rest}>
       {tree.map(node => (
         <TreeNodeItem
           key={node.path}
@@ -607,7 +736,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
           defaultExpanded
         />
       ))}
-    </Box>
+    </TreeRoot>
   );
 };
 

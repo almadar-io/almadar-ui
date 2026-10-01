@@ -12,7 +12,8 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
 import { resolveIcon } from "../atoms/Icon";
 import type { DisplayStateProps } from "./types";
-import type { EntityRow } from "@almadar/core";
+import type { A11yProps, EntityRow } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { formatValue } from "../../../lib/format";
 
 /**
@@ -36,7 +37,7 @@ export interface MetricDefinition {
   filter?: { field: string; equals: string | number | boolean };
 }
 
-export interface StatCardProps extends DisplayStateProps {
+export interface StatCardProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Entity data (single record or collection) used to compute metrics. */
   entity?: EntityRow | readonly EntityRow[];
   /** Main label */
@@ -102,6 +103,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   sparklineData,
   isLoading: externalLoading,
   error: externalError,
+  ...rest
 }) => {
   // Resolve icon: accept both LucideIcon components and string names
   const Icon = typeof iconProp === "string" ? resolveIcon(iconProp) ?? undefined : iconProp;
@@ -172,7 +174,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   if (schemaStats && schemaStats.length > 1) {
     if (isLoading) {
       return (
-        <Box className={cn("grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))]", className)}>
+        <Box {...domPassthrough(rest)} className={cn("grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))]", className)}>
           {schemaStats.map((_, idx) => (
             <Card key={idx} className="p-4">
               <VStack gap="xs" className="animate-pulse">
@@ -186,7 +188,7 @@ export const StatCard: React.FC<StatCardProps> = ({
     }
 
     return (
-      <Box className={cn("grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))]", className)}>
+      <Box {...domPassthrough(rest)} className={cn("grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))]", className)}>
         {schemaStats.map((stat, idx) => (
           <Card key={idx} className="p-4">
             <Typography variant="overline" color="secondary">
@@ -231,7 +233,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   // Show error state
   if (error) {
     return (
-      <Card className={cn("p-6", className)}>
+      <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
         <VStack gap="none" className="space-y-1">
           <Typography variant="overline" color="secondary">
             {label}
@@ -246,7 +248,7 @@ export const StatCard: React.FC<StatCardProps> = ({
 
   if (isLoading) {
     return (
-      <Card className={cn("p-6", className)}>
+      <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
         <VStack gap="sm" className="animate-pulse">
           <Box className="h-4 bg-muted rounded w-24" />
           <Box className="h-8 bg-muted rounded w-32" />
@@ -257,7 +259,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   }
 
   return (
-    <Card className={cn("p-6", className)}>
+    <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
       <HStack align="start" justify="between">
         <VStack gap="none" className="space-y-1">
           <Typography variant="overline" color="secondary">

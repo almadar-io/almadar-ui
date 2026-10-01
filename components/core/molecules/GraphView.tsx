@@ -13,6 +13,9 @@ import React, { useRef, useEffect, useState, useCallback, useMemo, useId } from 
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/index';
 import { useTranslate } from '../../../hooks/useTranslate';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
+import { pressableProps } from '../../../lib/pressable';
 import { computeStaticLayout, type GraphViewLayout } from '../../../lib/graphViewLayouts';
 import { THEME_SERIES } from '../../../lib/theme-color';
 
@@ -31,7 +34,7 @@ export interface GraphViewEdge {
   label?: string;
 }
 
-export interface GraphViewProps {
+export interface GraphViewProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Graph nodes */
   nodes: GraphViewNode[];
   /** Graph edges */
@@ -102,6 +105,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
   showLabels = true,
   zoomToFit = true,
   layout = 'force',
+  ...rest
 }) => {
   const { t } = useTranslate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -355,6 +359,8 @@ export const GraphView: React.FC<GraphViewProps> = ({
   return (
     <Box
       ref={containerRef}
+      role={onNodeClick ? 'group' : rest['aria-label'] ? 'img' : undefined}
+      {...domPassthrough(rest)}
       className={cn('relative overflow-hidden rounded-container border border-border bg-card', className)}
       style={{ width: propWidth ?? '100%', height: h }}
     >
@@ -430,7 +436,14 @@ export const GraphView: React.FC<GraphViewProps> = ({
               style={{ cursor: onNodeClick ? 'pointer' : 'default' }}
               onMouseEnter={() => handleNodeMouseEnter(node)}
               onMouseLeave={handleNodeMouseLeave}
-              onClick={() => handleNodeClickInternal(node)}
+              {...pressableProps<SVGGElement>(onNodeClick ? () => handleNodeClickInternal(node) : undefined)}
+              {...(onNodeClick
+                ? {
+                    'aria-label': node.group ? `${node.label ?? node.id}, ${node.group}` : (node.label ?? node.id),
+                    onFocus: () => handleNodeMouseEnter(node),
+                    onBlur: handleNodeMouseLeave,
+                  }
+                : undefined)}
               onPointerDown={(e) => handleNodePointerDown(e, node)}
             >
               <circle

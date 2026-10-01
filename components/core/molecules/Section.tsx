@@ -4,16 +4,18 @@
  * A semantic section wrapper with optional title, description, and action.
  * Perfect for grouping related content with consistent spacing.
  */
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
 import type { UiError } from '../atoms/types';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type SectionPadding = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 export type SectionVariant = 'default' | 'card' | 'bordered' | 'filled';
 
-export interface SectionProps {
+export interface SectionProps extends A11yProps {
   /** Section title */
   title?: string;
   /** Section subtitle/description */
@@ -81,6 +83,7 @@ export const Section: React.FC<SectionProps> = ({
   headerClassName,
   contentClassName,
   as: Component = 'section',
+  ...rest
 }) => {
   const hasHeader = title || description || action;
   // Polymorphic render via React.createElement — `as: React.ElementType`
@@ -88,6 +91,7 @@ export const Section: React.FC<SectionProps> = ({
   return React.createElement(
     Component,
     {
+      ...domPassthrough(rest),
       className: cn(
         paddingStyles[padding],
         variantStyles[variant],

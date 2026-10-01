@@ -16,6 +16,8 @@
  */
 
 import * as React from 'react';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { useCallback, useMemo } from 'react';
 import { Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
@@ -58,7 +60,7 @@ export interface AlgoGraphEdge {
   color?: string;
 }
 
-export interface AlgoGraphCanvasProps {
+export interface AlgoGraphCanvasProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   className?: string;
   width?: number;
   height?: number;
@@ -314,6 +316,7 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
   onNodeClick,
   isLoading,
   error,
+  ...rest
 }) => {
   const nodeById = useMemo(() => {
     const m = new Map<string, AlgoGraphNode>();
@@ -469,7 +472,7 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
   );
 
   return (
-    <Card className={className}>
+    <Card {...domPassthrough(rest)} className={className}>
       <VStack gap="sm">
         {title ? <Typography variant="h4">{title}</Typography> : null}
         <LearningCanvas

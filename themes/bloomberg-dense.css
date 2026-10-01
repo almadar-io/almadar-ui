@@ -5,8 +5,8 @@
  */
 
 [data-theme="bloomberg-dense-light"] {
-    --color-primary: #0e7490;
-    --color-primary-hover: #155e75;
+    --color-primary: #1e3a6e;
+    --color-primary-hover: #172e58;
     --color-primary-foreground: #ffffff;
     --color-secondary: #eef2f8;
     --color-secondary-hover: #e1e7f0;
@@ -22,7 +22,7 @@
     --color-surface: #eef2f8;
     --color-border: #d6deeb;
     --color-input: #c2cee0;
-    --color-ring: #0e7490;
+    --color-ring: #1e3a6e;
     --color-table-header: #eef2f8;
     --color-table-border: #d6deeb;
     --color-table-row-hover: #eef2f8;
@@ -37,6 +37,7 @@
     --color-warning-foreground: #ffffff;
     --color-info: #0e7490;
     --color-info-foreground: #ffffff;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 0px;
     --radius-md: 1px;
@@ -65,7 +66,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #0e7490;
+    --focus-ring-color: #1e3a6e;
     --shadow-main: none;
     --shadow-sm: none;
     --shadow-lg: none;
@@ -187,14 +188,14 @@
 }
 
 [data-theme="bloomberg-dense-dark"] {
-    --color-primary: #22d3ee;
-    --color-primary-hover: #67e8f9;
-    --color-primary-foreground: #06131a;
+    --color-primary: #f5a524;
+    --color-primary-hover: #f7b54a;
+    --color-primary-foreground: #1a1206;
     --color-secondary: #16233d;
     --color-secondary-hover: #1d2d4c;
     --color-secondary-foreground: #d6e0ef;
-    --color-accent: #fbbf24;
-    --color-accent-foreground: #1a1206;
+    --color-accent: #5ab0d8;
+    --color-accent-foreground: #06131a;
     --color-muted: #131f36;
     --color-muted-foreground: #8e9db8;
     --color-background: #0a0f1c;
@@ -204,7 +205,7 @@
     --color-surface: #131f36;
     --color-border: #20304e;
     --color-input: #2d4163;
-    --color-ring: #22d3ee;
+    --color-ring: #f5a524;
     --color-table-header: #131f36;
     --color-table-border: #20304e;
     --color-table-row-hover: #16233d;
@@ -219,6 +220,7 @@
     --color-warning-foreground: #1a1206;
     --color-info: #38bdf8;
     --color-info-foreground: #061318;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 0px;
     --radius-md: 1px;
@@ -247,7 +249,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #22d3ee;
+    --focus-ring-color: #f5a524;
     --shadow-main: none;
     --shadow-sm: none;
     --shadow-lg: none;

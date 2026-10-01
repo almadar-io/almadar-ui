@@ -5,6 +5,7 @@
  * an optional "navigate to field" action — use it in inspection/compliance forms only.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -13,6 +14,7 @@ import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
 import { Alert } from "./Alert";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type ViolationRecord = {
   /** Unique violation identifier */
   id: string;
@@ -34,7 +36,7 @@ export type ViolationRecord = {
   tabId?: string;
 };
 
-export interface ViolationAlertProps {
+export interface ViolationAlertProps extends A11yProps {
   /** Violation data */
   violation: ViolationRecord;
   /** Visual severity (derived from actionType if not specified) */
@@ -74,6 +76,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
   compact = false,
   className,
   message,
+  ...rest
 }) => {
   const { t } = useTranslate();
   // Support fallback message from playground render-ui
@@ -96,7 +99,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
 
   if (compact) {
     return (
-      <Alert variant={effectiveSeverity} icon={icon} title={citation} className={cn("px-3 py-2", className)} {...dismiss}>
+      <Alert {...domPassthrough(rest)} variant={effectiveSeverity} icon={icon} title={citation} className={cn("px-3 py-2", className)} {...dismiss}>
         {resolvedViolation.message}
       </Alert>
     );
@@ -106,6 +109,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
 
   return (
     <Alert
+      {...domPassthrough(rest)}
       variant={effectiveSeverity}
       icon={icon}
       title={citation}

@@ -26,14 +26,16 @@
 
 import * as React from 'react';
 import { Suspense, lazy, useId, useRef } from 'react';
-import type { Camera } from '@almadar/core';
+import type { A11yProps, Camera } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { createLogger } from '@almadar/logger';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import type { Canvas3DHostProps, CanvasLighting, CanvasPost } from '../../../lib/drawable/three/Canvas3DHost';
 import type { DrawMeshProps, MeshMaterial, MeshShapeKind } from '../../game/atoms/DrawMesh';
 import type { DrawTextProps } from '../../game/atoms/DrawText';
 import type { DrawGroupProps } from '../../game/atoms/DrawGroup';
-import { Card, Typography } from '../../core/atoms/index';
+import { Box, Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { useEventListener } from '../../../hooks/useEventBus';
 import type { UiError } from '../../core/atoms/types';
@@ -50,7 +52,9 @@ const Canvas3DHost = lazy(() =>
 /** A point in scene space: `[x, y, z]` — x/y the ground plane, z the height (cells). */
 export type Learning3DPoint = [number, number, number];
 
-export interface LearningScene3DProps {
+export interface LearningScene3DProps extends A11yProps {
+  /** Text alternative for the scene, rendered as visually hidden text and linked by aria-describedby. */
+  description?: string;
   className?: string;
   width?: number;
   height?: number;
@@ -92,7 +96,11 @@ export function LearningScene3D({
   isLoading,
   error,
   onItemClick,
+  description,
+  ...rest
 }: LearningScene3DProps): React.JSX.Element {
+  const { t } = useTranslate();
+  const descId = useId();
   const instanceId = useId().replace(/[^a-zA-Z0-9]/g, '');
   const clickEvent = onItemClick ? `LEARNING_SCENE_3D.ITEM_CLICK.${instanceId}` : undefined;
   const onItemClickRef = useRef(onItemClick);
@@ -133,11 +141,19 @@ export function LearningScene3D({
     <Card className={className}>
       <VStack gap="sm">
         {title ? <Typography variant="h4">{title}</Typography> : null}
-        <div style={{ width, height, display: 'flex' }}>
+        <Box
+          className="flex"
+          style={{ width, height }}
+          role="img"
+          aria-label={title ?? t('aria.scene3d')}
+          aria-describedby={description ? descId : undefined}
+          {...domPassthrough(rest)}
+        >
           <Suspense fallback={null}>
             <Canvas3DHost {...props3d} />
           </Suspense>
-        </div>
+        </Box>
+        {description ? <Box id={descId} className="sr-only">{description}</Box> : null}
       </VStack>
     </Card>
   );

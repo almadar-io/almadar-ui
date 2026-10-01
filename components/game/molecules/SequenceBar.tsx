@@ -9,14 +9,15 @@
  */
 
 import React, { useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { A11yProps, EventEmit } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { HStack, Typography } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { TraitSlot } from './TraitSlot';
 import type { SlotItemData } from './TraitSlot';
 
-export interface SequenceBarProps {
+export interface SequenceBarProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** The current sequence (sparse — undefined means empty slot) */
     slots: Array<SlotItemData | undefined>;
     /** Max number of slots */
@@ -56,6 +57,7 @@ export function SequenceBar({
     slotFeedback,
     size = 'lg',
     className,
+    ...rest
 }: SequenceBarProps): React.JSX.Element {
     const { emit } = useEventBus();
 
@@ -75,7 +77,7 @@ export function SequenceBar({
     const paddedSlots = Array.from({ length: maxSlots }, (_, i) => slots[i]);
 
     return (
-        <HStack className={cn('items-center', className)} gap="sm">
+        <HStack {...domPassthrough(rest)} className={cn('items-center', className)} gap="sm">
             {paddedSlots.map((slot, i) => (
                 <React.Fragment key={i}>
                     {i > 0 && (

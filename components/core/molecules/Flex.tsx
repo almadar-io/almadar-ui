@@ -4,16 +4,18 @@
  * Flex exposes direction, wrap, grow, shrink, basis individually; use it
  * when you need those extra axes or inline-flex behavior.
  */
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type FlexDirection = 'row' | 'row-reverse' | 'col' | 'col-reverse';
 export type FlexWrap = 'nowrap' | 'wrap' | 'wrap-reverse';
 export type FlexAlign = 'start' | 'center' | 'end' | 'stretch' | 'baseline';
 export type FlexJustify = 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
 export type FlexGap = 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
-export interface FlexProps {
+export interface FlexProps extends A11yProps {
   /** Flex direction */
   direction?: FlexDirection;
   /** Flex wrap */
@@ -96,6 +98,7 @@ export const Flex: React.FC<FlexProps> = ({
   className,
   children,
   as: Component = 'div',
+  ...rest
 }) => {
   // Build flex shorthand for grow/shrink/basis
   const flexStyle: React.CSSProperties = {};
@@ -110,6 +113,7 @@ export const Flex: React.FC<FlexProps> = ({
   }
 
   return React.createElement(Component, {
+    ...domPassthrough(rest),
     className: cn(
       inline ? 'inline-flex' : 'flex',
       directionStyles[direction],

@@ -12,7 +12,6 @@ export {
   type UISlot,
   type SlotContent,
   type SlotRenderConfig,
-  type SlotAnimation,
   type SlotChangeCallback,
 } from "../providers/UISlotContext";
 

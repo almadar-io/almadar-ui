@@ -16,8 +16,8 @@ import type { EmptyStateAction } from "../molecules/EmptyState";
 import { Icon, resolveIcon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
-import { useRowActions } from "../../../hooks/useRowActions";
-import type { RowActionCondition } from "../../../lib/row-action-when";
+import { useRowActions, useRowActionPayload, useRowActionFire } from "../../../hooks/useRowActions";
+import type { RowActionCondition, RowActionPayload, RowConditionalAction } from "../../../lib/row-action-when";
 import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
 import {
   ChevronUp,
@@ -28,7 +28,8 @@ import {
 } from "lucide-react";
 import { DisplayStateProps, EntityDisplayEvents } from "./types";
 import type { ItemActionPayload } from '@almadar/core/patterns';
-import type { EventEmit } from '@almadar/core';
+import type { A11yProps, EventEmit } from '@almadar/core';
+import { domPassthrough } from "../../../lib/domPassthrough";
 import type { EntityRow, FieldValue } from "@almadar/core";
 import { pressableProps, rowActivationProps } from "../../../lib/pressable";
 import type { DisplayFieldFormat } from "../atoms/types";
@@ -97,6 +98,8 @@ export interface RowAction<T> {
   event?: EventKey;
   /** Per-row condition, authored as `(fn row <bool>)`; composes with `show`. Omit = always shown. */
   when?: RowActionCondition;
+  /** Extra data the action sends, authored as `(fn row { key: <expr> })`; it emits `{ id, row }` plus these keys. */
+  payload?: RowActionPayload;
 }
 
 export type DataTableEmptyAction = EmptyStateAction;
@@ -105,7 +108,7 @@ export type DataTableEmptyAction = EmptyStateAction;
  * @fieldsContract display
  */
 export interface DataTableProps<T extends EntityRow & { id: string | number }>
-  extends DisplayStateProps {
+  extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Entity rows to display (collection cardinality). */
   entity?: readonly EntityRow[];
   /** Fields to display - accepts string[] or Column[] for unified interface. Alias for columns */
@@ -126,6 +129,8 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
     onClick?: (row: T) => void;
     /** Per-row condition, authored as `(fn row <bool>)`: the row's action is drawn only when it returns true. Omit = always shown. */
     when?: RowActionCondition;
+    /** Extra data the action sends, authored as `(fn row { key: <expr> })`; it emits `{ id, row }` plus these keys. */
+    payload?: RowActionPayload;
   }[];
   emptyIcon?: IconInput;
   emptyTitle?: string;
@@ -210,12 +215,15 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
   className,
   look = "dense",
   relationsData,
+  ...rest
 }: DataTableProps<T>) {
   const [openActionMenu, setOpenActionMenu] = useState<string | number | null>(
     null,
   );
   const eventBus = useEventBus();
   const viewerRowActions = useRowActions();
+  const actionPayload = useRowActionPayload();
+  const { fire: fireRowAction, isRowPending } = useRowActionFire<RowConditionalAction & { event?: string }>();
   const { t } = useTranslate();
   const fmt = useFormatContext();
 
@@ -246,7 +254,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
     return {
       ...action,
       onClick: (row: T) => {
-        eventBus.emit(`UI:${event}`, { row });
+        fireRowAction(action, row, String(row.id ?? ""));
       },
     };
   };
@@ -272,9 +280,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
             return;
           }
           if (action.event) {
-            eventBus.emit(`UI:${action.event}`, {
-              row,
-            });
+            fireRowAction(action, row, String(row.id ?? ""));
           }
         },
       })) as RowAction<T>[] | undefined)
@@ -375,6 +381,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         "bg-card border-heavy border-border rounded-none overflow-hidden",
         lookStyles[look],
@@ -555,7 +562,9 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                 <tr
                   key={row.id}
                   data-entity-row
-                  className={cn(
+
+ data-row-pending={isRowPending(String(row.id ?? "")) || undefined}
+ aria-busy={isRowPending(String(row.id ?? "")) || undefined}                  className={cn(
                     "border-b border-[var(--color-table-border)] last:border-0 hover:bg-[var(--color-table-row-hover)] transition-colors",
                     selectedIds.includes(row.id) &&
                       "bg-primary/10 font-medium",

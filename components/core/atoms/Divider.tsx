@@ -4,13 +4,15 @@
  * A divider component for separating content sections.
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from "react";
 import { cn } from "../../../lib/cn";
 
 export type DividerOrientation = "horizontal" | "vertical";
 export type DividerVariant = "solid" | "dashed" | "dotted";
 
-export interface DividerProps {
+export interface DividerProps extends A11yProps {
   /**
    * Orientation of the divider
    * @default 'horizontal'
@@ -45,6 +47,7 @@ export const Divider: React.FC<DividerProps> = ({
   label,
   variant = "solid",
   className,
+  ...rest
 }) => {
   if (orientation === "vertical") {
     return (
@@ -54,6 +57,7 @@ export const Divider: React.FC<DividerProps> = ({
           variantStyles[variant],
           className,
         )}
+        {...domPassthrough(rest)}
         role="separator"
         aria-orientation="vertical"
       />
@@ -64,8 +68,9 @@ export const Divider: React.FC<DividerProps> = ({
     return (
       <div
         className={cn("flex items-center gap-3 my-4", className)}
+        {...domPassthrough(rest)}
         role="separator"
-        aria-label={label}
+        aria-label={rest['aria-label'] ?? label}
       >
         <div
           className={cn(
@@ -93,6 +98,7 @@ export const Divider: React.FC<DividerProps> = ({
         variantStyles[variant],
         className,
       )}
+      {...domPassthrough(rest)}
       role="separator"
       aria-orientation="horizontal"
     />

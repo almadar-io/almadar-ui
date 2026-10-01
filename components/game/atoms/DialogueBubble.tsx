@@ -1,5 +1,6 @@
 import * as React from 'react';
-import type { Asset } from '@almadar/core';
+import type { A11yProps, Asset } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
@@ -20,7 +21,7 @@ const MOOD_RING_CLASS: Record<string, string> = {
   angry: 'border-error/70',
 };
 
-export interface DialogueBubbleProps {
+export interface DialogueBubbleProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Speaker name displayed at the top */
   speaker?: string;
   /** Dialogue text content */
@@ -49,6 +50,7 @@ export function DialogueBubble({
   mood = 'neutral',
   revealedChars,
   className,
+  ...rest
 }: DialogueBubbleProps) {
   const { t } = useTranslate();
   const speaker = speakerProp ?? t('dialogueBubble.defaultSpeaker');
@@ -57,6 +59,7 @@ export function DialogueBubble({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         'flex items-start gap-3 rounded-container bg-background/80 backdrop-blur-sm px-4 py-3 border border-border/10',
         position === 'top' ? 'rounded-bl-none' : 'rounded-tl-none',

@@ -5,14 +5,16 @@
  */
 
 import React from "react";
-import type { EventEmit } from "@almadar/core";
+import type { A11yProps, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { domPassthrough } from "../../../lib/domPassthrough";
 
+/** @accessibleName label */
 export interface RadioProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
-  "type" | "size"
-> {
+  "type" | "size" | keyof A11yProps
+>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** Radio options (string array or SelectOption array) */
@@ -71,6 +73,7 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
       action,
       name,
       onChange,
+      required,
       ...props
     },
     ref,
@@ -140,6 +143,9 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
       </div>
     );
 
+    const describedBy = (extra?: string): string | undefined =>
+      [extra, error ? `${baseId}-error` : helperText ? `${baseId}-helper` : undefined].filter(Boolean).join(" ") || undefined;
+
     const helper =
       helperText || error ? (
         <div className="mt-1.5 ml-8">
@@ -161,7 +167,15 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
       const groupName = name || baseId;
       return (
         <>
-          <div className="flex flex-col gap-3" role="radiogroup" aria-invalid={hasError}>
+          <div
+            {...domPassthrough(props)}
+            className="flex flex-col gap-3"
+            role="radiogroup"
+            aria-label={props["aria-label"] ?? (props["aria-labelledby"] ? undefined : label)}
+            aria-invalid={hasError}
+            aria-required={required ? true : undefined}
+            aria-describedby={describedBy(props["aria-describedby"])}
+          >
             {options.map((opt, i) => {
               const inputId = `${baseId}-${i}`;
               const isChecked = selected === opt;
@@ -178,6 +192,7 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
                       value={opt}
                       checked={isChecked}
                       disabled={disabled}
+                      required={required}
                       onChange={(e) => pick(opt, e)}
                       className={cn("sr-only peer", className)}
                     />,
@@ -209,9 +224,11 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
               disabled={disabled}
               onChange={(e) => pick(value ?? baseId, e)}
               className={cn("sr-only peer", className)}
-              aria-invalid={hasError}
-              aria-describedby={error ? `${baseId}-error` : helperText ? `${baseId}-helper` : undefined}
+              required={required}
               {...props}
+              aria-invalid={hasError}
+              aria-required={required ? true : undefined}
+              aria-describedby={describedBy(props["aria-describedby"])}
             />,
           )}
           {label && optionLabel(baseId, label)}

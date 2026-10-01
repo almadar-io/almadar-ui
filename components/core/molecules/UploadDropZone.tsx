@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
-import type { EventEmit, EventPayload } from "@almadar/core";
+import type { EventEmit, EventPayload, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/index";
@@ -9,6 +9,7 @@ import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 function useSafeEventBus() {
   try {
     return useEventBus();
@@ -17,7 +18,7 @@ function useSafeEventBus() {
   }
 }
 
-export interface UploadDropZoneProps {
+export interface UploadDropZoneProps extends A11yProps {
   /** Accepted MIME types (e.g., "image/*", "application/pdf") */
   accept?: string;
   /** Max file size in bytes */
@@ -62,6 +63,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
   actionPayload,
   onFiles,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const resolvedLabel = label ?? t("upload.dropOrBrowse");
@@ -196,6 +198,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
 
   return (
     <div
+      {...domPassthrough(rest)}
       className={cn(
         "relative flex flex-col items-center justify-center",
         "p-8 rounded-interactive",
@@ -222,7 +225,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
           handleClick();
         }
       }}
-      aria-label={resolvedLabel}
+      aria-label={rest['aria-label'] ?? resolvedLabel}
     >
       <input
         ref={inputRef}

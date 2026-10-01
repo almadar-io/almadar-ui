@@ -7,7 +7,7 @@
  * Composes DayCell and TimeSlotCell atoms into a 7-day grid.
  */
 import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
-import type { EventEmit, EventPayload, EntityRow, EntityWith } from "@almadar/core";
+import type { EventEmit, EventPayload, EntityRow, EntityWith, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { pressableProps } from "../../../lib/pressable";
 import { getNestedValue } from "../../../lib/getNestedValue";
@@ -22,6 +22,7 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useSwipeGesture } from "../../../hooks/useSwipeGesture";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /**
  * Number of day columns rendered at once. Matches the responsiveness-
  * audit tiers exactly: 1 day on mobile (≤640), 3 on tablet (641–1024),
@@ -38,7 +39,7 @@ export interface CalendarEventRow {
   color?: string;
 }
 
-export interface CalendarGridProps {
+export interface CalendarGridProps extends A11yProps {
   /** Start of the week (defaults to current week's Monday) */
   weekStart?: Date;
   /** Time slot labels (defaults to 09:00-17:00) */
@@ -293,6 +294,7 @@ export function CalendarGrid({
   colorField = 'color',
   children,
   renderItem,
+  ...rest
 }: CalendarGridProps): React.JSX.Element {
   const evs = Array.isArray(events) ? events : events ? [events] : [];
   const eventBus = useEventBus();
@@ -441,6 +443,7 @@ export function CalendarGrid({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={className}
       {...(swipeLeftEvent || swipeRightEvent ? {
         onPointerDown: swipe.onPointerDown,

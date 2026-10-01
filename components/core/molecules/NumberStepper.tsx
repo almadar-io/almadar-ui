@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef } from "react";
-import type { EventEmit, EventPayload } from "@almadar/core";
+import type { A11yProps, EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { domPassthrough } from "../../../lib/domPassthrough";
 
 function useSafeEventBus() {
   try {
@@ -17,7 +18,8 @@ function useSafeEventBus() {
 
 export type NumberStepperSize = "sm" | "md" | "lg";
 
-export interface NumberStepperProps {
+/** @accessibleName label */
+export interface NumberStepperProps extends A11yProps {
   /** Current value */
   value?: number;
   /** Minimum value */
@@ -77,6 +79,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
   actionPayload,
   className,
   label,
+  ...rest
 }) => {
   const eventBus = useSafeEventBus();
   const { t } = useTranslate();
@@ -140,6 +143,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
 
   return (
     <div
+      {...domPassthrough(rest)}
       className={cn(
         "inline-flex items-center",
         "rounded-interactive",
@@ -149,7 +153,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         className,
       )}
       role="group"
-      aria-label={label ?? t('numberStepper.ariaLabel')}
+      aria-label={rest["aria-label"] ?? label ?? t('numberStepper.ariaLabel')}
     >
       {/* Decrement button */}
       <button

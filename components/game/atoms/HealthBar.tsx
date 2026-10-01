@@ -1,11 +1,12 @@
 import * as React from 'react';
-import type { Asset } from '@almadar/core';
+import type { A11yProps, Asset } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 
 // Generic ratio/progress bar — covers health (hearts/bar/numeric) and XP/progress (progress format with optional level badge).
-export interface HealthBarProps {
+export interface HealthBarProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Current value */
   current: number;
   /** Maximum value */
@@ -62,13 +63,14 @@ export function HealthBar({
   animated = true,
   frameAsset,
   fillAsset,
+  ...rest
 }: HealthBarProps) {
   const sizes = sizeMap[size];
   const percentage = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
 
   if (format === 'hearts') {
     return (
-      <Box className={cn('flex items-center gap-1', className)}>
+      <Box {...domPassthrough(rest)} className={cn('flex items-center gap-1', className)}>
         {Array.from({ length: max }).map((_, i) => (
           <Box
             as="span"
@@ -85,6 +87,7 @@ export function HealthBar({
   if (format === 'bar') {
     return (
       <Box
+        {...domPassthrough(rest)}
         position="relative"
         overflow="hidden"
         className={cn(
@@ -114,7 +117,7 @@ export function HealthBar({
 
   if (format === 'progress') {
     return (
-      <Box className={cn('flex items-center gap-2', className)}>
+      <Box {...domPassthrough(rest)} className={cn('flex items-center gap-2', className)}>
         {level != null && (
           <Typography
             as="span"
@@ -162,7 +165,7 @@ export function HealthBar({
 
   // Numeric format
   return (
-    <Typography as="span" className={cn('font-mono font-bold', sizes.text, className)}>
+    <Typography as="span" {...domPassthrough(rest)} className={cn('font-mono font-bold', sizes.text, className)}>
       {current}/{max}
     </Typography>
   );

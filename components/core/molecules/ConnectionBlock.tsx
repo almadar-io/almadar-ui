@@ -10,6 +10,7 @@
  * - entityAware: false
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { Link2 } from 'lucide-react';
 import { MarkdownContent } from './markdown/MarkdownContent';
@@ -19,17 +20,18 @@ import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { useTranslate } from '../../../hooks/useTranslate';
 
-export interface ConnectionBlockProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface ConnectionBlockProps extends A11yProps {
   /** Markdown content summarising what the learner already knows */
   content: string;
   /** Additional CSS classes */
   className?: string;
 }
 
-export const ConnectionBlock: React.FC<ConnectionBlockProps> = ({ content, className }) => {
+export const ConnectionBlock: React.FC<ConnectionBlockProps> = ({ content, className, ...rest }) => {
   const { t } = useTranslate();
   return (
-    <Box className={cn('bg-success/10 border-s-heavy border-success rounded-e-container p-5 mb-6', className)}>
+    <Box {...domPassthrough(rest)} className={cn('bg-success/10 border-s-heavy border-success rounded-e-container p-5 mb-6', className)}>
       <HStack gap="sm" align="start">
         <Link2 className="text-success flex-shrink-0 mt-1" size={20} />
         <Box className="flex-1">

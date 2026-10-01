@@ -8,13 +8,14 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import type { EventPayloadValue, EventEmit } from "@almadar/core";
+import type { A11yProps, EventPayloadValue, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Card, Typography, Button, Badge, Icon, Box, Select } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { computeLineDiff } from "../../../lib/lineDiff";
+import { domPassthrough } from "../../../lib/domPassthrough";
 
 export interface DiffRevision {
     id: string;
@@ -46,7 +47,7 @@ export interface DiffHunk {
  *
  * @capabilities version diff, compare revisions, what changed, before and after, code diff, commit diff, revision comparison
  */
-export interface VersionDiffProps {
+export interface VersionDiffProps extends A11yProps {
     /**
      * All available revisions (at least 2). Accepts either a typed array (direct
      * consumers) or the runtime payload shape from a render-ui binding
@@ -158,6 +159,7 @@ const VersionDiffInner: React.FC<VersionDiffProps> = ({
     revertEvent,
     language,
     className,
+    ...rest
 }) => {
     const { t } = useTranslate();
     const eventBus = useEventBus();
@@ -304,7 +306,7 @@ const VersionDiffInner: React.FC<VersionDiffProps> = ({
     const isEmpty = hunks !== undefined && hunks.length === 0;
 
     return (
-        <Card className={cn("overflow-hidden", className)}>
+        <Card {...domPassthrough(rest)} className={cn("overflow-hidden", className)}>
             <VStack gap="none">
                 <HStack
                     gap="sm"

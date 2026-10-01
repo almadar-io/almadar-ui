@@ -14,11 +14,12 @@ import { AvlStateMachine } from '../../avl/molecules/AvlStateMachine';
 import { traitLevelFromTrait } from '../../../lib/avl-schema-parser';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
-import type { OrbitalSchema, Trait } from '@almadar/core';
+import type { OrbitalSchema, Trait, A11yProps } from '@almadar/core';
 import { isInlineTrait } from '@almadar/core';
 import type { UiError } from '../atoms/types';
 
-export interface JazariStateMachineProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface JazariStateMachineProps extends A11yProps {
   /** Additional CSS classes */
   className?: string;
   /** Loading state indicator */
@@ -66,6 +67,7 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   className,
   isLoading = false,
   error = null,
+  ...rest
 }) => {
   const { t } = useTranslate();
 
@@ -77,16 +79,16 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   }, [schema, traitProp, traitIndex, entity]);
 
   if (isLoading) {
-    return <LoadingState message={t('stateMachine.loading')} />;
+    return <LoadingState {...domPassthrough(rest)} message={t('stateMachine.loading')} />;
   }
 
   if (error) {
-    return <ErrorState message={error instanceof Error ? error.message : String(error)} />;
+    return <ErrorState {...domPassthrough(rest)} message={error instanceof Error ? error.message : String(error)} />;
   }
 
   if (!traitData || traitData.states.length === 0) {
     return (
-      <Box padding="lg" className={cn('text-center', className)}>
+      <Box {...domPassthrough(rest)} padding="lg" className={cn('text-center', className)}>
         <Typography variant="body" color="muted">
           {t('stateMachine.noStateMachine')}
         </Typography>
@@ -96,6 +98,7 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
 
   return (
     <AvlStateMachine
+      {...domPassthrough(rest)}
       trait={traitData}
       nodeShape="gear"
       direction={direction}

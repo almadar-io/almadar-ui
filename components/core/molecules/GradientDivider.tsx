@@ -6,11 +6,13 @@
  * Used between major sections for visual separation without hard background-color breaks.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
 import type { ColorToken } from '../atoms/types';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 const colorTokenVars: Record<ColorToken, string> = {
   primary: 'var(--color-primary)',
   secondary: 'var(--color-secondary)',
@@ -20,7 +22,7 @@ const colorTokenVars: Record<ColorToken, string> = {
   muted: 'var(--color-muted)',
 };
 
-export interface GradientDividerProps {
+export interface GradientDividerProps extends A11yProps {
   /** Semantic palette token or a raw CSS color value. Defaults to 'primary'. */
   color?: ColorToken | string;
   /** Additional class names */
@@ -30,6 +32,7 @@ export interface GradientDividerProps {
 export const GradientDivider: React.FC<GradientDividerProps> = ({
   color,
   className,
+  ...rest
 }) => {
   const centerColor = color
     ? (color in colorTokenVars
@@ -39,6 +42,7 @@ export const GradientDivider: React.FC<GradientDividerProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn('w-full h-px', className)}
       style={{
         background: `linear-gradient(to right, transparent, ${centerColor}, transparent)`,

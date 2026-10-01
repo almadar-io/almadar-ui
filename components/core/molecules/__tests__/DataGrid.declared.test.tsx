@@ -50,3 +50,27 @@ describe('DataGrid title', () => {
     expect(screen.getByText('Task One')).toBeInTheDocument();
   });
 });
+
+describe('DataGrid card body labels', () => {
+  const sheet = [{ id: '1', period: 'Week 12', hours: 13, billable: 85 }];
+
+  it('a body field without an icon shows its declared label beside the value', () => {
+    const fields: readonly DataGridField[] = [
+      { name: 'period', label: 'Period', variant: 'h4' },
+      { name: 'hours', label: 'Hours', format: 'number' },
+    ];
+    wrap(<DataGrid entity={sheet} fields={fields} />);
+    const label = screen.getByText('Hours:');
+    expect(label.className).not.toContain('sr-only');
+    expect(screen.getByText('13')).toBeTruthy();
+  });
+
+  it('control: a body field that declares an icon keeps its label screen-reader-only (the icon names it)', () => {
+    const fields: readonly DataGridField[] = [
+      { name: 'period', label: 'Period', variant: 'h4' },
+      { name: 'hours', label: 'Hours', format: 'number', icon: 'clock' },
+    ];
+    wrap(<DataGrid entity={sheet} fields={fields} />);
+    expect(screen.getByText('Hours:').className).toContain('sr-only');
+  });
+});

@@ -7,6 +7,7 @@
  *
  * Uses wireframe theme styling (high contrast, sharp edges).
  */
+import type { A11yProps } from '@almadar/core';
 import React from "react";
 import { AlertTriangle, Trash2, Check } from "lucide-react";
 import { Modal, type ModalSize } from "./Modal";
@@ -19,9 +20,10 @@ import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { UiError } from '../atoms/types';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type ConfirmDialogVariant = "danger" | "warning" | "info" | "default";
 
-export interface ConfirmDialogProps {
+export interface ConfirmDialogProps extends A11yProps {
   /** Whether the dialog is open (defaults to true when rendered by slot wrapper) */
   isOpen?: boolean;
   /** Callback when dialog is closed (injected by slot wrapper) */
@@ -103,6 +105,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   isLoading = false,
   error,
   className,
+  ...rest
 }) => {
   const config = variantConfig[variant];
   const { t } = useTranslate();
@@ -118,6 +121,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <Modal
+      {...domPassthrough(rest)}
       isOpen={isOpen}
       onExited={onExited}
       onClose={onClose}
@@ -134,7 +138,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <Button
             variant={config.confirmVariant}
             onClick={handleConfirm}
-            disabled={isLoading}
+            isLoading={isLoading}
           >
             {isLoading ? t('common.loading') : resolvedConfirmText}
           </Button>

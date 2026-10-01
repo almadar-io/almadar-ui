@@ -13,7 +13,8 @@
  */
 
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { A11yProps, EventKey } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Badge, Icon, Box, Button } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
@@ -69,7 +70,7 @@ export interface TimelineAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
-export interface TimelineProps {
+export interface TimelineProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Additional CSS classes */
     className?: string;
     /** Loading state indicator */
@@ -154,6 +155,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     error,
     className,
     look = "vertical-spacious",
+    ...rest
 }) => {
     const { t } = useTranslate();
     const fmt = useFormatContext();
@@ -176,31 +178,39 @@ export const Timeline: React.FC<TimelineProps> = ({
     }, [propItems, entityData, titleField, descriptionField, dateField, statusField]);
 
     if (isLoading) {
-        return <LoadingState message={t('common.loading')} className={className} />;
+        return (
+            <Box {...domPassthrough(rest)}>
+                <LoadingState message={t('common.loading')} className={className} />
+            </Box>
+        );
     }
 
     if (error) {
         return (
-            <ErrorState
-                title={t('display.timelineError')}
-                message={error.message}
-                className={className}
-            />
+            <Box {...domPassthrough(rest)}>
+                <ErrorState
+                    title={t('display.timelineError')}
+                    message={error.message}
+                    className={className}
+                />
+            </Box>
         );
     }
 
     if (items.length === 0) {
         return (
-            <EmptyState
-                title={t('display.noEvents')}
-                description={t('display.noTimelineEvents')}
-                className={className}
-            />
+            <Box {...domPassthrough(rest)}>
+                <EmptyState
+                    title={t('display.noEvents')}
+                    description={t('display.noTimelineEvents')}
+                    className={className}
+                />
+            </Box>
         );
     }
 
     return (
-        <Card className={cn("p-6", className)}>
+        <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
             <VStack gap="md">
                 {title && (
                     <Typography variant="h5">

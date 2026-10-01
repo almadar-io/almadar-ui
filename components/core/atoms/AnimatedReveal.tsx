@@ -1,5 +1,6 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { cn } from '../../../lib/cn';
 
@@ -14,7 +15,7 @@ export type RevealAnimation =
   | 'scale-up'
   | 'none';
 
-export interface AnimatedRevealProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface AnimatedRevealProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children' | keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** What triggers the animation */

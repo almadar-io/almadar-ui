@@ -8,9 +8,11 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import type { AssetUrl, EventEmit, JsonObject } from '@almadar/core';
+import type { A11yProps, AssetUrl, EventEmit, JsonObject } from '@almadar/core';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../../lib/cn';
+import { pressableProps } from '../../../lib/pressable';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useSwipeGesture } from '../../../hooks/useSwipeGesture';
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -37,7 +39,7 @@ export interface CarouselItem {
   image?: AssetUrl;
 }
 
-export interface CarouselProps<T = CarouselItem> {
+export interface CarouselProps<T = CarouselItem> extends A11yProps {
   /** Array of items to display as slides */
   items: T[];
   /** Render function for each slide. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field. */
@@ -76,6 +78,7 @@ export const Carousel = <T = CarouselItem,>({
   slideChangeEvent,
   slideChangePayload,
   className,
+  ...rest
 }: CarouselProps<T>): React.ReactElement | null => {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -195,7 +198,7 @@ export const Carousel = <T = CarouselItem,>({
   if (totalSlides === 0) return null;
 
   return (
-    <Box position="relative" overflow="hidden" className={cn('w-full', className)}>
+    <Box position="relative" overflow="hidden" {...domPassthrough(rest)} className={cn('w-full', className)}>
       {/* Slide track */}
       <Box
         ref={scrollRef}
@@ -289,7 +292,7 @@ export const Carousel = <T = CarouselItem,>({
           position="absolute"
           className="bottom-3 left-0 right-0 z-10"
         >
-          <HStack gap="xs" align="center" justify="center">
+          <HStack gap="xs" align="center" justify="center" role="tablist" aria-label={t('aria.carouselSlides')}>
             {safeItems.map((_, index) => {
               const isActive = index === activeIndex;
               return (
@@ -306,8 +309,10 @@ export const Carousel = <T = CarouselItem,>({
                       : 'var(--color-muted, #d4d4d8)',
                     opacity: isActive ? 1 : 0.6,
                   }}
-                  onClick={() => goToSlide(index)}
-                  role="button"
+                  {...pressableProps(() => goToSlide(index))}
+                  role="tab"
+                  aria-selected={isActive}
+                  tabIndex={isActive ? 0 : -1}
                   aria-label={t('carousel.goToSlide', { number: index + 1 })}
                 />
               );

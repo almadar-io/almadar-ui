@@ -8,6 +8,7 @@
  * Composed from: Box, HStack, VStack, Input, Button, Spinner, Typography atoms
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, {
   useState,
   useId,
@@ -33,6 +34,7 @@ import {
 } from "../../../lib/debug";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 // Helper to check if specific debug category is enabled
 const isRelationsDebugEnabled = () => isDebugEnabled();
 
@@ -65,7 +67,7 @@ export interface RelationOption {
   disabled?: boolean;
 }
 
-export interface RelationSelectProps {
+export interface RelationSelectProps extends A11yProps {
   /** Current value (ID) */
   value?: string;
   /** Callback when value changes */
@@ -108,6 +110,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
   className,
   searchPlaceholder,
   emptyMessage,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const resolvedPlaceholder = placeholder ?? t('relationSelect.selectPlaceholder');
@@ -249,7 +252,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
   const optionId = (index: number) => `${listboxId}-option-${index}`;
 
   return (
-    <Box ref={containerRef} className={cn("relative", className)}>
+    <Box {...domPassthrough(rest)} ref={containerRef} className={cn("relative", className)}>
       {/* Hidden input for form submission */}
       <Input type="hidden" name={name} value={value || ""} />
 

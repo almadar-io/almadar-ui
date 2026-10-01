@@ -10,15 +10,16 @@
  * for pagination, filtering, or search. All state is owned by the trait state machine.
  */
 import React from 'react';
-import type { EventKey, EventPayload, EventEmit, FieldValue } from "@almadar/core";
+import type { A11yProps, EventKey, EventPayload, EventEmit, FieldValue } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatValue } from '../../../lib/format';
 import { normalizeDisplayFields, badgeVariantFor, titleFieldOf } from '../../../lib/displayField';
 import { getNestedValue, resolveImageUrl } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { useRowActions } from '../../../hooks/useRowActions';
-import type { RowActionCondition } from '../../../lib/row-action-when';
+import { useRowActions, useRowActionPayload, useRowActionFire } from '../../../hooks/useRowActions';
+import type { RowActionCondition, RowActionPayload } from '../../../lib/row-action-when';
 import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
 import { Button } from '../atoms/index';
 import { Badge } from '../atoms/Badge';
@@ -50,12 +51,14 @@ export interface CardItemAction {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | string;
   /** Per-row condition, authored as `(fn row <bool>)`: the card's button is drawn only when it returns true. Omit = always shown. */
   when?: RowActionCondition;
+  /** Extra data the action sends, authored as `(fn row { key: <expr> })`; it emits `{ id, row }` plus these keys. */
+  payload?: RowActionPayload;
 }
 
 /** A field is a plain name or a declared {@link DisplayField}. */
 export type FieldDef = string | DisplayField;
 
-export interface CardGridProps extends DisplayStateProps {
+export interface CardGridProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Entity data (single record or collection). */
   entity?: EntityRow | readonly EntityRow[];
   /** Minimum width of each card (default: 280px) */
@@ -135,9 +138,12 @@ export const CardGrid: React.FC<CardGridProps> = ({
   itemClickEvent,
   showTotal = true,
   imageField,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const rowActions = useRowActions();
+  const actionPayload = useRowActionPayload();
+  const { fire: fireRowAction, isRowPending } = useRowActionFire<CardItemAction>();
   const { t } = useTranslate();
   const fmt = useFormatContext();
 
@@ -164,7 +170,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   const bodyFields = effectiveFields.filter((f) => f !== titleField && f.variant !== 'badge');
 
   // Handle action click - navigate, dispatch event, or call callback
-  const handleActionClick = (action: CardItemAction, itemData: EventPayload) => (e: React.MouseEvent) => {
+  const handleActionClick = (action: CardItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
     e.stopPropagation();
 
     if (action.navigatesTo) {
@@ -177,11 +183,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     }
 
     if (action.event) {
-      const payload: ItemActionPayload = {
-        id: itemData.id as string | number,
-        row: itemData as ItemActionPayload['row'],
-      };
-      eventBus.emit(`UI:${action.event}`, payload);
+      fireRowAction(action, itemData, String(itemData.id ?? ""));
     }
     if (action.onClick) {
       action.onClick(itemData);
@@ -235,7 +237,9 @@ export const CardGrid: React.FC<CardGridProps> = ({
         <Box
           key={id}
           data-entity-row
-          className={cn(
+
+ data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
+ aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}          className={cn(
             'bg-card rounded-container border border-border',
             'shadow-elevation-card hover:shadow-elevation-popover',
             itemClickEvent && 'cursor-pointer hover:border-primary',
@@ -290,7 +294,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                       key={actionIdx}
                       variant="ghost"
                       size="sm"
-                      onClick={handleActionClick(action, itemData)}
+                      onClick={handleActionClick(action, item)}
                       data-testid={action.event ? `action-${action.event}` : undefined}
                       data-row-id={String(itemData.id)}
                       className="text-foreground hover:bg-error/10 px-2"
@@ -353,7 +357,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                     key={actionIdx}
                     variant={action.variant === 'primary' ? 'primary' : 'ghost'}
                     size="sm"
-                    onClick={handleActionClick(action, itemData)}
+                    onClick={handleActionClick(action, item)}
                     data-testid={action.event ? `action-${action.event}` : undefined}
                     data-row-id={String(itemData.id)}
                   >
@@ -369,7 +373,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   };
 
   return (
-    <VStack gap="md">
+    <VStack gap="md" {...domPassthrough(rest)}>
       <Box
         className={cn(
           'grid',

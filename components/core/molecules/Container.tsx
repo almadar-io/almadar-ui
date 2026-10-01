@@ -4,13 +4,15 @@
  * Container constrains page width and centers; use it at the layout level,
  * not as a generic div replacement.
  */
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type ContainerSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
 export type ContainerPadding = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 
-export interface ContainerProps {
+export interface ContainerProps extends A11yProps {
   /** Maximum width */
   size?: ContainerSize;
   /** Alias for size (pattern compatibility) */
@@ -58,12 +60,14 @@ export const Container: React.FC<ContainerProps> = ({
   className,
   children,
   as: Component = 'div',
+  ...rest
 }) => {
   // Use maxWidth if provided, otherwise fall back to size, then default to 'lg'
   const resolvedSize = maxWidth ?? size ?? 'lg';
   return React.createElement(
     Component,
     {
+      ...domPassthrough(rest),
       className: cn(
         'w-full',
         sizeStyles[resolvedSize],

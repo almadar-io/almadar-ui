@@ -14,10 +14,10 @@
 import React from 'react';
 import { DataTable, type DataTableProps } from './DataTable';
 import type { DisplayStateProps } from './types';
-import type { EntityRow } from '@almadar/core';
+import type { A11yProps, EntityRow } from '@almadar/core';
 import { useTranslate } from '../../../hooks/useTranslate';
 
-export interface MasterDetailProps<T extends EntityRow & { id: string | number } = EntityRow & { id: string | number }> extends DisplayStateProps {
+export interface MasterDetailProps<T extends EntityRow & { id: string | number } = EntityRow & { id: string | number }> extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Entity rows to display in the master list (collection cardinality). */
   entity?: readonly EntityRow[];
   /** Fields to show in the master list (maps to DataTable columns) */

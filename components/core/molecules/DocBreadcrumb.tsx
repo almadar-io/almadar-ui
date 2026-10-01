@@ -6,6 +6,7 @@
  * Composes from HStack, Typography, and Icon atoms.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
@@ -14,6 +15,7 @@ import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
 import { useTranslate } from '../../../hooks/useTranslate';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface DocBreadcrumbItem {
   /** Display label */
   label: string;
@@ -21,7 +23,7 @@ export interface DocBreadcrumbItem {
   href?: string;
 }
 
-export interface DocBreadcrumbProps {
+export interface DocBreadcrumbProps extends A11yProps {
   /** Breadcrumb path items, last item is treated as current page */
   items: DocBreadcrumbItem[];
   /** Additional CSS classes */
@@ -31,13 +33,15 @@ export interface DocBreadcrumbProps {
 export const DocBreadcrumb: React.FC<DocBreadcrumbProps> = ({
   items,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn('w-full', className)}
       role="navigation"
-      aria-label={t('aria.breadcrumb')}
+      aria-label={rest['aria-label'] ?? t('aria.breadcrumb')}
     >
       <HStack gap="xs" align="center" wrap>
         {items.map((item, idx) => {

@@ -213,9 +213,15 @@ export function WalkMinimap(): React.ReactElement | null {
                 key={trait.name}
                 variant={variant}
                 size="sm"
+                aria-current={isActive ? 'step' : undefined}
                 className={`flex-shrink-0 text-[9px] ${isActive ? 'ring-1 ring-info' : ''}`}
               >
-                {isDone ? '\u2713' : isActive ? '\u25CF' : '\u25CB'} {shortName || trait.name}
+                <Typography variant="caption" aria-hidden="true" as="span">
+                  {isDone ? '\u2713' : isActive ? '\u25CF' : '\u25CB'}
+                </Typography>{' '}
+                {shortName || trait.name}
+                {isDone && <Typography variant="caption" as="span" className="sr-only">{t('aria.walkTraitDone')}</Typography>}
+                {!isDone && !isActive && <Typography variant="caption" as="span" className="sr-only">{t('aria.walkTraitPending')}</Typography>}
               </Badge>
             );
           })}
@@ -225,7 +231,13 @@ export function WalkMinimap(): React.ReactElement | null {
       {/* Layer 2: State graph SVG */}
       <Box className="flex-1 flex items-center justify-center px-1 py-1">
         {activeTrait && (
-          <svg width={graphW} height={graphH} viewBox={`0 0 ${graphW} ${graphH}`}>
+          <svg
+            width={graphW}
+            height={graphH}
+            viewBox={`0 0 ${graphW} ${graphH}`}
+            role="img"
+            aria-label={t('aria.walkGraph', { trait: activeTrait.name, from: walkStep.from, to: walkStep.to })}
+          >
             <defs>
               <marker id="mm-arrow" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
                 <path d="M0,0 L6,2 L0,4" fill="#888" />

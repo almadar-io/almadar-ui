@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useCallback } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { A11yProps, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Box } from "../atoms/Box";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { Button } from "../atoms/Button";
 import { Label } from "../atoms/Label";
 import { Radio } from "../atoms/Radio";
@@ -20,7 +21,7 @@ export interface LikertOption {
   label: string;
 }
 
-export interface LikertScaleProps {
+export interface LikertScaleProps extends A11yProps {
   /** Optional row prompt above the scale */
   question?: string;
   /** Scale points (defaults to a translated 5-point agree/disagree set) */
@@ -79,6 +80,7 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
       size = "md",
       variant = "radios",
       className,
+      ...rest
     },
     ref,
   ) => {
@@ -102,13 +104,14 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
     return (
       <Box
         ref={ref}
+        {...domPassthrough(rest)}
         className={cn(
           "w-full",
           disabled && "opacity-50 cursor-not-allowed",
           className,
         )}
         role="radiogroup"
-        aria-label={question ?? t("likert.ariaLabel")}
+        aria-label={rest['aria-label'] ?? question ?? t("likert.ariaLabel")}
       >
         {question && (
           <Box

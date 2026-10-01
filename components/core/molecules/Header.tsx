@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import type { AssetUrl } from "@almadar/core";
+import type { AssetUrl, A11yProps } from "@almadar/core";
 import { Menu, X } from "lucide-react";
 import { SearchInput } from "./SearchInput";
 import { Avatar } from "../atoms/Avatar";
@@ -24,6 +24,7 @@ import { useTranslate } from "../../../hooks/useTranslate";
 import { TopNavItem } from "./TopNavItem";
 import type { UiError } from '../atoms/types';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type HeaderLook =
   | "hero"
   | "compact-bar"
@@ -57,7 +58,7 @@ export interface HeaderUserAvatar {
   initials?: string;
 }
 
-export interface HeaderProps {
+export interface HeaderProps extends A11yProps {
   /**
    * Logo/Brand content
    */
@@ -187,6 +188,7 @@ export const Header: React.FC<HeaderProps> = ({
   look = "compact-bar",
   onLogoClick,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const resolvedSearchPlaceholder = searchPlaceholder ?? t('common.search');
@@ -197,6 +199,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       as="header"
       className={cn(
         "h-16 border-b border-border",

@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import type { ControlValue, EntityRow, EventEmit, EventKey, EventPayload, FieldValue, FormSubmitPayload } from "@almadar/core";
+import type { A11yProps, ControlValue, EntityRow, EventEmit, EventKey, EventPayload, FieldValue, FormSubmitPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { toDateInputValue, toDateTimeInputValue } from "../../../lib/format";
 import { Input } from "../atoms/Input";
@@ -36,6 +36,7 @@ import { TagInput } from "../molecules/TagInput";
 import { UploadDropZone } from "../molecules/UploadDropZone";
 import { DollarSign } from "lucide-react";
 import { Alert } from "../molecules/Alert";
+import { usePendingAction } from "../../../lib/pendingDispatch";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { OrbitalEntity } from "@almadar/core";
@@ -256,8 +257,8 @@ export interface SchemaFieldOverride {
  */
 export interface FormProps extends Omit<
   React.FormHTMLAttributes<HTMLFormElement>,
-  "onSubmit"
-> {
+  "onSubmit" | keyof A11yProps
+>, A11yProps {
   /** Form fields (traditional React children) */
   children?: React.ReactNode;
   /** Submit event name for trait dispatch (emitted via eventBus as UI:{onSubmit}) */
@@ -487,7 +488,7 @@ export const Form: React.FC<FormProps> = ({
   // submit handler both handle `undefined` already via the
   // `typeof initialData === 'object'` guard.
   initialData,
-  isLoading = false,
+  isLoading: isLoadingProp = false,
   error,
   submitLabel,
   cancelLabel,
@@ -509,6 +510,8 @@ export const Form: React.FC<FormProps> = ({
   ...props
 }) => {
   const eventBus = useEventBus();
+  const submitBusy = usePendingAction();
+  const isLoading = isLoadingProp || submitBusy.pending;
   const { t } = useTranslate();
   const resolvedSubmitLabel = submitLabel ?? t('common.save');
   const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
@@ -837,11 +840,15 @@ export const Form: React.FC<FormProps> = ({
     };
     const payload: FormSubmitPayload = { data: mergedData };
     debug('forms', 'submit-emit', { mode: formMode, submitEvent: `UI:${submitEvent}`, payloadData: payload.data });
-    eventBus.emit(`UI:${submitEvent}`, payload);
-    // Handle onSubmit - event name string for additional trait dispatch
-    if (onSubmit) {
-      eventBus.emit(`UI:${onSubmit}`, payload);
-    }
+    // The submit stays busy (form kept, fields locked) until the dispatches it
+    // started settle — then the result view takes over.
+    submitBusy.activate((pendingKey) => {
+      eventBus.emit(`UI:${submitEvent}`, payload, { pendingKey });
+      // Handle onSubmit - event name string for additional trait dispatch
+      if (onSubmit) {
+        eventBus.emit(`UI:${onSubmit}`, payload, { pendingKey });
+      }
+    });
   };
 
   // Capture HTML5 invalid events as the browser detects them. Surfaces
@@ -1111,7 +1118,7 @@ export const Form: React.FC<FormProps> = ({
         return (
           <Checkbox
             {...commonProps}
-            label={label + (field.required ? " *" : "")}
+            label={label}
             checked={Boolean(currentValue)}
             onChange={(e) => handleChange(fieldName, e.target.checked)}
           />
@@ -1471,11 +1478,11 @@ export const Form: React.FC<FormProps> = ({
             <Button
               type="submit"
               variant="primary"
-              disabled={isLoading}
+              isLoading={isLoading}
               data-event={submitEvent}
               data-testid={`action-${submitEvent}`}
             >
-              {isLoading ? t('form.saving') : resolvedSubmitLabel}
+              {resolvedSubmitLabel}
             </Button>
           )}
         </HStack>

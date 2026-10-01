@@ -26,9 +26,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { NavStackEntry } from '@almadar/core';
 import {
   entriesFor,
+  navLabelsFromItems,
   previousEntry,
   relabelCurrent,
+  resolveEntryLabels,
   syncNavStack,
+  type NavItemDecl,
   type NavPageDecl,
   type NavStackState,
   type PendingCrumb,
@@ -49,6 +52,8 @@ export interface NavStackApi {
    *  (idempotent; no-op when the label already matches). DetailPanel calls
    *  this from the routed main slot so cold-loaded crumbs read like pushes. */
   setCurrentLabel: (label: string) => void;
+  /** The app shell's declared navItems: a page reached by one shows that item's label in the trail. */
+  registerNavItems: (items: readonly NavItemDecl[]) => void;
 }
 
 /**
@@ -62,6 +67,7 @@ const INERT_API: NavStackApi = {
   back: () => undefined,
   goTo: () => undefined,
   setCurrentLabel: () => undefined,
+  registerNavItems: () => undefined,
 };
 
 const NavStackContext = createContext<NavStackApi>(INERT_API);
@@ -110,6 +116,15 @@ function persistStored(storageKey: string | undefined, state: NavStackState): vo
   }
 }
 
+function sameNavItems(a: readonly NavItemDecl[], b: readonly NavItemDecl[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  return a.every((item, i) => {
+    const other = b[i];
+    return item.href === other.href && item.label === other.label && sameNavItems(item.children ?? [], other.children ?? []);
+  });
+}
+
 export const NavStackProvider: React.FC<NavStackProviderProps> = ({
   pages,
   currentPath,
@@ -118,6 +133,7 @@ export const NavStackProvider: React.FC<NavStackProviderProps> = ({
   children,
 }) => {
   const [state, setState] = useState<NavStackState>(() => loadStored(storageKey));
+  const [navItems, setNavItems] = useState<readonly NavItemDecl[]>([]);
   const pendingCrumbRef = useRef<PendingCrumb | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -159,9 +175,15 @@ export const NavStackProvider: React.FC<NavStackProviderProps> = ({
     [pages, currentPath, storageKey],
   );
 
+  const registerNavItems = useCallback((items: readonly NavItemDecl[]) => {
+    setNavItems((prev) => (sameNavItems(prev, items) ? prev : items));
+  }, []);
+
+  const navLabels = useMemo(() => navLabelsFromItems(pages, navItems), [pages, navItems]);
+
   const entries = useMemo(
-    () => entriesFor(state, pages, currentPath),
-    [state, pages, currentPath],
+    () => resolveEntryLabels(entriesFor(state, pages, currentPath), pages, navLabels),
+    [state, pages, currentPath, navLabels],
   );
 
   const api = useMemo<NavStackApi>(
@@ -172,8 +194,9 @@ export const NavStackProvider: React.FC<NavStackProviderProps> = ({
       back,
       goTo,
       setCurrentLabel,
+      registerNavItems,
     }),
-    [entries, state, pages, currentPath, beginNavigate, back, goTo, setCurrentLabel],
+    [entries, state, pages, currentPath, beginNavigate, back, goTo, setCurrentLabel, registerNavItems],
   );
 
   return <NavStackContext.Provider value={api}>{children}</NavStackContext.Provider>;

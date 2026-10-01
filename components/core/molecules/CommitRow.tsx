@@ -7,7 +7,7 @@
  * Selecting the row and restoring to it are separate controls.
  */
 import React, { useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -18,6 +18,7 @@ import { Icon } from '../atoms/Icon';
 import { Typography } from '../atoms/Typography';
 import { VStack, HStack } from '../atoms/Stack';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type CommitKind = 'user' | 'agent' | 'restore' | 'undo' | 'redo' | 'snapshot' | 'merge';
 
 const KIND_ICONS: Record<CommitKind, string> = {
@@ -35,7 +36,7 @@ const KIND_ICONS: Record<CommitKind, string> = {
  *
  * @capabilities version history row, commit entry, revision list item, change log entry, restore point, undo history item
  */
-export interface CommitRowProps {
+export interface CommitRowProps extends A11yProps {
   /** Commit id; the first 7 characters are shown, the whole id on hover. */
   sha: string;
   /** Commit message. */
@@ -71,6 +72,7 @@ export const CommitRow: React.FC<CommitRowProps> = ({
   selectEvent,
   restoreEvent,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const eventBus = useEventBus();
@@ -81,7 +83,7 @@ export const CommitRow: React.FC<CommitRowProps> = ({
   }, [eventBus, selectEvent, sha]);
 
   return (
-    <HStack gap="sm" align="start" className={cn('rounded-interactive px-2 py-1.5', selected ? 'bg-muted' : 'hover:bg-muted', className)}>
+    <HStack {...domPassthrough(rest)} gap="sm" align="start" className={cn('rounded-interactive px-2 py-1.5', selected ? 'bg-muted' : 'hover:bg-muted', className)}>
       <Box
         role="button"
         tabIndex={0}

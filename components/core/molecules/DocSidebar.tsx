@@ -7,8 +7,11 @@
  */
 
 import React, { useState } from 'react';
+import type { A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { Box } from '../atoms/Box';
+import { Button } from '../atoms/Button';
 import { VStack } from '../atoms/Stack';
 import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -26,7 +29,7 @@ export interface DocSidebarItem {
   active?: boolean;
 }
 
-export interface DocSidebarProps {
+export interface DocSidebarProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Sidebar navigation items */
   items: DocSidebarItem[];
   /** Additional CSS classes */
@@ -49,23 +52,14 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
   if (item.items && item.items.length > 0) {
     return (
       <VStack gap="none">
-        <HStack
-          gap="sm"
-          align="center"
+        <Button
+          variant="ghost"
+          aria-expanded={expanded}
           className={cn(
-            'cursor-pointer select-none rounded-interactive px-2 py-1.5',
-            'hover:bg-muted',
+            'h-auto w-full justify-start gap-2 rounded-interactive px-2 py-1.5 font-normal',
             depth > 0 && 'pl-4',
           )}
           onClick={() => setExpanded((prev) => !prev)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e: React.KeyboardEvent) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setExpanded((prev) => !prev);
-            }
-          }}
         >
           <Icon
             name={expanded ? 'chevron-down' : 'chevron-right'}
@@ -79,7 +73,7 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
           >
             {item.label}
           </Typography>
-        </HStack>
+        </Button>
 
         {expanded && (
           <VStack gap="none" className="pl-4">
@@ -92,38 +86,48 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
     );
   }
 
-  return (
-    <Box
+  const label = (
+    <Typography
+      variant="body2"
       className={cn(
-        'block rounded-interactive px-3 py-1.5 text-sm transition-colors no-underline cursor-pointer',
-        'hover:bg-muted',
-        depth > 0 && 'ml-2',
         item.active
-          ? 'bg-primary/8 text-foreground font-semibold'
+          ? 'text-primary font-semibold'
           : 'text-muted-foreground',
       )}
-      onClick={() => { if (item.href) window.location.href = item.href; }}
-      role="link"
-      tabIndex={0}
+      as="span"
     >
-      <Typography
-        variant="body2"
-        className={cn(
-          item.active
-            ? 'text-primary font-semibold'
-            : 'text-muted-foreground',
-        )}
-        as="span"
-      >
-        {item.label}
-      </Typography>
-    </Box>
+      {item.label}
+    </Typography>
+  );
+
+  if (!item.href) {
+    return (
+      <Box className={cn('rounded-interactive px-3 py-1.5 text-sm', depth > 0 && 'ml-2')}>
+        {label}
+      </Box>
+    );
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      href={item.href}
+      aria-current={item.active ? 'page' : undefined}
+      className={cn(
+        'h-auto w-full justify-start rounded-interactive px-3 py-1.5 text-sm font-normal',
+        depth > 0 && 'ml-2',
+        item.active ? 'bg-primary/8 text-foreground font-semibold' : 'text-muted-foreground',
+      )}
+    >
+      {label}
+    </Button>
   );
 };
 
 export const DocSidebar: React.FC<DocSidebarProps> = ({
   items,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   return (
@@ -131,6 +135,7 @@ export const DocSidebar: React.FC<DocSidebarProps> = ({
       className={cn('w-full', className)}
       role="navigation"
       aria-label={t('aria.docsSidebar')}
+      {...domPassthrough(rest)}
     >
       <VStack gap="xs">
         {items.map((item, idx) => (

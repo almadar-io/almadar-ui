@@ -28,7 +28,8 @@
 import * as React from 'react';
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { createLogger } from '@almadar/logger';
-import type { Asset, AssetUrl, Camera, EventEmit, EventKey } from '@almadar/core';
+import type { A11yProps, Asset, AssetUrl, Camera, EventEmit, EventKey } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import { DrawableRegistryContext, type DrawableRegistrar } from '../../../lib/drawable/registry';
 import { Canvas2D, type CameraMode as Canvas2DCameraMode, type Projection } from './Canvas2D';
@@ -46,7 +47,7 @@ const Canvas3DHost = lazy(() =>
 /** Painter selection. Same `drawables` for both; differ only in projection + rasterizer. */
 export type CanvasMode = '2d' | '3d';
 
-export interface CanvasProps {
+export interface CanvasProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Painter: 2D sprite/shape/text raster, or 3D mesh. Default '2d'. */
     mode?: CanvasMode;
     /** Neutral drawable descriptors — the `draw-*` children. Routed to the host's painter. */
@@ -184,6 +185,7 @@ export function Canvas({
     selectEvent,
     moveEvent,
     children,
+    ...rest
 }: CanvasProps): React.JSX.Element {
     canvasLog.debug('Canvas render', { mode, drawablesCount: drawables?.length, projection, camera: camera ? JSON.stringify(camera) : undefined });
     const zoom = camera?.zoom;
@@ -263,6 +265,7 @@ export function Canvas({
 
     return (
         <Canvas2D
+            {...domPassthrough(rest)}
             className={className}
             drawables={drawables}
             isLoading={isLoading}

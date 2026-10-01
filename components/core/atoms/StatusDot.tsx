@@ -1,3 +1,4 @@
+import type { A11yProps } from '@almadar/core';
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -5,7 +6,7 @@ import { useTranslate } from "../../../hooks/useTranslate";
 export type StatusDotStatus = "online" | "offline" | "away" | "busy" | "warning" | "critical";
 export type StatusDotSize = "sm" | "md" | "lg";
 
-export interface StatusDotProps extends React.HTMLAttributes<HTMLSpanElement> {
+export interface StatusDotProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** Status determines the dot color */

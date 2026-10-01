@@ -35,14 +35,15 @@ import {
   Strikethrough,
   Underline,
 } from 'lucide-react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
 import { Button } from '../atoms/Button';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 
-export interface RichTextEditorProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface RichTextEditorProps extends A11yProps {
   /** The rich text content as HTML. Sanitized before rendering and on every change. */
   value?: string;
   onChange?: (value: string) => void;
@@ -305,6 +306,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder,
   showToolbar = true,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const ref = useRef<HTMLDivElement | null>(null);
@@ -558,7 +560,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   if (readOnly) {
     return (
-      <Box className={cn('almadar-rich-text max-w-none', className)}>
+      <Box {...domPassthrough(rest)} className={cn('almadar-rich-text max-w-none', className)}>
         <RichTextStyles />
         <Box dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(value ?? '') }} />
       </Box>
@@ -566,7 +568,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }
 
   return (
-    <Box className={cn('flex flex-col gap-2', className)}>
+    <Box {...domPassthrough(rest)} className={cn('flex flex-col gap-2', className)}>
       <RichTextStyles />
       <input
         ref={imageInputRef}
@@ -616,6 +618,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         data-empty={empty ? 'true' : 'false'}
         className={cn(
           'almadar-rich-text max-w-none min-h-[8rem] outline-none',
+          'focus-visible:ring-[length:var(--focus-ring-width)] focus-visible:ring-ring focus-visible:ring-inset',
           'data-[empty=true]:before:content-[attr(data-placeholder)]',
           'data-[empty=true]:before:text-muted-foreground/60',
           'data-[empty=true]:before:pointer-events-none',

@@ -3,10 +3,12 @@
  * 
  * A layout utility that centers its children horizontally and/or vertically.
  */
+import { domPassthrough } from '../../../lib/domPassthrough';
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 
-export interface CenterProps {
+export interface CenterProps extends A11yProps {
   /** Center inline (width fits content) vs block (full width) */
   inline?: boolean;
   /** Center only horizontally */
@@ -43,9 +45,11 @@ export const Center: React.FC<CenterProps> = ({
   style,
   children,
   as: Component = 'div',
+  ...rest
 }) => {
   const mergedStyle = minHeight ? { minHeight, ...style } : style;
   return React.createElement(Component, {
+    ...domPassthrough(rest),
     className: cn(
       inline ? 'inline-flex' : 'flex',
       horizontal && 'justify-center',

@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, A11yProps } from "@almadar/core";
 
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
@@ -15,6 +15,7 @@ import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface AccordionItem {
   /**
    * Item ID (auto-generated from header/title if not provided)
@@ -47,7 +48,7 @@ export interface AccordionItem {
   defaultOpen?: boolean;
 }
 
-export interface AccordionProps {
+export interface AccordionProps extends A11yProps {
   /**
    * Accordion items
    */
@@ -119,6 +120,7 @@ export const Accordion: React.FC<AccordionProps> = ({
   onItemToggle,
   className,
   toggleEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   // Normalize items to ensure id and header are always present
@@ -169,7 +171,7 @@ export const Accordion: React.FC<AccordionProps> = ({
   };
 
   return (
-    <div className={cn("w-full", className)}>
+    <div {...domPassthrough(rest)} className={cn("w-full", className)}>
       {normalizedItems.map((item, index) => {
         const isOpen = openItemsSet.has(item.id);
         const isDisabled = item.disabled;

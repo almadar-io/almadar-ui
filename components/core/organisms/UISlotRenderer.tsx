@@ -41,6 +41,9 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { slotLog, refId } from "../../../types/slot-types";
 import { cn } from "../../../lib/cn";
+import type { EnterAnimation } from "@almadar/core";
+import { PendingScopeContext, usePendingScopeValue, useScopeHasPending } from "../../../lib/pendingDispatch";
+import { asEnterAnimation, enterClassName, slotPlaysDefaultEnter, useSlotEnterRestart, ENTER_SLOT_CLASS } from "../../../lib/enter";
 import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
 import { SlotContainedContext } from "../../../lib/slotContained";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
@@ -381,6 +384,12 @@ export interface UISlotComponentProps {
   /** Source trait name for data-source-trait attribute (compiled mode) */
   sourceTrait?: string;
   /**
+   * Compiled mode: the root node's declared `enter`. When set, the slot plays
+   * no theme-default entry (the root element animates itself, or opts out
+   * with `none`). Runtime mode reads it off the slot content.
+   */
+  enter?: EnterAnimation;
+  /**
    * Host-supplied stock content for a slot-host region (Studio V4 §14 Part
    * I2). Ignored whenever `children` is passed — `children` (compiled mode)
    * always wins, so a compiled organism's slot can never be silently
@@ -416,7 +425,7 @@ function isAnimatedPortalSlot(slot: UISlot): boolean {
  * the Modal/Drawer can play its exit animation: `open` flips false while
  * `shown` still holds the last value, and `onExited` releases it.
  */
-function useSlotPresence<T>(value: T | null): { shown: T | null; open: boolean; onExited: () => void } {
+function useSlotPresence<T>(value: T | null, hold = false): { shown: T | null; open: boolean; onExited: () => void } {
   const last = useRef<T | null>(null);
   const current = useRef<T | null>(value);
   current.current = value;
@@ -427,7 +436,10 @@ function useSlotPresence<T>(value: T | null): { shown: T | null; open: boolean; 
     last.current = null;
     rerender();
   }, []);
-  return { shown: value ?? last.current, open: value !== null, onExited };
+  // `hold`: an action started inside the slot is still in flight — a cleared
+  // dialog stays open (its confirm busy) until that action settles.
+  const open = value !== null || (hold && last.current !== null);
+  return { shown: value ?? last.current, open, onExited };
 }
 
 /**
@@ -617,11 +629,16 @@ function MaybeTraitScope({
  * Handles different slot types with appropriate wrappers.
  */
 function UISlotComponent(props: UISlotComponentProps): React.ReactElement | null {
+  // Actions started inside this slot (a dialog's confirm) register here, so a
+  // cleared dialog holds open until they settle.
+  const pendingScope = usePendingScopeValue();
   // Every subtree knows which slot hosts it (RenderSlotContext default is
   // 'main'; slot-sensitive components like DetailPanel gate on it).
   return (
     <RenderSlotProvider slot={props.slot}>
-      <UISlotComponentInner {...props} />
+      <PendingScopeContext.Provider value={pendingScope}>
+        <UISlotComponentInner {...props} />
+      </PendingScopeContext.Provider>
     </RenderSlotProvider>
   );
 }
@@ -634,6 +651,7 @@ function UISlotComponentInner({
   children,
   pattern,
   sourceTrait,
+  enter,
   fallback,
   mode = "replace",
 }: UISlotComponentProps): React.ReactElement | null {
@@ -669,10 +687,27 @@ function UISlotComponentInner({
   // Modal/drawer slots stay mounted through their exit animation (runtime
   // content and compiled children alike) — see useSlotPresence.
   const animatedPortal = isAnimatedPortalSlot(slot);
-  const runtimePresence = useSlotPresence(portal && animatedPortal ? (content ?? null) : null);
+  const holdForPending = useScopeHasPending(useContext(PendingScopeContext));
+  const runtimePresence = useSlotPresence(portal && animatedPortal ? (content ?? null) : null, holdForPending);
   const compiledPresence = useSlotPresence(
     children !== undefined && pattern !== "clear" && animatedPortal ? { children, pattern, sourceTrait } : null,
+    holdForPending,
   );
+
+  // Theme-default entry on inline slot content: replays when another trait or
+  // root pattern takes the slot (a skeleton giving way to the record), not on
+  // a data refresh. A region mount (`display: contents`) has no box to animate.
+  const compiledMode = children !== undefined;
+  const runtimeRootEnterValue = content ? slotPropsOf(content).enter : undefined;
+  const runtimeRootEnter = asEnterAnimation(typeof runtimeRootEnterValue === "string" ? runtimeRootEnterValue : undefined);
+  const slotEnterActive =
+    fallback === undefined &&
+    !isPortalSlot(slot) &&
+    (compiledMode ? pattern !== "clear" : Boolean(content)) &&
+    slotPlaysDefaultEnter(compiledMode ? enter : runtimeRootEnter);
+  const slotContentKey = compiledMode ? `${sourceTrait ?? ""}:${pattern ?? ""}` : `${content?.sourceTrait ?? ""}:${content?.pattern ?? ""}`;
+  const slotBoxRef = useRef<HTMLDivElement>(null);
+  useSlotEnterRestart(slotBoxRef, slotContentKey, slotEnterActive);
 
   // Compiled mode: children provided directly, skip context resolution
   if (children !== undefined) {
@@ -684,8 +719,24 @@ function UISlotComponentInner({
       // handed it the presence (render-function children); finished JSX can't
       // take it, so it unmounts at once.
       const selfOverlay = last !== null && last.pattern !== undefined && SELF_OVERLAY_PATTERN_TYPES.has(last.pattern);
-      if (last === null || contained || (selfOverlay && typeof last.children !== "function")) {
+      const held = compiledPresence.open;
+      if (last === null || (selfOverlay && typeof last.children !== "function" && !held)) {
         return null;
+      }
+      if (contained) {
+        if (!held) return null;
+        return (
+          <Box
+            id={`slot-${slot}`}
+            className={cn("ui-slot", `ui-slot-${slot}`, className)}
+            data-pattern={last.pattern}
+            data-source-trait={last.sourceTrait}
+          >
+            <MaybeTraitScope sourceTrait={last.sourceTrait}>
+              {resolveCompiledChildren(last.children, { open: true, onExited: compiledPresence.onExited })}
+            </MaybeTraitScope>
+          </Box>
+        );
       }
       return (
         <CompiledPortal
@@ -693,11 +744,11 @@ function UISlotComponentInner({
           className={className}
           pattern={last.pattern}
           sourceTrait={last.sourceTrait}
-          open={false}
+          open={held}
           onExited={compiledPresence.onExited}
         >
           <MaybeTraitScope sourceTrait={last.sourceTrait}>
-            {resolveCompiledChildren(last.children, { open: false, onExited: compiledPresence.onExited })}
+            {resolveCompiledChildren(last.children, { open: held, onExited: compiledPresence.onExited })}
           </MaybeTraitScope>
         </CompiledPortal>
       );
@@ -736,8 +787,9 @@ function UISlotComponentInner({
 
     return (
       <Box
+        ref={slotBoxRef}
         id={`slot-${slot}`}
-        className={cn("ui-slot", `ui-slot-${slot}`, className)}
+        className={cn("ui-slot", `ui-slot-${slot}`, slotEnterActive && ENTER_SLOT_CLASS, className)}
         data-pattern={pattern}
         data-source-trait={sourceTrait}
       >
@@ -749,7 +801,7 @@ function UISlotComponentInner({
   // A cleared modal/drawer slot keeps rendering its last content (closed)
   // until the exit animation ends.
   const shownContent = content ?? runtimePresence.shown;
-  const slotOpen = content !== null && content !== undefined;
+  const slotOpen = (content !== null && content !== undefined) || runtimePresence.open;
 
   // Handle empty slot. When a `fallback` is supplied it renders INLINE at
   // this position regardless of `portal` — a portal slot's fallback is host
@@ -869,8 +921,9 @@ function UISlotComponentInner({
 
   return (
     <Box
+      ref={slotBoxRef}
       id={`slot-${slot}`}
-      className={cn("ui-slot", `ui-slot-${slot}`, regionClassName)}
+      className={cn("ui-slot", `ui-slot-${slot}`, slotEnterActive && ENTER_SLOT_CLASS, regionClassName)}
       data-pattern={shownContent.pattern}
       data-source-trait={shownContent.sourceTrait}
       data-testid={`ui-slot-${slot}`}
@@ -1968,6 +2021,18 @@ function SlotContentRenderer({
           ))}
         </Box>
       );
+    }
+
+    // A node's declared entry becomes a class on its own element (lib/enter);
+    // the entry props never reach the component.
+    const nodeEnterClass = enterClassName(
+      asEnterAnimation(typeof finalProps.enter === 'string' ? finalProps.enter : undefined),
+      typeof finalProps.enterDelay === 'number' ? finalProps.enterDelay : undefined,
+    );
+    delete finalProps.enter;
+    delete finalProps.enterDelay;
+    if (nodeEnterClass) {
+      finalProps.className = cn(typeof finalProps.className === 'string' ? finalProps.className : undefined, nodeEnterClass);
     }
 
     const acceptsChildren = PATTERNS_WITH_CHILDREN.has(content.pattern);

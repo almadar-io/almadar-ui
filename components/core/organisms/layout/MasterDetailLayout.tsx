@@ -7,13 +7,15 @@
  * Uses wireframe theme styling (high contrast, sharp edges).
  */
 import React from "react";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
+import { domPassthrough } from "../../../../lib/domPassthrough";
 import { Typography } from "../../atoms/Typography";
 import { SplitPane } from "./SplitPane";
 import { useTranslate } from "../../../../hooks/useTranslate";
 import { Box } from "../../atoms/Box";
 
-export interface MasterDetailLayoutProps {
+export interface MasterDetailLayoutProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Master panel content (usually a list) */
   master: React.ReactNode;
   /** Detail panel content */
@@ -61,6 +63,7 @@ export const MasterDetailLayout: React.FC<MasterDetailLayoutProps> = ({
   className,
   masterClassName,
   detailClassName,
+  ...rest
 }) => {
   // Below a `@md` container a two-column split has no room (a fixed master track leaves the
   // detail a ~0px sliver on phones — opening a record looked like a dead
@@ -69,7 +72,7 @@ export const MasterDetailLayout: React.FC<MasterDetailLayoutProps> = ({
   // list. The grid only exists from a `@md` container up, via a CSS var so masterWidth
   // stays a prop.
   return (
-    <Box className={cn("@container w-full h-full", className)}>
+    <Box {...domPassthrough(rest)} className={cn("@container w-full h-full", className)}>
       <Box
         className="w-full h-full @md:grid @md:grid-cols-[var(--master-detail-cols)]"
         style={{ "--master-detail-cols": `${masterWidth} 1fr` } as React.CSSProperties}

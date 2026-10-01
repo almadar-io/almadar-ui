@@ -9,6 +9,7 @@
  * - entityAware: false
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useState } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { Card } from './Card';
@@ -20,13 +21,14 @@ import { Box } from '../atoms/Box';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /**
  * QuizBlock — a single quiz question with answer choices and submit/reveal
  * feedback.
  *
  * @capabilities multiple-choice quiz, test question, exam item, assessment question, knowledge check, trivia question
  */
-export interface QuizBlockProps {
+export interface QuizBlockProps extends A11yProps {
   /** The quiz question */
   question: string;
   /** The quiz answer (revealed on toggle) */
@@ -39,12 +41,13 @@ export const QuizBlock: React.FC<QuizBlockProps> = ({
   question,
   answer,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const [revealed, setRevealed] = useState(false);
 
   return (
-    <Card className={cn('my-4 border-primary', className)}>
+    <Card {...domPassthrough(rest)} className={cn('my-4 border-primary', className)}>
       <VStack gap="sm" className="p-4">
         <HStack gap="sm" align="start">
           <Icon icon={HelpCircle} size="sm" className="text-primary mt-0.5 shrink-0" />

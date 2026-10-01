@@ -4,15 +4,17 @@
  * A two-column layout with configurable ratios.
  * Perfect for sidebar/content layouts or side-by-side comparisons.
  */
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
 import type { UiError } from '../atoms/types';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type SplitRatio = '1:1' | '1:2' | '2:1' | '1:3' | '3:1' | '1:4' | '4:1' | '2:3' | '3:2';
 export type SplitGap = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 
-export interface SplitProps {
+export interface SplitProps extends A11yProps {
   /** Size ratio between left and right panels */
   ratio?: SplitRatio;
   /** Gap between panels */
@@ -89,6 +91,7 @@ export const Split: React.FC<SplitProps> = ({
   leftClassName,
   rightClassName,
   children,
+  ...rest
 }) => {
   const [left, right] = children;
   const [leftRatio, rightRatio] = ratioStyles[ratio];
@@ -104,6 +107,7 @@ export const Split: React.FC<SplitProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         'flex',
         stackOnMobile ? `flex-col ${bp}flex-row` : 'flex-row',

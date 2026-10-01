@@ -18,6 +18,8 @@
  * @packageDocumentation
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../../../lib/cn";
 
@@ -142,7 +144,7 @@ export function usePresence(show: boolean, opts: UsePresenceOptions): PresenceRe
   return { mounted, exiting, className, onAnimationEnd };
 }
 
-export interface PresenceProps extends UsePresenceOptions {
+export interface PresenceProps extends UsePresenceOptions, A11yProps {
   /** When false, the exit animation runs, then children unmount. */
   show: boolean;
   className?: string;
@@ -153,11 +155,11 @@ export interface PresenceProps extends UsePresenceOptions {
  * Wrapper form of `usePresence` for arbitrary content that doesn't already
  * own its animated element. Renders a `<div>` carrying the animation class.
  */
-export const Presence: React.FC<PresenceProps> = ({ show, className, children, ...opts }) => {
-  const { mounted, className: animClass, onAnimationEnd } = usePresence(show, opts);
+export const Presence: React.FC<PresenceProps> = ({ show, className, children, ...rest }) => {
+  const { mounted, className: animClass, onAnimationEnd } = usePresence(show, rest);
   if (!mounted) return null;
   return (
-    <div className={cn(animClass, className)} onAnimationEnd={onAnimationEnd}>
+    <div className={cn(animClass, className)} onAnimationEnd={onAnimationEnd} {...domPassthrough(rest)}>
       {children}
     </div>
   );

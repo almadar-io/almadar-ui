@@ -10,9 +10,10 @@
 
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import type { OrbitalSchema } from '@almadar/core';
+import type { A11yProps, OrbitalSchema } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { pressableProps } from '../../../../lib/pressable';
+import { domPassthrough, type DomPassthrough } from '../../../../lib/domPassthrough';
 import type { EffectTrace, ServerResponseTrace, TransitionTrace } from '../../../../lib/verificationRegistry';
 import { useDebugData } from './hooks/useDebugData';
 import { onDebugToggle, isDebugEnabled } from '../../../../lib/debugUtils';
@@ -140,6 +141,7 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
 
 function VerifyModePanel({
     className,
+    a11y,
     failedChecks,
     transitions,
     traitStates,
@@ -147,6 +149,7 @@ function VerifyModePanel({
     localCount,
 }: {
     className?: string;
+    a11y: DomPassthrough;
     failedChecks: number;
     transitions: TransitionTrace[];
     traitStates: string;
@@ -186,6 +189,7 @@ function VerifyModePanel({
 
     const panel = (
         <div
+            {...a11y}
             className={cn(
                 'runtime-debugger runtime-debugger--verify',
                 'flex flex-col bg-[var(--color-card)] text-[var(--color-foreground)] border-t-heavy border-accent',
@@ -250,7 +254,7 @@ function VerifyModePanel({
     return hudBottom ? createPortal(panel, hudBottom) : panel;
 }
 
-export interface RuntimeDebuggerProps {
+export interface RuntimeDebuggerProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Initial position */
     position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
     /** Initial collapsed state */
@@ -272,7 +276,9 @@ export function RuntimeDebugger({
     mode = 'floating',
     defaultTab,
     schema,
+    ...rest
 }: RuntimeDebuggerProps) {
+    const a11y = domPassthrough(rest);
     const { t } = useTranslate();
     const [isCollapsed, setIsCollapsed] = React.useState(mode === 'verify' ? true : defaultCollapsed);
     const [isVisible, setIsVisible] = React.useState(mode === 'inline' || mode === 'verify' || isDebugEnabled());
@@ -382,6 +388,7 @@ export function RuntimeDebugger({
     if (mode === 'inline') {
         return (
             <div
+                {...a11y}
                 className={cn(
                     'runtime-debugger',
                     'runtime-debugger--inline',
@@ -438,6 +445,7 @@ export function RuntimeDebugger({
 
         return (
             <VerifyModePanel
+                a11y={a11y}
                 className={className}
                 failedChecks={failedChecks}
                 transitions={verification.transitions}
@@ -451,6 +459,7 @@ export function RuntimeDebugger({
     // Floating mode: fixed position overlay with collapse/expand
     return (
         <div
+            {...a11y}
             className={cn(
                 'runtime-debugger',
                 'fixed',

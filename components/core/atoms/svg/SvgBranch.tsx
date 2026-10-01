@@ -1,8 +1,10 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import React from 'react';
 
-export interface SvgBranchProps {
+export interface SvgBranchProps extends A11yProps {
   x?: number;
   y?: number;
   variant?: 'fork' | 'merge' | 'diamond';
@@ -89,13 +91,15 @@ export const SvgBranch: React.FC<SvgBranchProps> = ({
   asRoot = true,
   width = 100,
   height = 100,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   let inner: React.ReactNode;
 
   if (variant === 'diamond') {
     const points = buildDiamondPoints(x, y, size);
     inner = (
-      <g className={className} opacity={opacity}>
+      <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
         <polygon
           points={points}
           fill="none"
@@ -112,7 +116,7 @@ export const SvgBranch: React.FC<SvgBranchProps> = ({
         : buildMergePaths(x, y, branches, size);
 
     inner = (
-      <g className={className} opacity={opacity}>
+      <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
         {paths.map((d, i) => (
           <path
             key={i}
@@ -133,7 +137,7 @@ export const SvgBranch: React.FC<SvgBranchProps> = ({
 
   if (asRoot) {
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...a11y}>
         {inner}
       </svg>
     );

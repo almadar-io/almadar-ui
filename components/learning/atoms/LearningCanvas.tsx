@@ -14,7 +14,10 @@
  */
 
 import * as React from 'react';
-import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
+import { useEffect, useId, useRef, useCallback, useMemo, useState } from 'react';
+import type { A11yProps } from '@almadar/core';
+import { Box } from '../../core/atoms/Box';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { perfEnd, perfStart } from '../../../lib/perf';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -143,7 +146,7 @@ const DASH_PATTERNS = { solid: [], dashed: [6, 4], dotted: [2, 3] } as const;
 
 export const TRACE_SERIES_COLORS = THEME_SERIES;
 
-export interface LearningCanvasProps {
+export interface LearningCanvasProps extends A11yProps {
   /** Additional CSS classes. */
   className?: string;
   /** Canvas width in CSS pixels. */
@@ -184,6 +187,8 @@ export interface LearningCanvasProps {
   onShapeClick?: (payload: { id?: string; type?: string; index: number }) => void;
   /** Hovered shape payload: { id?, type?, index }. */
   onShapeHover?: (payload: { id?: string; type?: string; index: number }) => void;
+  /** Text alternative for the canvas, rendered as visually hidden text and linked by aria-describedby. */
+  description?: string;
   /** Loading state. */
   isLoading?: boolean;
   /** Error state. */
@@ -599,9 +604,12 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
   animate = false,
   onShapeClick,
   onShapeHover,
+  description,
   isLoading,
   error,
+  ...rest
 }) => {
+  const descId = useId();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -738,13 +746,24 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     );
   }
 
-  return (
+  const canvas = (
     <canvas
       ref={canvasRef}
       className={cn('block touch-none rounded border border-border', className)}
       style={{ width, maxWidth: '100%', height: 'auto', aspectRatio: `${width} / ${height}` }}
       onClick={handleClick}
       onPointerMove={handlePointerMove}
+      role="img"
+      aria-label={t('aria.learningCanvas')}
+      aria-describedby={description ? descId : undefined}
+      {...domPassthrough(rest)}
     />
+  );
+  if (!description) return canvas;
+  return (
+    <>
+      {canvas}
+      <Box id={descId} className="sr-only">{description}</Box>
+    </>
   );
 };

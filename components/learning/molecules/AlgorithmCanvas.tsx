@@ -22,6 +22,8 @@
  */
 
 import * as React from 'react';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { useMemo } from 'react';
 import { Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
@@ -112,7 +114,7 @@ export interface AlgorithmAxisLabel {
   color?: string;
 }
 
-export interface AlgorithmCanvasProps {
+export interface AlgorithmCanvasProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   className?: string;
   width?: number;
   height?: number;
@@ -246,6 +248,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
   onShapeClick,
   isLoading,
   error,
+  ...rest
 }) => {
   const derivedShapes: LearningShape[] = useMemo(() => {
     const out: LearningShape[] = [];
@@ -804,7 +807,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
   }, [bars, cells, pointers, ranges, slots, slotOrientation, frames, buckets, auxBars, rowLabels, colLabels, shapes, width, height]);
 
   return (
-    <Card className={className}>
+    <Card {...domPassthrough(rest)} className={className}>
       <VStack gap="sm">
         {title ? <Typography variant="h4">{title}</Typography> : null}
         <LearningCanvas

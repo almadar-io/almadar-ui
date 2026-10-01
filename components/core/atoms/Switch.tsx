@@ -1,8 +1,11 @@
 'use client';
 import * as React from "react";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { domPassthrough } from "../../../lib/domPassthrough";
 
-export interface SwitchProps {
+/** @accessibleName label */
+export interface SwitchProps extends A11yProps {
   checked?: boolean;
   defaultChecked?: boolean;
   onChange?: (checked: boolean) => void;
@@ -24,6 +27,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
       id,
       name,
       className,
+      ...rest
     },
     ref,
   ) => {
@@ -51,6 +55,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
     return (
       <div className={cn("inline-flex items-center gap-2", className)}>
         <button
+          {...domPassthrough(rest)}
           ref={ref}
           type="button"
           role="switch"

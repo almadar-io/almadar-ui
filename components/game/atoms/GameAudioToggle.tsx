@@ -13,7 +13,8 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import type { Asset, EventEmit } from '@almadar/core';
+import type { A11yProps, Asset, EventEmit } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { Button } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -26,7 +27,7 @@ import type { UiError } from '../../core/atoms/types';
 // Props
 // =============================================================================
 
-export interface GameAudioToggleProps {
+export interface GameAudioToggleProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Button size */
     size?: 'sm' | 'md' | 'lg';
     /** Additional CSS classes */
@@ -55,6 +56,7 @@ export function GameAudioToggle({
     onAsset,
     offAsset,
     toggleEvent,
+    ...rest
 }: GameAudioToggleProps): React.JSX.Element {
     const ctx = useGameAudioContextOptional();
     const [localMuted, setLocalMuted] = useState(false);
@@ -74,12 +76,13 @@ export function GameAudioToggle({
 
     return (
         <Button
+            {...domPassthrough(rest)}
             variant="ghost"
             size={size}
             onClick={handleToggle}
             className={cn('text-lg leading-none px-2', className)}
             aria-pressed={muted}
-            aria-label={stateLabel}
+            aria-label={rest['aria-label'] ?? stateLabel}
         >
             {activeAsset ? (
                 <GameIcon assetUrl={activeAsset} icon="image" size={20} alt={stateLabel} className="w-5 h-5 object-contain" />

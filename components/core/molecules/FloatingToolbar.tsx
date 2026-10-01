@@ -13,7 +13,7 @@
  */
 
 import React from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EventKey, EventPayload, A11yProps } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
 import { Divider } from "../atoms/Divider";
@@ -23,6 +23,7 @@ import { ButtonGroup } from "./ButtonGroup";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface FloatingToolbarItem {
   /** Item identifier */
   id: string;
@@ -61,7 +62,7 @@ export type FloatingToolbarPosition =
   | "top-left"
   | "top-right";
 
-export interface FloatingToolbarProps {
+export interface FloatingToolbarProps extends A11yProps {
   /** Tool items rendered as icon buttons */
   items: FloatingToolbarItem[];
   /**
@@ -89,11 +90,12 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   position = "bottom-center",
   children,
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
 
   return (
-    <Box className={cn("fixed z-50", positionClasses[position])}>
+    <Box {...domPassthrough(rest)} className={cn("fixed z-50", positionClasses[position])}>
       <ButtonGroup
         variant="default"
         orientation="horizontal"

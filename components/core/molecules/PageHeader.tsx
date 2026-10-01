@@ -1,6 +1,6 @@
 'use client';
 import React from "react";
-import type { EventKey, EventEmit } from "@almadar/core";
+import type { EventKey, EventEmit, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Button } from "../atoms/index";
 import { Box } from "../atoms/Box";
@@ -15,6 +15,7 @@ import { Breadcrumb } from "./Breadcrumb";
 import { Tabs } from "./Tabs";
 import { Badge } from "../atoms/Badge";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface PageBreadcrumb {
   label: string;
   href?: string;
@@ -42,7 +43,7 @@ export interface PageHeaderStatus {
   variant?: "default" | "success" | "warning" | "danger" | "info";
 }
 
-export interface PageHeaderProps {
+export interface PageHeaderProps extends A11yProps {
   /** Page title - accepts string or number from generated code accessing dynamic entity data */
   title?: string | number;
   /** Icon shown before the title. */
@@ -95,6 +96,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   onTabChange,
   children,
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -122,7 +124,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   };
 
   return (
-    <Box className={cn("w-full min-w-0", className)}>
+    <Box {...domPassthrough(rest)} className={cn("w-full min-w-0", className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumb items={breadcrumbs.map((crumb) => ({ label: crumb.label, href: crumb.href }))} className="mb-4" />
       )}
@@ -176,7 +178,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 leftIcon={action.icon || undefined}
                 onClick={createActionHandler(action)}
                 isLoading={action.loading || isLoading}
-                disabled={action.disabled || isLoading}
+                disabled={action.disabled}
                 className={idx > 0 ? "hidden sm:inline-flex" : undefined}
               >
                 {action.label}

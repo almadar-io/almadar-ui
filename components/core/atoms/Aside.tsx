@@ -6,6 +6,7 @@
  * semantic-aside primitive without falling back to a raw element.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from "react";
 import { cn } from "../../../lib/cn";
 
@@ -15,7 +16,7 @@ import { cn } from "../../../lib/cn";
  *
  * @capabilities settings navigation sidebar, preferences menu panel, account settings nav, secondary panel, side navigation rail
  */
-export interface AsideProps extends React.HTMLAttributes<HTMLElement> {
+export interface AsideProps extends Omit<React.HTMLAttributes<HTMLElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes */
   className?: string;
   /** Aside contents */

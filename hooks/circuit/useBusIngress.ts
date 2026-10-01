@@ -37,6 +37,7 @@ import { evaluateListenPayloadExpr } from '@almadar/evaluator';
 import { collectListenerTargets, LIFECYCLE_EVENTS, type TraitIndex } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 import type { EventBusContextType } from '../../types/event-bus-types';
+import { beginPending, endPending } from '../../lib/pendingDispatch';
 
 const log = createLogger('almadar:ui:circuit:bus-ingress');
 
@@ -96,9 +97,16 @@ export function useBusIngress(
     ): void => {
       if (!claim(source, traitName, eventKey)) return;
       const tick = source?.tick;
-      void settle(traitName, eventKey, payload, tick).catch((err: Error) => {
-        log.error('dispatch:failed', { trait: traitName, event: eventKey, error: String(err) });
-      });
+      // The firing control's busy state spans this dispatch (lib/pendingDispatch).
+      const pendingKey = source?.pendingKey;
+      if (pendingKey !== undefined) beginPending(pendingKey);
+      void settle(traitName, eventKey, payload, tick)
+        .catch((err: Error) => {
+          log.error('dispatch:failed', { trait: traitName, event: eventKey, error: String(err) });
+        })
+        .finally(() => {
+          if (pendingKey !== undefined) endPending(pendingKey);
+        });
     };
 
     for (const binding of traitBindings) {

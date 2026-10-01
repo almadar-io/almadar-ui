@@ -45,6 +45,7 @@ import { BrowserPlayground } from '../../../runtime/BrowserPlayground';
 import { avlSeries } from '../../../lib/avl-theme';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion';
 import {
   useCanvasDroppable,
   useCanvasDraggable,
@@ -740,6 +741,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const { t } = useTranslate();
   const eventBus = useEventBus();
   const reactFlow = useReactFlow();
+  const cameraMs = usePrefersReducedMotion() ? 0 : 200;
   const contentRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   // Paused by default: an edit surface first. While paused the card's ticks
@@ -992,7 +994,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     if (e.shiftKey && (e.code === 'Digit1' || e.code === 'Digit2') && hasCanvasTool(tools, 'zoomToSelection')) {
       handled();
       if (e.code === 'Digit1') {
-        void reactFlow.fitView({ padding: 0.1, duration: 200 });
+        void reactFlow.fitView({ padding: 0.1, duration: cameraMs });
         return;
       }
       const container = contentRef.current;
@@ -1009,7 +1011,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       orbPreviewLog.info('zoom-to-selection', { paths, boxes, topLeft, bottomRight });
       void reactFlow.fitBounds(
         { x: topLeft.x, y: topLeft.y, width: bottomRight.x - topLeft.x, height: bottomRight.y - topLeft.y },
-        { padding: 0.2, duration: 200 },
+        { padding: 0.2, duration: cameraMs },
       );
       return;
     }
@@ -1833,7 +1835,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
           reorder / marquee / drop gestures always reach the preview. */}
       <Box
         ref={setContentRef}
-        className={`orb-preview-live nodrag nopan relative outline-none${dragActive || reorderDragActive || l2IsOver ? ' drag-active' : ''}`}
+        className={`orb-preview-live nodrag nopan relative outline-none focus-visible:ring-[length:var(--focus-ring-width)] focus-visible:ring-ring focus-visible:ring-inset${dragActive || reorderDragActive || l2IsOver ? ' drag-active' : ''}`}
         data-playing={playing}
         onClick={playing ? handleContentClick : undefined}
         onClickCapture={playing ? undefined : handlePausedClickCapture}

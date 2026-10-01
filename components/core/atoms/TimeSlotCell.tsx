@@ -5,12 +5,14 @@
  * Calendar time slot atom. Renders a clickable container for a single
  * time slot that can hold event content via children.
  */
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React, { useCallback } from "react";
 import { cn } from "../../../lib/cn";
 import { Box } from "./Box";
 import { pressableProps } from "../../../lib/pressable";
 
-export interface TimeSlotCellProps {
+export interface TimeSlotCellProps extends A11yProps {
   /** Time label for this slot (e.g. "09:00") */
   time: string;
   /** Called when the slot is clicked */
@@ -39,6 +41,7 @@ export function TimeSlotCell({
   onPointerCancel,
   onPointerLeave,
   "data-testid": testId,
+  ...rest
 }: TimeSlotCellProps): React.JSX.Element {
   const handleClick = useCallback(() => {
     onClick?.(time);
@@ -52,8 +55,9 @@ export function TimeSlotCell({
         isOccupied && "bg-muted/30",
         className,
       )}
+      {...domPassthrough(rest)}
       {...press}
-      aria-label={onClick ? time : undefined}
+      aria-label={rest['aria-label'] ?? (onClick ? time : undefined)}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}

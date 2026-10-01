@@ -10,7 +10,7 @@
  */
 
 import React from "react";
-import type { AssetUrl, EventKey, EventPayload, JsonValue } from "@almadar/core";
+import type { A11yProps, AssetUrl, EventKey, EventPayload, JsonValue } from "@almadar/core";
 import type { UiError } from "../atoms/types";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { cn } from "../../../lib/cn";
@@ -125,7 +125,7 @@ export interface CustomPatternProps {
   /** Disabled state */
   disabled?: boolean;
   /** Additional HTML attributes */
-  htmlProps?: React.HTMLAttributes<HTMLElement>;
+  htmlProps?: Omit<React.HTMLAttributes<HTMLElement>, keyof A11yProps> & A11yProps;
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
@@ -206,7 +206,7 @@ export function CustomPattern({
   const renderContent = children ?? content;
 
   // Build common props
-  const commonProps: React.HTMLAttributes<HTMLElement> & { disabled?: boolean } = {
+  const commonProps: Omit<React.HTMLAttributes<HTMLElement>, keyof A11yProps> & A11yProps & { disabled?: boolean } = {
     className: classes || undefined,
     ...htmlProps,
   };

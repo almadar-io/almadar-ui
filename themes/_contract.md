@@ -227,6 +227,7 @@ These separate artistic styles (Art Deco vs Win95 vs wabi-sabi) along dimensions
 | `typeScale.fontImport` | — (not a var) | preset: generated `_fonts.css` `@import`; inline: `OrbitalThemeProvider` `<link>`; compiled: `@import` atop the theme CSS | — |
 | `geometry.cornerShape` | `--corner-shape` | every element inside `[data-theme]` (CSS `corner-shape`; Chromium 139+, other engines render plain round corners) | `round` |
 | `geometry.cornerShapePill` | `--corner-shape-pill` | `.rounded-full` / `.rounded-pill` | `round` |
+| `geometry.cornerShapeInteractive` | `--corner-shape-interactive` | `Button`, `Input`, `Select`, `Textarea` (`.interactive-border`) | `--corner-shape` |
 | `geometry.borderStyle` | `--border-style` | every bordered element (scoped reset) | `solid` |
 | `geometry.borderStyleInteractive` | `--border-style-interactive` | `Button` (`.interactive-border`) | `--border-style` |
 | `elevation.interactiveElevation` | `--elevation-interactive` | `Button` resting (`shadow-elevation-interactive`) | `--shadow-sm` |

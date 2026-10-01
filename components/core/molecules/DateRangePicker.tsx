@@ -12,7 +12,7 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { toDateInputValue } from '../../../lib/format';
 import { Button } from '../atoms/Button';
@@ -22,6 +22,7 @@ import { Typography } from '../atoms/Typography';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface DateRange {
   from: string;
   to: string;
@@ -42,7 +43,7 @@ export interface DateRangePickerPreset {
   range?: (() => DateRange) | DateRange;
 }
 
-export interface DateRangePickerProps {
+export interface DateRangePickerProps extends A11yProps {
   /** Controlled `from` (ISO date YYYY-MM-DD). */
   from?: string;
   /** Controlled `to` (ISO date YYYY-MM-DD). */
@@ -119,6 +120,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   fromLabel,
   toLabel,
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -190,7 +192,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   );
 
   return (
-    <VStack gap="sm" className={cn(className)}>
+    <VStack {...domPassthrough(rest)} gap="sm" className={cn(className)}>
       <HStack gap="md" align="end">
         <VStack gap="xs">
           <Typography variant="caption" color="secondary">

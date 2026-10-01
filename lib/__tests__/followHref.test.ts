@@ -19,7 +19,7 @@ describe('followHref', () => {
     const assign = vi.fn();
     vi.spyOn(window, 'location', 'get').mockReturnValue({ ...window.location, assign });
     const goTo = vi.fn();
-    const api: NavStackApi = { entries: [], canGoBack: false, beginNavigate: vi.fn(), back: vi.fn(), goTo, setCurrentLabel: vi.fn() };
+    const api: NavStackApi = { entries: [], canGoBack: false, beginNavigate: vi.fn(), back: vi.fn(), goTo, setCurrentLabel: vi.fn(), registerNavItems: vi.fn() };
     followHref('/pricing', api);
     expect(goTo).toHaveBeenCalledWith('/pricing');
     expect(assign).not.toHaveBeenCalled();

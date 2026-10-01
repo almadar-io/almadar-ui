@@ -4,10 +4,11 @@ import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { GameIcon } from '../../core/atoms/GameIcon';
-import type { Asset } from '@almadar/core';
+import type { A11yProps, Asset } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { useTranslate } from '../../../hooks/useTranslate';
 
-export interface ScoreDisplayProps {
+export interface ScoreDisplayProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Sprite asset — takes precedence over icon when provided */
   assetUrl?: Asset;
   /** Current score value */
@@ -42,6 +43,7 @@ export function ScoreDisplay({
   size = 'md',
   className,
   locale: localeProp,
+  ...rest
 }: ScoreDisplayProps) {
   const { locale: appLocale } = useTranslate();
   const locale = localeProp ?? appLocale;
@@ -56,6 +58,7 @@ export function ScoreDisplay({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         'flex items-center gap-2 font-bold',
         sizeMap[size],

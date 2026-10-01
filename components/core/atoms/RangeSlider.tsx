@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
-import type { EventPayload, EventEmit } from "@almadar/core";
+import type { A11yProps, EventPayload, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -16,7 +16,7 @@ function useSafeEventBus() {
 
 export type RangeSliderSize = "sm" | "md" | "lg";
 
-export interface RangeSliderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
+export interface RangeSliderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange" | keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** Minimum value */

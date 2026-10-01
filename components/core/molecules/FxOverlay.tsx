@@ -17,6 +17,7 @@
  * overlay's positioning bounds; without it the overlay is a pure absolute
  * layer over the nearest positioned ancestor (and `shake` items are inert).
  */
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
@@ -27,9 +28,10 @@ import {
     type FxOverlayItem,
 } from '../atoms/fx';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type { FxOverlayItem, FxOverlayKind } from '../atoms/fx';
 
-export interface FxOverlayProps {
+export interface FxOverlayProps extends A11yProps {
     /** Live screen-space fx entries (the mechanic's fx list filtered to `space == "screen"`); mount starts each item's animation, ttl decay unmounts it. */
     items: FxOverlayItem[];
     /** The fx mechanic's decay tick period in ms; per-item animation duration = maxTtl × tickMs. Default 500. */
@@ -200,7 +202,7 @@ function OverlayFxNode({ item, tickMs }: { item: FxOverlayItem; tickMs: number }
     }
 }
 
-export const FxOverlay: React.FC<FxOverlayProps> = ({ items, tickMs = DEFAULT_TICK_MS, children, className }) => {
+export const FxOverlay: React.FC<FxOverlayProps> = ({ items, tickMs = DEFAULT_TICK_MS, children, className, ...rest }) => {
     const screenItems = (Array.isArray(items) ? items : []).filter(
         (it): it is FxOverlayItem => Boolean(it) && typeof it.id === 'string' && it.space !== 'world',
     );
@@ -209,8 +211,10 @@ export const FxOverlay: React.FC<FxOverlayProps> = ({ items, tickMs = DEFAULT_TI
     // The overlay layer mounts persistently (an invisible pointer-events-none
     // container when idle) — a null return would read as a blank portal slot to
     // the verifier and force consumers into mount/unmount churn per burst.
+    const hasChildren = children !== undefined && children !== null;
     const overlay = (
         <Box
+            {...(hasChildren ? undefined : domPassthrough(rest))}
             position="absolute"
             className={cn('inset-0 pointer-events-none overflow-hidden z-50', !children && className)}
             aria-hidden="true"
@@ -222,9 +226,9 @@ export const FxOverlay: React.FC<FxOverlayProps> = ({ items, tickMs = DEFAULT_TI
         </Box>
     );
 
-    if (children !== undefined && children !== null) {
+    if (hasChildren) {
         return (
-            <Box position="relative" className={className}>
+            <Box {...domPassthrough(rest)} position="relative" className={className}>
                 <Box
                     key={shakeItem?.id ?? 'steady'}
                     style={

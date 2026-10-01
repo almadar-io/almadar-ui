@@ -14,6 +14,7 @@
  * DocumentViewer and `<svg>` in JazariStateMachine/StateMachineView.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -26,7 +27,15 @@ import { MermaidDiagram } from './MermaidDiagram';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
 
-export interface MarkdownContentProps {
+import { domPassthrough } from '../../../../lib/domPassthrough';
+function samePassthrough(a: MarkdownContentProps, b: MarkdownContentProps): boolean {
+  const pa = domPassthrough(a);
+  const pb = domPassthrough(b);
+  const keys = Object.keys(pa);
+  return keys.length === Object.keys(pb).length && keys.every((k) => pa[k] === pb[k]);
+}
+
+export interface MarkdownContentProps extends A11yProps {
   /** The markdown content to render */
   content: string;
   /** Text direction (defaults to ltr; `ltr` is first so the generated config seeds it) */
@@ -36,11 +45,12 @@ export interface MarkdownContentProps {
 }
 
 export const MarkdownContent = React.memo<MarkdownContentProps>(
-  ({ content, direction = 'ltr', className }) => {
+  ({ content, direction = 'ltr', className, ...rest }) => {
     const { t: _t } = useTranslate();
     const safeContent = typeof content === 'string' ? content : String(content ?? '');
     return (
       <Box
+        {...domPassthrough(rest)}
         className={cn('prose max-w-none', className)}
         style={{
           color: 'var(--color-foreground)',
@@ -204,7 +214,8 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
   (prev, next) =>
     prev.content === next.content &&
     prev.className === next.className &&
-    prev.direction === next.direction,
+    prev.direction === next.direction &&
+    samePassthrough(prev, next),
 );
 
 MarkdownContent.displayName = 'MarkdownContent';

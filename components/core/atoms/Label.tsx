@@ -1,14 +1,15 @@
 import React from "react";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 
-export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
+export interface LabelProps extends Omit<React.LabelHTMLAttributes<HTMLLabelElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** Label text content */
   text?: string;
   /** Associated input element ID */
   htmlFor?: string;
-  /** Show required indicator */
+  /** Show required indicator (decorative; the field itself carries aria-required) */
   required?: boolean;
 }
 
@@ -24,7 +25,7 @@ export const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
         {...props}
       >
         {children}
-        {required && <span className="text-error ml-1">*</span>}
+        {required && <span aria-hidden="true" className="text-error ml-1">*</span>}
       </label>
     );
   },

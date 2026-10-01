@@ -13,7 +13,7 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import type { EventKey, EventPayload } from '@almadar/core';
+import type { EventKey, EventPayload, A11yProps } from '@almadar/core';
 import { Box } from '../atoms/Box';
 import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -25,6 +25,7 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Modal } from './Modal';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface CommandPaletteCommand {
   /** Unique command identifier */
   id: string;
@@ -52,7 +53,7 @@ export interface CommandPaletteCommand {
   actionPayload?: EventPayload;
 }
 
-export interface CommandPaletteProps {
+export interface CommandPaletteProps extends A11yProps {
   /** Whether the palette overlay is open */
   open: boolean;
   /** Called to open/close the overlay (Escape, overlay click, or a selection) */
@@ -117,6 +118,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   placeholder: placeholderProp,
   emptyLabel: emptyLabelProp,
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -190,6 +192,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   return (
     <Modal
+      {...domPassthrough(rest)}
       isOpen={open}
       onClose={handleClose}
       onExited={resetQuery}
@@ -253,6 +256,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             'w-full flex items-center gap-3 px-3 py-2 text-start rounded-interactive',
                             'text-sm transition-colors',
                             'focus:outline-none',
+                            'focus-visible:ring-[length:var(--focus-ring-width)] focus-visible:ring-ring focus-visible:ring-inset',
                             isHighlighted && 'bg-muted',
                             command.disabled && 'opacity-50 cursor-not-allowed',
                           )}

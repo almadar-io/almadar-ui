@@ -6,6 +6,7 @@
  * later value changes. Optional label below the number.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
@@ -13,7 +14,8 @@ import { Typography } from '../atoms/Typography';
 import { useFormatContext } from '../../../hooks/useTranslate';
 import { formatValue, type FormatContext } from '../../../lib/format';
 
-export interface AnimatedCounterProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface AnimatedCounterProps extends A11yProps {
   /** Target value. Strings may carry display affixes (e.g. "500+", "99.9%", "$1.2M"). */
   value: string | number;
   /** Label displayed below the number */
@@ -83,6 +85,7 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   suffix,
   format,
   className,
+  ...rest
 }) => {
   const fmt = useFormatContext();
   const ref = useRef<HTMLDivElement>(null);
@@ -142,7 +145,7 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
       : `${prefix ?? ''}${parsed.prefix}${formatNumber(display, format, parsed.decimals, fmt)}${parsed.suffix}${suffix ?? ''}`;
 
   return (
-    <Box ref={ref} className={cn('flex flex-col items-center gap-1', className)}>
+    <Box {...domPassthrough(rest)} ref={ref} className={cn('flex flex-col items-center gap-1', className)}>
       <Typography variant="h2" className="text-primary tabular-nums">
         {text}
       </Typography>

@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { formatSExpr, type EventEmit } from '@almadar/core';
+import { formatSExpr, type A11yProps, type EventEmit } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
@@ -15,6 +15,7 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useContainerWidth } from '../../../hooks/useContainerWidth';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { gearTeethPath } from '../../../lib/jazari/svg-paths';
 import { computeTraitLayout, roundedEdgePath, type ElkLayout, type TraitLayoutMetrics } from '../../../lib/avl-elk-layout';
 import { AVL_FONT, AVL_INK, AVL_STROKE, avlTint } from '../../../lib/avl-theme';
@@ -22,7 +23,7 @@ import type { TraitLevelData } from '../../../lib/avl-schema-parser';
 
 const log = createLogger('almadar:ui:avl:state-machine');
 
-export interface AvlStateMachineProps {
+export interface AvlStateMachineProps extends A11yProps {
   /** The trait to draw (see `parseTraitLevel`).
    * @example {"name":"OrderFlow","linkedEntity":"Order","states":[{"name":"browsing","isInitial":true,"isTerminal":false},{"name":"editing","isInitial":false,"isTerminal":false},{"name":"saving","isInitial":false,"isTerminal":false},{"name":"confirmed","isInitial":false,"isTerminal":true},{"name":"failed","isInitial":false,"isTerminal":false}],"transitions":[{"from":"browsing","to":"editing","event":"EDIT","effects":[{"type":"render-ui","args":[]}],"index":0},{"from":"editing","to":"saving","event":"SAVE","effects":[{"type":"persist","args":[]},{"type":"notify","args":[]}],"index":1},{"from":"saving","to":"confirmed","event":"SAVED","effects":[{"type":"emit","args":[]},{"type":"render-ui","args":[]}],"index":2},{"from":"saving","to":"failed","event":"SAVE_FAILED","effects":[{"type":"notify","args":[]}],"index":3},{"from":"failed","to":"editing","event":"RETRY","effects":[],"index":4},{"from":"editing","to":"browsing","event":"CANCEL","effects":[{"type":"render-ui","args":[]}],"index":5},{"from":"confirmed","to":"browsing","event":"DONE","effects":[{"type":"navigate","args":[]}],"index":6}],"emittedEvents":["ORDER_SAVED"],"listenedEvents":["PAYMENT_OK"]}
    */
@@ -110,7 +111,9 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
   direction = 'ltr',
   showHeader = true,
   className,
+  ...rest
 }) => {
+  const passthrough = domPassthrough(rest);
   const { t } = useTranslate();
   const eventBus = useEventBus();
   const clickable = transitionClickEvent !== undefined || onTransitionClick !== undefined;
@@ -162,7 +165,7 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
 
   if (trait.states.length === 0) {
     return (
-      <Box data-testid="avl-state-machine" className={className} style={{ width: '100%' }}>
+      <Box data-testid="avl-state-machine" className={className} style={{ width: '100%' }} {...passthrough}>
         {header}
         <Box data-testid="avl-state-machine-empty" className="rounded-md border border-dashed p-6 text-center" style={{ borderColor: AVL_INK.line }}>
           <Typography variant="caption" color="muted">{t('avl.noStateMachine')}</Typography>
@@ -177,7 +180,7 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
   const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, fit));
 
   return (
-    <Box data-testid="avl-state-machine" className={className} style={{ width: '100%' }}>
+    <Box data-testid="avl-state-machine" className={className} style={{ width: '100%' }} {...passthrough}>
       {header}
       <Box ref={hostRef} className="overflow-x-auto" style={{ width: '100%' }}>
         {layout ? (
@@ -248,6 +251,7 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
                     data-event={tr.event}
                     role={clickable ? 'button' : undefined}
                     tabIndex={clickable ? 0 : undefined}
+                    aria-current={fired ? 'true' : undefined}
                     onClick={clickable ? () => {
                       const payload = { index: tr.index, event: tr.event, from: tr.from, to: tr.to };
                       onTransitionClick?.(payload);
@@ -311,6 +315,8 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
                     data-shape={nodeShape}
                     role={stateClickEvent ? 'button' : undefined}
                     tabIndex={stateClickEvent ? 0 : undefined}
+                    aria-current={active ? 'true' : undefined}
+                    aria-pressed={stateClickEvent ? selected : undefined}
                     onClick={stateClickEvent ? () => eventBus.emit(`UI:${stateClickEvent}`, { stateId: s.name }) : undefined}
                     className={`absolute flex items-center justify-center ${gear ? 'rounded-full' : 'rounded-lg'} ${stateClickEvent ? 'cursor-pointer' : ''}`}
                     style={{

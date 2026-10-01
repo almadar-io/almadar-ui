@@ -6,6 +6,7 @@
  */
 
 import React from "react";
+import type { A11yProps } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
 import { Input, InputProps } from "../atoms/Input";
 import { Icon } from "../atoms/Icon";
@@ -14,8 +15,8 @@ import { cn } from "../../../lib/cn";
 
 export interface InputGroupProps extends Omit<
   InputProps,
-  "icon" | "iconRight"
-> {
+  "icon" | "iconRight" | keyof A11yProps
+>, A11yProps {
   /**
    * Left addon (icon, button, or text)
    */

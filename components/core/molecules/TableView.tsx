@@ -13,7 +13,7 @@
  * Icon, Checkbox, Divider.
  */
 import React from 'react';
-import type { EntityRow, EntityWith, FieldValue, EventKey, EventEmit } from '@almadar/core';
+import type { A11yProps, EntityRow, EntityWith, FieldValue, EventKey, EventEmit } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatValue, type FormatContext } from '../../../lib/format';
@@ -24,8 +24,8 @@ import { createLogger } from '@almadar/logger';
 const tableViewLog = createLogger('almadar:ui:table-view');
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { useRowActions } from '../../../hooks/useRowActions';
-import type { RowActionCondition } from '../../../lib/row-action-when';
+import { useRowActions, useRowActionFire } from '../../../hooks/useRowActions';
+import type { RowActionCondition, RowActionPayload } from '../../../lib/row-action-when';
 import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
@@ -42,6 +42,7 @@ import { useDataDnd, type DataDndProps } from './useDataDnd';
 import type { BadgeColor, UiError } from '../atoms/types';
 import { badgeVariantFor, valueLabelFor } from '../../../lib/displayField';
 import { pressableProps, rowActivationProps } from '../../../lib/pressable';
+import { domPassthrough } from '../../../lib/domPassthrough';
 
 // ── Column Definition ────────────────────────────────────────────────
 
@@ -91,6 +92,8 @@ export interface TableViewItemAction {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   /** Per-row condition, authored as `(fn row <bool>)`: the row's menu item is drawn only when it returns true. Omit = always shown. */
   when?: RowActionCondition;
+  /** Extra data the action sends, authored as `(fn row { key: <expr> })`; it emits `{ id, row }` plus these keys. */
+  payload?: RowActionPayload;
 }
 
 // ── Props ────────────────────────────────────────────────────────────
@@ -103,7 +106,7 @@ export interface TableViewItemAction {
  * @fieldsContract display
  * @minWidth 240
  */
-export interface TableViewProps extends DataDndProps, EmptyStateSlotProps {
+export interface TableViewProps extends DataDndProps, EmptyStateSlotProps, A11yProps {
   /** Schema entity data — the collection of rows to render. */
   entity: readonly EntityRow[];
   /** Column definitions. The compiler emits `columns`; `fields` is the alias. */
@@ -295,6 +298,7 @@ export function TableView({
   dndItemIdField,
   dndRoot,
   relationsData,
+  ...rest
 }: TableViewProps) {
   const eventBus = useEventBus();
   const rowActions = useRowActions();
@@ -317,11 +321,7 @@ export function TableView({
   // actions track — the buttons overflow and the pinned opaque cell paints
   // over the data columns beside it (observed 2026-09-17 on std-browse
   // dense tables, e.g. PF Timesheets: View/Edit covering the Status pill).
-  const fireAction = (action: TableViewItemAction, row: EntityRow) =>
-    eventBus.emit(`UI:${action.event}`, {
-      id: row.id as string | number,
-      row: row as ItemActionPayload['row'],
-    });
+  const { fire: fireRowAction, isRowPending } = useRowActionFire<TableViewItemAction>();
   const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
 
   const dnd = useDataDnd({
@@ -477,7 +477,7 @@ export function TableView({
       )}
     >
       {selectable && (
-        <Box className="flex items-center">
+        <Box role="columnheader" className="flex items-center">
           <Checkbox checked={allSelected} onChange={toggleAll} aria-label={t('aria.selectAllRows')} />
         </Box>
       )}
@@ -526,6 +526,9 @@ export function TableView({
         role="row"
         data-entity-row
         data-entity-id={id}
+        data-row-pending={isRowPending(id) || undefined}
+        aria-busy={isRowPending(id) || undefined}
+        aria-selected={selectable ? selected.has(id) : undefined}
         {...rowActivationProps(rowClickEvent ? handleRowClick(row) : undefined)}
         style={!hasRenderProp ? { gridTemplateColumns } : undefined}
         className={cn(
@@ -540,7 +543,7 @@ export function TableView({
         )}
       >
         {selectable && (
-          <Box className="flex items-center" onClick={rowClickEvent ? (e) => e.stopPropagation() : undefined}>
+          <Box role="cell" className="flex items-center" onClick={rowClickEvent ? (e) => e.stopPropagation() : undefined}>
             <Checkbox
               checked={selected.has(id)}
               onChange={() => toggleRow(id)}
@@ -620,7 +623,7 @@ export function TableView({
                   icon: action.icon,
                   event: action.event,
                   variant: action.variant === 'danger' ? 'danger' : 'default',
-                  onClick: () => fireAction(action, row),
+                  onClick: () => fireRowAction(action, row, id),
                 }))}
               />
             )}
@@ -658,6 +661,7 @@ export function TableView({
   return (
     <Box
       role="table"
+      {...domPassthrough(rest)}
       className={cn('@container/table w-full text-sm', className)}
     >
       {showHeader && header}

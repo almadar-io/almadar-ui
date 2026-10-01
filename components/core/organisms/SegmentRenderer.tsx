@@ -23,6 +23,8 @@ import { ReflectionBlock } from '../molecules/ReflectionBlock';
 import { BloomQuizBlock } from '../molecules/BloomQuizBlock';
 import { CodeRunnerPanel, type CodeSimulationOutput } from './CodeRunnerPanel';
 import { cn } from '../../../lib/cn';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import type { LessonSegment, InteractiveOrbitalType } from '../../../lib/parseLessonSegments';
 
 export type { LessonSegment, CodeSimulationOutput };
@@ -39,7 +41,7 @@ export interface LessonUserProgress {
   bloomAnswered?: Record<number, boolean>;
 }
 
-export interface SegmentRendererProps {
+export interface SegmentRendererProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Parsed lesson segments (see `parseLessonSegments`) */
   segments: LessonSegment[];
   /** Additional CSS classes for the root container */
@@ -68,6 +70,7 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
   userProgress,
   onRunCodeSimulation,
   onRenderVisualization,
+  ...rest
 }) => {
   if (segments.length === 0) return null;
 
@@ -76,6 +79,7 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
 
   return (
     <div
+      {...domPassthrough(rest)}
       className={cn(
         'border border-border rounded-container p-2 md:p-4 overflow-x-auto space-y-6',
         containerClassName,

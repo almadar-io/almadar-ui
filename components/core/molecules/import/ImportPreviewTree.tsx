@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import type { FieldValue } from '@almadar/core';
+import type { FieldValue, A11yProps } from '@almadar/core';
 import { Box } from '../../atoms/Box';
 import { Badge } from '../../atoms/Badge';
 import { Button } from '../../atoms/Button';
@@ -18,6 +18,7 @@ import { Typography } from '../../atoms/Typography';
 import { cn } from '../../../../lib/cn';
 import { useTranslate } from '../../../../hooks/useTranslate';
 
+import { domPassthrough } from '../../../../lib/domPassthrough';
 export interface ImportPreviewUnit {
   /** Staging ref, provenance-linked to a source span */
   ref: string;
@@ -41,7 +42,7 @@ export interface ImportEntityDisplay {
   plural: string;
 }
 
-export interface ImportPreviewTreeProps {
+export interface ImportPreviewTreeProps extends A11yProps {
   /** Staged units to preview */
   units: ImportPreviewUnit[];
   /** Elements skipped during extraction, with reasons */
@@ -90,6 +91,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
   cancelLabel,
   indent = 16,
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const groups = new Map<string, ImportPreviewUnit[]>();
@@ -125,7 +127,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
   };
 
   return (
-    <Box className={cn('flex flex-col gap-4', className)}>
+    <Box {...domPassthrough(rest)} className={cn('flex flex-col gap-4', className)}>
       {units.length === 0 ? (
         <Typography variant="body2" className="text-muted-foreground">
           {t('import.noUnitsStaged')}

@@ -32,15 +32,39 @@ const products: TopNavItemData = {
 };
 
 describe('TopNavItem', () => {
-  it('a plain item follows its href through the nav stack', () => {
+  it('a plain item is a real link that follows its href through the nav stack', () => {
     const navigate = mount({ label: 'Pricing', href: '/pricing' });
-    fireEvent.click(screen.getByRole('button', { name: /pricing/i }));
+    const link = screen.getByRole('link', { name: /pricing/i });
+    expect(link.getAttribute('href')).toBe('/pricing');
+    fireEvent.click(link);
     expect(navigate).toHaveBeenCalledWith('/pricing');
   });
 
   it('control: a plain item has no dropdown affordance', () => {
     mount({ label: 'Pricing', href: '/pricing' });
-    expect(screen.getByRole('button', { name: /pricing/i }).getAttribute('aria-expanded')).toBeNull();
+    expect(screen.getByRole('link', { name: /pricing/i }).getAttribute('aria-expanded')).toBeNull();
+  });
+
+  it('the active plain item is marked aria-current="page"', () => {
+    mount({ label: 'Pricing', href: '/pricing' }, '/pricing');
+    expect(screen.getByRole('link', { name: /pricing/i }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it('control: an inactive plain item carries no aria-current', () => {
+    mount({ label: 'Pricing', href: '/pricing' }, '/about');
+    expect(screen.getByRole('link', { name: /pricing/i }).hasAttribute('aria-current')).toBe(false);
+  });
+
+  it('edge: an onClick-only item stays a button and still marks current', () => {
+    mount({ label: 'Help', onClick: vi.fn(), active: true });
+    expect(screen.getByRole('button', { name: /help/i }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it('the active child in an open dropdown is marked aria-current="page"', () => {
+    mount(products, '/orb');
+    fireEvent.click(screen.getByRole('button', { name: /products/i }));
+    expect(screen.getByRole('menuitem', { name: /orb/i }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('menuitem', { name: /studio/i }).hasAttribute('aria-current')).toBe(false);
   });
 
   it('an item with children opens a dropdown instead of navigating', () => {

@@ -10,6 +10,7 @@ import { Icon, type IconInput } from '../atoms/Icon';
 import { Tooltip, type TooltipPosition } from './Tooltip';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 
+/** @accessibleName label */
 export interface IconButtonProps extends Omit<ButtonProps, 'children' | 'label' | 'icon' | 'leftIcon' | 'rightIcon' | 'iconRight'> {
   icon: IconInput;
   /** What the button does — its accessible name and its tooltip. */

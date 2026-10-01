@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import type { EventEmit, EventPayload } from "@almadar/core";
+import type { EventEmit, EventPayload, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Box, Typography, Button } from "../atoms/index";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /**
  * QR scan callback payload. Extends `EventPayload` (string-indexed
  * `EventPayloadValue` map) so the result is directly assignable to a
@@ -19,7 +20,7 @@ export type QrScanResult = EventPayload & {
   timestamp: number;
 };
 
-export interface QrScannerProps {
+export interface QrScannerProps extends A11yProps {
   onScan?: (result: QrScanResult) => void;
   scanEvent?: EventEmit<QrScanResult>;
   onError?: (error: Error) => void;
@@ -41,6 +42,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
   showCameraControls = true,
   fallback,
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -151,11 +153,12 @@ export const QrScanner: React.FC<QrScannerProps> = ({
   };
 
   if (cameraError && fallback) {
-    return <Box position="relative" className={className}>{fallback}</Box>;
+    return <Box {...domPassthrough(rest)} position="relative" className={className}>{fallback}</Box>;
   }
 
   return (
     <Box
+      {...domPassthrough(rest)}
       position="relative"
       overflow="hidden"
       rounded="sm"
@@ -167,7 +170,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
       )}
       data-pattern="qr-scanner"
       role="region"
-      aria-label={t('aria.qrScanner')}
+      aria-label={rest['aria-label'] ?? t('aria.qrScanner')}
     >
       <Box
         as="video"
@@ -177,7 +180,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
         fullHeight
         className="inset-0 object-cover"
         aria-hidden="true"
-        {...(videoExtraProps as React.HTMLAttributes<HTMLDivElement>)}
+        {...(videoExtraProps as Omit<React.HTMLAttributes<HTMLDivElement>, keyof A11yProps>)}
       />
 
       {showOverlay && isReady && !isPaused && (

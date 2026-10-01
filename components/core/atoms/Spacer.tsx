@@ -4,12 +4,14 @@
  * A flexible spacer that expands to fill available space in a flex container.
  * Useful for pushing elements apart or creating consistent spacing.
  */
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 
 export type SpacerSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'auto';
 
-export interface SpacerProps {
+export interface SpacerProps extends A11yProps {
   /** Fixed size (auto = flex grow) */
   size?: SpacerSize;
   /** Orientation (for fixed sizes) */
@@ -47,9 +49,10 @@ export const Spacer: React.FC<SpacerProps> = ({
   size = 'auto',
   axis = 'horizontal',
   className,
+  ...rest
 }) => {
   if (size === 'auto') {
-    return <div className={cn('flex-1', className)} aria-hidden="true" />;
+    return <div className={cn('flex-1', className)} {...domPassthrough(rest)} aria-hidden="true" />;
   }
 
   const sizeClass = axis === 'horizontal' 
@@ -58,7 +61,8 @@ export const Spacer: React.FC<SpacerProps> = ({
 
   return (
     <div 
-      className={cn('flex-shrink-0', sizeClass, className)} 
+      className={cn('flex-shrink-0', sizeClass, className)}
+      {...domPassthrough(rest)}
       aria-hidden="true" 
     />
   );

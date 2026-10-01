@@ -1,8 +1,10 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import React from 'react';
 
-export interface SvgMorphProps {
+export interface SvgMorphProps extends A11yProps {
   x?: number;
   y?: number;
   size?: number;
@@ -161,7 +163,9 @@ export const SvgMorph: React.FC<SvgMorphProps> = ({
   asRoot = true,
   width = 130,
   height = 50,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   const gap = 40 * size;
   const midY = y + 10 * size;
 
@@ -171,7 +175,7 @@ export const SvgMorph: React.FC<SvgMorphProps> = ({
     const leftEnd = x + 30 * size;
     const rightStart = leftEnd + gap;
     inner = (
-      <g className={className} opacity={opacity}>
+      <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
         <TextLines x={x} y={y} scale={size} color={color} />
         <FlowArrow x1={leftEnd} y={midY} x2={rightStart} scale={size} color={color} />
         <CodeBrackets x={rightStart} y={y} scale={size} color={color} />
@@ -181,7 +185,7 @@ export const SvgMorph: React.FC<SvgMorphProps> = ({
     const leftEnd = x + 26 * size;
     const rightStart = leftEnd + gap;
     inner = (
-      <g className={className} opacity={opacity}>
+      <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
         <CodeBrackets x={x} y={y} scale={size} color={color} />
         <FlowArrow x1={leftEnd} y={midY} x2={rightStart} scale={size} color={color} />
         <AppRect x={rightStart} y={y} scale={size} color={color} />
@@ -194,7 +198,7 @@ export const SvgMorph: React.FC<SvgMorphProps> = ({
     const squareSize = circleR * 2;
 
     inner = (
-      <g className={className} opacity={opacity}>
+      <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
         <circle
           cx={circleX}
           cy={midY}
@@ -226,7 +230,7 @@ export const SvgMorph: React.FC<SvgMorphProps> = ({
 
   if (asRoot) {
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...a11y}>
         {inner}
       </svg>
     );

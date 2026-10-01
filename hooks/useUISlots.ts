@@ -52,11 +52,6 @@ const log = createLogger('almadar:ui:ui-slots');
 export type { UISlot };
 
 /**
- * Animation types for slot transitions
- */
-export type SlotAnimation = 'fade' | 'slide' | 'scale' | 'none';
-
-/**
  * Render-prop callback after fn-form-lambda conversion or
  * `wrapCallbackForEvent` wrapping. Pattern components consume these as
  * `renderItem` / `onTabChange` / `onClick` / etc. The arg list is
@@ -116,8 +111,6 @@ export interface SlotContent {
   props: SlotProps | string;
   /** Priority for conflict resolution (higher wins) */
   priority: number;
-  /** Animation for showing/hiding */
-  animation?: SlotAnimation;
   /** Auto-dismiss timestamp (for toasts) */
   autoDismissAt?: number;
   /** Callback when dismissed */
@@ -148,8 +141,6 @@ export interface SlotRenderConfig {
   props?: SlotProps | string;
   /** Priority (default: 0) */
   priority?: number;
-  /** Animation type */
-  animation?: SlotAnimation;
   /** Auto-dismiss after ms (for toasts) */
   autoDismissMs?: number;
   /** Callback on dismiss */
@@ -342,7 +333,6 @@ function aggregateSlot(sources: SlotSources | undefined): SlotContent | null {
       children,
     },
     priority: 0,
-    animation: 'fade',
     sourceTrait: MULTI_SOURCE_STACK_TRAIT,
   };
 }
@@ -455,7 +445,6 @@ export function useUISlotManager(): UISlotManager {
         pattern: config.pattern,
         props: config.props ?? {},
         priority: config.priority ?? 0,
-        animation: config.animation ?? 'fade',
         onDismiss: config.onDismiss,
         sourceTrait: config.sourceTrait,
         slot: config.target,
@@ -522,7 +511,6 @@ export function useUISlotManager(): UISlotManager {
           existing &&
           existing.priority === content.priority &&
           existing.pattern === content.pattern &&
-          existing.animation === content.animation &&
           existing.transitionEvent === content.transitionEvent &&
           existing.fromState === content.fromState &&
           existing.entity === content.entity &&

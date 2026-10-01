@@ -9,10 +9,11 @@
  * for non-modal use cases.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from "react";
 import { cn } from "../../../lib/cn";
 
-export interface DialogProps extends React.DialogHTMLAttributes<HTMLDialogElement> {
+export interface DialogProps extends Omit<React.DialogHTMLAttributes<HTMLDialogElement>, keyof A11yProps>, A11yProps {
   /** Additional CSS classes */
   className?: string;
   /** Dialog contents */

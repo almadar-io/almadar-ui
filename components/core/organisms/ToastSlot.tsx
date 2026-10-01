@@ -19,6 +19,8 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { useEntitySchemaOptional } from '../../../providers/EntitySchemaContext';
 import type { UiError } from '../atoms/types';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 
 /** Props extracted from a React element for toast content */
 interface ToastElementProps {
@@ -27,7 +29,7 @@ interface ToastElementProps {
   title?: string;
 }
 
-export interface ToastSlotProps {
+export interface ToastSlotProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Content to display in the toast (message or ReactNode) */
   children?: React.ReactNode;
   /** Toast variant */
@@ -85,6 +87,7 @@ export const ToastSlot: React.FC<ToastSlotProps> = ({
   duration = 5000,
   className,
   sourceTrait,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -116,7 +119,7 @@ export const ToastSlot: React.FC<ToastSlotProps> = ({
 
   return (
     <ThemedPortal>
-      <Box className="fixed bottom-4 right-4 z-50">
+      <Box {...domPassthrough(rest)} className="fixed bottom-4 right-4 z-50">
         {isCustomContent ? (
           children
         ) : (

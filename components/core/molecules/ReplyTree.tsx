@@ -7,13 +7,14 @@
  */
 
 import React, { useCallback, useState } from "react";
-import type { EventEmit, EntityRow, EntityWith } from "@almadar/core";
+import type { EventEmit, EntityRow, EntityWith, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Avatar, Typography, Button, Box, Input } from "../atoms/index";
 import { VoteStack, type VoteValue } from "./VoteStack";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /** The per-node entity fields this tree reads. `replies` is the same row shape
  *  nested recursively; `userVote` carries the `VoteValue` literal union. */
 export interface ReplyNodeRow {
@@ -27,7 +28,7 @@ export interface ReplyNodeRow {
     replies?: readonly EntityWith<ReplyNodeRow>[];
 }
 
-export interface ReplyTreeProps {
+export interface ReplyTreeProps extends A11yProps {
     nodes: readonly EntityWith<ReplyNodeRow>[];
     maxDepth?: number;
     onVote?: (nodeId: string, vote: VoteValue) => void;
@@ -306,6 +307,7 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
     continueThreadEvent,
     showActions = true,
     className,
+  ...rest
 }) => {
     const { t } = useTranslate();
     const nodeList = Array.isArray(nodes) ? nodes : nodes ? [nodes] : [];
@@ -329,14 +331,14 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
 
     if (nodeList.length === 0) {
         return (
-            <Box className={cn("text-sm text-muted-foreground", className)}>
+            <Box {...domPassthrough(rest)} className={cn("text-sm text-muted-foreground", className)}>
                 {t('replyTree.noRepliesYet')}
             </Box>
         );
     }
 
     return (
-        <Box className={cn("flex flex-col gap-2 min-w-0", className)}>
+        <Box {...domPassthrough(rest)} className={cn("flex flex-col gap-2 min-w-0", className)}>
             {nodeList.map((node) => (
                 <ReplyTreeNode
                     key={node.id as string}

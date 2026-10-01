@@ -5,11 +5,14 @@
  * Reveals text character-by-character with a blinking cursor
  * that disappears after the full text has been typed out.
  */
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "../../../lib/cn";
 import { Typography } from "./Typography";
+import { usePrefersReducedMotion } from "../../../hooks/usePrefersReducedMotion";
 
-export interface TypewriterTextProps {
+export interface TypewriterTextProps extends A11yProps {
   /** The full text to reveal */
   text: string;
   /** Milliseconds per character */
@@ -28,10 +31,12 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   startDelay = 0,
   className,
   onComplete,
+  ...rest
 }) => {
   const safeText = typeof text === 'string' ? text : String(text ?? '');
   const [charCount, setCharCount] = useState(0);
   const [started, setStarted] = useState(startDelay === 0);
+  const reducedMotion = usePrefersReducedMotion();
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -63,7 +68,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   useEffect(() => {
     if (!started) return undefined;
 
-    if (charCount >= safeText.length) {
+    if (reducedMotion || charCount >= safeText.length) {
       onCompleteRef.current?.();
       return undefined;
     }
@@ -81,13 +86,13 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
     return () => {
       window.clearInterval(interval);
     };
-  }, [started, text, speed, charCount]);
+  }, [started, text, speed, charCount, reducedMotion]);
 
-  const isComplete = charCount >= safeText.length;
-  const displayedText = safeText.slice(0, charCount);
+  const isComplete = reducedMotion || charCount >= safeText.length;
+  const displayedText = reducedMotion ? safeText : safeText.slice(0, charCount);
 
   return (
-    <Typography variant="body" className={cn("inline", className)}>
+    <Typography variant="body" className={cn("inline", className)} {...domPassthrough(rest)}>
       {displayedText}
       {!isComplete && (
         <span

@@ -6,7 +6,8 @@ import { Typography } from '../../core/atoms/Typography';
 import { GameIcon } from '../../core/atoms/GameIcon';
 import { HealthBar } from '../atoms/HealthBar';
 import { ScoreDisplay } from '../atoms/ScoreDisplay';
-import type { Asset } from '@almadar/core';
+import type { A11yProps, Asset } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 
 /**
  * StatBadge — game stat display molecule (distinct from core Badge atom).
@@ -14,7 +15,7 @@ import type { Asset } from '@almadar/core';
  * with optional HealthBar (hearts/bar) or ScoreDisplay (animated number) and
  * a named label — purpose-built for HUD stat rows, not general status tags.
  */
-export interface StatBadgeProps {
+export interface StatBadgeProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Sprite asset — takes precedence over icon when provided */
   assetUrl?: Asset;
   /** Asset image (board ui/ PNG); takes precedence over the Lucide icon. */
@@ -70,6 +71,7 @@ export function StatBadge({
   // Ignored config props (used for schema binding)
   source: _source,
   field: _field,
+  ...rest
 }: StatBadgeProps) {
   const hasValue = value !== undefined && value !== null;
   const numValue = typeof value === 'number' ? value : parseInt(String(value), 10) || 0;
@@ -77,6 +79,7 @@ export function StatBadge({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         'inline-flex items-center gap-2 rounded-container border backdrop-blur-sm',
         sizeMap[size as keyof typeof sizeMap] ?? sizeMap.md,

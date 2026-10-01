@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback, useContext, useEffect, Suspense, lazy } from "react";
-import type { EventPayload, EntityRow, FieldValue, EventKey } from "@almadar/core";
+import type { A11yProps, EventPayload, EntityRow, EntityWith, FieldValue, EventKey } from "@almadar/core";
 import type { RelationFieldCardinality } from "../molecules/RelationSelect";
 import type { ItemActionPayload } from "@almadar/core/patterns";
 import { ArrowLeft, FileText, X } from "lucide-react";
@@ -25,6 +25,11 @@ import {
   ProgressBar,
 } from "../atoms/index";
 import { Box } from "../atoms/Box";
+import { Image } from "../atoms/Image";
+import { DetailLookLayout, type DetailLook, type DetailStage, type DetailTab } from "./detail-looks/DetailLookLayout";
+import type { TimelineItem } from "./Timeline";
+import type { TableViewColumn } from "../molecules/TableView";
+import type { ReplyNodeRow } from "../molecules/ReplyTree";
 import { Input } from "../atoms/Input";
 import { VStack, HStack } from "../atoms/Stack";
 import { SimpleGrid } from "../molecules/SimpleGrid";
@@ -41,15 +46,17 @@ import type { TranslateFunction } from "../../../hooks/useTranslate";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { relationDisplayLabels } from "../../../lib/relationLabel";
 import { useEventBus } from "../../../hooks/useEventBus";
-import { useRowActions } from "../../../hooks/useRowActions";
-import type { RowActionCondition } from "../../../lib/row-action-when";
+import { useRowActions, useRowActionPayload } from "../../../hooks/useRowActions";
+import type { RowActionCondition, RowActionPayload } from "../../../lib/row-action-when";
 import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
+import { usePendingAction } from "../../../lib/pendingDispatch";
 import { useNavStack } from "../../../providers/NavStackContext";
 import { useRenderSlot } from "../../../providers/RenderSlotContext";
 import type { DisplayStateProps } from "./types";
 import type { RelationOption } from "../molecules/RelationSelect";
 import { formatFileSize } from "../molecules/UploadDropZone";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
+import { domPassthrough } from "../../../lib/domPassthrough";
 
 const formatFieldLabel = (name: string): string => name;
 
@@ -105,6 +112,10 @@ function renderRichFieldValue(
 
   const str = String(value);
 
+  // A declared display format is the author's choice and wins over the
+  // schema type (a `datetime` field declared `format: date` shows the date).
+  if (field.format) return formatValue(value, field.format, fmt);
+
   switch (fieldType) {
     case "image": {
       // The declared type IS the truth: an `image` field renders as an image,
@@ -112,31 +123,14 @@ function renderRichFieldValue(
       // gate showed them as raw text).
       if (!str) return "—";
       return (
-        <Box className="mt-1 max-w-full">
-          <img
-            src={str}
-            alt={formatFieldLabel(fieldName)}
-            className="max-w-full max-h-64 rounded-container object-contain"
-            loading="lazy"
-          />
+        <Box className="mt-1 max-w-full max-h-64">
+          <Image src={str} alt={formatFieldLabel(fieldName)} fit="contain" rounded="md" />
         </Box>
       );
     }
 
     case "url": {
-      // A url field renders as an image only when the URL looks like one.
-      if (str.match(/\.(png|jpe?g|gif|svg|webp|avif)(\?|$)/i) || str.startsWith("data:image/")) {
-        return (
-          <Box className="mt-1 max-w-full">
-            <img
-              src={str}
-              alt={formatFieldLabel(fieldName)}
-              className="max-w-full max-h-64 rounded-container object-contain"
-              loading="lazy"
-            />
-          </Box>
-        );
-      }
+      // A url renders as a link; an image is declared as an `image` field.
       if (/^https?:\/\//i.test(str)) {
         return (
           <a
@@ -363,6 +357,8 @@ export interface DetailPanelAction {
   variant?: "primary" | "secondary" | "ghost" | "danger";
   /** Condition over the panel's record, authored as `(fn row <bool>)`: the button is drawn only when it returns true. Omit = always shown. */
   when?: RowActionCondition;
+  /** Extra data the action sends, authored as `(fn row { key: <expr> })`; it emits `{ id, row }` plus these keys. Omit = `{ id, row }`. */
+  payload?: RowActionPayload;
 }
 
 /** Schema metadata the runtime's detail enrichment (UISlotRenderer) or the
@@ -409,7 +405,7 @@ function slotOf(f: ResolvedField): FieldSlot {
   if (f.variant === "badge") return "badge";
   if (f.variant === "progress") return "progress";
   if (f.variant === "body") return "body";
-  if (f.format === "date") return "date";
+  if (f.format === "date" || f.format === "datetime") return "date";
   if (f.format === "currency" || f.format === "number" || f.format === "percent") return "metric";
   return "other";
 }
@@ -424,7 +420,7 @@ export interface DetailPanelStatus {
  *
  * @fieldsContract display
  */
-export interface DetailPanelProps extends DisplayStateProps {
+export interface DetailPanelProps extends DisplayStateProps, A11yProps {
   /** RECORD-cardinality: renders ONE record (see body collapse below). */
   entity?: EntityRow;
   title?: string;
@@ -482,6 +478,39 @@ export interface DetailPanelProps extends DisplayStateProps {
    *  server-side by the runtime (relation-option injection) or bound by
    *  compiled codegen; resolves stored foreign ids to display names. */
   relationsData?: Record<string, readonly RelationOption[]>;
+  /** Page variant: panel (labelled fields, default), profile (person/member hero), showcase (image-first product/listing), workflow (lifecycle stepper + activity), map (location hero), ledger (document with line items + totals), conversation (thread beside the record), workspace (tabbed record). */
+  look?: DetailLook;
+  /** Record field holding the avatar image. The profile look always shows an avatar, with the title's initials when this is unset or empty. */
+  avatarField?: string;
+  /** Record field holding the cover image (profile). */
+  coverField?: string;
+  /** Record field holding the image, or list of images, the showcase look leads with. */
+  mediaField?: string;
+  /** Record field holding the current lifecycle stage (workflow). */
+  stageField?: string;
+  /** The lifecycle in order, `{ value, label }` per stage (workflow). */
+  stages?: readonly DetailStage[];
+  /** Activity entries shown under the record (workflow). */
+  activity?: readonly TimelineItem[];
+  /** Activity composed in instead of `activity` — e.g. the record's own history trait (workflow). */
+  activityContent?: React.ReactNode;
+  /** Record fields holding the location (map). */
+  latitudeField?: string;
+  longitudeField?: string;
+  /** Child rows shown as the document's line items (ledger). */
+  lineItems?: readonly EntityRow[];
+  /** Columns of the line-items table (ledger). */
+  lineItemColumns?: readonly TableViewColumn[];
+  /** Line items composed in instead of `lineItems` — e.g. the child rows' own trait (ledger). */
+  lineItemsContent?: React.ReactNode;
+  /** Record fields shown as the document's totals, in order (ledger). */
+  totals?: readonly DisplayField[];
+  /** The thread shown as the main surface (conversation). */
+  thread?: readonly EntityWith<ReplyNodeRow>[];
+  /** The thread composed in instead of `thread` — e.g. the replies' own trait with its composer (conversation). */
+  threadContent?: React.ReactNode;
+  /** Tabs after the overview tab, each listing declared field names (workspace). */
+  tabs?: readonly DetailTab[];
 }
 
 export const DetailPanel: React.FC<DetailPanelProps> = ({
@@ -506,9 +535,28 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   isLoading = false,
   error,
   relationsData,
+  look = "panel",
+  avatarField,
+  coverField,
+  mediaField,
+  stageField,
+  stages,
+  activity,
+  latitudeField,
+  longitudeField,
+  lineItems,
+  lineItemColumns,
+  lineItemsContent,
+  totals,
+  thread,
+  threadContent,
+  activityContent,
+  tabs,
+  ...a11yRest
 }) => {
   const eventBus = useEventBus();
   const rowActions = useRowActions();
+  const actionPayload = useRowActionPayload();
   const { t, locale } = useTranslate();
   const fmt = useFormatContext();
   const ctx: RenderContext = { locale, t, fmt };
@@ -549,27 +597,26 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     renderRichFieldValue(value, field, ctx, metaFor(field));
 
   // Handle action click with event bus and navigation support
+  // An overflow-menu action closes its menu, so the trigger it came from shows busy.
+  const overflowBusy = usePendingAction();
   const handleActionClick = useCallback(
-    (action: DetailPanelAction, data?: EventPayload) => {
+    (action: DetailPanelAction, record?: EntityRow, pendingKey?: string) => {
       if (action.navigatesTo) {
         // Replace template variables in URL
         const url = action.navigatesTo.replace(/\{\{(\w+)\}\}/g, (_, key) =>
-          String(data?.[key] ?? ""),
+          String(record?.[key] ?? ""),
         );
-        eventBus.emit('UI:NAVIGATE', { url, row: data });
+        eventBus.emit('UI:NAVIGATE', { url, row: record });
         return;
       }
       if (action.event) {
-        const payload: ItemActionPayload | EventPayload = data
-          ? { id: data.id as string | number, row: data as ItemActionPayload['row'] }
-          : {};
-        eventBus.emit(`UI:${action.event}`, payload);
+        eventBus.emit(`UI:${action.event}`, record ? actionPayload(action, record) : {}, pendingKey !== undefined ? { pendingKey } : undefined);
       }
       if (action.onClick) {
         action.onClick();
       }
     },
-    [eventBus],
+    [eventBus, actionPayload],
   );
 
   // entity is now the data itself (single record or first element of array)
@@ -578,7 +625,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 
   let title = propTitle;
   // Use a mutable array for building sections, but accept readonly from props
-  let sections: DetailSection[] | undefined = propSections
+  const hasDeclaredSections = Boolean(propSections && propSections.length > 0);
+  let sections: DetailSection[] | undefined = hasDeclaredSections && propSections
     ? [...propSections]
     : undefined;
 
@@ -605,6 +653,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     }));
   }
 
+  let keyFigures: ResolvedField[] = [];
+  let proseFields: DetailField[] = [];
+
   // Build sections from schema if provided
   if (normalizedData && resolvedFields) {
     const declaredTitle = titleFieldOf(resolvedFields);
@@ -615,8 +666,10 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       title = String(getNestedValue(normalizedData, declaredTitle.name));
     }
 
+    // A workspace tab claims its fields; the Overview tab leaves them out.
+    const tabClaimed = new Set(look === "workspace" ? (tabs ?? []).flatMap((tab) => tab.fields ?? []) : []);
     const slotted = (slot: FieldSlot): ResolvedField[] =>
-      resolvedFields.filter((f) => slotOf(f) === slot && !(titleDerived && f === declaredTitle));
+      resolvedFields.filter((f) => slotOf(f) === slot && !(titleDerived && f === declaredTitle) && !tabClaimed.has(f.name));
     const progressFields = slotted("progress");
     const metricFields = slotted("metric");
     const dateFields = slotted("date");
@@ -634,22 +687,24 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       return out;
     };
 
-    sections = [];
-
     // Badge-variant fields are DELIBERATELY withheld — they already render as
     // badges beside the title; repeating them as grid rows showed the same
-    // value twice on 53 of 79 surveyed detail pages.
-    const overviewFields = toDetailFields(otherFields);
-    if (overviewFields.length > 0) sections.push({ title: t("detailPanel.section.overview"), fields: overviewFields });
+    // value twice on 53 of 79 surveyed detail pages. Money/number/percent and
+    // progress fields go to the key-figures strip, prose to its own block.
+    // Declared `sections` are the author's grouping and win over the field slots.
+    if (!hasDeclaredSections) {
+      sections = [];
+      const overviewFields = toDetailFields(otherFields);
+      if (overviewFields.length > 0) sections.push({ title: t("detailPanel.section.overview"), fields: overviewFields });
+      const timelineFields = toDetailFields(dateFields);
+      if (timelineFields.length > 0) sections.push({ title: t("detailPanel.section.timeline"), fields: timelineFields });
+    }
 
-    const metricsFields = toDetailFields([...progressFields, ...metricFields]);
-    if (metricsFields.length > 0) sections.push({ title: t("detailPanel.section.metrics"), fields: metricsFields });
-
-    const timelineFields = toDetailFields(dateFields);
-    if (timelineFields.length > 0) sections.push({ title: t("detailPanel.section.timeline"), fields: timelineFields });
-
-    const descFields = toDetailFields(descriptionFields);
-    if (descFields.length > 0) sections.push({ title: t("detailPanel.section.details"), fields: descFields });
+    keyFigures = [...progressFields, ...metricFields].filter((field) => {
+      const value = getNestedValue(normalizedData, field.name);
+      return value !== undefined && value !== null && value !== "";
+    });
+    proseFields = toDetailFields(descriptionFields);
   }
 
   // Feed the loaded record's title into the nav stack's current crumb, so a
@@ -702,23 +757,18 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     );
   }
 
-  // Flatten all section fields into a single list (no section headings)
-  const allFields: DetailField[] = [];
-  if (sections) {
-    for (const section of sections) {
-      for (const field of section.fields) {
-        if (typeof field === "string") {
-          const value = (normalizedData ? getNestedValue(normalizedData, field) : undefined) as FieldValue | undefined;
-          allFields.push({
-            label: labelFor(field),
-            value: richValue(fieldFor(field), value),
-          });
-        } else {
-          allFields.push(field);
-        }
-      }
-    }
-  }
+  // Resolve string field references inside sections; sections keep their own headings.
+  const renderedSections: { title: string; fields: DetailField[] }[] = (sections ?? [])
+    .map((section) => ({
+      title: section.title,
+      fields: section.fields.map((field): DetailField => {
+        if (typeof field !== "string") return field;
+        const value = (normalizedData ? getNestedValue(normalizedData, field) : undefined) as FieldValue | undefined;
+        return { label: labelFor(field), value: richValue(fieldFor(field), value) };
+      }),
+    }))
+    .filter((section) => section.fields.length > 0);
+  const showSectionHeadings = renderedSections.length > 1;
 
   // The close × renders ONLY for the action whose event the call site names
   // in `closeEvent` — a routed detail page names none and gets no dismiss
@@ -735,7 +785,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           .filter((f) => slotOf(f) === "badge")
           .map((field) => {
             const value = getNestedValue(normalizedData, field.name);
-            if (!value) return null;
+            if (value === undefined || value === null || value === "") return null;
             return (
               <Badge
                 key={field.name}
@@ -808,28 +858,65 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       </Typography>
     );
 
-  const content = (
-    <Card variant="elevated">
-      <VStack gap="md" className="p-6">
+  const avatarSrc = avatarField && normalizedData ? getNestedValue(normalizedData, avatarField) : undefined;
+  const avatarNode = avatar ?? (avatarField || look === "profile" ? (
+    <Avatar src={typeof avatarSrc === "string" && avatarSrc ? avatarSrc : undefined} name={title} size="xl" />
+  ) : null);
+
+  const totalsNode = totals && totals.length > 0 && normalizedData ? (
+    <VStack gap="xs" align="end" className="ms-auto min-w-[16rem] border-t border-border pt-3" data-testid="detail-totals">
+      {totals.map((field, idx) => {
+        const value = getNestedValue(normalizedData, field.name) as FieldValue | undefined;
+        const last = idx === totals.length - 1;
+        return (
+          <HStack key={field.name} justify="between" gap="lg" className="w-full">
+            <Typography variant={last ? "body" : "small"} color={last ? undefined : "secondary"} weight={last ? "semibold" : undefined}>
+              {field.label ?? field.name}
+            </Typography>
+            <Typography variant={last ? "h4" : "body"} as="span" className="tabular-nums">
+              {value === undefined || value === null ? "—" : formatValue(value, field.format, fmt)}
+            </Typography>
+          </HStack>
+        );
+      })}
+    </VStack>
+  ) : null;
+
+  const renderFields = (names: readonly string[]): React.ReactNode => (
+    <SimpleGrid minChildWidth="200px" maxCols={3} gap="md">
+      {names.map((name) => {
+        const value = (normalizedData ? getNestedValue(normalizedData, name) : undefined) as FieldValue | undefined;
+        return (
+          <VStack key={name} gap="none" className="min-w-0">
+            <Typography variant="caption" color="muted" weight="medium">{labelFor(name)}</Typography>
+            <Typography variant="body" className="break-words">{richValue(fieldFor(name), value)}</Typography>
+          </VStack>
+        );
+      })}
+    </SimpleGrid>
+  );
+
+  const headerNode = (
+    <>
         {/* One-row header: identity LEFT (back per OS convention, then
             avatar + title with its status badges + subtitle), actions RIGHT
             (inline up to maxInlineActions, rest in the ⋯ menu, gated ×). */}
-        <HStack justify="between" align="start" gap="md">
-          <HStack align="start" gap="sm" className="min-w-0">
+        <HStack justify="between" align="start" gap="md" wrap className={slideOver ? "sticky top-0 z-10 -mx-6 -mt-6 bg-card px-6 pt-6 pb-3 border-b border-border" : undefined}>
+          <HStack align="start" gap="sm" className="min-w-0 flex-1">
             {backAction && (
               <Button
                 variant={backAction.variant || "ghost"}
                 size="sm"
                 action={backAction.navigatesTo ? undefined : backAction.event}
-                actionPayload={{ row: normalizedData }}
-                onClick={backAction.navigatesTo ? () => handleActionClick(backAction, normalizedData) : undefined}
+                actionPayload={data ? actionPayload(backAction, data) : undefined}
+                onClick={backAction.navigatesTo ? () => handleActionClick(backAction, data) : undefined}
                 icon={backAction.icon ?? ArrowLeft}
                 data-testid={backAction.event ? `action-${backAction.event}` : "action-back"}
               >
                 {backAction.label}
               </Button>
             )}
-            {avatar}
+            {avatarNode}
             <VStack gap="xs" className="min-w-0">
               <HStack align="center" gap="sm" wrap>
                 {titleNode}
@@ -850,8 +937,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   variant={action.variant || "secondary"}
                   size="sm"
                   action={action.navigatesTo ? undefined : action.event}
-                  actionPayload={{ row: normalizedData }}
-                  onClick={action.navigatesTo ? () => handleActionClick(action, normalizedData) : undefined}
+                  actionPayload={data ? actionPayload(action, data) : undefined}
+                  onClick={action.navigatesTo ? () => handleActionClick(action, data) : undefined}
                   icon={action.icon}
                   data-testid={action.event ? `action-${action.event}` : undefined}
                   data-row-id={normalizedData?.id !== undefined ? String(normalizedData.id) : undefined}
@@ -863,7 +950,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 <Menu
                   position="bottom-end"
                   trigger={
-                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow" isLoading={overflowBusy.pending}>
                       <Icon name="more-horizontal" size="xs" />
                     </Button>
                   }
@@ -874,7 +961,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                     label: action.label,
                     icon: action.icon,
                     variant: action.variant === "danger" ? ("danger" as const) : ("default" as const),
-                    onClick: () => handleActionClick(action, normalizedData),
+                    onClick: () => overflowBusy.activate((pendingKey) => handleActionClick(action, data, pendingKey)),
                   }))}
                 />
               )}
@@ -883,105 +970,154 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   variant="ghost"
                   size="sm"
                   action={closeAction.event}
-                  actionPayload={{ row: normalizedData }}
-                  onClick={closeAction.event ? undefined : () => handleActionClick(closeAction, normalizedData)}
+                  actionPayload={data ? actionPayload(closeAction, data) : undefined}
+                  onClick={closeAction.event ? undefined : () => handleActionClick(closeAction, data)}
                   icon={X}
+                  aria-label={t("aria.closePanel")}
                   data-testid={closeAction.event ? `action-${closeAction.event}` : "action-close"}
                 />
               )}
             </HStack>
           )}
         </HStack>
-
-        {/* Progress bars */}
-        {normalizedData &&
-          resolvedFields &&
-          resolvedFields
-            .filter((f) => slotOf(f) === "progress")
-            .map((field) => {
-              const value = getNestedValue(normalizedData, field.name);
-              if (typeof value !== "number") return null;
+    </>
+  );
+  const figuresNode = (
+    <>
+        {keyFigures.length > 0 && normalizedData && (
+          <HStack gap="md" wrap align="stretch" data-testid="detail-key-figures">
+            {keyFigures.map((field) => {
+              const value = getNestedValue(normalizedData, field.name) as FieldValue;
               return (
-                <VStack key={field.name} gap="xs" className="w-full">
-                  <HStack justify="between">
-                    <Typography variant="small" color="secondary">
-                      {labelFor(field.name)}
-                    </Typography>
-                    <Typography variant="small" weight="medium">
-                      {formatValue(value, field.format, fmt)}
-                    </Typography>
-                  </HStack>
-                  <ProgressBar value={value} />
+                <VStack key={field.name} gap="xs" className="min-w-[10rem] max-w-[18rem] flex-1 rounded-container border border-border bg-muted/30 p-3">
+                  <Typography variant="caption" color="muted" weight="medium">
+                    {labelFor(field.name)}
+                  </Typography>
+                  <Typography variant="h4" as="p" className="tabular-nums break-words">
+                    {formatValue(value, field.format, fmt)}
+                  </Typography>
+                  {slotOf(field) === "progress" && typeof value === "number" && <ProgressBar value={value} />}
                 </VStack>
               );
             })}
-
-        {/* All fields in a flat grid (no section headings) */}
-        {allFields.length > 0 && (
-          <>
-            <Divider />
-            <SimpleGrid minChildWidth="250px" maxCols={2} gap="lg">
-              {allFields.map((field, idx) => (
-                <HStack key={idx} gap="sm" align="start">
-                  {field.icon && (
-                    <Icon
-                      icon={field.icon}
-                      size="md"
-                      className="text-muted-foreground mt-1"
-                    />
-                  )}
-                  <VStack gap="xs" flex className="min-w-0">
-                    <Typography
-                      variant="caption"
-                      color="muted"
-                      weight="medium"
-                      className="uppercase tracking-wider"
-                    >
-                      {field.label}
-                    </Typography>
-                    <Typography variant="body" className="break-words">
-                      {field.value || "—"}
-                    </Typography>
-                  </VStack>
-                </HStack>
-              ))}
-            </SimpleGrid>
-          </>
+          </HStack>
         )}
-
-        {/* Footer */}
+    </>
+  );
+  const sectionsNode = (
+    <>
+        {renderedSections.length > 0 && (
+          <VStack gap="lg" data-testid="detail-fields">
+            {renderedSections.map((section, sIdx) => (
+              <VStack key={sIdx} gap="sm">
+                {showSectionHeadings && (
+                  <Typography variant="h5" as="h3" color="secondary">
+                    {section.title}
+                  </Typography>
+                )}
+                <SimpleGrid minChildWidth="200px" maxCols={3} gap="md">
+                  {section.fields.map((field, idx) => (
+                    <HStack key={idx} gap="sm" align="start" className="min-w-0">
+                      {field.icon && (
+                        <Icon icon={field.icon} size="md" className="text-muted-foreground mt-1" />
+                      )}
+                      <VStack gap="none" flex className="min-w-0">
+                        <Typography variant="caption" color="muted" weight="medium">
+                          {field.label}
+                        </Typography>
+                        <Typography variant="body" className="break-words">
+                          {field.value || "—"}
+                        </Typography>
+                      </VStack>
+                    </HStack>
+                  ))}
+                </SimpleGrid>
+              </VStack>
+            ))}
+          </VStack>
+        )}
+    </>
+  );
+  const proseNode = (
+    <>
+        {proseFields.length > 0 && (
+          <VStack gap="md" data-testid="detail-prose">
+            {proseFields.map((field, idx) => (
+              <VStack key={idx} gap="xs">
+                <Typography variant="caption" color="muted" weight="medium">
+                  {field.label}
+                </Typography>
+                <Typography variant="body" className="whitespace-pre-line break-words">
+                  {field.value}
+                </Typography>
+              </VStack>
+            ))}
+          </VStack>
+        )}
+    </>
+  );
+  const footerNode = (
+    <>
         {footer && (
           <>
             <Divider />
             {footer}
           </>
         )}
-      </VStack>
-    </Card>
+    </>
+  );
+  const content = (
+    <Box className={slideOver ? undefined : "p-6"}>
+      <DetailLookLayout
+        look={look}
+        record={data}
+        title={title}
+        regions={{ coverField, mediaField, stageField, stages, activity, activityContent, latitudeField, longitudeField, lineItems, lineItemColumns, lineItemsContent, thread, threadContent, tabs }}
+        pieces={{ header: headerNode, figures: figuresNode, sections: sectionsNode, prose: proseNode, footer: footerNode, totals: totalsNode, renderFields }}
+      />
+    </Box>
   );
 
   if (!slideOver) {
-    return <Box className={className}>{content}</Box>;
+    return (
+      <Box {...domPassthrough(a11yRest)} className={className}>
+        <Card variant="elevated" data-testid="detail-card">
+          {content}
+        </Card>
+      </Box>
+    );
   }
 
   // Portal into the theme-synced portal root, for the same reason Modal does:
-  // `position: fixed` is
-  // resolved against the nearest ancestor that establishes containment, and
-  // DashboardLayout's root carries `@container/dashboard`
-  // (`container-type: inline-size`, which implies `contain: layout`). Left in
-  // place, every slide-over in a dashboard app was laid out against that
-  // container instead of the viewport and painted off-screen — the page just
-  // grew a scrollbar. Corpus-wide and long-standing: an untouched
-  // hand-authored slide-over showed it identically, while a non-slide-over
-  // DetailPanel rendered fine, which is how it was isolated.
+  // `position: fixed` is resolved against the nearest ancestor that
+  // establishes containment, and DashboardLayout's root carries
+  // `@container/dashboard` (`contain: layout`), so an in-place slide-over was
+  // laid out against that container and painted off-screen.
+  // The scrim dismisses through the declared closeEvent only; the panel is
+  // the surface itself — no card inside it.
+  const dismiss = closeAction ? () => handleActionClick(closeAction, data) : undefined;
   const panel = (
-    <Box className={cn(contained ? "absolute" : "fixed", "inset-y-0 right-0 w-full max-w-2xl bg-card surface-material shadow-elevation-dialog z-50 overflow-y-auto p-6", className)}>
-      {content}
-    </Box>
+    <>
+      <Box
+        className={cn(contained ? "absolute" : "fixed", "inset-0 z-40 bg-scrim")}
+        onClick={dismiss}
+        aria-hidden="true"
+        data-testid="detail-scrim"
+      />
+      <Box
+        {...domPassthrough(a11yRest)}
+        role="dialog"
+        aria-modal="true"
+        aria-label={a11yRest["aria-label"] ?? (title || t("display.details"))}
+        className={cn(contained ? "absolute" : "fixed", "inset-y-0 right-0 z-50 w-full max-w-2xl overflow-y-auto bg-card surface-material shadow-elevation-dialog p-6", className)}
+        data-testid="detail-slide-over"
+      >
+        {content}
+      </Box>
+    </>
   );
   // Contained previews render inline against the UISlotRenderer root (relative);
-  // only real app pages portal to the shared root (fixed resolves to viewport —
-  // but see the dashboard containment note above for why the portal exists).
+  // only real app pages portal to the shared root.
   if (contained || typeof document === "undefined") return panel;
   return (<ThemedPortal>{panel}</ThemedPortal>);
 };

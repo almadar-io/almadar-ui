@@ -10,7 +10,7 @@
  */
 
 import React, { useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate, type TranslateFunction } from '../../../hooks/useTranslate';
@@ -20,6 +20,7 @@ import { Label } from '../atoms/Label';
 import { Radio } from '../atoms/Radio';
 import { Checkbox } from '../atoms/Checkbox';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type OptionConstraintOption = {
   id: string;
   label: string;
@@ -32,7 +33,7 @@ export type OptionConstraint =
   | { type: 'single'; required?: boolean }
   | { type: 'multi'; min?: number; max?: number };
 
-export interface OptionConstraintGroupProps {
+export interface OptionConstraintGroupProps extends A11yProps {
   groupId: string;
   title: string;
   description?: string;
@@ -102,6 +103,7 @@ export const OptionConstraintGroup: React.FC<OptionConstraintGroupProps> = ({
   changeEvent,
   size = 'md',
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -133,9 +135,10 @@ export const OptionConstraintGroup: React.FC<OptionConstraintGroupProps> = ({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       as="fieldset"
       className={cn('space-y-2', className)}
-      aria-describedby={`${groupId}-hint`}
+      aria-describedby={[rest['aria-describedby'], `${groupId}-hint`].filter(Boolean).join(' ')}
     >
       <Box className="flex items-baseline justify-between gap-2">
         <Typography as="legend" variant="label" weight="semibold">

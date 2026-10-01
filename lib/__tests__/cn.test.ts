@@ -57,11 +57,14 @@ describe('cn merges the preset custom scales', () => {
 
   it('every plugin utility the preset adds survives a merge with stock utilities of every group', () => {
     const require = createRequire(import.meta.url);
-    const preset = require('../../tailwind-preset.cjs') as {
-      plugins: readonly { handler: (api: { addUtilities: (u: Record<string, object>) => void }) => void }[];
-    };
+    type PresetPlugin = { handler: (api: { addUtilities: (u: Record<string, object>) => void }) => void };
+    const preset = require('../../tailwind-preset.cjs') as { plugins: readonly (PresetPlugin | (() => object))[] };
     const names: string[] = [];
+    // The preset's own utility plugins are `{ handler }` objects; a third-party
+    // options plugin (e.g. @tailwindcss/typography) is a function and adds no
+    // utilities of ours to check.
     for (const plugin of preset.plugins) {
+      if (typeof plugin === 'function') continue;
       plugin.handler({ addUtilities: (u) => names.push(...Object.keys(u).map((k) => k.slice(1))) });
     }
     expect(names).toContain('interactive-border');

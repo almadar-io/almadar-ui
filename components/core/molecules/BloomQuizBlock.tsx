@@ -9,6 +9,7 @@
  * - entityAware: false
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useState, useMemo } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { MarkdownContent } from './markdown/MarkdownContent';
@@ -19,6 +20,7 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 import type { CodeLanguage } from './markdown/CodeBlock';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
 
 const BLOOM_CONFIG: Record<BloomLevel, { color: string; bgColor: string; labelKey: string }> = {
@@ -30,7 +32,7 @@ const BLOOM_CONFIG: Record<BloomLevel, { color: string; bgColor: string; labelKe
   create:     { color: 'bg-primary text-primary-foreground',     bgColor: 'bg-primary/10', labelKey: 'bloomQuiz.level.create' },
 };
 
-export interface BloomQuizBlockProps {
+export interface BloomQuizBlockProps extends A11yProps {
   level: BloomLevel;
   question: string;
   answer: string;
@@ -52,6 +54,7 @@ export const BloomQuizBlock: React.FC<BloomQuizBlockProps> = ({
   isAnswered,
   answerEvent = 'ANSWER_BLOOM',
   className,
+  ...rest
 }) => {
   const [revealed, setRevealed] = useState(false);
   const config = BLOOM_CONFIG[level];
@@ -70,6 +73,7 @@ export const BloomQuizBlock: React.FC<BloomQuizBlockProps> = ({
 
   return (
     <div
+      {...domPassthrough(rest)}
       className={cn(
         'rounded-container border border-primary p-4 my-4 transition-all',
         config.bgColor,

@@ -1,11 +1,12 @@
 import * as React from 'react';
-import type { Asset } from '@almadar/core';
+import type { A11yProps, Asset } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { GameIcon } from '../../core/atoms/GameIcon';
 import { useTranslate, type TranslateFunction } from '../../../hooks/useTranslate';
 
-export interface TimerDisplayProps {
+export interface TimerDisplayProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Time in seconds */
   seconds: number;
   /** Whether the timer is running */
@@ -55,12 +56,14 @@ export function TimerDisplay({
   className,
   lowThreshold,
   iconAsset,
+  ...rest
 }: TimerDisplayProps) {
   const { t } = useTranslate();
   const isLow = lowThreshold != null && seconds <= lowThreshold && seconds > 0;
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         'inline-flex items-center gap-1 justify-center rounded-container',
         'bg-card/80 border border-muted font-mono font-bold tabular-nums',

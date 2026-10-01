@@ -8,9 +8,9 @@
     --color-primary: #1f3f8f;
     --color-primary-hover: #183275;
     --color-primary-foreground: #fff8e7;
-    --color-secondary: #2bb3a6;
-    --color-secondary-hover: #2fbfb1;
-    --color-secondary-foreground: #06302c;
+    --color-secondary: #247a74;
+    --color-secondary-hover: #1d6964;
+    --color-secondary-foreground: #fff8e7;
     --color-accent: #7d5a0c;
     --color-accent-foreground: #fff8e7;
     --color-muted: #ebe0c6;
@@ -37,6 +37,7 @@
     --color-warning-foreground: #1a1200;
     --color-info: #1f5fbf;
     --color-info-foreground: #ffffff;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 4px;
     --radius-md: 8px;
@@ -193,8 +194,8 @@
     --color-primary: #e0b64a;
     --color-primary-hover: #efc866;
     --color-primary-foreground: #1a1200;
-    --color-secondary: #3cc9bb;
-    --color-secondary-hover: #56d8cb;
+    --color-secondary: #4fb3a9;
+    --color-secondary-hover: #66c1b8;
     --color-secondary-foreground: #04201d;
     --color-accent: #8fb0ff;
     --color-accent-foreground: #0a1530;
@@ -207,7 +208,7 @@
     --color-surface: #122040;
     --color-border: #c9a13a;
     --color-input: #c9a13a;
-    --color-ring: #3cc9bb;
+    --color-ring: #4fb3a9;
     --color-table-header: #122040;
     --color-table-border: #c9a13a;
     --color-table-row-hover: #1a2c55;
@@ -222,6 +223,7 @@
     --color-warning-foreground: #1a1200;
     --color-info: #8ab4ff;
     --color-info-foreground: #071b3d;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 4px;
     --radius-md: 8px;
@@ -249,7 +251,7 @@
     --active-translate-y: 0px;
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #3cc9bb;
+    --focus-ring-color: #4fb3a9;
     --shadow-main: 0 4px 14px rgba(0,0,0,0.45);
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
     --shadow-lg: 0 12px 32px rgba(0,0,0,0.55);

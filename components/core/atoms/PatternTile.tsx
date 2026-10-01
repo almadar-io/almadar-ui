@@ -22,6 +22,8 @@
  * All tiles use stroke only (no fill), rendering as transparent overlays.
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from 'react';
 
 export type PatternVariant = 'star8' | 'star6' | 'khatam' | 'star10' | 'star12'
@@ -29,7 +31,7 @@ export type PatternVariant = 'star8' | 'star6' | 'khatam' | 'star10' | 'star12'
     | 'seigaiha' | 'greek-key' | 'celtic-knot' | 'kolam'
     | 'arch' | 'arabesque-vine' | 'arabesque-net';
 
-export interface PatternTileProps {
+export interface PatternTileProps extends A11yProps {
     /** Which geometric pattern to render */
     variant?: PatternVariant;
     /** Tile unit size in SVG units */
@@ -804,10 +806,11 @@ export const PatternTile: React.FC<PatternTileProps> = ({
     color = 'var(--color-primary)',
     strokeWidth = 0.5,
     className,
+    ...rest
 }) => {
     const Variant = VARIANT_MAP[variant];
     return (
-        <g className={className}>
+        <g className={className} {...domPassthrough(rest)}>
             <Variant size={size} color={color} strokeWidth={strokeWidth} />
         </g>
     );

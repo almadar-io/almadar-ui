@@ -6,12 +6,14 @@
  * Composes SimpleGrid and FeatureCard molecules.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { SimpleGrid } from './SimpleGrid';
 import { FeatureCard, type FeatureCardProps } from './FeatureCard';
 
-export interface FeatureGridProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface FeatureGridProps extends A11yProps {
   /** Array of feature card configurations */
   items: FeatureCardProps[];
   /** Number of grid columns */
@@ -27,9 +29,11 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
   columns = 3,
   gap = 'md',
   className,
+  ...rest
 }) => {
   return (
     <SimpleGrid
+      {...domPassthrough(rest)}
       cols={columns}
       gap={gap}
       className={cn(className)}

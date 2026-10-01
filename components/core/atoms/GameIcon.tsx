@@ -1,6 +1,7 @@
 'use client';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import * as React from 'react';
-import type { Asset } from '@almadar/core';
+import type { A11yProps, Asset } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { type IconInput } from './Icon';
 import { resolveIconForFamily, useIconFamily } from '../../../lib/iconFamily';
@@ -12,7 +13,8 @@ const sizeMap = {
   lg: 32,
 };
 
-export interface GameIconProps {
+/** @accessibleName alt */
+export interface GameIconProps extends A11yProps {
   /** Asset — when url is present, renders an img (Asset-primary). */
   assetUrl?: Asset;
   /** Lucide component or kebab-case icon name (fallback when no assetUrl). */
@@ -25,7 +27,7 @@ export interface GameIconProps {
   className?: string;
 }
 
-export function GameIcon({ assetUrl, icon, size = 'md', alt, className }: GameIconProps) {
+export function GameIcon({ assetUrl, icon, size = 'md', alt, className, ...rest }: GameIconProps) {
   const px = typeof size === 'number' ? size : sizeMap[size];
   const family = useIconFamily();
 
@@ -36,13 +38,14 @@ export function GameIcon({ assetUrl, icon, size = 'md', alt, className }: GameIc
         size={px}
         alt={alt ?? assetUrl.category ?? ''}
         className={cn('flex-shrink-0', className)}
+        {...domPassthrough(rest)}
       />
     );
   }
 
   const I = typeof icon === 'string' ? resolveIconForFamily(icon, family) : icon;
 
-  return <I width={px} height={px} className={cn('flex-shrink-0', className)} />;
+  return <I width={px} height={px} className={cn('flex-shrink-0', className)} {...domPassthrough(rest)} />;
 }
 
 GameIcon.displayName = 'GameIcon';

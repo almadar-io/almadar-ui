@@ -1,8 +1,10 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import React from 'react';
 
-export interface SvgLobeProps {
+export interface SvgLobeProps extends A11yProps {
   cx?: number;
   cy?: number;
   rx?: number;
@@ -31,7 +33,9 @@ export const SvgLobe: React.FC<SvgLobeProps> = ({
   asRoot = true,
   width = 100,
   height = 100,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   const clampedShells = Math.max(1, Math.min(3, shells));
 
   const renderShell = (shellIndex: number) => {
@@ -65,7 +69,7 @@ export const SvgLobe: React.FC<SvgLobeProps> = ({
   };
 
   const inner = (
-    <g
+    <g {...(asRoot ? undefined : a11y)}
       className={className}
       opacity={opacity}
       transform={`rotate(${rotation}, ${cx}, ${cy})`}
@@ -76,7 +80,7 @@ export const SvgLobe: React.FC<SvgLobeProps> = ({
 
   if (asRoot) {
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...a11y}>
         {inner}
       </svg>
     );

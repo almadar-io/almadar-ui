@@ -37,6 +37,7 @@
     --color-warning-foreground: #1a1200;
     --color-info: #3a5f8a;
     --color-info-foreground: #ffffff;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 2px;
     --radius-md: 4px;
@@ -222,6 +223,7 @@
     --color-warning-foreground: #1a1200;
     --color-info: #8ab0dc;
     --color-info-foreground: #071b3d;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 2px;
     --radius-md: 4px;

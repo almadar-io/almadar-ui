@@ -7,7 +7,9 @@
  * Uses wireframe theme styling (high contrast, sharp edges).
  */
 import React from "react";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
+import { domPassthrough } from "../../../../lib/domPassthrough";
 import { Box } from "../../atoms/Box";
 import type { DisplayStateProps } from "../types";
 
@@ -22,7 +24,7 @@ export interface DashboardGridCell {
   rowSpan?: 1 | 2;
 }
 
-export interface DashboardGridProps extends DisplayStateProps {
+export interface DashboardGridProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Number of columns */
   columns?: 2 | 3 | 4;
   /** Gap between cells */
@@ -66,9 +68,11 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
   gap = "md",
   cells,
   className,
+  ...rest
 }) => {
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         "grid w-full",
         columnStyles[columns],

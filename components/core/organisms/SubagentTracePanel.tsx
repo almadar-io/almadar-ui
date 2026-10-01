@@ -24,6 +24,8 @@ import { Accordion, type AccordionItem } from '../molecules/Accordion';
 import { CodeBlock, MarkdownContent } from '../molecules/markdown/index';
 import { useTranslate, type TranslateFunction } from '../../../hooks/useTranslate';
 import { pressableProps } from '../../../lib/pressable';
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import type { DisplayStateProps } from './types';
 import type {
   TraceActivity,
@@ -38,7 +40,7 @@ import type {
 /** Disclosure level driving panel density (builder=1 … architect=4). */
 export type TraceDisclosureLevel = 1 | 2 | 3 | 4;
 
-export interface SubagentTracePanelProps extends DisplayStateProps {
+export interface SubagentTracePanelProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** All known subagents from the runner. */
   subagents: TraceSubagent[];
   /** Current canvas focus orbital — only used by overlay mode. Tab mode ignores this. */
@@ -920,6 +922,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
   mode = 'overlay',
   coordinatorActivities,
   coordinatorMessages,
+  ...rest
 }) => {
   const { t, locale } = useTranslate();
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
@@ -938,7 +941,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
     const hasData = timelineItems.length > 0;
 
     return (
-      <Box className={`h-full w-full bg-[var(--color-card)] overflow-hidden flex flex-col ${className ?? ''}`}>
+      <Box {...domPassthrough(rest)} className={`h-full w-full bg-[var(--color-card)] overflow-hidden flex flex-col ${className ?? ''}`}>
         <HStack
           gap="sm"
           className="items-center px-3 py-2 border-b border-[var(--color-border)]"
@@ -1055,7 +1058,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
     || (coordinatorActivities && coordinatorActivities.length > 0);
   if (filtered.length === 0 && !hasCoordinatorData) {
     return (
-      <Box className={wrapperClass} style={wrapperStyle}>
+      <Box {...domPassthrough(rest)} className={wrapperClass} style={wrapperStyle}>
         <HStack
           gap="sm"
           className="items-center px-3 py-2 border-b border-[var(--color-border)]"
@@ -1084,7 +1087,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
   // Filtered (zoomed into a specific orbital): flat list, no group headers
   if (focusedOrbital) {
     return (
-      <Box className={wrapperClass} style={wrapperStyle}>
+      <Box {...domPassthrough(rest)} className={wrapperClass} style={wrapperStyle}>
         <HStack
           gap="sm"
           className="items-center px-3 py-2 border-b border-[var(--color-border)]"
@@ -1122,7 +1125,7 @@ export const SubagentTracePanel: React.FC<SubagentTracePanelProps> = ({
   const grouped = groupByOrbital(filtered, t('subagentTrace.unattached'));
   const coordinatorSnapshot = pluckCoordinatorState(coordinatorActivities ?? []);
   return (
-    <Box className={wrapperClass} style={wrapperStyle}>
+    <Box {...domPassthrough(rest)} className={wrapperClass} style={wrapperStyle}>
       <HStack
         gap="sm"
         className="items-center px-3 py-2 border-b border-[var(--color-border)]"

@@ -1,8 +1,10 @@
 'use client';
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../../lib/domPassthrough';
 import React from 'react';
 
-export interface SvgShieldProps {
+export interface SvgShieldProps extends A11yProps {
   x?: number;
   y?: number;
   size?: number;
@@ -32,9 +34,11 @@ export const SvgShield: React.FC<SvgShieldProps> = ({
   asRoot = true,
   width = 100,
   height = 100,
+  ...rest
 }) => {
+  const a11y = domPassthrough(rest);
   const inner = (
-    <g
+    <g {...(asRoot ? undefined : a11y)}
       className={className}
       opacity={opacity}
       transform={`translate(${x - 15 * size}, ${y - 18 * size}) scale(${size})`}
@@ -61,7 +65,7 @@ export const SvgShield: React.FC<SvgShieldProps> = ({
 
   if (asRoot) {
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} {...a11y}>
         {inner}
       </svg>
     );

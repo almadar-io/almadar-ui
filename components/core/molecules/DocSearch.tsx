@@ -5,6 +5,7 @@
  * DocSearch drives a callback-based result list with keyboard navigation and
  * popover dropdown; designed for docs site navigation, not data-list filtering.
  */
+import type { A11yProps } from '@almadar/core';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
@@ -15,6 +16,7 @@ import { Icon } from '../atoms/Icon';
 import { Input } from '../atoms/Input';
 import { useTranslate } from '../../../hooks/useTranslate';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface DocSearchResult {
   title: string;
   href: string;
@@ -22,7 +24,7 @@ export interface DocSearchResult {
   category?: string;
 }
 
-export interface DocSearchProps {
+export interface DocSearchProps extends A11yProps {
   /** Placeholder text for the input */
   placeholder?: string;
   /** Callback invoked with the search query, returns results */
@@ -35,6 +37,7 @@ export function DocSearch({
   placeholder,
   onSearch,
   className,
+  ...rest
 }: DocSearchProps) {
   const { t } = useTranslate();
   const resolvedPlaceholder = placeholder ?? t('docSearch.placeholder');
@@ -153,6 +156,7 @@ export function DocSearch({
 
   return (
     <Box
+      {...domPassthrough(rest)}
       position="relative"
       className={cn('w-full', className)}
       ref={containerRef}

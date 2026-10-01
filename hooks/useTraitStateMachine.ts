@@ -46,7 +46,7 @@ import type { TraitStateSnapshot } from '@almadar/core';
 import type { useUISlots } from '../providers/UISlotContext';
 import { useCircuitKernel } from './circuit/useCircuitKernel';
 import { useBusIngress } from './circuit/useBusIngress';
-import { useSlotFlush } from './circuit/useSlotFlush';
+import { useSlotFlush, type SlotCheckpoint } from './circuit/useSlotFlush';
 import { useCallsiteCapture } from './circuit/useCallsiteCapture';
 import { useClientTicks } from './circuit/useClientTicks';
 import { useEntityBindingSource } from './circuit/useEntityBindingSource';
@@ -224,6 +224,10 @@ export function useTraitStateMachine(
     const orbitalName = traitIndex.byName.get(traitName)?.orbitalName ?? traitName;
     let outcome: Awaited<ReturnType<typeof kernel.dispatch>>;
     const composedBefore = new Map(store.callsitePayloads);
+    // Paint local first: the transition's own render-ui (its loading
+    // skeleton) paints the moment the local arm runs, not after the server
+    // round trip; a failed leg rolls the slots back with the state.
+    let beforeLocalPaint: SlotCheckpoint | undefined;
     try {
       outcome = await kernel.dispatch({
         event: eventKey,
@@ -231,15 +235,31 @@ export function useTraitStateMachine(
         ...(entityId !== undefined ? { entityId } : {}),
         ...(tick !== undefined ? { tick } : {}),
         targetTrait: traitName,
+      }, {
+        onLocal: (local) => {
+          beforeLocalPaint = slotFlush.checkpoint();
+          slotFlush.applyClientEffects(
+            local.clientEffects ?? [],
+            local.clientEffectsByTrait,
+            options.navigate,
+            options.navigateBack,
+            activeTraitNamesRef.current,
+          );
+        },
       });
     } catch (err: unknown) {
+      if (beforeLocalPaint !== undefined) slotFlush.rollback(beforeLocalPaint);
       recordDispatchVerdict(orbitalName, eventKey, { error: err instanceof Error ? err : String(err) });
       throw err;
     }
     recordDispatchVerdict(orbitalName, eventKey, { response: outcome.response });
+    if (outcome.localPainted && !outcome.response.success && beforeLocalPaint !== undefined) {
+      slotFlush.rollback(beforeLocalPaint);
+    }
+    const settledEffects = outcome.localPainted && outcome.serverEffects !== undefined ? outcome.serverEffects : outcome.response;
     slotFlush.applyClientEffects(
-      outcome.response.clientEffects ?? [],
-      outcome.response.clientEffectsByTrait,
+      settledEffects.clientEffects ?? [],
+      settledEffects.clientEffectsByTrait,
       options.navigate,
       options.navigateBack,
       activeTraitNamesRef.current,

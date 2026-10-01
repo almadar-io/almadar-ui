@@ -6,8 +6,8 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useEffect, useState } from "react";
-import type { EventEmit } from "@almadar/core";
+import React, { useEffect, useRef, useState } from "react";
+import type { EventEmit, A11yProps } from "@almadar/core";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
@@ -17,16 +17,21 @@ import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export type ToastVariant = "success" | "error" | "info" | "warning";
 
-export interface ToastProps {
+export interface ToastProps extends A11yProps {
   /** Toast variant */
   variant?: ToastVariant;
   /** Toast message */
   message: string;
   /** Toast title (optional) */
   title?: string;
-  /** Auto-dismiss duration in milliseconds (0 = no auto-dismiss) */
+  /**
+   * Auto-dismiss duration in milliseconds (0 = no auto-dismiss). The timer
+   * pauses while the toast is hovered or focused, and a toast carrying an
+   * action (`actionLabel` with `onAction`/`actionEvent`) never auto-dismisses.
+   */
   duration?: number;
   /** Show dismiss button */
   dismissible?: boolean;
@@ -84,6 +89,7 @@ export const Toast: React.FC<ToastProps> = ({
   className,
   dismissEvent,
   actionEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -112,20 +118,32 @@ export const Toast: React.FC<ToastProps> = ({
     if (leaving) doRealDismiss();
   };
 
+  const hasAction = Boolean(actionLabel) && Boolean(onAction || actionEvent);
+  const [paused, setPaused] = useState(false);
+  const remainingRef = useRef(duration);
   useEffect(() => {
-    if (duration <= 0 || (!onDismiss && !dismissEvent)) {
+    remainingRef.current = duration;
+  }, [duration]);
+
+  useEffect(() => {
+    if (duration <= 0 || hasAction || paused || (!onDismiss && !dismissEvent)) {
       return;
     }
 
+    const startedAt = Date.now();
     const timer = setTimeout(() => {
       handleDismiss();
-    }, duration);
+    }, remainingRef.current);
 
-    return () => clearTimeout(timer);
-  }, [duration, onDismiss, dismissEvent]); // handleDismiss is stable across renders
+    return () => {
+      clearTimeout(timer);
+      remainingRef.current = Math.max(0, remainingRef.current - (Date.now() - startedAt));
+    };
+  }, [duration, hasAction, paused, onDismiss, dismissEvent]); // handleDismiss is stable across renders
 
   return (
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         // `min-w-[300px]` only kicks in at `sm:` and above so a phone
         // viewport doesn't get a toast wider than the screen near the
@@ -136,8 +154,12 @@ export const Toast: React.FC<ToastProps> = ({
         variantClasses[variant],
         className,
       )}
-      role="alert"
+      role={variant === "error" || variant === "warning" ? "alert" : "status"}
       onAnimationEnd={handleAnimEnd}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
     >
       <Box className="flex items-start gap-3">
         <Box className="flex-shrink-0 mt-0.5">

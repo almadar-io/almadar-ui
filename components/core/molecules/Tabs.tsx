@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useRef, useId } from 'react';
-import type { EventKey, Asset, EventEmit } from '@almadar/core';
+import type { EventKey, Asset, EventEmit, A11yProps } from '@almadar/core';
 import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
 import { Badge } from '../atoms/Badge';
@@ -17,6 +17,7 @@ import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface TabItem {
   /**
    * Tab ID. Optional — schema-driven callers may pass `value` instead;
@@ -55,7 +56,7 @@ interface NormalizedTabItem extends Omit<TabItem, 'id' | 'value'> {
   id: string;
 }
 
-export interface TabsProps {
+export interface TabsProps extends A11yProps {
   /** Tab items */
   items?: TabItem[];
   /** Tab items (alias for items - used by generated code) */
@@ -86,6 +87,7 @@ export const Tabs: React.FC<TabsProps> = ({
   variant = 'default',
   orientation = 'horizontal',
   className,
+  ...rest
 }) => {
   // Guard against undefined or empty items - support both 'items' and 'tabs' props.
   // Normalize {value, label} format from schema to {id, label}; result carries a
@@ -157,7 +159,7 @@ export const Tabs: React.FC<TabsProps> = ({
   // Graceful handling for empty tabs
   if (safeItems.length === 0) {
     return (
-      <Box className={cn('w-full', className)}>
+      <Box {...domPassthrough(rest)} className={cn('w-full', className)}>
         <Typography variant="small" color="muted" className="py-4">
           {t('empty.noItems')}
         </Typography>
@@ -184,7 +186,7 @@ export const Tabs: React.FC<TabsProps> = ({
   };
 
   return (
-    <Box className={cn('w-full', orientation === 'vertical' && 'flex flex-row', className)}>
+    <Box {...domPassthrough(rest)} className={cn('w-full', orientation === 'vertical' && 'flex flex-row', className)}>
       <Box
         role="tablist"
         aria-orientation={orientation}
@@ -222,6 +224,7 @@ export const Tabs: React.FC<TabsProps> = ({
               onClick={() => !isDisabled && handleTabChange(item.id, item.event)}
               onKeyDown={(e: React.KeyboardEvent) => handleKeyDown(e, index)}
               data-active={isActive}
+              data-testid={`tab-${item.id}`}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap',
                 orientation === 'horizontal' && 'snap-start shrink-0',

@@ -6,6 +6,8 @@
  * Shows law name, article number, and relevant clause text.
  */
 
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from "react";
 import { Box } from "./Box";
 import { VStack } from "./Stack";
@@ -31,7 +33,7 @@ export type LawReference = {
   link?: string;
 };
 
-export interface LawReferenceTooltipProps {
+export interface LawReferenceTooltipProps extends A11yProps {
   /** The law reference to display */
   reference: LawReference;
   /** Children element that triggers the tooltip */
@@ -84,6 +86,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
   children,
   position = "top",
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const [isVisible, setIsVisible] = React.useState(false);
@@ -117,6 +120,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
       position="relative"
       display="inline-block"
       className={className}
+      {...domPassthrough(rest)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onFocus={handleMouseEnter}

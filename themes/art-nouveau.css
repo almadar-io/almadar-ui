@@ -37,6 +37,7 @@
     --color-warning-foreground: #2a1c00;
     --color-info: #3a6a80;
     --color-info-foreground: #ffffff;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 8px;
     --radius-md: 16px;
@@ -181,6 +182,7 @@
     --border-heavy: var(--border-width-thick);
     --corner-shape: scoop;
     --corner-shape-pill: round;
+    --corner-shape-interactive: round;
     --border-style: solid;
     --border-style-interactive: solid;
     --surface-card-image: linear-gradient(160deg, rgba(255,250,235,0.7), rgba(233,200,192,0.12));
@@ -221,6 +223,7 @@
     --color-warning-foreground: #241800;
     --color-info: #86c2dc;
     --color-info-foreground: #05202c;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 8px;
     --radius-md: 16px;
@@ -365,6 +368,7 @@
     --border-heavy: var(--border-width-thick);
     --corner-shape: scoop;
     --corner-shape-pill: round;
+    --corner-shape-interactive: round;
     --border-style: solid;
     --border-style-interactive: solid;
     --surface-card-image: linear-gradient(160deg, rgba(185,196,106,0.07), rgba(227,160,168,0.04));

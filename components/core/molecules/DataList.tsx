@@ -14,10 +14,11 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React from 'react';
-import type { EntityRow, EventKey, EventEmit, FieldValue } from "@almadar/core";
+import type { A11yProps, EntityRow, EventKey, EventEmit, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { formatDate, formatValue as libFormatValue, type FormatContext, sortRows } from '../../../lib/format';
 import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
 import type { RelationOption } from './RelationSelect';
@@ -26,8 +27,8 @@ import { createLogger } from '@almadar/logger';
 const dataListLog = createLogger('almadar:ui:data-list');
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { useRowActions } from '../../../hooks/useRowActions';
-import type { RowActionCondition } from '../../../lib/row-action-when';
+import { useRowActions, useRowActionPayload, useRowActionFire } from '../../../hooks/useRowActions';
+import type { RowActionCondition, RowActionPayload } from '../../../lib/row-action-when';
 import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
@@ -63,6 +64,8 @@ export interface DataListItemAction {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   /** Per-row condition, authored as `(fn row <bool>)`: the row's button is drawn only when it returns true. Omit = always shown. */
   when?: RowActionCondition;
+  /** Extra data the action sends, authored as `(fn row { key: <expr> })`; it emits `{ id, row }` plus these keys. */
+  payload?: RowActionPayload;
 }
 
 export interface DataListSwipeAction {
@@ -80,7 +83,7 @@ export interface DataListSwipeAction {
  * @fieldsContract display
  * @minWidth 200
  */
-export interface DataListProps extends DataDndProps, EmptyStateSlotProps {
+export interface DataListProps extends DataDndProps, EmptyStateSlotProps, A11yProps {
   /**
    * Schema entity data — the collection of rows to render.
    */
@@ -290,9 +293,12 @@ export function DataList({
   dndRoot,
   look = 'dense',
   relationsData,
+  ...rest
 }: DataListProps) {
   const eventBus = useEventBus();
   const rowActions = useRowActions();
+  const actionPayload = useRowActionPayload();
+  const { fire: fireRowAction, isRowPending } = useRowActionFire<DataListItemAction>();
   const { t } = useTranslate();
   const fmt = useFormatContext();
   const [visibleCount, setVisibleCount] = React.useState(pageSize || Infinity);
@@ -373,11 +379,7 @@ export function DataList({
 
   const handleActionClick = (action: DataListItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    const payload: ItemActionPayload = {
-      id: itemData.id as string | number,
-      row: itemData as ItemActionPayload['row'],
-    };
-    eventBus.emit(`UI:${action.event}`, payload);
+    fireRowAction(action, itemData, String(itemData.id ?? ""));
   };
 
   // Inline up to `maxInlineActions` row actions; collapse the rest into a "⋯" overflow menu.
@@ -429,10 +431,7 @@ export function DataList({
               icon: action.icon,
               variant: action.variant === 'danger' ? 'danger' : 'default',
               onClick: () =>
-                eventBus.emit(`UI:${action.event}`, {
-                  id: itemData.id as string | number,
-                  row: itemData as ItemActionPayload['row'],
-                }),
+                fireRowAction(action, itemData, String(itemData.id ?? "")),
             }))}
           />
         )}
@@ -537,6 +536,8 @@ export function DataList({
                   key={id}
                   data-entity-row
                   data-entity-id={id}
+ data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
+ aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
                   {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)}
                   className={cn(
                     'flex px-4 group/rowactions',
@@ -633,7 +634,9 @@ export function DataList({
       const id = (itemData.id as string) || String(index);
       const actions = renderItemActions(itemData);
       return wrapDnd(
-        <Box key={id} data-entity-row data-entity-id={id} {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)} className={cn('relative group/rowactions', itemClickEvent && 'cursor-pointer')}>
+        <Box key={id} data-entity-row data-entity-id={id}
+ data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
+ aria-busy={isRowPending(String(itemData.id ?? "")) || undefined} {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)} className={cn('relative group/rowactions', itemClickEvent && 'cursor-pointer')}>
           {itemRenderer!(itemData as EntityRow, index)}
           {actions && (
             <Box className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
@@ -657,10 +660,7 @@ export function DataList({
                     icon: action.icon,
                     variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),
                     onClick: () =>
-                      eventBus.emit(`UI:${action.event}`, {
-                        id: itemData.id as string | number,
-                        row: itemData as ItemActionPayload['row'],
-                      }),
+                      fireRowAction(action, itemData, String(itemData.id ?? "")),
                   }))}
                 />
               </Box>
@@ -682,7 +682,9 @@ export function DataList({
     ) ?? (titleValue !== undefined && titleValue !== null ? String(titleValue) : undefined);
 
     return wrapDnd(
-      <Box key={id} data-entity-row data-entity-id={id} {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)} className={cn(itemClickEvent && 'cursor-pointer')}>
+      <Box key={id} data-entity-row data-entity-id={id}
+ data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
+ aria-busy={isRowPending(String(itemData.id ?? "")) || undefined} {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)} className={cn(itemClickEvent && 'cursor-pointer')}>
         <Box
           className={cn(
             // items-start, not items-center: a multi-line row (title + meta +
@@ -800,6 +802,7 @@ export function DataList({
 
   return dnd.wrapContainer(
     <Box
+      {...domPassthrough(rest)}
       className={cn(
         isCard && 'bg-card rounded-container border border-border shadow-elevation-dialog overflow-hidden',
         // `gap-*` is inert on a block container, and Box only emits a display

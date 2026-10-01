@@ -10,13 +10,14 @@
  */
 
 import React from 'react';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { Handle, Position, useNodeId, ReactFlowProvider } from '@xyflow/react';
 import { AvlEntity } from '../atoms/AvlEntity';
 import { AvlFieldType } from '../atoms/AvlFieldType';
 import { AvlPage } from '../atoms/AvlPage';
 import { MiniStateMachine } from './MiniStateMachine';
 import { CONNECTION_COLORS } from '../../../lib/avl-theme';
-import { type FieldType, type EntityPersistence } from '@almadar/core';
+import { type FieldType, type EntityPersistence, type A11yProps } from '@almadar/core';
 import { type AvlNodeData } from '../../../lib/avl-flow-converter';
 
 /**
@@ -25,7 +26,7 @@ import { type AvlNodeData } from '../../../lib/avl-flow-converter';
  *
  * @capabilities orbital module summary card, entity and trait overview card, app architecture node card
  */
-export interface ModuleCardProps {
+export interface ModuleCardProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** The orbital to summarize.
    * @example {"orbitalName":"OrderOrbital","entityName":"Order","persistence":"persistent","fields":[{"name":"customer","type":"string","required":true,"hasDefault":false},{"name":"qty","type":"number","required":true,"hasDefault":true},{"name":"status","type":"string","required":false,"hasDefault":true}],"traits":[{"name":"OrderFlow","stateCount":5,"eventCount":7,"transitionCount":7,"emits":["ORDER_SAVED"],"listens":["PAYMENT_OK"]}],"pages":[{"name":"Orders","route":"/orders"}],"traitDetails":{"OrderFlow":{"name":"OrderFlow","linkedEntity":"Order","states":[{"name":"browsing","isInitial":true,"isTerminal":false},{"name":"editing","isInitial":false,"isTerminal":false},{"name":"saving","isInitial":false,"isTerminal":false},{"name":"confirmed","isInitial":false,"isTerminal":true},{"name":"failed","isInitial":false,"isTerminal":false}],"transitions":[{"from":"browsing","to":"editing","event":"EDIT","effects":[{"type":"render-ui","args":[]}],"index":0},{"from":"editing","to":"saving","event":"SAVE","effects":[{"type":"persist","args":[]},{"type":"notify","args":[]}],"index":1},{"from":"saving","to":"confirmed","event":"SAVED","effects":[{"type":"emit","args":[]},{"type":"render-ui","args":[]}],"index":2},{"from":"saving","to":"failed","event":"SAVE_FAILED","effects":[{"type":"notify","args":[]}],"index":3},{"from":"failed","to":"editing","event":"RETRY","effects":[],"index":4},{"from":"editing","to":"browsing","event":"CANCEL","effects":[{"type":"render-ui","args":[]}],"index":5},{"from":"confirmed","to":"browsing","event":"DONE","effects":[{"type":"navigate","args":[]}],"index":6}],"emittedEvents":["ORDER_SAVED"],"listenedEvents":["PAYMENT_OK"]}},"externalLinks":[{"targetOrbital":"PaymentOrbital","eventName":"PAYMENT_OK","direction":"in","traitName":"OrderFlow"}]}
    */
@@ -54,7 +55,7 @@ const PERSISTENCE_ICON: Record<string, string> = {
   instance: '\u22A1',   // ⊡ box
 };
 
-const ModuleCardInner: React.FC<ModuleCardProps> = ({ data }) => {
+const ModuleCardInner: React.FC<ModuleCardProps> = ({ data, ...rest }) => {
   const {
     orbitalName,
     entityName,
@@ -70,6 +71,7 @@ const ModuleCardInner: React.FC<ModuleCardProps> = ({ data }) => {
 
   return (
     <div
+      {...domPassthrough(rest)}
       className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm overflow-hidden"
       style={{ minWidth: 280, maxWidth: 400 }}
     >

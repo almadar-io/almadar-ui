@@ -8,13 +8,14 @@
  */
 
 import React, { useCallback, useEffect, useRef } from 'react';
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EventKey, EventPayload, A11yProps } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { usePullToRefresh } from '../../../hooks/usePullToRefresh';
 import { Box } from '../atoms/Box';
 import { Spinner } from '../atoms/Spinner';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /**
  * Safe event bus hook that works outside EventBusProvider context.
  * Returns a no-op emit function if not in EventBusProvider context.
@@ -27,7 +28,7 @@ function useSafeEventBus() {
   }
 }
 
-export interface PullToRefreshProps {
+export interface PullToRefreshProps extends A11yProps {
   /** Event name to emit on refresh (emitted as UI:{refreshEvent}) */
   refreshEvent: EventKey;
   /** Payload to include with the refresh event
@@ -50,6 +51,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   threshold = 60,
   children,
   className,
+  ...rest
 }) => {
   const eventBus = useSafeEventBus();
   const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,7 +93,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   const showIndicator = pullDistance > 0 || isRefreshing;
 
   return (
-    <Box position="relative" overflow="hidden" className={cn('w-full', className)}>
+    <Box {...domPassthrough(rest)} position="relative" overflow="hidden" className={cn('w-full', className)}>
       {/* Refresh indicator */}
       <Box
         position="absolute"

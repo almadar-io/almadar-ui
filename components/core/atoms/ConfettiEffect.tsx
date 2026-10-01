@@ -6,12 +6,15 @@
  * Uses CSS keyframe animations for each particle with random
  * position, rotation, and velocity.
  */
+import { domPassthrough } from '../../../lib/domPassthrough';
+import type { A11yProps } from '@almadar/core';
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "../../../lib/cn";
 import { Box } from "./Box";
+import { usePrefersReducedMotion } from "../../../hooks/usePrefersReducedMotion";
 import { CONFETTI_BURST_KEYFRAMES, createConfettiParticles, type ConfettiParticle } from "./fx";
 
-export interface ConfettiEffectProps {
+export interface ConfettiEffectProps extends A11yProps {
   /** When this changes from false to true, a burst of particles is spawned */
   trigger: boolean;
   /** How long the animation lasts in milliseconds */
@@ -27,16 +30,18 @@ export const ConfettiEffect: React.FC<ConfettiEffectProps> = ({
   duration = 2000,
   particleCount = 30,
   className,
+  ...rest
 }) => {
   const [particles, setParticles] = useState<ConfettiParticle[]>([]);
   const previousTriggerRef = useRef(false);
   const burstRef = useRef(0);
+  const reducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     const wasFalse = !previousTriggerRef.current;
     previousTriggerRef.current = trigger;
 
-    if (trigger && wasFalse) {
+    if (trigger && wasFalse && !reducedMotion) {
       burstRef.current += 1;
       const newParticles = createConfettiParticles(particleCount, `confetti-${burstRef.current}`);
       setParticles(newParticles);
@@ -50,7 +55,7 @@ export const ConfettiEffect: React.FC<ConfettiEffectProps> = ({
       };
     }
     return undefined;
-  }, [trigger, particleCount, duration]);
+  }, [trigger, particleCount, duration, reducedMotion]);
 
   if (particles.length === 0) {
     return null;
@@ -63,6 +68,7 @@ export const ConfettiEffect: React.FC<ConfettiEffectProps> = ({
         "inset-0 pointer-events-none overflow-hidden z-50",
         className,
       )}
+      {...domPassthrough(rest)}
       aria-hidden="true"
     >
       {particles.map((p) => {

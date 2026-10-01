@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, A11yProps } from "@almadar/core";
 import { Aside } from "../atoms/Aside";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
@@ -17,7 +17,8 @@ import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
-export interface SidePanelProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface SidePanelProps extends A11yProps {
   /**
    * Panel title
    */
@@ -80,6 +81,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   showOverlay = true,
   className,
   closeEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -111,6 +113,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           (default `w-96`) at `sm:` and above so phones don't lose content
           to a fixed 384 px column. */}
       <Aside
+        {...domPassthrough(rest)}
         className={cn(
           "fixed top-16 lg:top-0 bottom-0 z-[60]",
           "bg-card surface-material",

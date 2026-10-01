@@ -7,11 +7,12 @@
  * when item ordering is user-controlled.
  */
 import React, { useCallback } from 'react';
-import type { EntityRow, EventEmit, EventPayload } from "@almadar/core";
+import type { A11yProps, EntityRow, EventEmit, EventPayload } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useDragReorder } from '../../../hooks/useDragReorder';
 import { Box } from '../atoms/Box';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { HStack } from '../atoms/Stack';
 import { VStack } from '../atoms/Stack';
 import { Icon } from '../atoms/Icon';
@@ -23,7 +24,7 @@ const EMPTY_ITEMS: readonly EntityRow[] = [];
  *
  * @capabilities checklist, task list, to-do list, priority list, ranked list, drag-to-reorder queue
  */
-export interface SortableListProps {
+export interface SortableListProps extends A11yProps {
   items: readonly EntityRow[];
   /** Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field. */
   renderItem: (item: EntityRow, index: number) => React.ReactNode;
@@ -50,6 +51,7 @@ function SortableListInner({
   reorderPayload,
   dragHandlePosition = 'left',
   className,
+  ...rest
 }: SortableListProps) {
   const eventBus = useSafeEventBus();
 
@@ -77,7 +79,7 @@ function SortableListInner({
   } = useDragReorder<EntityRow>(initialItems, handleReorder);
 
   return (
-    <VStack gap="none" className={cn('w-full', className)}>
+    <VStack {...domPassthrough(rest)} gap="none" className={cn('w-full', className)}>
       {items.map((item, index) => {
         const { 'aria-dropeffect': ariaDropEffect, ...itemProps } = getItemProps(index);
         const { 'aria-grabbed': ariaGrabbed, ...handleRest } = getDragHandleProps(index);

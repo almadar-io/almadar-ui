@@ -6,11 +6,13 @@
  * Pure UI molecule with no entity binding.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useMemo, useId } from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/index';
 import { useTranslate } from '../../../hooks/useTranslate';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface ChartDataPoint {
   /** Optional: chronological x-axis. Absent for a categorical line chart
    * (label-as-x), which plots points in author order. Sorts the points but
@@ -26,7 +28,7 @@ export interface ChartDataPoint {
   label?: string;
 }
 
-export interface LineChartProps {
+export interface LineChartProps extends A11yProps {
   /** Data points to plot */
   data: ChartDataPoint[];
   /** SVG viewBox width */
@@ -64,6 +66,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   lineColor = 'var(--color-primary)',
   areaColor = 'var(--color-primary)',
   className,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const gradientId = useId();
@@ -140,14 +143,14 @@ export const LineChart: React.FC<LineChartProps> = ({
 
   if (safeData.length === 0) {
     return (
-      <Box className={cn('flex items-center justify-center text-muted-foreground', className)} style={{ width, height }}>
+      <Box {...domPassthrough(rest)} className={cn('flex items-center justify-center text-muted-foreground', className)} style={{ width, height }}>
         {t('empty.noData')}
       </Box>
     );
   }
 
   return (
-    <Box className={cn(className)}>
+    <Box {...domPassthrough(rest)} className={cn(className)}>
       <svg
         viewBox={`0 0 ${width} ${height}`}
         width="100%"

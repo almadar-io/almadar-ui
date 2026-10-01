@@ -3,7 +3,8 @@ import { cn } from "../../../lib/cn";
 import { Box } from "../../core/atoms/Box";
 import { Card } from "../../core/atoms/Card";
 import { StatBadge, type StatBadgeProps } from "./StatBadge";
-import type { Asset } from "@almadar/core";
+import type { A11yProps, Asset } from "@almadar/core";
+import { domPassthrough } from '../../../lib/domPassthrough';
 import type { IconInput } from "../../core/atoms/index";
 import { useTranslate, type TranslateFunction } from "../../../hooks/useTranslate";
 
@@ -34,7 +35,7 @@ export interface GameHudElement {
   max?: number;
 }
 
-export interface GameHudProps {
+export interface GameHudProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Position of the HUD */
   position?: "top" | "bottom" | "corners" | string;
   /** Stats to display - accepts readonly for compatibility with generated const arrays */
@@ -111,6 +112,7 @@ export function GameHud({
   variant = "floating",
   className,
   transparent = true,
+  ...rest
 }: GameHudProps) {
   // Convert elements to stats if provided, with items as alias for stats
   // Defensive: ensure stats is always a valid array even if props are malformed
@@ -129,7 +131,7 @@ export function GameHud({
     const rightStats = stats.slice(Math.ceil(stats.length / 2));
 
     return (
-      <Box position="relative" className={cn(positionMap[position], className)}>
+      <Box {...domPassthrough(rest)} position="relative" className={cn(positionMap[position], className)}>
         {/* Top-left */}
         <Box position="absolute" className="top-4 left-4 flex flex-col gap-2 pointer-events-auto">
           {leftStats.map((stat, i) => (
@@ -156,6 +158,7 @@ export function GameHud({
 
     return (
       <Card
+        {...domPassthrough(rest)}
         variant="bordered"
         padding="none"
         className={cn(
@@ -186,6 +189,7 @@ export function GameHud({
 
   return (
     <Card
+      {...domPassthrough(rest)}
       variant="bordered"
       padding="sm"
       className={cn(

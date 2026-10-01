@@ -1,10 +1,12 @@
+import type { A11yProps } from '@almadar/core';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { VStack } from "./Stack";
 import { Typography } from "./Typography";
 import type { TypographyVariant } from "./Typography";
 
-export interface SectionHeaderProps {
+export interface SectionHeaderProps extends A11yProps {
   /** Section title text */
   title: string;
   /** Optional subtitle text */
@@ -36,7 +38,7 @@ const alignToStack: Record<string, "center" | "start" | "end"> = {
 };
 
 export const SectionHeader: React.FC<SectionHeaderProps> = (
-  { title, subtitle, align = "center", level = 2, className },
+  { title, subtitle, align = "center", level = 2, className, ...rest },
 ) => {
     const variant = levelToVariant[level];
 
@@ -45,6 +47,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = (
         gap="sm"
         align={alignToStack[align]}
         className={cn(alignClasses[align], className)}
+        {...domPassthrough(rest)}
       >
         <Typography variant={variant} weight="bold">
           {title}

@@ -14,7 +14,8 @@
  */
 
 import React, { useState, useCallback, useEffect } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { A11yProps, EventEmit } from "@almadar/core";
+import { domPassthrough } from "../../../lib/domPassthrough";
 import { cn } from "../../../lib/cn";
 import { Button } from "../atoms/Button";
 import { Input } from "../atoms/Input";
@@ -85,7 +86,7 @@ const resolveFilterType = (filter: FilterDefinition) =>
  *
  * @capabilities search refinement panel, facet filters, admin list filters, records filter sidebar, filter chips panel
  */
-export interface FilterGroupProps {
+export interface FilterGroupProps extends A11yProps {
   /** Entity name to filter */
   entity: string;
   /** Filter definitions from schema */
@@ -147,6 +148,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
   look = "toolbar",
   event,
   clearEvent,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const eventBus = useEventBus();
@@ -248,6 +250,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
         gap="md"
         align="center"
         className={cn("flex-wrap", lookStyles[look], className)}
+        {...domPassthrough(rest)}
       >
         {showIcon && (
           <Icon name="filter" className="h-4 w-4 text-muted-foreground" />
@@ -264,6 +267,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
               <button
                 type="button"
                 onClick={() => handleFilterSelect(filter.field, null)}
+                aria-pressed={!selectedValues[filter.field]}
                 className={cn(
                   "px-3 py-1.5 text-sm font-medium transition-all duration-fast",
                   !selectedValues[filter.field]
@@ -278,6 +282,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
                   key={option}
                   type="button"
                   onClick={() => handleFilterSelect(filter.field, option)}
+                  aria-pressed={selectedValues[filter.field] === option}
                   className={cn(
                     "px-3 py-1.5 text-sm font-medium transition-all duration-fast",
                     "border-l-[length:var(--border-width)] border-border",
@@ -311,7 +316,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
   // Vertical variant - stacked filters for sidebars
   if (variant === "vertical") {
     return (
-      <div className={cn("flex flex-col gap-4", lookStyles[look], className)}>
+      <div className={cn("flex flex-col gap-4", lookStyles[look], className)} {...domPassthrough(rest)}>
         {showIcon && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Icon name="filter" className="h-4 w-4" />
@@ -446,6 +451,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
         gap="sm"
         align="center"
         className={cn("flex-wrap", lookStyles[look], className)}
+        {...domPassthrough(rest)}
       >
         {showIcon && (
           <Icon name="filter" className="h-4 w-4 text-muted-foreground" />
@@ -586,6 +592,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
         lookStyles[look],
         className,
       )}
+      {...domPassthrough(rest)}
     >
       <HStack gap="md" align="center" className="flex-wrap">
         {showIcon && (

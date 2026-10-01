@@ -18,8 +18,8 @@
  * @packageDocumentation
  */
 
-import type { EntityRow, RuntimeValue, SExpr, TraitConfig, UserContext } from '@almadar/core';
-import { ANONYMOUS_USER } from '@almadar/core';
+import type { EntityRow, EventPayload, RuntimeValue, SExpr, TraitConfig, UserContext } from '@almadar/core';
+import { ANONYMOUS_USER, isEventPayloadValue } from '@almadar/core';
 import { createChildContext, createMinimalContext, evaluate } from '@almadar/evaluator';
 import { createLogger } from '@almadar/logger';
 
@@ -36,9 +36,16 @@ export const ACTION_WHEN_KEY = 'when';
  */
 export type RowActionCondition = SExpr | ((row: EntityRow) => boolean);
 
-/** An action item that may carry a per-row condition. */
+/**
+ * What an action item's `payload` holds: the authored `(fn row { key: <expr> })`
+ * S-expression, or the compiled shell's `(row) => payload` closure.
+ */
+export type RowActionPayload = SExpr | ((row: EntityRow) => EventPayload);
+
+/** An action item that may carry a per-row condition and a declared payload. */
 export interface RowConditionalAction {
   readonly when?: RowActionCondition;
+  readonly payload?: RowActionPayload;
 }
 
 /** What a `when` body may read besides `@row`: the viewer, and host-supplied `@entity` / `@config`. */
@@ -55,6 +62,57 @@ function lambdaParts(when: SExpr): { param: string; body: SExpr } | null {
   const param = typeof params === 'string' ? params : Array.isArray(params) && params.length === 1 ? params[0] : null;
   if (typeof param !== 'string' || param.length === 0) return null;
   return { param: param.startsWith('@') ? param.slice(1) : param, body: when[2] as SExpr };
+}
+
+function contextFor(row: EntityRow, param: string, bindings: RowActionBindings) {
+  const base = createMinimalContext(bindings.entity ?? {}, {}, 'idle');
+  base.user = bindings.user ?? ANONYMOUS_USER;
+  if (bindings.config !== undefined) base.config = bindings.config;
+  return createChildContext(base, new Map<string, RuntimeValue>([[param, row]]));
+}
+
+/**
+ * The event payload `action` sends for `row`: `{ id, row }` plus every key its
+ * declared `payload` computes (a declared key wins). A malformed or throwing
+ * payload is logged and the action still sends `{ id, row }`.
+ */
+export function rowActionPayload<A extends RowConditionalAction>(
+  action: A,
+  row: EntityRow,
+  bindings: RowActionBindings,
+): EventPayload {
+  const base: EventPayload = { id: row.id, row };
+  const declared = action.payload;
+  if (declared === undefined) return base;
+  try {
+    if (typeof declared === 'function') return { ...base, ...declared(row) };
+    const lambda = lambdaParts(declared);
+    if (lambda === null) {
+      whenLog.warn('malformed-payload', { payload: JSON.stringify(declared) });
+      return base;
+    }
+    const ctx = contextFor(row, lambda.param, bindings);
+    const body: SExpr = lambda.body;
+    const out: EventPayload = { ...base };
+    if (body !== null && typeof body === 'object' && !Array.isArray(body)) {
+      // `(fn row { key: <expr>, … })` — each value is an expression or a literal.
+      for (const [key, expr] of Object.entries(body)) {
+        const value = evaluate(expr, ctx);
+        if (isEventPayloadValue(value)) out[key] = value;
+      }
+      return out;
+    }
+    const value = evaluate(body, ctx);
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      for (const [key, v] of Object.entries(value)) {
+        if (isEventPayloadValue(v)) out[key] = v;
+      }
+    }
+    return out;
+  } catch (error) {
+    whenLog.warn('payload-threw', { message: error instanceof Error ? error.message : String(error) });
+    return base;
+  }
 }
 
 /**
@@ -82,12 +140,8 @@ export function isActionShownForRow(
     whenLog.warn('malformed-when', { when: JSON.stringify(when) });
     return false;
   }
-  const base = createMinimalContext(bindings.entity ?? {}, {}, 'idle');
-  base.user = bindings.user ?? ANONYMOUS_USER;
-  if (bindings.config !== undefined) base.config = bindings.config;
-  const locals = new Map<string, RuntimeValue>([[lambda.param, row]]);
   try {
-    return evaluate(lambda.body, createChildContext(base, locals)) === true;
+    return evaluate(lambda.body, contextFor(row, lambda.param, bindings)) === true;
   } catch (error) {
     whenLog.warn('when-threw', { message: error instanceof Error ? error.message : String(error) });
     return false;

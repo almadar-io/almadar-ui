@@ -5,8 +5,8 @@
  */
 
 [data-theme="atelier-light"] {
-    --color-primary: #1f51ff;
-    --color-primary-hover: #1a45e0;
+    --color-primary: #1a3db8;
+    --color-primary-hover: #15319a;
     --color-primary-foreground: #fafaf7;
     --color-secondary: #f2f1ec;
     --color-secondary-hover: #e8e7e1;
@@ -22,7 +22,7 @@
     --color-surface: #f2f1ec;
     --color-border: #e5e4de;
     --color-input: #d6d5cf;
-    --color-ring: #1f51ff;
+    --color-ring: #1a3db8;
     --color-table-header: #f2f1ec;
     --color-table-border: #e5e4de;
     --color-table-row-hover: #f6f5f0;
@@ -37,6 +37,7 @@
     --color-warning-foreground: #fafaf7;
     --color-info: #1f51ff;
     --color-info-foreground: #fafaf7;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 6px;
     --radius-md: 12px;
@@ -65,7 +66,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 3px;
-    --focus-ring-color: #1f51ff;
+    --focus-ring-color: #1a3db8;
     --shadow-main: none;
     --shadow-sm: none;
     --shadow-lg: none;
@@ -187,8 +188,8 @@
 }
 
 [data-theme="atelier-dark"] {
-    --color-primary: #5b7fff;
-    --color-primary-hover: #7a96ff;
+    --color-primary: #7088f0;
+    --color-primary-hover: #8a9ff5;
     --color-primary-foreground: #0d0d0d;
     --color-secondary: #1a1a1a;
     --color-secondary-hover: #242424;
@@ -204,7 +205,7 @@
     --color-surface: #1a1a1a;
     --color-border: #262626;
     --color-input: #333333;
-    --color-ring: #5b7fff;
+    --color-ring: #7088f0;
     --color-table-header: #1a1a1a;
     --color-table-border: #262626;
     --color-table-row-hover: #181818;
@@ -219,6 +220,7 @@
     --color-warning-foreground: #0d0d0d;
     --color-info: #5b7fff;
     --color-info-foreground: #0d0d0d;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 6px;
     --radius-md: 12px;
@@ -247,7 +249,7 @@
     --active-translate-y: 0;
     --focus-ring-width: 2px;
     --focus-ring-offset: 3px;
-    --focus-ring-color: #5b7fff;
+    --focus-ring-color: #7088f0;
     --shadow-main: none;
     --shadow-sm: none;
     --shadow-lg: none;

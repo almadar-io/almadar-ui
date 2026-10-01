@@ -1,7 +1,8 @@
 import React from "react";
-import type { EventKey, EventEmit } from "@almadar/core";
+import type { A11yProps, EventKey, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon, resolveIcon, type IconInput } from "./Icon";
+import { Button } from "./Button";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useEventBus } from "../../../hooks/useEventBus";
 
@@ -10,10 +11,11 @@ export interface SelectOption {
   label: string;
 }
 
+/** @accessibleName label */
 export interface InputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
-  "onChange"
-> {
+  "onChange" | Exclude<keyof A11yProps, "role" | "dir">
+>, Omit<A11yProps, "role" | "dir"> {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** Placeholder text */
@@ -104,10 +106,12 @@ export const Input = React.forwardRef<
     const generatedId = React.useId();
     const fieldId = props.id ?? generatedId;
     const descriptionId = helperText || error ? `${fieldId}-description` : undefined;
+    const describedBy = [props["aria-describedby"], descriptionId].filter(Boolean).join(" ") || undefined;
     const a11yProps = {
       id: fieldId,
-      "aria-invalid": error ? true : undefined,
-      "aria-describedby": descriptionId,
+      "aria-invalid": error ? true : props["aria-invalid"],
+      "aria-required": props.required ? true : undefined,
+      "aria-describedby": describedBy,
     };
 
     // Declarative mode (onChange is an event-key string): the value round-trips
@@ -244,8 +248,8 @@ export const Input = React.forwardRef<
             value={displayValue as string}
             onChange={handleChange as React.ChangeEventHandler<HTMLSelectElement>}
             className={cn(baseClassName, "appearance-none pr-10", className)}
-            {...a11yProps}
             {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
+            {...a11yProps}
           >
             <option value="">{t('form.selectPlaceholder', { label: '' })}</option>
             {options?.map((opt) => (
@@ -271,8 +275,8 @@ export const Input = React.forwardRef<
             onChange={handleChange as React.ChangeEventHandler<HTMLTextAreaElement>}
             rows={rows}
             className={baseClassName}
-            {...a11yProps}
             {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+            {...a11yProps}
           />
         </div>
       );
@@ -293,8 +297,8 @@ export const Input = React.forwardRef<
             "disabled:opacity-50 disabled:cursor-not-allowed",
             className,
           )}
-          {...a11yProps}
           {...props}
+          {...a11yProps}
         />,
         false,
       );
@@ -315,17 +319,18 @@ export const Input = React.forwardRef<
           onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>}
           onKeyDown={handleKeyDown}
           className={baseClassName}
-          {...a11yProps}
           {...props}
+          {...a11yProps}
         />
         {showClearButton && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="x"
+            aria-label={t("aria.clearInput")}
             onClick={handleClear}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
-          >
-            <Icon name="x" className="h-icon-default w-icon-default" />
-          </button>
+            className="absolute inset-y-0 right-0 text-muted-foreground hover:text-foreground"
+          />
         )}
         {rightIcon && !showClearButton && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">

@@ -37,6 +37,7 @@
     --color-warning-foreground: #2b2b2b;
     --color-info: #1a56b0;
     --color-info-foreground: #ffffff;
+    --color-scrim: rgba(0, 0, 0, 0.6);
     --radius-none: 0px;
     --radius-sm: 4px 8px 5px 9px / 8px 4px 9px 5px;
     --radius-md: 15px 225px 15px 255px / 255px 15px 225px 15px;
@@ -220,6 +221,7 @@
     --color-warning-foreground: #25262b;
     --color-info: #7fb2ff;
     --color-info-foreground: #25262b;
+    --color-scrim: rgba(0, 0, 0, 0.7);
     --radius-none: 0px;
     --radius-sm: 4px 8px 5px 9px / 8px 4px 9px 5px;
     --radius-md: 15px 225px 15px 255px / 255px 15px 225px 15px;

@@ -12,10 +12,11 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import type { EntityRow, EventKey, EventEmit, FieldValue } from '@almadar/core';
+import type { A11yProps, EntityRow, EventKey, EventEmit, FieldValue } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
+import { domPassthrough } from '../../../lib/domPassthrough';
 import { formatValue, type BooleanLabels } from '../../../lib/format';
 import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
 import type { RelationOption } from './RelationSelect';
@@ -24,8 +25,8 @@ import { createLogger } from '@almadar/logger';
 const dataGridLog = createLogger('almadar:ui:data-grid');
 import { getNestedValue, resolveImageUrl } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { useRowActions } from '../../../hooks/useRowActions';
-import type { RowActionCondition } from '../../../lib/row-action-when';
+import { useRowActions, useRowActionPayload, useRowActionFire } from '../../../hooks/useRowActions';
+import type { RowActionCondition, RowActionPayload } from '../../../lib/row-action-when';
 import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
@@ -64,6 +65,8 @@ export interface DataGridItemAction {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   /** Per-row condition, authored as `(fn row <bool>)`: the row's button is drawn only when it returns true. Omit = always shown. */
   when?: RowActionCondition;
+  /** Extra data the action sends, authored as `(fn row { key: <expr> })`; it emits `{ id, row }` plus these keys. */
+  payload?: RowActionPayload;
 }
 
 // ── Props ────────────────────────────────────────────────────────────
@@ -76,7 +79,7 @@ export interface DataGridItemAction {
  * @fieldsContract display
  * @minWidth 200
  */
-export interface DataGridProps extends DataDndProps, EmptyStateSlotProps {
+export interface DataGridProps extends DataDndProps, EmptyStateSlotProps, A11yProps {
   /**
    * Schema entity data — the collection of rows to render. pattern-sync tags
    * it `kind:"entity", cardinality:"collection"` so consumers bind the domain
@@ -219,9 +222,12 @@ export function DataGrid({
   dndRoot,
   look = 'dense',
   relationsData,
+  ...rest
 }: DataGridProps) {
   const eventBus = useEventBus();
   const rowActions = useRowActions();
+  const actionPayload = useRowActionPayload();
+  const { fire: fireRowAction, isRowPending } = useRowActionFire<DataGridItemAction>();
   const { t } = useTranslate();
   const fmt = useFormatContext();
   const boolLabels: BooleanLabels = { yes: t('common.yes'), no: t('common.no') };
@@ -315,11 +321,7 @@ export function DataGrid({
       eventBus.emit('UI:NAVIGATE', { url, row: itemData });
       return;
     }
-    const payload: ItemActionPayload = {
-      id: itemData.id as string | number,
-      row: itemData,
-    };
-    eventBus.emit(`UI:${action.event}`, payload);
+    fireRowAction(action, itemData, String(itemData.id ?? ""));
   };
 
   const handleActionClick = (action: DataGridItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
@@ -425,7 +427,7 @@ export function DataGrid({
 
   const idFieldName = dndItemIdField ?? 'id';
   return dnd.wrapContainer(
-    <VStack gap="sm">
+    <VStack gap="sm" {...domPassthrough(rest)}>
       {/* Selection toolbar */}
       {selectable && someSelected && (
         <HStack gap="sm" className="items-center px-2 py-2 bg-muted rounded-container">
@@ -479,6 +481,9 @@ export function DataGrid({
                 key={id}
                 data-entity-row
                 data-entity-id={id}
+ data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
+ aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
+                aria-current={isSelected ? 'true' : undefined}
                 {...pressableProps(handleCardClick)}
                 className={cn('relative group/rowactions', handleCardClick && 'cursor-pointer', isSelected && 'ring-2 ring-primary rounded-container')}
               >
@@ -538,6 +543,9 @@ export function DataGrid({
               key={id}
               data-entity-row
               data-entity-id={id}
+ data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
+ aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
+                aria-current={isSelected ? 'true' : undefined}
               {...pressableProps(handleCardClick)}
               className={cn(
                 'bg-card rounded-container',
@@ -693,12 +701,10 @@ export function DataGrid({
                       return (
                         <HStack key={field.name} gap="xs" className="items-center">
                           {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
-                          {/* Prefix hidden, not dropped: a card repeats the same
-                              labels on every tile, which is the "too many labels"
-                              noise Almadar_UI_Beauty.md 4 warns about. Screen
-                              readers keep it; the boolean branch above still shows
-                              its label, because a bare Yes/No badge names nothing. */}
-                          <Typography variant="caption" color="secondary" className="sr-only">
+                          {/* A declared icon names the value, so its label stays
+                              screen-reader-only; without one the label shows — a
+                              bare number ("13") names nothing. */}
+                          <Typography variant="caption" color="secondary" className={field.icon ? "sr-only" : undefined}>
                             {(field.label ?? fieldLabel(field.name)) + ':'}
                           </Typography>
                           <Typography variant="small" color="secondary">

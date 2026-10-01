@@ -10,13 +10,15 @@
  * - entityAware: false
  */
 
+import type { A11yProps } from '@almadar/core';
 import React, { useState } from 'react';
 import { Lightbulb } from 'lucide-react';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 
-export interface ActivationBlockProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface ActivationBlockProps extends A11yProps {
   /** The prior-knowledge question */
   question: string;
   /** Pre-filled response from saved state */
@@ -32,6 +34,7 @@ export const ActivationBlock: React.FC<ActivationBlockProps> = ({
   savedResponse,
   saveEvent = 'SAVE_ACTIVATION',
   className,
+  ...rest
 }) => {
   const [response, setResponse] = useState(savedResponse ?? '');
   const [isExpanded, setIsExpanded] = useState(!savedResponse);
@@ -45,6 +48,7 @@ export const ActivationBlock: React.FC<ActivationBlockProps> = ({
 
   return (
     <div
+      {...domPassthrough(rest)}
       className={cn(
         'bg-primary/10 border-heavy border-primary rounded-container p-5 mb-6',
         className,

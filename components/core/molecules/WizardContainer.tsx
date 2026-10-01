@@ -9,7 +9,7 @@
  */
 import React, { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { JsonValue, EventKey, EventEmit, ControlValue, FieldValue } from "@almadar/core";
+import type { JsonValue, EventKey, EventEmit, ControlValue, FieldValue, A11yProps } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
@@ -22,6 +22,7 @@ import type { SExpr } from "@almadar/evaluator";
 import type { UiError } from '../atoms/types';
 import { WizardProgress } from "./WizardProgress";
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 /** Form field definition for wizard sections */
 export interface WizardField {
   id: string;
@@ -146,7 +147,7 @@ export interface WizardStep {
   [key: string]: JsonValue | React.ReactNode | WizardSection[] | WizardEntityMapping | WizardValidationRule[] | WizardLawReference[] | (() => boolean) | undefined;
 }
 
-export interface WizardContainerProps {
+export interface WizardContainerProps extends A11yProps {
   /** Wizard steps */
   steps: WizardStep[];
   /** Current step index (controlled) - accepts number or string for generated code compatibility */
@@ -190,6 +191,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   nextEvent,
   backEvent,
   completeEvent,
+  ...rest
 }) => {
   const { t } = useTranslate();
   const eventBus = useEventBus();
@@ -249,7 +251,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   };
 
   return (
-    <Box className={cn("flex flex-col h-full", className)}>
+    <Box {...domPassthrough(rest)} className={cn("flex flex-col h-full", className)}>
       {showProgress && (
         <WizardProgress
           steps={steps.map((step, index) => ({

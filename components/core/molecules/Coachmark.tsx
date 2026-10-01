@@ -8,14 +8,15 @@
  * menu, a canvas node — resolved from a ref, a CSS selector, or a DOMRect.
  * Portals into the shared portal root so it escapes the canvas/preview transform contexts.
  */
+import type { A11yProps } from "@almadar/core";
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
-import { Icon } from "../atoms/Icon";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
+import { domPassthrough } from "../../../lib/domPassthrough";
 
 export type CoachmarkPlacement = "top" | "bottom" | "left" | "right";
 export type CoachmarkAnchor =
@@ -23,7 +24,7 @@ export type CoachmarkAnchor =
   | string
   | DOMRect;
 
-export interface CoachmarkProps {
+export interface CoachmarkProps extends A11yProps {
   /** Controlled visibility. */
   open: boolean;
   /** The element to point at: a ref, a CSS selector, or a DOMRect. */
@@ -155,6 +156,7 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
   showBeacon = false,
   fallbackCentered = false,
   className,
+  ...rest
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslate();
@@ -205,8 +207,9 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
       border
       rounded="lg"
       padding="md"
+      {...domPassthrough(rest)}
       role="dialog"
-      aria-label={title}
+      aria-label={rest["aria-label"] ?? title}
       className={cn("shadow-elevation-popover", 
         "fixed z-50 max-w-xs w-72 transition-opacity duration-fast",
         centered || pos ? "opacity-100" : "opacity-0",
@@ -214,14 +217,14 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
       )}
       style={cardStyle}
     >
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
+        icon="close"
         aria-label={t('aria.dismiss')}
         onClick={onDismiss}
-        className="absolute top-2 right-2 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
-      >
-        <Icon name="close" size="xs" />
-      </button>
+        className="absolute top-1 right-1 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+      />
 
       {title && (
         <Typography variant="body1" weight="semibold" className="pr-6 mb-1">

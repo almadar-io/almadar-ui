@@ -23,7 +23,7 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -32,7 +32,8 @@ import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { HStack, VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 
-export interface TagInputProps {
+import { domPassthrough } from '../../../lib/domPassthrough';
+export interface TagInputProps extends A11yProps {
   /** Current list of tags. */
   value: ReadonlyArray<string>;
   /** Direct callback emitted on every change. Stays as the
@@ -70,6 +71,7 @@ export const TagInput: React.FC<TagInputProps> = ({
   className,
   addEvent,
   removeEvent,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -123,7 +125,7 @@ export const TagInput: React.FC<TagInputProps> = ({
   );
 
   return (
-    <VStack gap="xs" className={cn('w-full', className)}>
+    <VStack {...domPassthrough(rest)} gap="xs" className={cn('w-full', className)}>
       {value.length > 0 ? (
         <HStack gap="xs" className="flex-wrap">
           {value.map((tag, index) => (

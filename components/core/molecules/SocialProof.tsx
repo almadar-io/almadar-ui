@@ -7,6 +7,7 @@
  * Box, and Typography atoms.
  */
 
+import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
@@ -17,6 +18,7 @@ import { Badge } from '../atoms/Badge';
 import { Typography } from '../atoms/Typography';
 import { SimpleGrid } from './SimpleGrid';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 export interface SocialProofItem {
   /** Optional logo URL */
   logo?: string;
@@ -26,7 +28,7 @@ export interface SocialProofItem {
   quote?: string;
 }
 
-export interface SocialProofProps {
+export interface SocialProofProps extends A11yProps {
   /** List of social proof items */
   items: SocialProofItem[];
   /** Display variant */
@@ -100,9 +102,10 @@ export const SocialProof: React.FC<SocialProofProps> = ({
   items,
   variant = 'logos',
   className,
+  ...rest
 }) => {
   return (
-    <Box className={cn(className)}>
+    <Box {...domPassthrough(rest)} className={cn(className)}>
       {variant === 'logos' && <LogosVariant items={items} />}
       {variant === 'quotes' && <QuotesVariant items={items} />}
       {variant === 'badges' && <BadgesVariant items={items} />}

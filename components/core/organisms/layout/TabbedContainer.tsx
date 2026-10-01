@@ -9,7 +9,9 @@
  */
 import React from "react";
 import { Tabs, type TabItem } from "../../molecules/Tabs";
+import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
+import { domPassthrough } from "../../../../lib/domPassthrough";
 
 export interface TabDefinition {
   /** Tab identifier */
@@ -26,7 +28,7 @@ export interface TabDefinition {
   disabled?: boolean;
 }
 
-export interface TabbedContainerProps {
+export interface TabbedContainerProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Tab definitions */
   tabs: TabDefinition[];
   /** Default active tab ID */
@@ -51,6 +53,7 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
   onTabChange,
   position = "top",
   className,
+  ...rest
 }) => {
   const items: TabItem[] = (tabs ?? []).map((tab) => ({
     id: tab.id,
@@ -62,6 +65,7 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
 
   return (
     <Tabs
+      {...domPassthrough(rest)}
       items={items}
       defaultActiveTab={defaultTab}
       activeTab={controlledActiveTab}

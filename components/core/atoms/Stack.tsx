@@ -6,7 +6,7 @@
  * Includes convenience exports VStack and HStack for common use cases.
  */
 import React from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { A11yProps, EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { domPassthrough } from "../../../lib/domPassthrough";
@@ -22,7 +22,7 @@ export type StackJustify =
   | "around"
   | "evenly";
 
-export interface StackProps extends React.AriaAttributes {
+export interface StackProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Stack direction */
   direction?: StackDirection;
   /** Gap between children */
@@ -49,12 +49,8 @@ export interface StackProps extends React.AriaAttributes {
   onClick?: (e: React.MouseEvent) => void;
   /** Keyboard handler */
   onKeyDown?: (e: React.KeyboardEvent) => void;
-  /** Role for accessibility */
-  role?: string;
   /** Element id */
   id?: string;
-  /** Tab index for focus management */
-  tabIndex?: number;
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
   /** Payload to include with the action event

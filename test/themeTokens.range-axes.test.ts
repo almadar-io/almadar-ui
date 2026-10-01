@@ -22,6 +22,7 @@ const RANGE_FIXTURE: ThemeTokens = {
   geometry: {
     cornerShape: 'bevel',
     cornerShapePill: 'round',
+    cornerShapeInteractive: 'round',
     borderStyle: 'double',
     borderStyleInteractive: 'outset',
   },
@@ -54,6 +55,7 @@ describe('themeTokensToCssVars — range axes', () => {
     expect(themeTokensToCssVars({ geometry: RANGE_FIXTURE.geometry }, 'light')).toEqual({
       '--corner-shape': 'bevel',
       '--corner-shape-pill': 'round',
+      '--corner-shape-interactive': 'round',
       '--border-style': 'double',
       '--border-style-interactive': 'outset',
     });
@@ -106,5 +108,26 @@ describe('themeTokensToCssVars — range axes', () => {
   it('control: motion without shapes emits no transform endpoints', () => {
     const vars = themeTokensToCssVars({ motion: { durations: { normal: '200ms' } } }, 'light');
     expect(Object.keys(vars).some((k) => k.startsWith('--motion-'))).toBe(false);
+  });
+});
+
+describe('themeTokensToCssVars — element entry', () => {
+  it('emits the theme default entry as its keyframe and the stagger step', () => {
+    const vars = themeTokensToCssVars({ motion: { entry: { default: 'rise', stagger: '60ms' }, shapes: { enterRise: 'translateY(24px)' } } }, 'light');
+    expect(vars['--motion-enter-default']).toBe('almadar-enter-rise');
+    expect(vars['--motion-enter-stagger']).toBe('60ms');
+    expect(vars['--motion-enter-rise-from-transform']).toBe('translateY(24px)');
+  });
+  it('emits the busy delay token', () => {
+    expect(themeTokensToCssVars({ motion: { busyDelay: '500ms' } }, 'light')['--motion-busy-delay']).toBe('500ms');
+  });
+  it('a theme turning entry off emits none, not a keyframe name', () => {
+    const vars = themeTokensToCssVars({ motion: { entry: { default: 'none' } } }, 'light');
+    expect(vars['--motion-enter-default']).toBe('none');
+  });
+  it('control: motion without entry emits no entry vars', () => {
+    const vars = themeTokensToCssVars({ motion: { durations: { fast: '100ms' } } }, 'light');
+    expect(vars['--motion-enter-default']).toBeUndefined();
+    expect(vars['--motion-enter-stagger']).toBeUndefined();
   });
 });

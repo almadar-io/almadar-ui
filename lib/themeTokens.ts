@@ -42,6 +42,7 @@ import type {
   MotionIntent,
   MotionIntentMap,
   MotionShapeTokens,
+  EnterAnimation,
   MotionTokens,
   SurfaceTokens,
   ThemeDefinition,
@@ -178,6 +179,9 @@ export const MOTION_SHAPE_VARS: ReadonlyArray<FlatVarEntry<MotionShapeTokens>> =
   { cssVar: '--motion-toast-enter-from-transform', key: 'toastEnter' },
   { cssVar: '--motion-toast-exit-to-transform', key: 'toastExit' },
   { cssVar: '--motion-page-enter-from-transform', key: 'pageEnter' },
+  { cssVar: '--motion-enter-rise-from-transform', key: 'enterRise' },
+  { cssVar: '--motion-enter-scale-from-transform', key: 'enterScale' },
+  { cssVar: '--motion-enter-slide-from-transform', key: 'enterSlide' },
 ];
 
 /** Iconography axis — flat fields. */
@@ -207,6 +211,7 @@ export const GEOMETRY_VARS: ReadonlyArray<FlatVarEntry<GeometryTokens>> = [
   { cssVar: '--border-heavy', key: 'borderHeavy' },
   { cssVar: '--corner-shape', key: 'cornerShape' },
   { cssVar: '--corner-shape-pill', key: 'cornerShapePill' },
+  { cssVar: '--corner-shape-interactive', key: 'cornerShapeInteractive' },
   { cssVar: '--border-style', key: 'borderStyle' },
   { cssVar: '--border-style-interactive', key: 'borderStyleInteractive' },
 ];
@@ -404,6 +409,14 @@ function emitMotion(m: MotionTokens | undefined, vars: Record<string, string>): 
     }
   }
   applyFlat(m.shapes, MOTION_SHAPE_VARS, vars);
+  if (m.entry?.default !== undefined) vars['--motion-enter-default'] = enterKeyframe(m.entry.default);
+  if (m.entry?.stagger !== undefined) vars['--motion-enter-stagger'] = m.entry.stagger;
+  if (m.busyDelay !== undefined) vars['--motion-busy-delay'] = m.busyDelay;
+}
+
+/** The keyframe name an entry keyword plays (`none` stays `none`). */
+export function enterKeyframe(enter: EnterAnimation): string {
+  return enter === 'none' ? 'none' : `almadar-enter-${enter}`;
 }
 
 function emitIconography(i: IconographyTokens | undefined, vars: Record<string, string>): void {

@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useMemo } from "react";
+import { beginPending, endPending } from '../lib/pendingDispatch';
 import { useEventBus, type BusEvent } from "./useEventBus";
 import type { EventPayload } from "@almadar/core";
 
@@ -35,7 +36,7 @@ const UI_PREFIX = 'UI:';
  * @param eventBusInstance - Optional event bus instance (for testing)
  */
 export function useUIEvents<E extends string>(
-  dispatch: (event: E, payload?: EventPayload) => void,
+  dispatch: (event: E, payload?: EventPayload) => void | Promise<void>,
   traitName: string,
   validEvents: readonly E[],
   eventBusInstance?: ReturnType<typeof useEventBus>,
@@ -71,7 +72,14 @@ export function useUIEvents<E extends string>(
         if (event.source && (event.source as { dispatched?: boolean }).dispatched) {
           return;
         }
-        dispatch(smEvent, event.payload);
+        // Compiled path: the firing control's busy state spans this dispatch
+        // (lib/pendingDispatch) — the generated queue resolves when it settles.
+        const pendingKey = event.source?.pendingKey;
+        const settled = dispatch(smEvent, event.payload);
+        if (pendingKey !== undefined && settled instanceof Promise) {
+          beginPending(pendingKey);
+          void settled.finally(() => endPending(pendingKey));
+        }
       };
       unsubscribes.push(
         eventBus.on(`${UI_PREFIX}${traitName}.${smEvent}`, handler),

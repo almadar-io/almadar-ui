@@ -14,7 +14,7 @@
  * translated strings via entity props from the organism above.
  */
 
-import { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { DEFAULT_CURRENCY, type FormatContext } from '../lib/format';
 import coreLocaleRaw from '../locales/en.json';
 
@@ -63,7 +63,22 @@ I18nContext.displayName = 'I18nContext';
  * </I18nProvider>
  * ```
  */
-export const I18nProvider = I18nContext.Provider;
+export interface I18nProviderProps {
+  value: I18nContextValue;
+  children?: React.ReactNode;
+  /** The app's root provider: mirrors locale + direction onto `<html lang dir>`.
+   *  Embedded previews omit it so they never rewrite their host document. */
+  documentRoot?: boolean;
+}
+
+export function I18nProvider({ value, children, documentRoot }: I18nProviderProps): React.ReactElement {
+  useEffect(() => {
+    if (!documentRoot) return;
+    document.documentElement.lang = value.locale;
+    document.documentElement.dir = value.direction;
+  }, [documentRoot, value.locale, value.direction]);
+  return React.createElement(I18nContext.Provider, { value }, children);
+}
 
 /**
  * Hook to access the current locale and translate function.

@@ -11,7 +11,7 @@
 
 import React, { useState } from 'react';
 import emojilib from 'emojilib';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, A11yProps } from '@almadar/core';
 import type { EmojiPickPayload } from '@almadar/core/patterns';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -20,6 +20,7 @@ import type { IconInput } from '../atoms/index';
 import { GridPicker, type PickerItem } from './GridPicker';
 import { Popover } from './Popover';
 
+import { domPassthrough } from '../../../lib/domPassthrough';
 const { lib, ordered } = emojilib;
 
 /**
@@ -44,7 +45,7 @@ const EMOJI_ITEMS: PickerItem[] = (() => {
 
 export type EmojiPickerPosition = 'top' | 'bottom';
 
-export interface EmojiPickerProps {
+export interface EmojiPickerProps extends A11yProps {
   /**
    * Declarative event name — picking an emoji emits UI:{pickEvent} with { emoji } via eventBus
    */
@@ -80,6 +81,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
   triggerIcon = 'smile',
   triggerLabel,
   className,
+  ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -96,6 +98,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
 
   return (
     <Popover
+      {...domPassthrough(rest)}
       position={position}
       trigger="click"
       showArrow={false}
