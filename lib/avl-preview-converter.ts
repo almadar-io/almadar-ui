@@ -835,15 +835,22 @@ function stateOptionsFor(
     const key = `${s.entry.traitName}|${s.entry.transition.to}`;
     stateUses.set(key, (stateUses.get(key) ?? 0) + 1);
   }
+  // Guarded arms of one transition (same trait/event/from/to) are separate
+  // options: the first keeps the plain id, the nth gets `#n` + "(guard n)".
+  const armsSeen = new Map<string, number>();
   return screens.map(({ entry, enteredBy }) => {
     const t = entry.transition;
     const from = String(t.from);
     const state = view === 'screens'
       ? ((stateUses.get(`${entry.traitName}|${t.to}`) ?? 0) > 1 ? `${t.to} · ${t.event}` : t.to)
       : `${t.event}: ${from} → ${t.to}`;
-    const label = manyTraits ? `${entry.traitName} · ${state}` : state;
+    const baseId = `${entry.traitName}:${t.event}:${from}:${t.to}`;
+    const arm = (armsSeen.get(baseId) ?? 0) + 1;
+    armsSeen.set(baseId, arm);
+    const named = manyTraits ? `${entry.traitName} · ${state}` : state;
+    const label = arm > 1 ? `${named} (guard ${arm})` : named;
     return {
-      id: `${entry.traitName}:${t.event}:${from}:${t.to}`,
+      id: arm > 1 ? `${baseId}#${arm}` : baseId,
       label,
       hint: view === 'screens' ? enteredBy.join(' · ') : entry.traitName,
       data: {

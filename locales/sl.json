@@ -1226,5 +1226,7 @@
   "agentActivity.llmToolCalls": "Klici orodij",
   "agentActivity.showRawLlm": "Surovi LLM",
   "agentActivity.earlierConversations": "Prejšnji pogovori ({{count}})",
-  "agentActivity.earlierActivity": "Prejšnja dejavnost"
+  "agentActivity.earlierActivity": "Prejšnja dejavnost",
+  "tabs.scrollStart": "Pomakni zavihke nazaj",
+  "tabs.scrollEnd": "Pomakni zavihke naprej"
 }

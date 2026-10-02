@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { OrbitalSchema } from '@almadar/core';
-import { stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, canvasViewChanged } from '../avl-preview-converter';
+import { stateOptionsOf, canvasViewGraph, initialStateOf, LIVE_STATE, canvasViewChanged, optionForPlayedStep } from '../avl-preview-converter';
 
 const list = { type: 'data-list', entity: 'Task' };
 const schema = {
@@ -138,6 +138,46 @@ describe('stateOptionsOf', () => {
 
   it('an unknown orbital has no options', () => {
     expect(stateOptionsOf(schema, 'Missing', 'screens')).toEqual({ own: [], groups: [] });
+  });
+});
+
+describe('stateOptionsOf — guarded arms of one transition (G-UI-059)', () => {
+  // Two INIT arms on `composing` (as std-app-layout has), told apart by their guards
+  // and rendering different screens.
+  const guarded = {
+    ...schema,
+    orbitals: [{
+      name: 'Shell',
+      entity: { name: 'Layout', persistence: 'runtime', fields: [{ name: 'id', type: 'string' }] },
+      traits: [{
+        name: 'AppLayout',
+        scope: 'instance',
+        linkedEntity: 'Layout',
+        stateMachine: {
+          states: [{ name: 'composing', isInitial: true }],
+          events: [],
+          transitions: [
+            { from: 'composing', to: 'composing', event: 'INIT', guard: ['=', '@config.mode', 'a'], effects: [['render-ui', 'main', { type: 'loading-state' }]] },
+            { from: 'composing', to: 'composing', event: 'INIT', guard: ['=', '@config.mode', 'b'], effects: [['render-ui', 'main', { type: 'error-state' }]] },
+          ],
+        },
+      }],
+      pages: [{ name: 'Main', path: '/', traits: [{ ref: 'AppLayout' }] }],
+    }],
+  } as OrbitalSchema;
+
+  for (const view of ['screens', 'transitions'] as const) {
+    it(`${view}: each arm is its own option — distinct ids and labels`, () => {
+      const { own } = stateOptionsOf(guarded, 'Shell', view);
+      expect(own.map((o) => o.id)).toEqual(['AppLayout:INIT:composing:composing', 'AppLayout:INIT:composing:composing#2']);
+      expect(new Set(own.map((o) => o.label)).size).toBe(2);
+      expect(own[1].label).toContain('(guard 2)');
+    });
+  }
+
+  it('a played step still maps onto the first arm', () => {
+    const options = stateOptionsOf(guarded, 'Shell', 'screens');
+    expect(optionForPlayedStep(options, { trait: 'AppLayout', event: 'INIT', from: 'composing', to: 'composing' })).toBe('AppLayout:INIT:composing:composing');
   });
 });
 

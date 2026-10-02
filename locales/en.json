@@ -1226,5 +1226,7 @@
   "agentActivity.llmToolCalls": "Tool calls",
   "agentActivity.showRawLlm": "Raw LLM",
   "agentActivity.earlierConversations": "Earlier conversations ({{count}})",
-  "agentActivity.earlierActivity": "Earlier activity"
+  "agentActivity.earlierActivity": "Earlier activity",
+  "tabs.scrollStart": "Scroll tabs back",
+  "tabs.scrollEnd": "Scroll tabs forward"
 }

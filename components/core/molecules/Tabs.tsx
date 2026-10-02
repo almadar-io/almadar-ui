@@ -6,13 +6,14 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useState, useRef, useId } from 'react';
+import React, { useState, useRef, useId, useLayoutEffect, useCallback } from 'react';
 import type { EventKey, Asset, EventEmit, A11yProps } from '@almadar/core';
 import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
 import { Badge } from '../atoms/Badge';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
+import { Button } from '../atoms/Button';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -112,6 +113,31 @@ export const Tabs: React.FC<TabsProps> = ({
   const tabId = (id: string) => `${uid}-tab-${id}`;
   const panelId = (id: string) => `${uid}-panel-${id}`;
 
+  // A horizontal lane wider than its container scrolls; which edges hide tabs
+  // drives the chevrons + fades (G-UI-060 — the scrollbar is hidden).
+  const laneRef = useRef<HTMLDivElement | null>(null);
+  const [hidden, setHidden] = useState<{ start: boolean; end: boolean }>({ start: false, end: false });
+  const measure = useCallback(() => {
+    const lane = laneRef.current;
+    if (!lane || orientation !== 'horizontal') return;
+    const max = lane.scrollWidth - lane.clientWidth;
+    const start = max > 1 && lane.scrollLeft > 1;
+    const end = max > 1 && lane.scrollLeft < max - 1;
+    setHidden((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+  }, [orientation]);
+  useLayoutEffect(() => {
+    measure();
+    const lane = laneRef.current;
+    if (!lane || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(lane);
+    return () => observer.disconnect();
+  }, [measure, rawItems.length]);
+  const scrollLane = (direction: 1 | -1) => {
+    const lane = laneRef.current;
+    if (lane) lane.scrollBy({ left: direction * lane.clientWidth * 0.8, behavior: 'smooth' });
+  };
+
   const handleTabChange = (tabId: string, tabEvent?: string) => {
     if (controlledActiveTab === undefined) {
       setInternalActiveTab(tabId);
@@ -187,9 +213,13 @@ export const Tabs: React.FC<TabsProps> = ({
 
   return (
     <Box {...domPassthrough(rest)} className={cn('w-full', orientation === 'vertical' && 'flex flex-row', className)}>
+      <Box className={cn(orientation === 'horizontal' && 'relative')}>
       <Box
+        ref={laneRef}
         role="tablist"
         aria-orientation={orientation}
+        onScroll={measure}
+        data-scroll-affordance={hidden.start || hidden.end ? 'true' : undefined}
         className={cn(
           'flex',
           // Horizontal tab strip becomes a horizontally-scrollable lane
@@ -256,6 +286,35 @@ export const Tabs: React.FC<TabsProps> = ({
             </Box>
           );
         })}
+      </Box>
+      {hidden.start && (
+        <>
+          <Box className="pointer-events-none absolute inset-y-0 start-0 w-10 bg-gradient-to-r from-[var(--color-background)] to-transparent rtl:bg-gradient-to-l" />
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon="chevron-left"
+            aria-label={t('tabs.scrollStart')}
+            data-testid="tabs-scroll-start"
+            className="absolute start-0 top-1/2 -translate-y-1/2 px-1 rtl:rotate-180"
+            onClick={() => scrollLane(-1)}
+          />
+        </>
+      )}
+      {hidden.end && (
+        <>
+          <Box className="pointer-events-none absolute inset-y-0 end-0 w-10 bg-gradient-to-l from-[var(--color-background)] to-transparent rtl:bg-gradient-to-r" />
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon="chevron-right"
+            aria-label={t('tabs.scrollEnd')}
+            data-testid="tabs-scroll-end"
+            className="absolute end-0 top-1/2 -translate-y-1/2 px-1 rtl:rotate-180"
+            onClick={() => scrollLane(1)}
+          />
+        </>
+      )}
       </Box>
 
       {activeTabContent !== undefined && activeTabContent !== null && (

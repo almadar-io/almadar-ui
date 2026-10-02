@@ -1226,5 +1226,7 @@
   "agentActivity.llmToolCalls": "استدعاءات الأدوات",
   "agentActivity.showRawLlm": "LLM خام",
   "agentActivity.earlierConversations": "المحادثات السابقة ({{count}})",
-  "agentActivity.earlierActivity": "نشاط سابق"
+  "agentActivity.earlierActivity": "نشاط سابق",
+  "tabs.scrollStart": "مرّر علامات التبويب للخلف",
+  "tabs.scrollEnd": "مرّر علامات التبويب للأمام"
 }
