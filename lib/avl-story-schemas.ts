@@ -7,28 +7,20 @@
 
 import type { OrbitalSchema } from '@almadar/core';
 import { stdBrowse } from '@almadar/std/behaviors/functions';
-// stdWizard was cut in @almadar/std 8.x (audit). Use stdList instead — same
-// CRUD-shaped params (entityName/fields/persistence/pagePath) so the story
-// schemas remain valid OrbitalSchemas. Multi-step forms now author via
-// std-wizard-form (molecule) inline.
-import { stdList } from '@almadar/std/behaviors/functions';
 import { stdConfirmation } from '@almadar/std/behaviors/functions';
-// stdTimer was cut from @almadar/std. Use stdList instead — same CRUD-shaped
-// params (entityName/fields/persistence/pagePath) so the story schema stays a
-// valid 3-orbital OrbitalSchema.
 import { schemaToFlowGraph } from './avl-flow-converter';
 import { parseOrbitalLevel, parseTraitLevel } from './avl-schema-parser';
 
 /**
  * Clinic schema: 2 orbitals with real state machines.
- * - PatientOrbital (std-wizard): multi-step form with 5 fields
+ * - PatientOrbital (std-browse): data grid with 5 fields
  * - QueueEntryOrbital (std-browse): data grid with 4 fields
  */
 export const CLINIC_SCHEMA: OrbitalSchema = {
   name: 'Dermatology Clinic',
   description: 'Patient intake and reception queue',
   orbitals: [
-    stdList({
+    stdBrowse({
       entityName: 'Patient',
       fields: [
         { name: 'fullName', type: 'string' },
@@ -37,7 +29,6 @@ export const CLINIC_SCHEMA: OrbitalSchema = {
         { name: 'medicalHistory', type: 'string' },
         { name: 'insuranceProvider', type: 'string' },
       ],
-      persistence: 'persistent',
       pagePath: '/intake',
     }),
     stdBrowse({
@@ -73,14 +64,13 @@ export const TASK_SCHEMA: OrbitalSchema = {
         { name: 'assignee', type: 'string' },
       ],
     }),
-    stdList({
+    stdBrowse({
       entityName: 'FocusTimer',
       fields: [
         { name: 'label', type: 'string' },
         { name: 'duration', type: 'number' },
         { name: 'remaining', type: 'number' },
       ],
-      persistence: 'runtime',
       pagePath: '/timer',
     }),
     stdConfirmation({
