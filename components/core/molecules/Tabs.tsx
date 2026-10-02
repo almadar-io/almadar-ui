@@ -211,111 +211,116 @@ export const Tabs: React.FC<TabsProps> = ({
     ].join(' '),
   };
 
+  const tablist = (
+    <Box
+      ref={laneRef}
+      role="tablist"
+      aria-orientation={orientation}
+      onScroll={measure}
+      data-scroll-affordance={hidden.start || hidden.end ? 'true' : undefined}
+      className={cn(
+        'flex',
+        // Horizontal tab strip becomes a horizontally-scrollable lane
+        // below its container width — phones with many tabs scroll
+        // instead of clipping. `snap-x` snaps to each tab; the
+        // scrollbar is hidden — the edge chevrons are the affordance.
+        orientation === 'horizontal'
+          ? 'flex-row border-b-[length:var(--border-width)] border-border overflow-x-auto snap-x snap-mandatory [&::-webkit-scrollbar]:hidden'
+          : 'flex-col border-r-[length:var(--border-width)] border-border',
+        variant === 'pills' && 'gap-1 p-1 bg-muted border-0 rounded-interactive',
+        variant === 'underline' && orientation === 'vertical' && 'border-b-0'
+      )}
+    >
+      {safeItems.map((item, index) => {
+        const isActive = item.id === activeTab;
+        const isDisabled = item.disabled;
+
+        return (
+          <Box
+            key={item.id}
+            as="button"
+            ref={(el: HTMLDivElement | null) => {
+              tabRefs.current[item.id] = el;
+            }}
+            id={tabId(item.id)}
+            role="tab"
+            aria-selected={isActive}
+            aria-controls={isActive ? panelId(item.id) : undefined}
+            aria-disabled={isDisabled}
+            tabIndex={isActive ? 0 : -1}
+            onClick={() => !isDisabled && handleTabChange(item.id, item.event)}
+            onKeyDown={(e: React.KeyboardEvent) => handleKeyDown(e, index)}
+            data-active={isActive}
+            data-testid={`tab-${item.id}`}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap',
+              orientation === 'horizontal' && 'snap-start shrink-0',
+              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+              isDisabled && 'opacity-50 cursor-not-allowed',
+              variantClasses[variant],
+              isActive
+                ? variant === 'pills'
+                  ? 'text-primary-foreground'
+                  : 'text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {item.iconAsset?.url
+              ? <img src={item.iconAsset.url} alt={item.iconAsset.name ?? item.iconAsset.category ?? ''} width={16} height={16} style={{ imageRendering: 'pixelated', objectFit: 'contain', width: 16, height: 16 }} className="flex-shrink-0" />
+              : item.icon && (typeof item.icon === 'string'
+                  ? <Icon name={item.icon} size="sm" />
+                  : <Icon icon={item.icon} size="sm" />
+                )
+            }
+            <Typography variant="small" weight="medium" className="!text-inherit">
+              {item.label}
+            </Typography>
+            {item.badge !== undefined && (
+              <Badge variant="default" size="sm">
+                {item.badge}
+              </Badge>
+            )}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+
   return (
     <Box {...domPassthrough(rest)} className={cn('w-full', orientation === 'vertical' && 'flex flex-row', className)}>
-      <Box className={cn(orientation === 'horizontal' && 'relative')}>
-      <Box
-        ref={laneRef}
-        role="tablist"
-        aria-orientation={orientation}
-        onScroll={measure}
-        data-scroll-affordance={hidden.start || hidden.end ? 'true' : undefined}
-        className={cn(
-          'flex',
-          // Horizontal tab strip becomes a horizontally-scrollable lane
-          // below its container width — phones with many tabs scroll
-          // instead of clipping. `snap-x` snaps to each tab; the
-          // scrollbar is hidden for a cleaner affordance (the swipe
-          // gesture is the discoverability cue).
-          orientation === 'horizontal'
-            ? 'flex-row border-b-[length:var(--border-width)] border-border overflow-x-auto snap-x snap-mandatory [&::-webkit-scrollbar]:hidden'
-            : 'flex-col border-r-[length:var(--border-width)] border-border',
-          variant === 'pills' && 'gap-1 p-1 bg-muted border-0 rounded-interactive',
-          variant === 'underline' && orientation === 'vertical' && 'border-b-0'
-        )}
-      >
-        {safeItems.map((item, index) => {
-          const isActive = item.id === activeTab;
-          const isDisabled = item.disabled;
-
-          return (
-            <Box
-              key={item.id}
-              as="button"
-              ref={(el: HTMLDivElement | null) => {
-                tabRefs.current[item.id] = el;
-              }}
-              id={tabId(item.id)}
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={isActive ? panelId(item.id) : undefined}
-              aria-disabled={isDisabled}
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => !isDisabled && handleTabChange(item.id, item.event)}
-              onKeyDown={(e: React.KeyboardEvent) => handleKeyDown(e, index)}
-              data-active={isActive}
-              data-testid={`tab-${item.id}`}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap',
-                orientation === 'horizontal' && 'snap-start shrink-0',
-                'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                isDisabled && 'opacity-50 cursor-not-allowed',
-                variantClasses[variant],
-                isActive
-                  ? variant === 'pills'
-                    ? 'text-primary-foreground'
-                    : 'text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {item.iconAsset?.url
-                ? <img src={item.iconAsset.url} alt={item.iconAsset.name ?? item.iconAsset.category ?? ''} width={16} height={16} style={{ imageRendering: 'pixelated', objectFit: 'contain', width: 16, height: 16 }} className="flex-shrink-0" />
-                : item.icon && (typeof item.icon === 'string'
-                    ? <Icon name={item.icon} size="sm" />
-                    : <Icon icon={item.icon} size="sm" />
-                  )
-              }
-              <Typography variant="small" weight="medium" className="!text-inherit">
-                {item.label}
-              </Typography>
-              {item.badge !== undefined && (
-                <Badge variant="default" size="sm">
-                  {item.badge}
-                </Badge>
-              )}
-            </Box>
-          );
-        })}
-      </Box>
-      {hidden.start && (
-        <>
-          <Box className="pointer-events-none absolute inset-y-0 start-0 w-10 bg-gradient-to-r from-[var(--color-background)] to-transparent rtl:bg-gradient-to-l" />
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon="chevron-left"
-            aria-label={t('tabs.scrollStart')}
-            data-testid="tabs-scroll-start"
-            className="absolute start-0 top-1/2 -translate-y-1/2 px-1 rtl:rotate-180"
-            onClick={() => scrollLane(-1)}
-          />
-        </>
-      )}
-      {hidden.end && (
-        <>
-          <Box className="pointer-events-none absolute inset-y-0 end-0 w-10 bg-gradient-to-l from-[var(--color-background)] to-transparent rtl:bg-gradient-to-r" />
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon="chevron-right"
-            aria-label={t('tabs.scrollEnd')}
-            data-testid="tabs-scroll-end"
-            className="absolute end-0 top-1/2 -translate-y-1/2 px-1 rtl:rotate-180"
-            onClick={() => scrollLane(1)}
-          />
-        </>
-      )}
-      </Box>
+      {orientation === 'horizontal' ? (
+        <Box className="relative">
+          {tablist}
+          {hidden.start && (
+            <>
+              <Box className="pointer-events-none absolute inset-y-0 start-0 w-10 bg-gradient-to-r from-[var(--color-background)] to-transparent rtl:bg-gradient-to-l" />
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon="chevron-left"
+                aria-label={t('tabs.scrollStart')}
+                data-testid="tabs-scroll-start"
+                className="absolute start-0 top-1/2 -translate-y-1/2 px-1 rtl:rotate-180"
+                onClick={() => scrollLane(-1)}
+              />
+            </>
+          )}
+          {hidden.end && (
+            <>
+              <Box className="pointer-events-none absolute inset-y-0 end-0 w-10 bg-gradient-to-l from-[var(--color-background)] to-transparent rtl:bg-gradient-to-r" />
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon="chevron-right"
+                aria-label={t('tabs.scrollEnd')}
+                data-testid="tabs-scroll-end"
+                className="absolute end-0 top-1/2 -translate-y-1/2 px-1 rtl:rotate-180"
+                onClick={() => scrollLane(1)}
+              />
+            </>
+          )}
+        </Box>
+      ) : tablist}
 
       {activeTabContent !== undefined && activeTabContent !== null && (
         <Box
