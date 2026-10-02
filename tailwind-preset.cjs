@@ -450,6 +450,16 @@ module.exports = {
 
   // Auto-added by audit-tailwind-safelist.ts (2026-10-01)
   'lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-10-02)
+  'bg-primary/5',
+  'from-[var(--color-background)]',
+  'max-w-[90%]',
+  'rounded-[inherit]',
+  'rounded-[var(--radius-lg)]',
+  'shadow-[var(--shadow-lg)]',
+  'text-[var(--color-primary-foreground)]',
+  'z-[850]',
 ],
   theme: {
     fontFamily: {
