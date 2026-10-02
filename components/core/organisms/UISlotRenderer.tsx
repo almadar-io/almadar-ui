@@ -33,6 +33,7 @@ import {
 } from "../../../providers/UISlotContext";
 import { Modal } from "../molecules/Modal";
 import { Drawer } from "../molecules/Drawer";
+import { useCompactLayout } from "./layout/DockLayout";
 import { PageTransition } from "../molecules/PageTransition";
 import { Toast } from "../molecules/Toast";
 import { Box } from "../atoms/Box";
@@ -41,7 +42,7 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { slotLog, refId } from "../../../types/slot-types";
 import { cn } from "../../../lib/cn";
-import type { EnterAnimation } from "@almadar/core";
+import type { EnterAnimation, SkeletonNode } from "@almadar/core";
 import { PendingScopeContext, usePendingScopeValue, useScopeHasPending } from "../../../lib/pendingDispatch";
 import { asEnterAnimation, enterClassName, slotPlaysDefaultEnter, useSlotEnterRestart, ENTER_SLOT_CLASS } from "../../../lib/enter";
 import { getOrCreatePortalRoot } from "../../../lib/portalRoot";
@@ -51,7 +52,8 @@ import { createLogger } from '@almadar/logger';
 import { propTypeMismatches } from '../../../lib/propTypeMismatch';
 
 const scopeWrapLog = createLogger("almadar:ui:scope-wrap");
-import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
+import { Skeleton, SkeletonTree, type SkeletonVariant } from "../molecules/Skeleton";
+import { useAwaitingSkeleton } from "../../../providers/AwaitingSkeletonContext";
 
 // Shared renderer imports (synced from @almadar/core/patterns renderer)
 import { isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer/index";
@@ -141,7 +143,6 @@ function getSlotFallback(slot: UISlot, config: SuspenseConfig): React.ReactNode 
 import { COMPONENT_REGISTRY } from "./component-registry.generated";
 
 // Legacy imports kept for direct use in slot wrappers below (used by non-registry code)
-import { DataTable } from "./DataTable";
 import type { UiError } from '../atoms/types';
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 // ============================================================================
@@ -390,6 +391,13 @@ export interface UISlotComponentProps {
    */
   enter?: EnterAnimation;
   /**
+   * Compiled mode: the predicted skeleton while this trait's server round
+   * trip is in flight (the View selects it by the pending transition). Shown
+   * only while the slot is empty. Runtime mode reads it from
+   * `AwaitingSkeletonContext`.
+   */
+  awaitingSkeleton?: SkeletonNode;
+  /**
    * Host-supplied stock content for a slot-host region (Studio V4 §14 Part
    * I2). Ignored whenever `children` is passed — `children` (compiled mode)
    * always wins, so a compiled organism's slot can never be silently
@@ -491,6 +499,13 @@ function renderContainedPortal(
         >
           <Box id={slotId}>{slotContent}</Box>
         </Modal>
+      );
+
+    case "dock":
+      return (
+        <DockSlotFrame open={open} onExited={onExited} onDismiss={onDismiss} contained>
+          <Box id={slotId} className="flex min-h-0 flex-1 flex-col">{slotContent}</Box>
+        </DockSlotFrame>
       );
 
     case "drawer":
@@ -652,6 +667,7 @@ function UISlotComponentInner({
   pattern,
   sourceTrait,
   enter,
+  awaitingSkeleton,
   fallback,
   mode = "replace",
 }: UISlotComponentProps): React.ReactElement | null {
@@ -662,6 +678,8 @@ function UISlotComponentInner({
   const contained = useContext(SlotContainedContext);
   const schemaCtx = useEntitySchemaOptional();
   const rawContent = slots[slot];
+  const runtimeAwaiting = useAwaitingSkeleton({ slot });
+  const awaiting = isPortalSlot(slot) ? undefined : (awaitingSkeleton ?? runtimeAwaiting);
   // A region mount (one carrying `fallback`) is not a layout box: `display:
   // contents` lets the fill (stock or plugin) occupy exactly the box the
   // host's layout gives the region, as if mounted directly.
@@ -715,6 +733,13 @@ function UISlotComponentInner({
     // first plays its exit with the last children.
     if (pattern === "clear") {
       const last = compiledPresence.shown;
+      if (last === null && awaiting !== undefined) {
+        return (
+          <Box id={`slot-${slot}`} className={cn("ui-slot", `ui-slot-${slot}`, className)} data-slot-mode="awaiting">
+            <SkeletonTree node={awaiting} />
+          </Box>
+        );
+      }
       // Self-overlaying content plays its own exit only when the codegen
       // handed it the presence (render-function children); finished JSX can't
       // take it, so it unmounts at once.
@@ -759,6 +784,26 @@ function UISlotComponentInner({
     // Portal slots (modal, drawer, toast): render through a portal with proper wrapper
     // In contained mode, use inline rendering with absolute positioning
     if (isPortalSlot(slot)) {
+      if (contained && slot === "dock") {
+        return (
+          <DockSlotFrame
+            open
+            onExited={compiledPresence.onExited}
+            onDismiss={() => {
+              const orbital = sourceTrait !== undefined && schemaCtx !== null ? schemaCtx.orbitalsByTrait.get(sourceTrait) : undefined;
+              const prefix = orbital !== undefined && sourceTrait !== undefined ? `UI:${orbital}.${sourceTrait}.` : "UI:";
+              eventBus.emit(`${prefix}CLOSE`);
+              eventBus.emit(`${prefix}CANCEL`);
+              clear(slot);
+            }}
+            contained
+          >
+            <Box id={`slot-${slot}`} className={cn("ui-slot", `ui-slot-${slot}`, "flex min-h-0 flex-1 flex-col", className)} data-pattern={pattern} data-source-trait={sourceTrait}>
+              <MaybeTraitScope sourceTrait={sourceTrait}>{openChildren}</MaybeTraitScope>
+            </Box>
+          </DockSlotFrame>
+        );
+      }
       if (contained) {
         return (
           <Box
@@ -820,15 +865,18 @@ function UISlotComponentInner({
         </Box>
       );
     }
-    // For non-portal slots, render an empty placeholder
+    // For non-portal slots, render an empty placeholder (the predicted
+    // skeleton while a server round trip will fill it)
     if (!portal) {
       return (
         <Box
           id={`slot-${slot}`}
           className={cn("ui-slot", `ui-slot-${slot}`, className)}
           data-testid={`ui-slot-${slot}`}
-          data-slot-mode="empty"
-        />
+          data-slot-mode={awaiting !== undefined ? "awaiting" : "empty"}
+        >
+          {awaiting !== undefined ? <SkeletonTree node={awaiting} /> : null}
+        </Box>
       );
     }
     return null;
@@ -843,7 +891,7 @@ function UISlotComponentInner({
   // attempt no-ops because the state machine thinks it's already there.
   // Mirrors `ModalSlot.handleClose` (which has done it right all along).
   const handleDismiss = () => {
-    if (slot === 'modal' || slot === 'drawer') {
+    if (slot === 'modal' || slot === 'drawer' || slot === 'dock') {
       const trait = shownContent.sourceTrait;
       const orbital = trait !== undefined && schemaCtx !== null
         ? schemaCtx.orbitalsByTrait.get(trait)
@@ -936,6 +984,73 @@ function UISlotComponentInner({
 }
 
 // ============================================================================
+// Dock frame — the `dock` slot's chrome on both paths
+// ============================================================================
+
+/** Width of the docked panel; the page gives up the same inset while it is open. */
+const DOCK_INSET = "384px";
+
+/**
+ * Desktop: a full-height panel on the inline end that pushes the page (it sets
+ * `--almadar-dock-inset`, which the base theme pads the body by). Compact
+ * (<1024px): the existing right `Drawer`, full width on phones. The content
+ * carries its own close control (an explicit `.lolo` affordance); Escape on
+ * the drawer is the only chrome dismiss.
+ */
+function DockSlotFrame({ open, onExited, onDismiss, contained = false, children }: {
+  open: boolean;
+  onExited: () => void;
+  onDismiss: () => void;
+  /** Inside a preview box (`SlotContainedContext`): push the preview, not the page. */
+  contained?: boolean;
+  children: React.ReactNode;
+}): React.ReactElement | null {
+  const compact = useCompactLayout();
+  const { t } = useTranslate();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const pushes = open && !compact;
+
+  useEffect(() => {
+    if (!pushes) return;
+    if (contained) {
+      const host = panelRef.current?.closest<HTMLElement>(".ui-slot-renderer");
+      if (!host) return;
+      host.style.setProperty("--almadar-dock-contained-inset", DOCK_INSET);
+      return () => { host.style.removeProperty("--almadar-dock-contained-inset"); };
+    }
+    const root = document.documentElement;
+    root.style.setProperty("--almadar-dock-inset", DOCK_INSET);
+    return () => { root.style.removeProperty("--almadar-dock-inset"); };
+  }, [pushes, contained]);
+
+  useEffect(() => {
+    if (!open && !compact) onExited();
+  }, [open, compact, onExited]);
+
+  if (compact) {
+    return (
+      <Drawer isOpen={open} onExited={onExited} onClose={onDismiss} position="right" width="md" showCloseButton={false} contained={contained}>
+        <Box data-testid="dock-sheet-fill" className="flex h-full min-h-0 flex-col">{children}</Box>
+      </Drawer>
+    );
+  }
+  if (!open) return null;
+  return (
+    <Box
+      ref={panelRef}
+      role="complementary"
+      aria-label={t("aria.dockPanel")}
+      className={cn(
+        contained ? "absolute" : "fixed",
+        "inset-y-0 end-0 z-[850] flex w-96 flex-col border-s border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-lg)]",
+      )}
+    >
+      <Box className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</Box>
+    </Box>
+  );
+}
+
+// ============================================================================
 // Compiled Portal — wraps compiled children in portal for modal/drawer/toast
 // ============================================================================
 
@@ -968,7 +1083,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children, open,
   // trait stays in `open` and the next OPEN no-ops on a same-state
   // transition. See std-modal G27 / VG3 click-path "no state advanced".
   const handleDismiss = () => {
-    if (slot === 'modal' || slot === 'drawer') {
+    if (slot === 'modal' || slot === 'drawer' || slot === 'dock') {
       const orbital = sourceTrait !== undefined && compiledPortalSchemaCtx !== null
         ? compiledPortalSchemaCtx.orbitalsByTrait.get(sourceTrait)
         : undefined;
@@ -1027,6 +1142,21 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children, open,
             {children}
           </Box>
         </Drawer>
+      );
+      break;
+
+    case "dock":
+      wrapper = (
+        <DockSlotFrame open={open} onExited={onExited} onDismiss={handleDismiss}>
+          <Box
+            id={slotId}
+            className={cn("ui-slot", `ui-slot-${slot}`, "flex min-h-0 flex-1 flex-col", className)}
+            data-pattern={pattern}
+            data-source-trait={sourceTrait}
+          >
+            {children}
+          </Box>
+        </DockSlotFrame>
       );
       break;
 
@@ -1143,6 +1273,14 @@ function SlotPortal({
         >
           <Box id={slotId}>{slotContent}</Box>
         </Drawer>
+      );
+      break;
+
+    case "dock":
+      wrapper = (
+        <DockSlotFrame open={open} onExited={onExited} onDismiss={onDismiss}>
+          <Box id={slotId} className="flex min-h-0 flex-1 flex-col">{slotContent}</Box>
+        </DockSlotFrame>
       );
       break;
 
@@ -2031,6 +2169,9 @@ function SlotContentRenderer({
     );
     delete finalProps.enter;
     delete finalProps.enterDelay;
+    // An injected `skeleton` only feeds the awaiting-skeleton prediction; a
+    // component that declares the prop draws it in its own loading state.
+    if (propsSchema?.skeleton?.kind === 'skeleton') delete finalProps.skeleton;
     if (nodeEnterClass) {
       finalProps.className = cn(typeof finalProps.className === 'string' ? finalProps.className : undefined, nodeEnterClass);
     }
@@ -2184,6 +2325,7 @@ export function UISlotRenderer({
       </Box>
 
       {/* Portal slots */}
+      <UISlotComponent slot="dock" portal />
       <UISlotComponent slot="modal" portal />
       <UISlotComponent slot="drawer" portal />
       <UISlotComponent slot="overlay" portal />
@@ -2208,13 +2350,16 @@ export function UISlotRenderer({
         </>
       )}
 
-      {/* Floating slot (optional) - absolutely positioned */}
-      {includeFloating && (
+      {/* Floating slot: a draggable panel where includeFloating asks for one,
+          otherwise a portal its content positions itself in (a FAB). */}
+      {includeFloating ? (
         <UISlotComponent
           slot="floating"
           className={isContained ? "absolute top-2 left-2 z-50" : "fixed z-50"}
           draggable
         />
+      ) : (
+        <UISlotComponent slot="floating" portal />
       )}
     </Box>
   );

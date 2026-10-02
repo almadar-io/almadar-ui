@@ -10,6 +10,7 @@ import { cn } from '../../../lib/cn';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
 import type { UiError } from '../atoms/types';
+import { SurfaceBoundary } from '../../../providers/SurfaceContext';
 
 import { domPassthrough } from '../../../lib/domPassthrough';
 export type SectionPadding = 'none' | 'sm' | 'md' | 'lg' | 'xl';
@@ -55,12 +56,8 @@ const paddingStyles: Record<SectionPadding, string> = {
 // Using CSS variables for theme-aware styling
 const variantStyles: Record<SectionVariant, string> = {
   default: '',
-  card: [
-    'bg-card',
-    'border-[length:var(--border-width)] border-border',
-    'shadow',
-    'rounded-container',
-  ].join(' '),
+  // An explicit surface, like Card: always paints, and blocks inside stay flat.
+  card: 'surface-content',
   bordered: [
     'border-[length:var(--border-width)] border-border',
     'rounded-container',
@@ -86,6 +83,7 @@ export const Section: React.FC<SectionProps> = ({
   ...rest
 }) => {
   const hasHeader = title || description || action;
+  const wrap = (node: React.ReactNode) => (variant === 'card' ? <SurfaceBoundary>{node}</SurfaceBoundary> : node);
   // Polymorphic render via React.createElement — `as: React.ElementType`
   // collapses JSX children prop inference to `never`; createElement avoids this.
   return React.createElement(
@@ -98,7 +96,8 @@ export const Section: React.FC<SectionProps> = ({
         className
       ),
     },
-    hasHeader && (
+    wrap(<>
+    {hasHeader && (
       <Box
         className={cn(
           'flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4',
@@ -132,10 +131,11 @@ export const Section: React.FC<SectionProps> = ({
           </Box>
         )}
       </Box>
-    ),
+    )}
     <Box className={contentClassName}>
       {children}
-    </Box>,
+    </Box>
+    </>),
   );
 };
 

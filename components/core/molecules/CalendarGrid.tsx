@@ -9,6 +9,8 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import type { EventEmit, EventPayload, EntityRow, EntityWith, A11yProps } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { useContentSurface } from '../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
 import { pressableProps } from "../../../lib/pressable";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { Box } from "../atoms/Box";
@@ -55,6 +57,8 @@ export interface CalendarGridProps extends A11yProps {
   onEventClick?: (event: EntityRow) => void;
   /** Additional CSS classes */
   className?: string;
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   /** Event emitted on long-press of a time slot: UI:{longPressEvent} with { date, time, ...longPressPayload } */
   longPressEvent?: EventEmit<{ date: string; time?: string }>;
   /** Additional payload for long-press events
@@ -283,6 +287,7 @@ export function CalendarGrid({
   onDayClick,
   onEventClick,
   className,
+  surface = 'auto',
   longPressEvent,
   longPressPayload,
   swipeLeftEvent,
@@ -298,6 +303,7 @@ export function CalendarGrid({
 }: CalendarGridProps): React.JSX.Element {
   const evs = Array.isArray(events) ? events : events ? [events] : [];
   const eventBus = useEventBus();
+  const contentSurface = useContentSurface(surface);
   const { t, locale } = useTranslate();
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
@@ -441,10 +447,10 @@ export function CalendarGrid({
     );
   };
 
-  return (
+  return contentSurface.provide(
     <Box
       {...domPassthrough(rest)}
-      className={className}
+      className={cn(contentSurface.className && cn(contentSurface.className, 'p-card-sm'), className)}
       {...(swipeLeftEvent || swipeRightEvent ? {
         onPointerDown: swipe.onPointerDown,
         onPointerMove: swipe.onPointerMove,

@@ -13,14 +13,18 @@
  */
 
 import React from "react";
-import type { A11yProps, EventKey } from "@almadar/core";
+import type { A11yProps, SkeletonSpec, EventKey } from "@almadar/core";
+import { Skeleton } from "../molecules/Skeleton";
 import { domPassthrough } from "../../../lib/domPassthrough";
+import { entityRows } from "../../../lib/entityRows";
 import { cn } from "../../../lib/cn";
-import { Card, Typography, Badge, Icon, Box, Button } from "../atoms/index";
+import { Typography, Badge, Icon, Box, Button } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
+import { useContentSurface } from "../../../providers/SurfaceContext";
+import type { SurfaceMode } from '@almadar/core';
 import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
 import { formatValue } from "../../../lib/format";
 // Timeline carries `icon?: IconInput` on TimelineItem (a React component),
@@ -71,10 +75,14 @@ export interface TimelineAction {
 }
 
 export interface TimelineProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
+    /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+    surface?: SurfaceMode;
     /** Additional CSS classes */
     className?: string;
     /** Loading state indicator */
     isLoading?: boolean;
+    /** Skeleton drawn while loading, and the shape an empty slot shows while this element's server render is in flight (`none` opts out). */
+    skeleton?: SkeletonSpec;
     /** Error state */
     error?: UiError | null;
     /**
@@ -83,7 +91,7 @@ export interface TimelineProps extends Omit<React.AriaAttributes, keyof A11yProp
      * TimelineItem fields (`icon`, callbacks) cannot round-trip through the
      * event bus, so decorative stories that need them pass `items` directly.
      */
-    entity?: readonly EntityRow[];
+    entity?: EntityRow | readonly EntityRow[];
     /** Timeline title */
     title?: string;
     /** Timeline items */
@@ -152,16 +160,19 @@ export const Timeline: React.FC<TimelineProps> = ({
     itemActions,
     entity,
     isLoading = false,
+    skeleton = 'list',
     error,
     className,
     look = "vertical-spacious",
+    surface = 'auto',
     ...rest
 }) => {
+    const contentSurface = useContentSurface(surface);
     const { t } = useTranslate();
     const fmt = useFormatContext();
 
     // Normalize entity data to TimelineItem[] if schema data is provided
-    const entityData: readonly EntityRow[] = entity ?? [];
+    const entityData = entityRows(entity);
     const items: readonly TimelineItem[] = React.useMemo(() => {
         if (propItems && propItems.length > 0) return propItems;
         if (entityData.length === 0) return [];
@@ -180,7 +191,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     if (isLoading) {
         return (
             <Box {...domPassthrough(rest)}>
-                <LoadingState message={t('common.loading')} className={className} />
+                <Skeleton spec={skeleton} className={className} />
             </Box>
         );
     }
@@ -209,8 +220,8 @@ export const Timeline: React.FC<TimelineProps> = ({
         );
     }
 
-    return (
-        <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
+    return contentSurface.provide(
+        <Box {...domPassthrough(rest)} className={cn(contentSurface.className, "p-6 rounded-container", className)}>
             <VStack gap="md">
                 {title && (
                     <Typography variant="h5">
@@ -300,7 +311,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     })}
                 </VStack>
             </VStack>
-        </Card>
+        </Box>,
     );
 };
 

@@ -12,10 +12,14 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import type { A11yProps, EntityRow, EventKey, EventEmit, FieldValue } from '@almadar/core';
+import type { A11yProps, SkeletonSpec, EntityRow, EventKey, EventEmit, FieldValue } from '@almadar/core';
+import { Skeleton } from "./Skeleton";
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
-import { pressableProps } from '../../../lib/pressable';
+import { useContentSurface } from '../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
+import { entityRows } from '../../../lib/entityRows';
+import { rowOpenControlProps, STRETCHED_CONTROL, STRETCHED_ABOVE } from '../../../lib/pressable';
 import { domPassthrough } from '../../../lib/domPassthrough';
 import { formatValue, type BooleanLabels } from '../../../lib/format';
 import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
@@ -113,6 +117,8 @@ export interface DataGridProps extends DataDndProps, EmptyStateSlotProps, A11yPr
   className?: string;
   /** Loading state */
   isLoading?: boolean;
+  /** Skeleton drawn while loading, and the shape an empty slot shows while this element's server render is in flight (`none` opts out). */
+  skeleton?: SkeletonSpec;
   /** Error state */
   error?: UiError | null;
   /** Entity field name containing an image URL for card thumbnails */
@@ -145,6 +151,8 @@ export interface DataGridProps extends DataDndProps, EmptyStateSlotProps, A11yPr
    * data-grid / data-list / entity-table share one knob name from authors.
    */
   look?: "dense" | "spacious" | "striped" | "borderless" | "card-rows";
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   /** Relation display data: { fieldName: [{value, label}] } — injected
    *  server-side by the runtime (relation-option injection) or bound by
    *  compiled codegen; resolves stored foreign ids to display names for a
@@ -202,6 +210,7 @@ export function DataGrid({
   minCardWidth = 280,
   className,
   isLoading = false,
+  skeleton = 'grid',
   error = null,
   imageField,
   selectable = false,
@@ -221,6 +230,7 @@ export function DataGrid({
   dndItemIdField,
   dndRoot,
   look = 'dense',
+  surface = 'auto',
   relationsData,
   ...rest
 }: DataGridProps) {
@@ -229,6 +239,7 @@ export function DataGrid({
   const actionPayload = useRowActionPayload();
   const { fire: fireRowAction, isRowPending } = useRowActionFire<DataGridItemAction>();
   const { t } = useTranslate();
+  const contentSurface = useContentSurface(surface);
   const fmt = useFormatContext();
   const boolLabels: BooleanLabels = { yes: t('common.yes'), no: t('common.no') };
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -242,7 +253,7 @@ export function DataGrid({
   const fieldDefs: readonly DataGridField[] = (Array.isArray(fields) ? fields : undefined) ?? (Array.isArray(columns) ? columns : undefined) ?? [];
   const actionDefs: readonly DataGridItemAction[] = Array.isArray(itemActions) ? itemActions : [];
 
-  const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const allDataRaw = entityRows(entity);
   const dnd = useDataDnd({
     items: allDataRaw as readonly EntityRow[],
     layout: 'grid',
@@ -384,15 +395,12 @@ export function DataGrid({
       }[cols]
     : undefined;
 
+  // One column is a list, not a gallery: one surface, divided rows.
+  const asRows = cols === 1 && !scrollX && !hasRenderProp;
+
   // Loading state
   if (isLoading) {
-    return (
-      <Box className="text-center py-8">
-        <Typography variant="body" color="secondary">
-          {t('loading.items')}
-        </Typography>
-      </Box>
-    );
+    return <Skeleton spec={skeleton} className={className} />;
   }
 
   // Error state
@@ -426,7 +434,7 @@ export function DataGrid({
   const someSelected = selectedIds.size > 0;
 
   const idFieldName = dndItemIdField ?? 'id';
-  return dnd.wrapContainer(
+  return contentSurface.provide(dnd.wrapContainer(
     <VStack gap="sm" {...domPassthrough(rest)}>
       {/* Selection toolbar */}
       {selectable && someSelected && (
@@ -443,7 +451,13 @@ export function DataGrid({
       )}
 
       <Box
-        className={cn('grid', gapStyles[gap], scrollX ? 'grid-flow-col overflow-x-auto snap-x snap-mandatory [&>*]:snap-start pb-2' : colsClass, lookStyles[look], className)}
+        data-grid-layout={asRows ? 'rows' : 'cards'}
+        className={cn(
+          asRows
+            ? cn('flex flex-col divide-y divide-border', contentSurface.className && cn(contentSurface.className, 'overflow-hidden'))
+            : cn('grid', gapStyles[gap], scrollX ? 'grid-flow-col overflow-x-auto snap-x snap-mandatory [&>*]:snap-start pb-2' : colsClass, lookStyles[look]),
+          className,
+        )}
         style={
           scrollX
             // Capped below the board width so, on a narrow screen, the next
@@ -484,10 +498,19 @@ export function DataGrid({
  data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
  aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
                 aria-current={isSelected ? 'true' : undefined}
-                {...pressableProps(handleCardClick)}
+                onClick={handleCardClick}
                 className={cn('relative group/rowactions', handleCardClick && 'cursor-pointer', isSelected && 'ring-2 ring-primary rounded-container')}
               >
-                {itemRenderer!(itemData, index)}
+                {handleCardClick && (
+                  <Box
+                    {...rowOpenControlProps(true)}
+                    aria-label={t('aria.openRow', { position: index + 1 })}
+                    className="absolute inset-0 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                  />
+                )}
+                <Box className={cn(handleCardClick && 'relative')}>
+                  {itemRenderer!(itemData, index)}
+                </Box>
                 {rowAct.visible.length > 0 && (
                   <Box onClick={stopCardClick} className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
                     {/* Card rule (same as the fields path): at most one
@@ -538,6 +561,55 @@ export function DataGrid({
             titleField ? relationsData?.[titleField.name] : undefined,
           ) ?? (titleValue !== undefined && titleValue !== null ? String(titleValue) : undefined);
 
+          const bodyContent = bodyFields.length > 0 ? (
+          <VStack gap="xs">
+            {bodyFields.filter((f) => f.variant === 'caption' && f.format !== 'boolean').map((field) => {
+              const value = getNestedValue(itemData, field.name);
+              if (value === undefined || value === null || value === '') return null;
+              return (
+                <Typography key={field.name} variant="small" color="secondary" className="line-clamp-2">
+                  {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format, fmt)}
+                </Typography>
+              );
+            })}
+            <HStack gap="md" className="flex-wrap gap-y-1">
+              {bodyFields.filter((f) => f.variant !== 'caption' || f.format === 'boolean').map((field) => {
+                const value = getNestedValue(itemData, field.name);
+                if (value === undefined || value === null || value === '') return null;
+
+                if (field.format === 'boolean') {
+                  return (
+                    <HStack key={field.name} gap="xs" className="items-center">
+                      {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
+                      <Typography variant="caption" color="secondary">
+                        {field.label ?? fieldLabel(field.name)}
+                      </Typography>
+                      <Badge variant={value ? 'success' : 'neutral'}>
+                        {value ? boolLabels.yes : boolLabels.no}
+                      </Badge>
+                    </HStack>
+                  );
+                }
+
+                return (
+                  <HStack key={field.name} gap="xs" className="items-center">
+                    {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
+                    {/* A declared icon names the value, so its label stays
+                        screen-reader-only; without one the label shows — a
+                        bare number ("13") names nothing. */}
+                    <Typography variant="caption" color="secondary" className={field.icon ? "sr-only" : undefined}>
+                      {(field.label ?? fieldLabel(field.name)) + ':'}
+                    </Typography>
+                    <Typography variant="small" color="secondary">
+                      {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format, fmt)}
+                    </Typography>
+                  </HStack>
+                );
+              })}
+            </HStack>
+          </VStack>
+          ) : null;
+
           return wrapDnd(
             <Box
               key={id}
@@ -546,15 +618,19 @@ export function DataGrid({
  data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
  aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
                 aria-current={isSelected ? 'true' : undefined}
-              {...pressableProps(handleCardClick)}
+              onClick={handleCardClick}
               className={cn(
-                'bg-card rounded-container',
-                'border border-border',
-                'shadow-elevation-card hover:shadow-elevation-dialog',
-                'hover:border-primary transition-all',
-                'flex flex-col',
+                'relative',
+                asRows
+                  ? 'flex flex-row items-center gap-3 px-card-md transition-colors duration-fast hover:bg-muted/50'
+                  : cn(
+                      // Each card is a surface; already on one, a hairline keeps the tiles apart.
+                      contentSurface.className ?? 'rounded-container border border-border',
+                      'hover:shadow-elevation-dialog hover:border-primary transition-all',
+                      'flex flex-col',
+                    ),
                 handleCardClick && 'cursor-pointer',
-                isSelected && 'ring-2 ring-primary border-primary',
+                isSelected && (asRows ? 'bg-primary/5' : 'ring-2 ring-primary border-primary'),
               )}
             >
             {/* Card Image */}
@@ -562,7 +638,7 @@ export function DataGrid({
               const imgUrl = resolveImageUrl(getNestedValue(itemData, imageField));
               if (!imgUrl) return null;
               return (
-                <Box className="w-full aspect-video overflow-hidden rounded-t-container">
+                <Box className={asRows ? 'w-12 h-12 flex-shrink-0 overflow-hidden rounded-container' : 'w-full aspect-video overflow-hidden rounded-t-container'}>
                   <img
                     src={imgUrl}
                     alt={titleDisplay ?? ''}
@@ -574,27 +650,32 @@ export function DataGrid({
             })()}
 
             {/* Card Header: title + badges + the action cluster */}
-            <Box className={cn('p-4', bodyFields.length > 0 && 'pb-0')}>
-              <HStack gap="sm" className="justify-between items-start">
+            <Box className={cn(asRows ? 'flex-1 min-w-0 py-card-sm' : cn('p-4', bodyFields.length > 0 && 'pb-0'))}>
+              <HStack gap="sm" className={cn('justify-between', asRows ? 'items-center' : 'items-start')}>
                 {selectable && (
                   <Checkbox
                     checked={isSelected}
                     onChange={() => toggleSelection(id)}
                     onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                    className="mt-1 flex-shrink-0"
+                    className={cn("mt-1 flex-shrink-0", STRETCHED_ABOVE)}
                     aria-label={t('card.selectItem', { item: titleDisplay ?? t('card.itemFallback') })}
                   />
                 )}
-                <VStack gap="xs" className="flex-1 min-w-0">
+                <VStack gap="xs" className={cn('flex-1 min-w-0', asRows && 'flex-row flex-wrap items-center gap-x-2')}>
                   {titleDisplay !== undefined && (
                     <HStack gap="xs" className="items-center min-w-0">
                       {titleField?.icon && renderIconInput(titleField.icon, { size: 'sm', className: 'text-primary flex-shrink-0' })}
-                      <Typography
-                        variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
-                        className="font-semibold truncate min-w-0"
+                      <Box
+                        {...rowOpenControlProps(handleCardClick !== undefined)}
+                        className={cn('min-w-0', handleCardClick && STRETCHED_CONTROL)}
                       >
-                        {titleDisplay}
-                      </Typography>
+                        <Typography
+                          variant={titleField?.variant === 'h3' && !asRows ? 'h3' : 'h4'}
+                          className="font-semibold truncate min-w-0"
+                        >
+                          {titleDisplay}
+                        </Typography>
+                      </Box>
                     </HStack>
                   )}
                   {badgeFields.length > 0 && (
@@ -613,6 +694,7 @@ export function DataGrid({
                       })}
                     </HStack>
                   )}
+                  {asRows && bodyContent && <Box className="basis-full min-w-0">{bodyContent}</Box>}
                 </VStack>
                 {/* Header action cluster: the title owns this row, so at
                     most ONE explicit primary action rides inline (icon-only
@@ -622,7 +704,7 @@ export function DataGrid({
                     title to a couple of characters
                     (U-DATAGRID-ACTIONS-STARVE-CARD-TITLE). */}
                 {rowAct.visible.length > 0 && (
-                  <HStack gap="xs" onClick={stopCardClick} className="flex-shrink-0">
+                  <HStack gap="xs" onClick={stopCardClick} className={cn('flex-shrink-0', STRETCHED_ABOVE)}>
                     {rowAct.inline.map((action, idx) => (
                       <Button
                         key={idx}
@@ -667,54 +749,9 @@ export function DataGrid({
                 a wrapping meta row, the same convention DataList's default
                 path uses. Never label-left/value-right across the card width:
                 that separation breaks the label from its value. */}
-            {bodyFields.length > 0 && (
+            {!asRows && bodyContent && (
               <Box className="px-4 pt-2 pb-4 flex-1">
-                <VStack gap="xs">
-                  {bodyFields.filter((f) => f.variant === 'caption' && f.format !== 'boolean').map((field) => {
-                    const value = getNestedValue(itemData, field.name);
-                    if (value === undefined || value === null || value === '') return null;
-                    return (
-                      <Typography key={field.name} variant="small" color="secondary" className="line-clamp-2">
-                        {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format, fmt)}
-                      </Typography>
-                    );
-                  })}
-                  <HStack gap="md" className="flex-wrap gap-y-1">
-                    {bodyFields.filter((f) => f.variant !== 'caption' || f.format === 'boolean').map((field) => {
-                      const value = getNestedValue(itemData, field.name);
-                      if (value === undefined || value === null || value === '') return null;
-
-                      if (field.format === 'boolean') {
-                        return (
-                          <HStack key={field.name} gap="xs" className="items-center">
-                            {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
-                            <Typography variant="caption" color="secondary">
-                              {field.label ?? fieldLabel(field.name)}
-                            </Typography>
-                            <Badge variant={value ? 'success' : 'neutral'}>
-                              {value ? boolLabels.yes : boolLabels.no}
-                            </Badge>
-                          </HStack>
-                        );
-                      }
-
-                      return (
-                        <HStack key={field.name} gap="xs" className="items-center">
-                          {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
-                          {/* A declared icon names the value, so its label stays
-                              screen-reader-only; without one the label shows — a
-                              bare number ("13") names nothing. */}
-                          <Typography variant="caption" color="secondary" className={field.icon ? "sr-only" : undefined}>
-                            {(field.label ?? fieldLabel(field.name)) + ':'}
-                          </Typography>
-                          <Typography variant="small" color="secondary">
-                            {resolveRelationCellDisplay(value as FieldValue, relationsData?.[field.name]) ?? formatValue(value, field.format, fmt)}
-                          </Typography>
-                        </HStack>
-                      );
-                    })}
-                  </HStack>
-                </VStack>
+                {bodyContent}
               </Box>
             )}
           </Box>
@@ -741,7 +778,7 @@ export function DataGrid({
         />
       )}
     </VStack>
-  );
+  ));
 };
 
 DataGrid.displayName = 'DataGrid';

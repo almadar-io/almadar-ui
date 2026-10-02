@@ -15,6 +15,8 @@ import { Box } from '../atoms/Box';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
+import { useContentSurface } from '../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
 
 import { domPassthrough } from '../../../lib/domPassthrough';
 export interface BranchingQuestion {
@@ -43,6 +45,8 @@ export interface BranchingLogicBuilderProps extends A11yProps {
    * `[]` internally when the value isn't an array.
    */
   rules: readonly BranchingRule[] | EventPayloadValue;
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   onRulesChange?: (rules: BranchingRule[]) => void;
   /** Event name dispatched via event bus when rules change. Payload: `{ rules }`. */
   rulesChangeEvent?: EventEmit<{ rules: BranchingRule[] }>;
@@ -297,6 +301,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
 interface LogicGraphProps {
   questions: readonly BranchingQuestion[];
   rules: BranchingRule[];
+  surface: SurfaceMode;
 }
 
 const NODE_WIDTH = 180;
@@ -304,7 +309,8 @@ const NODE_HEIGHT = 56;
 const NODE_GAP_Y = 80;
 const PADDING = 32;
 
-const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
+const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules, surface }) => {
+  const contentSurface = useContentSurface(surface);
   const { t } = useTranslate();
   const endOfSurveyLabel = t('branchingLogic.endOfSurvey');
   const layout = useMemo(() => {
@@ -324,8 +330,8 @@ const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
     return { items, positions, width, height };
   }, [questions, endOfSurveyLabel]);
 
-  return (
-    <Box className="overflow-auto rounded-container border border-border bg-card p-2">
+  return contentSurface.provide(
+    <Box className={cn('overflow-auto p-2', contentSurface.className)}>
       <svg
         width={layout.width}
         height={layout.height}
@@ -423,7 +429,7 @@ const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
           );
         })}
       </svg>
-    </Box>
+    </Box>,
   );
 };
 
@@ -434,6 +440,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
   rulesChangeEvent,
   readOnly = false,
   className,
+  surface = 'auto',
   ...rest
 }) => {
   const { t } = useTranslate();
@@ -585,7 +592,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
           )}
         </Box>
       ) : (
-        <LogicGraph questions={questions} rules={rules} />
+        <LogicGraph questions={questions} rules={rules} surface={surface} />
       )}
     </Box>
   );

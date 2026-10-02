@@ -1,6 +1,7 @@
 import React from "react";
 import type { A11yProps, EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { SurfaceBoundary } from "../../../providers/SurfaceContext";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { Spinner } from "./Spinner";
 import { pressableProps } from "../../../lib/pressable";
@@ -44,16 +45,12 @@ export interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, ke
 // Using CSS variables for theme-aware styling
 const variantStyles = {
   default: [
-    "bg-card surface-material",
-    "border-[length:var(--border-width)] border-border",
-    "shadow-elevation-card",
+    "surface-content",
     "transition-all duration-normal",
     "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
   bordered: [
-    "bg-card surface-material",
-    "border-[length:var(--border-width)] border-border",
-    "shadow-elevation-card",
+    "surface-content",
     "transition-all duration-normal",
     "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
@@ -166,7 +163,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
             )}
           </div>
         )}
-        {children}
+        <SurfaceBoundary>{children}</SurfaceBoundary>
       </div>
     );
   },

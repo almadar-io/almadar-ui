@@ -16,9 +16,6 @@ import { DataList } from '../components/core/molecules/DataList';
 import { DataGrid } from '../components/core/molecules/DataGrid';
 import { TableView } from '../components/core/molecules/TableView';
 import { SwipeableRow } from '../components/core/molecules/SwipeableRow';
-import { CardGrid } from '../components/core/organisms/CardGrid';
-import { DataTable } from '../components/core/organisms/DataTable';
-import { List } from '../components/core/organisms/List';
 import { DetailPanel } from '../components/core/organisms/DetailPanel';
 
 const ownerOnly: SExpr = ['fn', 'row', ['=', ['object/get', '@row', 'ownerId'], '@user.id']];
@@ -155,66 +152,6 @@ describe('TableView', () => {
     const events = menuEvents(1);
     expect(events).toContain('action-VIEW');
     expect(events).not.toContain('action-EDIT');
-  });
-});
-
-describe('CardGrid', () => {
-  const actions = [{ event: 'EDIT', label: 'Edit', when: ownerOnly }];
-
-  it('draws Edit only on the viewer-owned card', () => {
-    as(alice, <CardGrid entity={rows} fields={['title']} itemActions={actions} />);
-    expect(editIds()).toEqual(['r1']);
-  });
-
-  it('control: the other viewer gets the other card', () => {
-    as(bob, <CardGrid entity={rows} fields={['title']} itemActions={actions} />);
-    expect(editIds()).toEqual(['r2']);
-  });
-});
-
-describe('DataTable', () => {
-  type Row = { id: string; title: string; ownerId: string };
-  const actions = [
-    { event: 'VIEW', label: 'Open' },
-    { event: 'EDIT', label: 'Edit', when: ownerOnly },
-  ];
-
-  const openMenu = (rowIndex: number) => {
-    const buttons = document.querySelectorAll('tbody tr');
-    const trigger = buttons[rowIndex].querySelector('td:last-child button');
-    if (!trigger) throw new Error('no row action trigger');
-    fireEvent.click(trigger);
-    return screen.queryAllByTestId('action-EDIT').length;
-  };
-
-  it("shows Edit in the viewer-owned row's menu", () => {
-    as(alice, <DataTable<Row> entity={rows} fields={[{ key: 'title', header: 'Title' }]} itemActions={actions} />);
-    expect(openMenu(0)).toBe(1);
-  });
-
-  it("control: the other row's menu has no Edit", () => {
-    as(alice, <DataTable<Row> entity={rows} fields={[{ key: 'title', header: 'Title' }]} itemActions={actions} />);
-    expect(openMenu(1)).toBe(0);
-  });
-
-  it('composes with the legacy `show` predicate: both must pass', () => {
-    const rowActions = [{ label: 'Edit', event: 'EDIT', when: ownerOnly, show: (row: Row) => row.title !== 'Alice task' }];
-    as(alice, <DataTable<Row> entity={rows} fields={[{ key: 'title', header: 'Title' }]} rowActions={rowActions} />);
-    expect(openMenu(0)).toBe(0);
-  });
-});
-
-describe('List', () => {
-  const actions = [{ event: 'EDIT', label: 'Edit', icon: 'pencil', when: ownerOnly }];
-
-  it('draws the Edit button for one row of the two, for the owner', () => {
-    as(alice, <List entity={rows} fields={['title']} itemActions={actions} />);
-    expect(screen.queryAllByTestId('action-EDIT')).toHaveLength(1);
-  });
-
-  it('control: without `when` both rows draw Edit', () => {
-    as(alice, <List entity={rows} fields={['title']} itemActions={[{ event: 'EDIT', label: 'Edit', icon: 'pencil' }]} />);
-    expect(screen.queryAllByTestId('action-EDIT')).toHaveLength(2);
   });
 });
 

@@ -17,6 +17,8 @@ import { Icon } from '../../atoms/Icon';
 import { Typography } from '../../atoms/Typography';
 import { cn } from '../../../../lib/cn';
 import { useTranslate } from '../../../../hooks/useTranslate';
+import { useContentSurface } from '../../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
 
 import { domPassthrough } from '../../../../lib/domPassthrough';
 export interface ImportPreviewUnit {
@@ -43,6 +45,8 @@ export interface ImportEntityDisplay {
 }
 
 export interface ImportPreviewTreeProps extends A11yProps {
+  /** Content surface: `auto` paints the theme's surface behind each group tile unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   /** Staged units to preview */
   units: ImportPreviewUnit[];
   /** Elements skipped during extraction, with reasons */
@@ -91,8 +95,11 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
   cancelLabel,
   indent = 16,
   className,
+  surface = 'auto',
   ...rest
 }) => {
+  const contentSurface = useContentSurface(surface);
+  const tileClass = cn(contentSurface.className ?? 'rounded-container border border-border', 'p-3');
   const { t } = useTranslate();
   const groups = new Map<string, ImportPreviewUnit[]>();
   for (const unit of units) {
@@ -126,7 +133,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
     );
   };
 
-  return (
+  return contentSurface.provide(
     <Box {...domPassthrough(rest)} className={cn('flex flex-col gap-4', className)}>
       {units.length === 0 ? (
         <Typography variant="body2" className="text-muted-foreground">
@@ -148,7 +155,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
         }
         const label = entityDisplay[entity]?.plural ?? entity;
         return (
-          <Box key={entity} border className="rounded-container border-border bg-card p-3">
+          <Box key={entity} className={tileClass}>
             <Box className="flex items-center gap-2 pb-2">
               <Typography variant="label">{label}</Typography>
               <Badge amount={groupUnits.length} />
@@ -158,7 +165,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
         );
       })}
       {skipped.length > 0 ? (
-        <Box border className="rounded-container border-border bg-card p-3">
+        <Box className={tileClass}>
           <Box className="flex items-center gap-2 pb-2">
             <Typography variant="label">{t('import.skipped')}</Typography>
             <Badge amount={skipped.length} />
@@ -183,7 +190,7 @@ export const ImportPreviewTree: React.FC<ImportPreviewTreeProps> = ({
           ) : null}
         </Box>
       ) : null}
-    </Box>
+    </Box>,
   );
 };
 

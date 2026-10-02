@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import type { A11yProps, ControlValue, EntityRow, EventEmit, EventKey, EventPayload, FieldValue, FormSubmitPayload } from "@almadar/core";
+import type { A11yProps, ControlValue, EntityRow, EventEmit, EventKey, EventPayload, FieldValue, FormSubmitPayload, SkeletonSpec } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { toDateInputValue, toDateTimeInputValue } from "../../../lib/format";
 import { Input } from "../atoms/Input";
@@ -39,6 +39,8 @@ import { Alert } from "../molecules/Alert";
 import { usePendingAction } from "../../../lib/pendingDispatch";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useContentSurface } from "../../../providers/SurfaceContext";
+import type { SurfaceMode } from '@almadar/core';
 import type { OrbitalEntity } from "@almadar/core";
 import type { IconInput } from "../atoms/Icon";
 import {
@@ -259,6 +261,10 @@ export interface FormProps extends Omit<
   React.FormHTMLAttributes<HTMLFormElement>,
   "onSubmit" | keyof A11yProps
 >, A11yProps {
+  /** Content surface: `auto` paints the theme's surface (with card padding) behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
+  /** The shape an empty slot shows while this form's server render is in flight (`none` opts out). @default 'form' */
+  skeleton?: SkeletonSpec;
   /** Form fields (traditional React children) */
   children?: React.ReactNode;
   /** Submit event name for trait dispatch (emitted via eventBus as UI:{onSubmit}) */
@@ -476,6 +482,7 @@ export const Form: React.FC<FormProps> = ({
   onCancel,
   layout = "vertical",
   gap = "md",
+  surface = 'auto',
   className,
   // Schema-based props
   entity,
@@ -507,8 +514,11 @@ export const Form: React.FC<FormProps> = ({
   evaluationContext: externalContext,
   sections = [],
   onFieldChange,
+  // Feeds the awaiting-skeleton prediction only; never forwarded to the <form>.
+  skeleton: _skeleton,
   ...props
 }) => {
+  const contentSurface = useContentSurface(surface);
   const eventBus = useEventBus();
   const submitBusy = usePendingAction();
   const isLoading = isLoadingProp || submitBusy.pending;
@@ -1399,12 +1409,11 @@ export const Form: React.FC<FormProps> = ({
     }
   }
 
-  return (
-     
+  return contentSurface.provide(
     <form
       ref={formRef}
       data-pattern="form-section"
-      className={cn(layoutStyles[layout], gapStyles[gap], layout === "vertical" && "w-full max-w-xl", className)}
+      className={cn(layoutStyles[layout], gapStyles[gap], layout === "vertical" && "w-full max-w-xl", contentSurface.className && cn(contentSurface.className, "p-card-md"), className)}
       onSubmit={handleSubmit}
       onBlur={(e: React.FocusEvent<HTMLFormElement>) => {
         const name = e.target instanceof HTMLElement ? e.target.getAttribute("data-field-name") : null;
@@ -1487,7 +1496,7 @@ export const Form: React.FC<FormProps> = ({
           )}
         </HStack>
       )}
-    </form>
+    </form>,
   );
 };
 

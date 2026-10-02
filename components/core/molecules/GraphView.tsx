@@ -13,6 +13,8 @@ import React, { useRef, useEffect, useState, useCallback, useMemo, useId } from 
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/index';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { useContentSurface } from '../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
 import type { A11yProps } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
 import { pressableProps } from '../../../lib/pressable';
@@ -47,6 +49,8 @@ export interface GraphViewProps extends Omit<React.AriaAttributes, keyof A11yPro
   width?: number;
   /** Height in pixels */
   height?: number;
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   /** Additional CSS classes */
   className?: string;
   /** Show node labels (default true) */
@@ -105,8 +109,10 @@ export const GraphView: React.FC<GraphViewProps> = ({
   showLabels = true,
   zoomToFit = true,
   layout = 'force',
+  surface = 'auto',
   ...rest
 }) => {
+  const contentSurface = useContentSurface(surface);
   const { t } = useTranslate();
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(0);
@@ -356,12 +362,12 @@ export const GraphView: React.FC<GraphViewProps> = ({
     );
   }
 
-  return (
+  return contentSurface.provide(
     <Box
       ref={containerRef}
       role={onNodeClick ? 'group' : rest['aria-label'] ? 'img' : undefined}
       {...domPassthrough(rest)}
-      className={cn('relative overflow-hidden rounded-container border border-border bg-card', className)}
+      className={cn('relative overflow-hidden', contentSurface.className, className)}
       style={{ width: propWidth ?? '100%', height: h }}
     >
       <svg
@@ -472,7 +478,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
           );
         })}
       </svg>
-    </Box>
+    </Box>,
   );
 };
 

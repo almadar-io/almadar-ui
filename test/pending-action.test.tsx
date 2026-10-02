@@ -159,4 +159,24 @@ describe('busy action controls', () => {
     expect(fired).toBe(1);
     settleAll();
   });
+
+  it('a row menu action fires exactly once, with the row payload (no second payload-less copy from the menu)', () => {
+    const seen: Array<Record<string, unknown>> = [];
+    function Spy(): null {
+      const bus = useEventBus();
+      React.useEffect(() => bus.on('UI:OPEN', (e) => { seen.push((e.payload ?? {}) as Record<string, unknown>); }), [bus]);
+      return null;
+    }
+    wrap(
+      <>
+        <Spy />
+        <TableView entity={[{ id: 'r1', name: 'One' }]} columns={[{ key: 'name', header: 'Name' }]} itemActions={[{ label: 'Open', event: 'OPEN' }]} />
+      </>,
+      [],
+    );
+    fireEvent.click(screen.getByTestId('action-overflow'));
+    fireEvent.click(screen.getByText('Open'));
+    expect(seen).toHaveLength(1);
+    expect(seen[0].id).toBe('r1');
+  });
 });

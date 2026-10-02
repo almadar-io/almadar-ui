@@ -14,10 +14,14 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React from 'react';
-import type { A11yProps, EntityRow, EventKey, EventEmit, FieldValue } from "@almadar/core";
+import type { A11yProps, SkeletonSpec, EntityRow, EventKey, EventEmit, FieldValue } from "@almadar/core";
+import { Skeleton } from "./Skeleton";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
-import { pressableProps } from '../../../lib/pressable';
+import { useContentSurface } from '../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
+import { entityRows } from '../../../lib/entityRows';
+import { rowOpenControlProps, STRETCHED_CONTROL, STRETCHED_ABOVE } from '../../../lib/pressable';
 import { domPassthrough } from '../../../lib/domPassthrough';
 import { formatDate, formatValue as libFormatValue, type FormatContext, sortRows } from '../../../lib/format';
 import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
@@ -35,6 +39,7 @@ import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { EmptyState, type EmptyStateSlotProps } from './EmptyState';
 import { Badge } from '../atoms/Badge';
+import { Avatar } from '../atoms/Avatar';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
@@ -130,6 +135,8 @@ export interface DataListProps extends DataDndProps, EmptyStateSlotProps, A11yPr
   className?: string;
   /** Loading state */
   isLoading?: boolean;
+  /** Skeleton drawn while loading, and the shape an empty slot shows while this element's server render is in flight (`none` opts out). */
+  skeleton?: SkeletonSpec;
   /** Error state */
   error?: UiError | null;
   /** Enable drag-to-reorder with grip handles */
@@ -185,6 +192,8 @@ export interface DataListProps extends DataDndProps, EmptyStateSlotProps, A11yPr
    * data-grid / data-list / entity-table share one knob name from authors.
    */
   look?: "dense" | "spacious" | "striped" | "borderless" | "card-rows";
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   /** Relation display data: { fieldName: [{value, label}] } — injected
    *  server-side by the runtime (relation-option injection) or bound by
    *  compiled codegen; resolves stored foreign ids to display names for a
@@ -241,7 +250,7 @@ const listLookStyles: Record<NonNullable<DataListProps['look']>, string> = {
   spacious: '[&_[data-entity-row]>div]:!py-5 [&_[data-entity-row]>div]:!px-8',
   striped: '[&_[data-entity-row]:nth-child(even)>div]:bg-muted/30',
   borderless: '[&_[data-entity-row]>div]:!border-0 [&_[data-entity-row]>div]:!hover:border-transparent',
-  'card-rows': '[&_[data-entity-row]>div]:shadow-elevation-card [&_[data-entity-row]>div]:rounded-container [&_[data-entity-row]>div]:!border [&_[data-entity-row]>div]:border-border [&_[data-entity-row]]:mb-2',
+  'card-rows': '[&_[data-entity-row]>div]:surface-content [&_[data-entity-row]]:mb-2',
 };
 
 export function DataList({
@@ -264,6 +273,7 @@ export function DataList({
   emptyAction,
   className,
   isLoading = false,
+  skeleton = 'list',
   error = null,
   // Gesture props: reorderable, swipeLeftEvent, swipeRightEvent, longPressEvent
   // are consumed by the compiler to wrap items in SwipeableRow/SortableList.
@@ -292,6 +302,7 @@ export function DataList({
   dndItemIdField,
   dndRoot,
   look = 'dense',
+  surface = 'auto',
   relationsData,
   ...rest
 }: DataListProps) {
@@ -301,6 +312,8 @@ export function DataList({
   const { fire: fireRowAction, isRowPending } = useRowActionFire<DataListItemAction>();
   const { t } = useTranslate();
   const fmt = useFormatContext();
+  // card-rows makes every row its own surface, so the list itself stays flat.
+  const contentSurface = useContentSurface(look === 'card-rows' ? 'none' : surface);
   const [visibleCount, setVisibleCount] = React.useState(pageSize || Infinity);
 
   // Honor the pattern-types alias: compiler emits `columns`, the React API
@@ -308,7 +321,7 @@ export function DataList({
   // an empty list rather than a TypeError on `.find`.
   const fieldDefs: readonly DataListField[] = fields ?? columns ?? [];
 
-  const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const allDataRaw = entityRows(entity);
   const dnd = useDataDnd({
     items: allDataRaw as readonly EntityRow[],
     layout: 'list',
@@ -371,10 +384,14 @@ export function DataList({
 
   // Separate fields by role
   const titleField = titleFieldOf(fieldDefs);
+  const avatarField = fieldDefs.find((f) => f.variant === 'avatar');
+  const overlineFields = fieldDefs.filter((f) => f.variant === 'overline');
   const badgeFields = fieldDefs.filter((f) => f.variant === 'badge' && f !== titleField);
   const progressFields = fieldDefs.filter((f) => f.variant === 'progress');
+  const proseFields = fieldDefs.filter((f) => f.variant === 'caption' && f.format !== 'boolean');
   const bodyFields = fieldDefs.filter(
-    (f) => f !== titleField && !badgeFields.includes(f) && !progressFields.includes(f)
+    (f) => f !== titleField && f.variant !== 'avatar' && !overlineFields.includes(f) && !badgeFields.includes(f)
+      && !progressFields.includes(f) && !proseFields.includes(f)
   );
 
   const handleActionClick = (action: DataListItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
@@ -398,7 +415,7 @@ export function DataList({
       // stopPropagation at the cluster: the "⋯" trigger opens the overflow
       // menu without also firing the row's default click (inline buttons
       // already stop it in handleActionClick; the Menu panel is portaled).
-      <HStack gap="xs" onClick={itemClickEvent ? (e) => e.stopPropagation() : undefined} className="flex-shrink-0">
+      <HStack gap="xs" onClick={itemClickEvent ? (e) => e.stopPropagation() : undefined} className={cn('flex-shrink-0', STRETCHED_ABOVE)}>
         {inline.map((action, idx) => (
           <Button
             key={idx}
@@ -450,13 +467,7 @@ export function DataList({
 
   // Loading state
   if (isLoading) {
-    return (
-      <Box className="text-center py-8">
-        <Typography variant="body" color="secondary">
-          {t('loading.items')}
-        </Typography>
-      </Box>
-    );
+    return <Skeleton spec={skeleton} className={className} />;
   }
 
   // Error state
@@ -538,9 +549,9 @@ export function DataList({
                   data-entity-id={id}
  data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
  aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
-                  {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)}
+                  onClick={itemClickEvent ? handleRowClick(itemData) : undefined}
                   className={cn(
-                    'flex px-4 group/rowactions',
+                    'relative flex px-4 group/rowactions',
                     itemClickEvent && 'cursor-pointer',
                     isSent ? 'justify-end' : 'justify-start',
                   )}
@@ -558,9 +569,11 @@ export function DataList({
                         {senderLabel(itemData, sender)}
                       </Typography>
                     )}
-                    <Typography variant="body" className={cn(isSent && 'text-primary-foreground')}>
-                      {content !== undefined && content !== null ? String(content) : ''}
-                    </Typography>
+                    <Box {...rowOpenControlProps(itemClickEvent !== undefined)} className={cn(itemClickEvent && STRETCHED_CONTROL)}>
+                      <Typography variant="body" className={cn(isSent && 'text-primary-foreground')}>
+                        {content !== undefined && content !== null ? String(content) : ''}
+                      </Typography>
+                    </Box>
                     {metaFields.length > 0 && (
                       <HStack gap="xs" className="mt-1 flex-wrap">
                         {metaFields.map((f) => {
@@ -626,20 +639,34 @@ export function DataList({
     const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
     const wrapDnd = (node: React.ReactNode): React.ReactNode =>
       dnd.isZone ? <dnd.SortableItem key={dndId} id={dndId}>{node}</dnd.SortableItem> : node;
-    // Custom render-prop path: delegate item content to children, keep itemActions.
-    // The custom card draws its own chrome, so actions render INSIDE its
-    // top-right corner as a hover/focus-revealed cluster (always visible on
-    // coarse pointers) instead of a side gutter that floats outside the card.
+    const rowId = String(itemData.id ?? '');
+    const pending = isRowPending(rowId) || undefined;
+    const onOpen = itemClickEvent ? handleRowClick(itemData) : undefined;
+    const divider = (isCard || isCompact) && !isLast
+      ? <Box className={cn('border-b border-border/40', isCompact ? 'mx-4' : 'mx-6')} />
+      : null;
+
+    // Custom render-prop path: the custom card owns its chrome. Row opening is a
+    // named overlay control beneath the content; the content lets clicks through
+    // except on its own interactive elements, and actions sit above both.
     if (hasRenderProp) {
       const id = (itemData.id as string) || String(index);
       const actions = renderItemActions(itemData);
       return wrapDnd(
-        <Box key={id} data-entity-row data-entity-id={id}
- data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
- aria-busy={isRowPending(String(itemData.id ?? "")) || undefined} {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)} className={cn('relative group/rowactions', itemClickEvent && 'cursor-pointer')}>
-          {itemRenderer!(itemData as EntityRow, index)}
+        <Box key={id} data-entity-row data-entity-id={id} data-row-pending={pending} aria-busy={pending}
+          onClick={onOpen} className={cn('relative group/rowactions', onOpen && 'cursor-pointer')}>
+          {onOpen && (
+            <Box
+              {...rowOpenControlProps(true)}
+              aria-label={t('aria.openRow', { position: index + 1 })}
+              className="absolute inset-0 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+            />
+          )}
+          <Box className={cn(onOpen && 'relative')}>
+            {itemRenderer!(itemData as EntityRow, index)}
+          </Box>
           {actions && (
-            <Box className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
+            <Box onClick={(e) => e.stopPropagation()} className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
               {/* Fine pointers: hover-revealed inline cluster. */}
               <Box className="rounded-container border border-border bg-card/95 backdrop-blur-sm shadow-elevation-popover surface-material p-0.5 [@media(pointer:coarse)]:hidden">
                 {actions}
@@ -666,25 +693,40 @@ export function DataList({
               </Box>
             </Box>
           )}
-          {isCard && !isLast && (
-            <Box className="mx-6 border-b border-border/40" />
-          )}
+          {isCard && divider}
         </Box>
       );
     }
 
-    // Default fields-based path
+    // Default fields-based path. Each field's declared role places it:
+    // avatar leads, overline sits above the title, caption is prose under it,
+    // everything else is the meta line (row position labels it, as in Gmail).
     const id = (itemData.id as string) || String(index);
     const titleValue = getNestedValue(itemData, titleField?.name ?? '');
     const titleDisplay = resolveRelationCellDisplay(
       titleValue as FieldValue | undefined,
       titleField ? relationsData?.[titleField.name] : undefined,
     ) ?? (titleValue !== undefined && titleValue !== null ? String(titleValue) : undefined);
+    const avatarValue = avatarField ? getNestedValue(itemData, avatarField.name) : undefined;
+    const display = (field: DataListField): string | undefined => {
+      const v = getNestedValue(itemData, field.name) as FieldValue | undefined;
+      return v === undefined || v === null || v === '' ? undefined : formatValue(v, field.format, fmt, relationsData?.[field.name]);
+    };
+    // Compact rows are scanning labels: the theme's display voice (often a
+    // light or decorative heading face) would make them unreadable at row size.
+    const titleNode = titleDisplay !== undefined && (
+      <Typography
+        variant={isCompact ? 'small' : titleField?.variant === 'h3' ? 'h3' : 'h4'}
+        weight="semibold"
+        className="truncate"
+      >
+        {titleDisplay}
+      </Typography>
+    );
 
     return wrapDnd(
-      <Box key={id} data-entity-row data-entity-id={id}
- data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
- aria-busy={isRowPending(String(itemData.id ?? "")) || undefined} {...pressableProps(itemClickEvent ? handleRowClick(itemData) : undefined)} className={cn(itemClickEvent && 'cursor-pointer')}>
+      <Box key={id} data-entity-row data-entity-id={id} data-row-pending={pending} aria-busy={pending}
+        onClick={onOpen} className={cn('relative', onOpen && 'cursor-pointer')}>
         <Box
           className={cn(
             // items-start, not items-center: a multi-line row (title + meta +
@@ -697,23 +739,31 @@ export function DataList({
             !isCard && !isCompact && 'rounded-container border border-transparent hover:border-border',
           )}
         >
-          {/* Main content area */}
+          {avatarValue !== undefined && avatarValue !== null && avatarValue !== '' && (
+            <Avatar name={String(avatarValue)} size={isCompact ? 'sm' : 'md'} className="flex-shrink-0" />
+          )}
+          {titleField?.icon && !isCompact && (
+            <Box className="flex-shrink-0 w-10 h-10 rounded-container bg-primary/10 flex items-center justify-center">
+              {renderIconInput(titleField.icon, { size: 'sm', className: 'text-primary' })}
+            </Box>
+          )}
           <Box className="flex-1 min-w-0">
-            {/* Primary row: icon + title + badges */}
-            <HStack gap="sm" className="items-center">
-              {titleField?.icon && renderIconInput(titleField.icon, { size: isCompact ? 'xs' : 'sm', className: 'text-primary flex-shrink-0' })}
-              {titleValue !== undefined && titleValue !== null && (
-                <Typography
-                  variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
-                  className={cn('font-semibold truncate flex-1', isCompact && 'text-sm')}
-                >
-                  {titleDisplay}
-                </Typography>
-              )}
-              {/* Inline badges */}
+            {overlineFields.map((field) => {
+              const text = display(field);
+              return text === undefined ? null : (
+                <Typography key={field.name} variant="overline" className="block text-primary mb-0.5">{text}</Typography>
+              );
+            })}
+            <HStack gap="sm" className="items-center min-w-0">
+              {titleField?.icon && isCompact && renderIconInput(titleField.icon, { size: 'xs', className: 'text-primary flex-shrink-0' })}
+              {titleNode && (onOpen ? (
+                <Box {...rowOpenControlProps(true)} className={cn('min-w-0 flex-1', STRETCHED_CONTROL)}>{titleNode}</Box>
+              ) : (
+                <Box className="min-w-0 flex-1">{titleNode}</Box>
+              ))}
               {badgeFields.map((field) => {
                 const val = getNestedValue(itemData, field.name);
-                if (val === undefined || val === null) return null;
+                if (val === undefined || val === null || val === '') return null;
                 return (
                   <HStack key={field.name} gap="xs" className="items-center flex-shrink-0">
                     {field.icon && renderIconInput(field.icon, { size: 'xs' })}
@@ -725,10 +775,19 @@ export function DataList({
               })}
             </HStack>
 
-            {/* Secondary row: metadata fields. Compact rows keep it — an
-                inbox row's meta (assignee, age) is its scanning substance —
-                just tighter. Suppressing it entirely silently emptied every
-                triage queue's configured meta (U-DATALIST-COMPACT-DROPS-META-FIELDS). */}
+            {proseFields.map((field) => {
+              const text = display(field);
+              return text === undefined ? null : (
+                <Box key={field.name} className={isCompact ? 'mt-0.5' : 'mt-1'}>
+                  <Typography variant={isCompact ? 'small' : 'body'} color="secondary" className={cn('whitespace-pre-wrap break-words', isCompact && 'line-clamp-1')}>
+                    {text}
+                  </Typography>
+                </Box>
+              );
+            })}
+
+            {/* Meta line. Compact rows keep it — an inbox row's meta (assignee,
+                age) is its scanning substance (U-DATALIST-COMPACT-DROPS-META-FIELDS). */}
             {bodyFields.length > 0 && (
               <HStack gap="md" className={cn('flex-wrap', isCompact ? 'mt-0.5' : 'mt-1.5')}>
                 {bodyFields.map((field) => {
@@ -738,17 +797,10 @@ export function DataList({
                   return (
                     <HStack key={field.name} gap="xs" className="items-center">
                       {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
-                      {/* The label is repeated on every row, so printing it
-                          inline turned each record into "Company: X Industry: Y
-                          Email: Z" — four label/value size pairs per row, against
-                          Almadar_UI_Beauty.md 4 ("two sizes maximum in any single
-                          card or section"). Row position is the label here, the
-                          way Gmail and Linear do it; the text stays for screen
-                          readers. Column headers still carry it in TableView, and
-                          DetailPanel still labels every field.
-                          A boolean is the exception and keeps its visible label —
-                          a bare "Yes" names nothing. Same rule DataGrid already
-                          encodes for its boolean branch. */}
+                      {/* Row position is the label (Almadar_UI_Beauty.md 4: two
+                          sizes max per card); the label stays for screen
+                          readers. A boolean keeps its visible label — a bare
+                          "Yes" names nothing. */}
                       <Typography
                         variant="caption"
                         color="secondary"
@@ -765,7 +817,6 @@ export function DataList({
               </HStack>
             )}
 
-            {/* Progress fields */}
             {progressFields.map((field) => {
               const value = getNestedValue(itemData, field.name);
               if (typeof value !== 'number') return null;
@@ -783,28 +834,22 @@ export function DataList({
             })}
           </Box>
 
-          {/* Actions (visible on hover) */}
           {renderItemActions(itemData)}
         </Box>
 
-        {/* Divider between items. `compact` is the scanning list that
-            std-browse's master-detail and triage looks both mount
-            (variant: compact) — it had no divider AND no working gap, so
-            records ran together with only a hover tint to separate them
-            (U-DATALIST-COMPACT-NO-ROW-SEPARATION). Gestalt/proximity needs
-            one separator, not none and not both. */}
-        {(isCard || isCompact) && !isLast && (
-          <Box className={cn('border-b border-border/40', isCompact ? 'mx-4' : 'mx-6')} />
-        )}
+        {/* One separator for the scanning variants — `compact` (master-detail
+            and triage) had none and records ran together
+            (U-DATALIST-COMPACT-NO-ROW-SEPARATION). */}
+        {divider}
       </Box>
     );
   };
 
-  return dnd.wrapContainer(
+  return contentSurface.provide(dnd.wrapContainer(
     <Box
       {...domPassthrough(rest)}
       className={cn(
-        isCard && 'bg-card rounded-container border border-border shadow-elevation-dialog overflow-hidden',
+        contentSurface.className && cn(contentSurface.className, 'overflow-hidden'),
         // `gap-*` is inert on a block container, and Box only emits a display
         // class when its `display` prop is set — so every non-card list had
         // been asking for a gap that CSS silently dropped. flex-col makes it
@@ -846,7 +891,7 @@ export function DataList({
         />
       )}
     </Box>
-  );
+  ));
 };
 
 DataList.displayName = 'DataList';

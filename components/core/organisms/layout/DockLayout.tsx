@@ -116,7 +116,7 @@ export interface DockLayoutProps extends Omit<React.AriaAttributes, keyof A11yPr
   /** Width of `secondarySidebar` in pixels (fixed — not resizable). @default 280 */
   secondarySidebarWidth?: number;
 
-  /** Whether `sidebar` is collapsed. @default false */
+  /** Whether `sidebar` is collapsed (controlled; the layout keeps its own state when omitted). */
   sidebarCollapsed?: boolean;
   onSidebarCollapsedChange?: (collapsed: boolean) => void;
   /** Sidebar size as a SplitPane ratio (0-100, percentage of the sidebar/main split). @default 20 */
@@ -125,7 +125,7 @@ export interface DockLayoutProps extends Omit<React.AriaAttributes, keyof A11yPr
   /** Minimum sidebar size in pixels, forwarded to SplitPane's `minSize`. @default 160 */
   sidebarMinSize?: number;
 
-  /** Whether `bottomPanel` is collapsed. @default false */
+  /** Whether `bottomPanel` is collapsed (controlled; the layout keeps its own state when omitted). */
   bottomPanelCollapsed?: boolean;
   onBottomPanelCollapsedChange?: (collapsed: boolean) => void;
   /** Bottom panel size as a SplitPane ratio (0-100, percentage given to the panel). @default 30 */
@@ -134,7 +134,7 @@ export interface DockLayoutProps extends Omit<React.AriaAttributes, keyof A11yPr
   /** Minimum bottom panel size in pixels, forwarded to SplitPane's `minSize`. @default 120 */
   bottomPanelMinSize?: number;
 
-  /** Whether `secondarySidebar` is collapsed. @default false */
+  /** Whether `secondarySidebar` is collapsed (controlled; the layout keeps its own state when omitted). */
   secondarySidebarCollapsed?: boolean;
   onSecondarySidebarCollapsedChange?: (collapsed: boolean) => void;
 

@@ -34,7 +34,7 @@
 import type React from 'react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { isNotificationSlot } from '../lib/slot-definitions';
-import { UI_SLOTS } from '@almadar/core';
+import { RENDERED_SLOTS } from '@almadar/core';
 import type { EventPayloadValue, RenderItemLambda, UISlot } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { reconcileSlotProps } from '../lib/reconcile-slot-content';
@@ -246,15 +246,8 @@ const MULTI_SOURCE_STACK_TRAIT = '__multi_source_stack__';
 // Default Slots State
 // ============================================================================
 
-// Derived from core's UI_SLOTS (single source of truth) rather than
-// hand-listed: excludes the dotted game-namespaced slots (`hud.*`,
-// `overlay.*`) plus bare `hud`/`screen`, which this manager doesn't route
-// to today. This previously omitted `system` and `content` even though
-// core declared them — `render({target:'system'})` was stored but never
-// surfaced (see docs/Almadar_UI_Gaps.md, 2026-09-04).
-export const ALL_SLOTS: readonly UISlot[] = UI_SLOTS.filter(
-  (slot) => !slot.includes('.') && slot !== 'hud' && slot !== 'screen',
-);
+// Core's RENDERED_SLOTS: the one list every renderer and verifier shares.
+export const ALL_SLOTS: readonly UISlot[] = RENDERED_SLOTS;
 
 const DEFAULT_SLOTS: Partial<Record<UISlot, SlotContent | null>> = ALL_SLOTS.reduce(
   (acc, slot) => {

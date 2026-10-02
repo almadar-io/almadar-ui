@@ -15,13 +15,15 @@
 import React, { useState, useCallback } from "react";
 import type { A11yProps, EventKey, AssetUrl } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { Card, Typography, Button, Badge, Icon, Box } from "../atoms/index";
+import { Typography, Button, Badge, Icon, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { EmptyState } from "./EmptyState";
 import { Tabs, type TabItem } from "./Tabs";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useContentSurface } from "../../../providers/SurfaceContext";
+import type { SurfaceMode } from '@almadar/core';
 import { useTranslate } from "../../../hooks/useTranslate";
 import { domPassthrough } from "../../../lib/domPassthrough";
 import {
@@ -53,6 +55,8 @@ export interface DocumentItem {
 }
 
 export interface DocumentViewerProps extends A11yProps {
+    /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+    surface?: SurfaceMode;
     /** Document title */
     title?: string;
     /** Document URL (for PDF/external documents) */
@@ -101,8 +105,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     isLoading = false,
     error,
     className,
+    surface = 'auto',
     ...rest
 }) => {
+    const contentSurface = useContentSurface(surface);
     const eventBus = useEventBus();
     const { t } = useTranslate();
     const [zoom, setZoom] = useState(100);
@@ -225,8 +231,8 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         );
     };
 
-    return (
-        <Card {...domPassthrough(rest)} className={cn("overflow-hidden", className)}>
+    return contentSurface.provide(
+        <Box {...domPassthrough(rest)} className={cn(contentSurface.className, "p-card-md rounded-container overflow-hidden", className)}>
             <VStack gap="none">
                 {/* Tabs for multiple documents */}
                 {tabItems && tabItems.length > 1 && (
@@ -306,7 +312,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                     {renderContent()}
                 </Box>
             </VStack>
-        </Card>
+        </Box>,
     );
 };
 

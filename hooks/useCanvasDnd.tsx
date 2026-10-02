@@ -27,6 +27,7 @@
  * provider. Return `true` from `onDrop` to suppress the default emit.
  */
 
+import { isAriaRole, type AriaRole } from '@almadar/core';
 import React from 'react';
 import {
   DndContext,
@@ -137,7 +138,8 @@ export interface UseCanvasDraggableArgs {
 
 export interface UseCanvasDraggableResult {
   setNodeRef: (node: HTMLElement | null) => void;
-  attributes: ReturnType<typeof dndKitUseDraggable>['attributes'];
+  /** dnd-kit's attributes, with `role` narrowed to a declared ARIA role so they spread onto a core `Box`. */
+  attributes: Omit<ReturnType<typeof dndKitUseDraggable>['attributes'], 'role'> & { role?: AriaRole };
   listeners: ReturnType<typeof dndKitUseDraggable>['listeners'];
   isDragging: boolean;
   /** Spread on the tile — live transform + grab cursor + touch-action. */
@@ -163,7 +165,14 @@ export function useCanvasDraggable({
     opacity: isDragging ? 0.5 : 1,
     touchAction: 'none',
   };
-  return { setNodeRef, attributes, listeners, isDragging, style };
+  const { role, ...ariaAttributes } = attributes;
+  return {
+    setNodeRef,
+    attributes: { ...ariaAttributes, ...(isAriaRole(role) ? { role } : {}) },
+    listeners,
+    isDragging,
+    style,
+  };
 }
 
 // ---------------------------------------------------------------------------

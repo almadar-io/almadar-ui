@@ -11,6 +11,8 @@ import type { A11yProps } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
 import { domPassthrough } from "../../../../lib/domPassthrough";
 import { Box } from "../../atoms/Box";
+import { useContentSurface } from "../../../../providers/SurfaceContext";
+import type { SurfaceMode } from '@almadar/core';
 import type { DisplayStateProps } from "../types";
 
 export interface DashboardGridCell {
@@ -25,6 +27,8 @@ export interface DashboardGridCell {
 }
 
 export interface DashboardGridProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. Each cell is a tile. */
+  surface?: SurfaceMode;
   /** Number of columns */
   columns?: 2 | 3 | 4;
   /** Gap between cells */
@@ -68,9 +72,11 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
   gap = "md",
   cells,
   className,
+  surface = 'auto',
   ...rest
 }) => {
-  return (
+  const contentSurface = useContentSurface(surface);
+  return contentSurface.provide(
     <Box
       {...domPassthrough(rest)}
       className={cn(
@@ -84,7 +90,9 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
         <Box
           key={cell.id != null ? String(cell.id) : idx}
           className={cn(
-            "min-w-0 rounded-container border border-border bg-card p-4",
+            "min-w-0 p-4",
+            // Each cell is a surface; already on one, a hairline keeps the tiles apart.
+            contentSurface.className ?? "rounded-container border border-border",
             colSpanStyles[Math.min(cell.colSpan ?? 1, columns) as 1 | 2 | 3 | 4],
             rowSpanStyles[cell.rowSpan ?? 1],
           )}
@@ -92,7 +100,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
           {cell.content as React.ReactNode}
         </Box>
       ))}
-    </Box>
+    </Box>,
   );
 };
 

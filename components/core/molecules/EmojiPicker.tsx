@@ -64,8 +64,7 @@ export interface EmojiPickerProps extends A11yProps {
   triggerIcon?: IconInput;
 
   /**
-   * Accessible label for the trigger button
-   * @default translated "Add emoji"
+   * Accessible label for the trigger button (the translated "Add emoji" when omitted)
    */
   triggerLabel?: string;
 

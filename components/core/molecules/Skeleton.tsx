@@ -1,6 +1,6 @@
 'use client';
 
-import type { A11yProps } from '@almadar/core';
+import { LOADING_STATE_MARKER, type A11yProps, type SkeletonNode, type SkeletonShape, type SkeletonSpec, type SkeletonVariant } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -16,11 +16,13 @@ import { domPassthrough } from '../../../lib/domPassthrough';
  * `list` → DataList, `grid` → DataGrid cards, `detail` → DetailPanel, `stats` →
  * stat tiles, `form` → Form, `card` / `header` / `text` for the rest.
  */
-export type SkeletonVariant = 'header' | 'table' | 'list' | 'grid' | 'detail' | 'stats' | 'form' | 'card' | 'text';
+export type { SkeletonVariant };
 
 export interface SkeletonProps extends A11yProps {
   /** The skeleton variant to render */
   variant?: SkeletonVariant;
+  /** A declared `skeleton` prop value (shape name, sized shape or `none`); overrides variant/rows/columns/fields */
+  spec?: SkeletonSpec;
   /** Rows for table/list/text, cards for grid, field pairs for detail */
   rows?: number;
   /** Columns for table, tiles for stats */
@@ -231,16 +233,65 @@ function DetailSkeleton({ rows = 6, className }: { rows?: number; className?: st
  */
 export function Skeleton({
   variant = 'text',
+  spec,
   rows,
   columns,
   fields,
   className,
   ...rest
-}: SkeletonProps): React.ReactElement {
+}: SkeletonProps): React.ReactElement | null {
+  const { t } = useTranslate();
+  const shape = spec !== undefined ? shapeOfSpec(spec) : { variant, rows, columns, fields };
+  if (shape === null) return null;
+  return (
+    <Box
+      {...domPassthrough(rest)}
+      role="status"
+      aria-busy="true"
+      aria-label={rest['aria-label'] ?? t('common.loading')}
+      data-skeleton={shape.variant}
+      {...{ [LOADING_STATE_MARKER]: '' }}
+      className="w-full"
+    >
+      {renderVariant(shape.variant, shape.rows, shape.columns, shape.fields, className)}
+    </Box>
+  );
+}
+
+/** A declared `skeleton` value as a sized shape; `none` draws nothing. */
+export function shapeOfSpec(spec: SkeletonSpec): SkeletonShape | null {
+  if (spec === 'none') return null;
+  return typeof spec === 'string' ? { variant: spec } : spec;
+}
+
+function renderNode(node: SkeletonNode, key?: number): React.ReactElement {
+  if ('stack' in node) {
+    return (
+      <VStack key={key} gap="lg">
+        {node.stack.map((child, i) => renderNode(child, i))}
+      </VStack>
+    );
+  }
+  const { variant, rows, columns, fields } = node.shape;
+  return <React.Fragment key={key}>{renderVariant(variant, rows, columns, fields, undefined)}</React.Fragment>;
+}
+
+/**
+ * A predicted skeleton (what a server-backed trait will render while it awaits
+ * its round trip), drawn as one busy status region.
+ */
+export function SkeletonTree({ node, className }: { node: SkeletonNode; className?: string }): React.ReactElement {
   const { t } = useTranslate();
   return (
-    <Box {...domPassthrough(rest)} role="status" aria-busy="true" aria-label={rest['aria-label'] ?? t('common.loading')} data-skeleton={variant} className="w-full">
-      {renderVariant(variant, rows, columns, fields, className)}
+    <Box
+      role="status"
+      aria-busy="true"
+      aria-label={t('common.loading')}
+      data-skeleton="tree"
+      {...{ [LOADING_STATE_MARKER]: '' }}
+      className={cn('w-full almadar-awaiting-skeleton', className)}
+    >
+      {renderNode(node)}
     </Box>
   );
 }

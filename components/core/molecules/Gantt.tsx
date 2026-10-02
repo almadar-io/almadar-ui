@@ -15,6 +15,8 @@ import type { EntityRow, EventEmit, FieldValue, A11yProps } from '@almadar/core'
 import { cn } from '../../../lib/cn';
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { useContentSurface } from '../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -92,6 +94,8 @@ export interface GanttProps extends A11yProps {
   dayWidth?: number;
   /** Event emitted when a bar is clicked: UI:{barClickEvent} with { id } */
   barClickEvent?: EventEmit<{ id: string }>;
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   /** Additional CSS classes */
   className?: string;
   /** Loading state */
@@ -143,8 +147,10 @@ export function Gantt({
   className,
   isLoading = false,
   error = null,
+  surface = 'auto',
   ...rest
 }: GanttProps): React.JSX.Element {
+  const contentSurface = useContentSurface(surface);
   const { t } = useTranslate();
 
   const placed = useMemo<PlacedTask[]>(() => {
@@ -260,10 +266,10 @@ export function Gantt({
     );
   }
 
-  return (
+  return contentSurface.provide(
     <Box
       {...domPassthrough(rest)}
-      className={cn('w-full overflow-auto rounded-container border border-border bg-card', className)}
+      className={cn('w-full overflow-auto', contentSurface.className, className)}
     >
       <Box className="relative" style={{ width: LABEL_WIDTH + chartWidth, minWidth: '100%' }}>
         {/* Day header */}
@@ -383,7 +389,7 @@ export function Gantt({
           )}
         </VStack>
       </Box>
-    </Box>
+    </Box>,
   );
 }
 

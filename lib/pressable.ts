@@ -69,3 +69,33 @@ export function rowActivationProps<T extends Element = HTMLElement>(
     },
   };
 }
+
+/**
+ * The keyboard/AT half of a clickable row: the row container owns the plain
+ * `onClick` (no role, no tab stop), and ONE element inside it — the title, or
+ * an overlay for custom-rendered rows — is the named `role="button"` tab stop.
+ * Enter/Space dispatch a real click that bubbles to the row, so activation runs
+ * through the one handler and row-action buttons stay siblings instead of
+ * buttons nested inside a button. Action clusters must stop propagation.
+ */
+export function rowOpenControlProps<T extends Element = HTMLElement>(
+  enabled: boolean,
+): { role?: 'button'; tabIndex?: number; onKeyDown?: (e: React.KeyboardEvent<T>) => void } {
+  if (!enabled) return {};
+  return {
+    role: 'button',
+    tabIndex: 0,
+    onKeyDown: (e) => {
+      if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      clickElement(e.currentTarget);
+    },
+  };
+}
+
+/** Focus ring for a row-open control, painted over its whole row via `::after` (row needs `relative`). */
+export const STRETCHED_CONTROL =
+  "after:absolute after:inset-0 after:content-[''] after:rounded-[inherit] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-primary focus-visible:after:ring-inset";
+
+/** Lifts interactive row content (action clusters, checkboxes) above a STRETCHED_CONTROL's ::after. */
+export const STRETCHED_ABOVE = 'relative z-[1]';

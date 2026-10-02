@@ -11,6 +11,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect, useId } from "reac
 import { Typography } from "../atoms/Typography";
 import { usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
+import { SurfaceBoundary } from "../../../providers/SurfaceContext";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
@@ -322,7 +323,7 @@ export const Popover: React.FC<PopoverProps> = ({
       {typeof content === "string" ? (
         <Typography variant="body">{content}</Typography>
       ) : (
-        content
+        <SurfaceBoundary>{content}</SurfaceBoundary>
       )}
       {showArrow && (
         <div

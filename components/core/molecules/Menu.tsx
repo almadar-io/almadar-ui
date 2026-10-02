@@ -41,7 +41,7 @@ export interface MenuItem {
   title?: string;
   /** Item click handler */
   onClick?: () => void;
-  /** Event name for pattern compatibility */
+  /** Bus event this item fires on pick — unless `onClick` is set, which then owns firing (`event` then only names the item, e.g. its `action-<EVENT>` test id). */
   event?: EventKey;
   /** Link this item follows on pick: an in-app path (nav stack), `#anchor` or absolute URL. */
   href?: string;
@@ -246,7 +246,8 @@ function SubMenu({
             tabIndex={-1}
             onClick={() => {
               if (item.disabled) return;
-              if (item.event) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
+              // One firing path per item: an onClick owns it (and emits its own payload); `event` alone emits here.
+      if (item.event && !item.onClick) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
               if (item.url) downloadItemUrl(item.url, item.label);
               if (item.href !== undefined) followHref(item.href, navStack);
               item.onClick?.();
@@ -446,7 +447,8 @@ export const Menu: React.FC<MenuProps> = ({
     if (item.subMenu && item.subMenu.length > 0) {
       setActiveSubMenu(itemId);
     } else {
-      if (item.event) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
+      // One firing path per item: an onClick owns it (and emits its own payload); `event` alone emits here.
+      if (item.event && !item.onClick) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
       if (item.url) downloadItemUrl(item.url, item.label);
       if (item.href !== undefined) followHref(item.href, navStack);
       item.onClick?.();

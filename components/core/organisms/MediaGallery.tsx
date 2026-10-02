@@ -17,13 +17,15 @@ import type { A11yProps, EventKey, AssetUrl, EventEmit } from "@almadar/core";
 import { domPassthrough } from "../../../lib/domPassthrough";
 import { resolveImageUrl } from "../../../lib/getNestedValue";
 import { cn } from "../../../lib/cn";
-import { Card, Typography, Badge, Button, Icon, Box } from "../atoms/index";
+import { Typography, Badge, Button, Icon, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { Lightbox } from "../molecules/Lightbox";
 import { useEventBus, useEventListener } from "../../../hooks/useEventBus";
+import { useContentSurface } from "../../../providers/SurfaceContext";
+import type { SurfaceMode } from '@almadar/core';
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { DisplayStateProps } from "./types";
 import type { EntityRow } from "@almadar/core";
@@ -54,6 +56,8 @@ export interface MediaGalleryAction {
 }
 
 export interface MediaGalleryProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
+    /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+    surface?: SurfaceMode;
     /** Entity rows to display (collection cardinality). */
     entity?: readonly EntityRow[];
     /** Gallery title */
@@ -110,8 +114,10 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     isLoading = false,
     error,
     className,
+    surface = 'auto',
     ...rest
 }) => {
+    const contentSurface = useContentSurface(surface);
     const eventBus = useEventBus();
     const { t } = useTranslate();
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -195,9 +201,9 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
         );
     }
 
-    return (
+    return contentSurface.provide(
         <>
-            <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
+            <Box {...domPassthrough(rest)} className={cn(contentSurface.className, "p-6 rounded-container", className)}>
                 <VStack gap="md">
                     {/* Header */}
                     {(title || showUpload || (actions && actions.length > 0)) && (
@@ -324,7 +330,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                         })}
                     </Box>
                 </VStack>
-            </Card>
+            </Box>
 
             <Lightbox
                 images={items.map((it) => ({ src: it.src, alt: it.alt || it.caption, caption: it.caption }))}
@@ -333,7 +339,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                 onClose={closeLightbox}
                 closeAction="LIGHTBOX_CLOSE"
             />
-        </>
+        </>,
     );
 };
 

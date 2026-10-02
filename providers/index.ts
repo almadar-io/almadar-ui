@@ -113,6 +113,8 @@ export { SelectionProvider, SelectionContext, useSelection, useSelectionOptional
 export type { SelectionContextType } from './SelectionProvider';
 export { EntityBindingContext, useEntityBindingSnapshot } from './EntityBindingContext';
 export type { EntityBindingSource } from './EntityBindingContext';
+export { AwaitingSkeletonContext, useAwaitingSkeleton } from './AwaitingSkeletonContext';
+export type { AwaitingSkeletonSource } from './AwaitingSkeletonContext';
 
 // G13 Phase 3 (2026-04-24): the FetchedDataProvider family has been
 // removed. It was never mounted in any real provider tree, so consumers
@@ -171,3 +173,5 @@ export type { ArbitraryClassCompiler, ArbitraryClassCompilerProviderProps } from
 export { Avl3DContext, useAvl3DConfig, useAvl3DPalette, type Avl3DModelOverrides, type Avl3DConfig } from './avl-3d-context';
 
 // Note: EventBusContextType is exported from hooks/event-bus-types to avoid duplicate exports
+export { SurfaceBoundary, useContentSurface, useOnSurface } from './SurfaceContext';
+export type { SurfaceMode, ContentSurface } from './SurfaceContext';

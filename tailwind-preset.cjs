@@ -856,6 +856,19 @@ module.exports = {
           'backdrop-filter': 'var(--surface-backdrop, none)',
           '-webkit-backdrop-filter': 'var(--surface-backdrop, none)',
         },
+        // Content surface: the box behind a content block (table, calendar, list,
+        // chart …). Every value is a theme hook with a paint-site fallback, so a
+        // [data-theme] subtree's colors apply (never alias these on :root).
+        '.surface-content': {
+          'background-color': 'var(--surface-content-bg, var(--color-card))',
+          'background-image': 'var(--surface-card-image, none)',
+          'backdrop-filter': 'var(--surface-backdrop, none)',
+          '-webkit-backdrop-filter': 'var(--surface-backdrop, none)',
+          'border-width': 'var(--surface-content-border-width, var(--border-width, 1px))',
+          'border-color': 'var(--surface-content-border-color, var(--color-border))',
+          'border-radius': 'var(--surface-content-radius, var(--radius-container, var(--radius-md)))',
+          'box-shadow': 'var(--surface-content-shadow, var(--elevation-card, var(--shadow-sm)))',
+        },
         // Surface material on the page background (app shell / themed root).
         '.surface-page': {
           'background-image': 'var(--surface-page-image, none)',

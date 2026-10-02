@@ -46,8 +46,7 @@ export interface SearchInputProps extends Omit<React.InputHTMLAttributes<HTMLInp
   isLoading?: boolean;
 
   /**
-   * Placeholder text
-   * @default 'Search...'
+   * Placeholder text (the translated "Search" when omitted)
    */
   placeholder?: string;
 

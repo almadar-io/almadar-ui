@@ -6,7 +6,7 @@ export { FormField, type FormFieldProps } from './FormField';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { LoadingState, type LoadingStateProps } from './LoadingState';
 export { ErrorState, type ErrorStateProps } from './ErrorState';
-export { Skeleton, type SkeletonProps, type SkeletonVariant } from './Skeleton';
+export { Skeleton, SkeletonTree, type SkeletonProps, type SkeletonVariant } from './Skeleton';
 
 // Migrated molecules
 export { Accordion, type AccordionProps, type AccordionItem } from './Accordion';
@@ -332,3 +332,18 @@ export { parseMarkdownWithCodeBlocks, type MixedSegment } from '../../../lib/les
 
 // Floating tool strip (Figma UI3-style pill), composed from Button/ButtonGroup/Divider
 export { FloatingToolbar, type FloatingToolbarProps, type FloatingToolbarItem, type FloatingToolbarPosition } from './FloatingToolbar';
+
+// Agent activity feed (the TraceActivity rows a chat surface renders), promoted from apps/builder
+export {
+  AgentActivityFeed,
+  AgentActivityRow,
+  AgentThinkingRow,
+  activityRowFacts,
+  groupIntoConversations,
+  type AgentActivityFeedProps,
+  type AgentActivityRowProps,
+  type AgentActivityJumpTarget,
+  type AgentConversation,
+  type RowFacts,
+} from './AgentActivityFeed';
+export { AgentChatFeed, type AgentChatFeedProps } from './AgentChatFeed';

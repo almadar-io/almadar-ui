@@ -226,6 +226,9 @@
     /* A busy control shows its spinner only once its action outlasts this
      * (under it the action reads as instant — no flash on fast actions). */
     --motion-busy-delay: 300ms;
+    /* An empty slot awaiting its server render shows the compiler-predicted
+     * skeleton (`block`) or nothing (`none`), fading in after the busy delay. */
+    --awaiting-skeleton-display: none;
     --motion-enter-stagger: 40ms;
     --motion-enter-rise-from-transform: translateY(12px);
     --motion-enter-scale-from-transform: scale(0.96);
@@ -233,12 +236,12 @@
     --motion-enter-slide-from-transform: translateX(calc(16px * var(--motion-enter-slide-sign)));
 
     /* ----------------------------------------------------------------
-     * Skeleton shimmer — the loading-placeholder sweep. Two color stops
-     * (base + highlight) drive the gradient; --duration-shimmer the loop.
-     * Override per theme to restyle the placeholder tone.
+     * Skeleton shimmer — the loading-placeholder sweep. A theme may set
+     * --skeleton-base / --skeleton-highlight to restyle the tone; unset, the
+     * shimmer paints the active theme's --color-muted / --color-surface
+     * (resolved at `.almadar-shimmer`, not here — a :root alias would freeze
+     * the root theme's colors for every [data-theme] subtree).
      * ---------------------------------------------------------------- */
-    --skeleton-base: var(--color-muted, rgba(128, 128, 128, 0.18));
-    --skeleton-highlight: var(--color-surface, rgba(255, 255, 255, 0.55));
     --duration-shimmer: 1.5s;
 }
 
@@ -284,6 +287,13 @@
     animation: almadar-row-pending var(--duration-fast, 150ms) var(--easing-standard, ease) var(--motion-busy-delay, 300ms) forwards;
 }
 
+/* Awaiting-server skeleton: theme-switched, appears only once the round trip outlasts --motion-busy-delay. */
+.almadar-awaiting-skeleton {
+    display: var(--awaiting-skeleton-display, none);
+    opacity: 0;
+    animation: almadar-busy-show var(--duration-fast, 150ms) var(--easing-standard, ease) var(--motion-busy-delay, 300ms) forwards;
+}
+
 /* Slot content: plays the theme's default entry (restarted when the content changes). */
 .almadar-enter-slot {
     animation-name: var(--motion-enter-default, none);
@@ -316,9 +326,9 @@
 .almadar-shimmer {
     background-image: linear-gradient(
         90deg,
-        var(--skeleton-base) 0%,
-        var(--skeleton-highlight) 50%,
-        var(--skeleton-base) 100%
+        var(--skeleton-base, var(--color-muted)) 0%,
+        var(--skeleton-highlight, var(--color-surface)) 50%,
+        var(--skeleton-base, var(--color-muted)) 100%
     );
     background-size: 200% 100%;
     background-repeat: no-repeat;
@@ -340,4 +350,14 @@
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
+}
+
+/* The `dock` slot (a right panel that pushes the page) sets this inset while open. */
+body {
+    padding-inline-end: var(--almadar-dock-inset, 0px);
+}
+
+/* A `dock` inside a contained preview pushes that preview, not the page. */
+.ui-slot-renderer {
+    padding-inline-end: var(--almadar-dock-contained-inset, 0px);
 }

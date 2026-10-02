@@ -94,6 +94,8 @@ export interface CircuitKernelHandle {
   kernel: ClientKernel;
   store: CircuitStore;
   traitIndex: TraitIndex;
+  /** The server the kernel posts to; its pushes are settled by the caller. */
+  transport: EventTransport | undefined;
 }
 
 /**
@@ -106,7 +108,7 @@ export interface CircuitKernelHandle {
  * and subscribing both moved here.
  */
 let tabClientId: string | undefined;
-function getTabClientId(): string {
+export function getTabClientId(): string {
   if (tabClientId === undefined) tabClientId = crypto.randomUUID();
   return tabClientId;
 }
@@ -235,6 +237,19 @@ export function useCircuitKernel(
   );
   const orbitalName = options.orbitals[0]?.name ?? '';
 
+  // The transport's topology, confirmed once its register() settles: the
+  // kernel paints every local arm at once and holds only its posts on this.
+  const topology = useMemo(() => {
+    let resolve: (t: { carriesCircuitState: boolean }) => void = () => undefined;
+    const promise = new Promise<{ carriesCircuitState: boolean }>((r) => { resolve = r; });
+    return { promise, resolve };
+  }, [effectiveTransport]);
+  const awaitTopology = options.awaitTopology === true;
+  const confirmedCarries = options.carriesCircuitState ?? false;
+  useEffect(() => {
+    if (!awaitTopology) topology.resolve({ carriesCircuitState: confirmedCarries });
+  }, [awaitTopology, confirmedCarries, topology]);
+
   const rawKernel = useMemo(() => createClientKernel({
     orbitalName,
     traitIndex,
@@ -247,7 +262,8 @@ export function useCircuitKernel(
     ...(options.contextExtensions !== undefined ? { contextExtensions: options.contextExtensions } : {}),
     ...(options.debug !== undefined ? { debug: options.debug } : {}),
     ...(options.logContext !== undefined ? { logContext: options.logContext } : {}),
-    carriesCircuitState: options.carriesCircuitState ?? false,
+    carriesCircuitState: false,
+    topology: topology.promise,
     ...(effectiveTransport !== undefined ? { transport: effectiveTransport } : {}),
   }), [
     orbitalName,
@@ -261,7 +277,7 @@ export function useCircuitKernel(
     options.contextExtensions,
     options.debug,
     options.logContext,
-    options.carriesCircuitState,
+    topology,
     effectiveTransport,
   ]);
 
@@ -269,59 +285,15 @@ export function useCircuitKernel(
   // carry one, so callers (`useBusIngress`, the composer) never have to
   // know about tab identity — same posted-leg field the old
   // `ServerBridge.tsx`'s `buildEventRequest` stamped by hand.
-  const rawKernelRef = useRef(rawKernel);
-  rawKernelRef.current = rawKernel;
-  const awaitTopology = options.awaitTopology === true;
-  const holdRef = useRef(awaitTopology);
-  holdRef.current = awaitTopology;
-  const heldRef = useRef<Array<() => void>>([]);
-  useEffect(() => {
-    if (awaitTopology) return;
-    const held = heldRef.current;
-    heldRef.current = [];
-    for (const release of held) release();
-  }, [awaitTopology, rawKernel]);
-
   const kernel = useMemo<ClientKernel>(() => ({
     store: rawKernel.store,
-    dispatch: (request: import('@almadar/core').OrbitalEventRequest) => {
-      const stamped = request.clientId !== undefined ? request : { ...request, clientId: getTabClientId() };
-      if (!holdRef.current) return rawKernel.dispatch(stamped);
-      return new Promise<ClientKernelOutcome>((resolve, reject) => {
-        heldRef.current.push(() => { rawKernelRef.current.dispatch(stamped).then(resolve, reject); });
-      });
-    },
+    dispatch: (request, hooks) =>
+      rawKernel.dispatch(request.clientId !== undefined ? request : { ...request, clientId: getTabClientId() }, hooks),
+    dispatchMount: (seeds, hooks, base = {}) =>
+      rawKernel.dispatchMount(seeds, hooks, base.clientId !== undefined ? base : { ...base, clientId: getTabClientId() }),
+    dispatchProgress: (request: import('@almadar/core').OrbitalEventRequest) =>
+      rawKernel.dispatchProgress(request.clientId !== undefined ? request : { ...request, clientId: getTabClientId() }),
   }), [rawKernel]);
 
-  // `kernel` is rebuilt whenever `carriesCircuitState` resolves from its
-  // pre-register guess to the transport's confirmed value (a `rawKernel`
-  // dependency, needed for correct posting) — that identity change must
-  // NOT itself tear down and reopen the SSE connection below, or every
-  // page load pays two connects. The push-ingress effect reads the LATEST
-  // kernel through this ref instead of closing over `kernel` directly.
-  const kernelRef = useRef(kernel);
-  kernelRef.current = kernel;
-
-  // Server-pushed cascade ingress (e.g. another client's persist-envelope
-  // emit, Almadar_Live_Push.md). Absent for a transport with no `subscribe`
-  // (in-process — no server to push from). Every matched local listener
-  // dispatches through the SAME kernel queue as any other event. `clientId`
-  // rides the subscribe params so the server can exclude this tab's own
-  // echoes, same as the old provider's push effect.
-  useEffect(() => {
-    if (!effectiveTransport?.subscribe) return;
-    return effectiveTransport.subscribe((emitted: import('@almadar/core').EmittedEvent) => {
-      const targets = collectListenerTargets(traitIndex, emitted.source, emitted.event, emitted.payload);
-      for (const target of targets) {
-        void kernelRef.current.dispatch({
-          event: target.triggers,
-          ...(target.payload !== undefined ? { payload: target.payload } : {}),
-          ...(target.entityId !== undefined ? { entityId: target.entityId } : {}),
-          targetTrait: target.listenerTrait,
-        });
-      }
-    }, { clientId: getTabClientId() });
-  }, [effectiveTransport, traitIndex]);
-
-  return { kernel, store, traitIndex };
+  return { kernel, store, traitIndex, transport: effectiveTransport };
 }

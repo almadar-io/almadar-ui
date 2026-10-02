@@ -20,7 +20,7 @@ import type { UISlot, SlotDefinition, SlotType } from '../types/renderer-types';
  * Inline slots render within the component hierarchy.
  * Portal slots render to document.body, breaking out of overflow containers.
  */
-export const SLOT_DEFINITIONS: Partial<Record<UISlot, SlotDefinition>> & Record<'main' | 'sidebar' | 'modal' | 'drawer' | 'overlay' | 'center' | 'toast' | 'hud-top' | 'hud-bottom' | 'floating', SlotDefinition> = {
+export const SLOT_DEFINITIONS: Partial<Record<UISlot, SlotDefinition>> & Record<'main' | 'sidebar' | 'dock' | 'modal' | 'drawer' | 'overlay' | 'center' | 'toast' | 'hud-top' | 'hud-bottom' | 'floating', SlotDefinition> = {
   // -------------------------------------------------------------------------
   // Inline Slots - Render in place within the component tree
   // -------------------------------------------------------------------------
@@ -33,6 +33,13 @@ export const SLOT_DEFINITIONS: Partial<Record<UISlot, SlotDefinition>> & Record<
   sidebar: {
     name: 'sidebar',
     type: 'inline',
+  },
+
+  dock: {
+    name: 'dock',
+    type: 'portal',
+    portalTarget: 'body',
+    zIndex: 850,
   },
 
   // -------------------------------------------------------------------------

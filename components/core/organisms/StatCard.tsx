@@ -1,7 +1,9 @@
 'use client';
 import React from "react";
 import { cn } from "../../../lib/cn";
-import { Card, Typography } from "../atoms/index";
+import { Typography } from "../atoms/index";
+import { useContentSurface } from "../../../providers/SurfaceContext";
+import type { SurfaceMode } from '@almadar/core';
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Button } from "../atoms/Button";
@@ -80,6 +82,8 @@ export interface StatCardProps extends DisplayStateProps, Omit<React.AriaAttribu
   compact?: boolean;
   /** Sparkline data points for an inline trend chart */
   sparklineData?: readonly number[];
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -103,8 +107,11 @@ export const StatCard: React.FC<StatCardProps> = ({
   sparklineData,
   isLoading: externalLoading,
   error: externalError,
+  surface = 'auto',
   ...rest
 }) => {
+  const contentSurface = useContentSurface(surface);
+  const tileClass = cn(contentSurface.className ?? 'rounded-container border border-border', 'p-4');
   // Resolve icon: accept both LucideIcon components and string names
   const Icon = typeof iconProp === "string" ? resolveIcon(iconProp) ?? undefined : iconProp;
 
@@ -173,33 +180,33 @@ export const StatCard: React.FC<StatCardProps> = ({
   // If multiple metrics, render them as a row of stats
   if (schemaStats && schemaStats.length > 1) {
     if (isLoading) {
-      return (
+      return contentSurface.provide(
         <Box {...domPassthrough(rest)} className={cn("grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))]", className)}>
           {schemaStats.map((_, idx) => (
-            <Card key={idx} className="p-4">
+            <Box key={idx} className={tileClass}>
               <VStack gap="xs" className="animate-pulse">
                 <Box className="h-3 bg-muted rounded w-16" />
                 <Box className="h-6 bg-muted rounded w-12" />
               </VStack>
-            </Card>
+            </Box>
           ))}
-        </Box>
+        </Box>,
       );
     }
 
-    return (
+    return contentSurface.provide(
       <Box {...domPassthrough(rest)} className={cn("grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(10rem,100%),1fr))]", className)}>
         {schemaStats.map((stat, idx) => (
-          <Card key={idx} className="p-4">
+          <Box key={idx} className={tileClass}>
             <Typography variant="overline" color="secondary">
               {stat.label}
             </Typography>
             <Typography variant="h4" className="text-xl tabular-nums">
               {formatValue(stat.value, stat.format ?? "number", fmt)}
             </Typography>
-          </Card>
+          </Box>
         ))}
-      </Box>
+      </Box>,
     );
   }
 
@@ -232,8 +239,8 @@ export const StatCard: React.FC<StatCardProps> = ({
 
   // Show error state
   if (error) {
-    return (
-      <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
+    return contentSurface.provide(
+      <Box {...domPassthrough(rest)} className={cn(contentSurface.className, "p-6 rounded-container", className)}>
         <VStack gap="none" className="space-y-1">
           <Typography variant="overline" color="secondary">
             {label}
@@ -242,24 +249,24 @@ export const StatCard: React.FC<StatCardProps> = ({
             {t('error.generic') + ": " + error.message}
           </Typography>
         </VStack>
-      </Card>
+      </Box>,
     );
   }
 
   if (isLoading) {
-    return (
-      <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
+    return contentSurface.provide(
+      <Box {...domPassthrough(rest)} className={cn(contentSurface.className, "p-6 rounded-container", className)}>
         <VStack gap="sm" className="animate-pulse">
           <Box className="h-4 bg-muted rounded w-24" />
           <Box className="h-8 bg-muted rounded w-32" />
           <Box className="h-4 bg-muted rounded w-20" />
         </VStack>
-      </Card>
+      </Box>,
     );
   }
 
-  return (
-    <Card {...domPassthrough(rest)} className={cn("p-6", className)}>
+  return contentSurface.provide(
+    <Box {...domPassthrough(rest)} className={cn(contentSurface.className, "p-6 rounded-container", className)}>
       <HStack align="start" justify="between">
         <VStack gap="none" className="space-y-1">
           <Typography variant="overline" color="secondary">
@@ -323,7 +330,7 @@ export const StatCard: React.FC<StatCardProps> = ({
           {action.label} →
         </Button>
       )}
-    </Card>
+    </Box>,
   );
 };
 

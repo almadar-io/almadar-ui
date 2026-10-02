@@ -1,6 +1,6 @@
 'use client';
 import React from "react";
-import type { EventKey, EventEmit, A11yProps } from "@almadar/core";
+import type { EventKey, EventEmit, A11yProps, SkeletonSpec } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Button } from "../atoms/index";
 import { Box } from "../atoms/Box";
@@ -44,6 +44,8 @@ export interface PageHeaderStatus {
 }
 
 export interface PageHeaderProps extends A11yProps {
+  /** The shape an empty slot shows while this header's server render is in flight (`none` opts out). @default 'header' */
+  skeleton?: SkeletonSpec;
   /** Page title - accepts string or number from generated code accessing dynamic entity data */
   title?: string | number;
   /** Icon shown before the title. */

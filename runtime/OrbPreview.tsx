@@ -36,6 +36,7 @@ import { useTraitStateMachine } from '../hooks/useTraitStateMachine';
 import { buildOrbitalsByTrait } from '../lib/orbitalsByTrait';
 import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
 import { EntityBindingContext } from '../providers/EntityBindingContext';
+import { AwaitingSkeletonContext } from '../providers/AwaitingSkeletonContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport, type AccessTokenProvider } from '../providers/ServerBridge';
 import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
@@ -167,7 +168,7 @@ function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate,
     return () => clearTimeout(timer);
   }, [hasBridge, bridge.connected, onLocalFallback, localFallbackTimeoutMs]);
 
-  const { entityBindingSource } = useTraitStateMachine(traits, uiSlots, {
+  const { entityBindingSource, awaitingSkeletonSource } = useTraitStateMachine(traits, uiSlots, {
     orbitals,
     ...(onNavigate !== undefined ? { navigate: onNavigate } : {}),
     ...(onNavigateBack !== undefined ? { navigateBack: onNavigateBack } : {}),
@@ -183,7 +184,7 @@ function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate,
 
   return (
     <EntityBindingContext.Provider value={entityBindingSource}>
-      {children}
+      <AwaitingSkeletonContext.Provider value={awaitingSkeletonSource}>{children}</AwaitingSkeletonContext.Provider>
     </EntityBindingContext.Provider>
   );
 }

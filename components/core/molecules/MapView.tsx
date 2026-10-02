@@ -20,6 +20,8 @@ import React, { lazy, Suspense } from 'react';
 import type { EventEmit, A11yProps } from '@almadar/core';
 import { Box } from '../atoms/Box';
 import { cn } from '../../../lib/cn';
+import { useContentSurface } from '../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
 
 // Type-only import is erased at compile time and never pulls leaflet at runtime.
 import type { LeafletMouseEvent } from 'leaflet';
@@ -61,6 +63,8 @@ export interface MapRouteData {
 }
 
 export interface MapViewProps extends A11yProps {
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   /** Array of markers to display */
   markers?: MapMarkerData[];
   /** Routes (polylines with optional popups) drawn over the tile layer */
@@ -174,8 +178,10 @@ const MapViewImpl = lazy(async () => {
     showClickedPin = false,
     className,
     showAttribution = true,
+    surface = 'auto',
     ...rest
   }: MapViewProps) {
+    const contentSurface = useContentSurface(surface);
     const eventBus = useEventBus();
     const [clickedPosition, setClickedPosition] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -196,10 +202,10 @@ const MapViewImpl = lazy(async () => {
       }
     }, [onMarkerClick, markerClickEvent, eventBus]);
 
-    return (
+    return contentSurface.provide(
       <Box
         {...domPassthrough(rest)}
-        className={cn('relative isolate z-0 w-full overflow-hidden rounded-container', className)}
+        className={cn('relative isolate z-0 w-full overflow-hidden rounded-container', contentSurface.className, className)}
         style={{ height }}
         data-testid="map-view"
       >
@@ -260,7 +266,7 @@ const MapViewImpl = lazy(async () => {
             </Polyline>
           ))}
         </MapContainer>
-      </Box>
+      </Box>,
     );
   }
 
@@ -273,12 +279,13 @@ const MapViewImpl = lazy(async () => {
  * the leaflet code.
  */
 export function MapView(props: MapViewProps) {
+  const contentSurface = useContentSurface(props.surface);
   return (
     <Suspense
       fallback={
         <Box
           {...domPassthrough(props)}
-          className={cn('relative w-full overflow-hidden rounded-container bg-muted/20', props.className)}
+          className={cn('relative w-full overflow-hidden rounded-container', contentSurface.className ?? 'bg-muted/20', props.className)}
           style={{ height: props.height ?? '400px' }}
           data-testid="map-view"
         />

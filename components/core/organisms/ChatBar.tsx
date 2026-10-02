@@ -24,7 +24,7 @@ import { Spinner } from '../atoms/Spinner';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import type { DisplayStateProps } from './types';
-import type { A11yProps, EditFocus } from '@almadar/core';
+import type { A11yProps, EditFocus, EventKey } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
 import { ELEMENT_SELECTED_EVENT, parseEditFocus } from './trace-edit-focus';
 
@@ -45,6 +45,8 @@ export interface ChatBarProps extends DisplayStateProps, Omit<React.AriaAttribut
   placeholder?: string;
   /** Agent context description */
   context?: string;
+  /** The event a message is sent as — `UI:{sendEvent}` with `{ message }`, from Enter or the send button. @default "CHAT_SEND" */
+  sendEvent?: EventKey;
 }
 
 // ─── Helpers ───────────────────────────────────────────────
@@ -64,6 +66,7 @@ export function ChatBar({
   runningIndicator,
   placeholder,
   context,
+  sendEvent = 'CHAT_SEND',
   className,
   ...rest
 }: ChatBarProps): React.ReactElement {
@@ -89,14 +92,14 @@ export function ChatBar({
     const trimmed = inputValue.trim();
     if (!trimmed) return;
     e.preventDefault();
-    eventBus.emit('UI:CHAT_SEND', { message: trimmed });
-  }, [inputValue, eventBus]);
+    eventBus.emit(`UI:${sendEvent}`, { message: trimmed });
+  }, [inputValue, eventBus, sendEvent]);
 
   // Closed-circuit listener: any UI:CHAT_SEND emission clears our local input
   // and consumes the focus chip. Covers both the Enter key handler above and
   // the declarative <Button action="CHAT_SEND" />.
   useEffect(() => {
-    const unsubSend = eventBus.on('UI:CHAT_SEND', () => {
+    const unsubSend = eventBus.on(`UI:${sendEvent}`, () => {
       setInputValue('');
       setFocus(null);
       setRequestedPlaceholder(null);
@@ -114,7 +117,7 @@ export function ChatBar({
       unsubFocus();
       unsubSelect();
     };
-  }, [eventBus]);
+  }, [eventBus, sendEvent]);
 
   // Fused trailing action(s) — Send by default; status-specific replacements
   // for error / running / paused. All variants share `rounded-none` so they
@@ -163,7 +166,7 @@ export function ChatBar({
       <Button
         variant="primary"
         size="sm"
-        action="CHAT_SEND"
+        action={sendEvent}
         actionPayload={{ message: inputValue.trim() }}
         disabled={!inputValue.trim()}
         aria-label={t('chatBar.sendMessage')}

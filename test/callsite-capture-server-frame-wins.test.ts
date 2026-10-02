@@ -64,7 +64,8 @@ class Server implements EventTransport {
   register(): Promise<EventTransportRegisterResult> { return Promise.resolve({ success: true, carriesCircuitState: false }); }
   unregister(): Promise<void> { return Promise.resolve(); }
   send(_orbital: string, request: OrbitalEventRequest): Promise<OrbitalEventResponse> {
-    if (request.event !== 'INIT' || request.targetTrait !== 'Feed') {
+    const mountsFeed = request.mount?.some((m) => m.trait === 'Feed' && m.event === 'INIT') ?? false;
+    if (!mountsFeed && (request.event !== 'INIT' || request.targetTrait !== 'Feed')) {
       return Promise.resolve({ success: true, transitioned: false, states: {}, emittedEvents: [] });
     }
     return Promise.resolve(loaded);

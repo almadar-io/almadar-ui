@@ -9,13 +9,13 @@
  */
 
 import React, { useCallback, useContext, useEffect, Suspense, lazy } from "react";
-import type { A11yProps, EventPayload, EntityRow, EntityWith, FieldValue, EventKey } from "@almadar/core";
+import type { A11yProps, SkeletonSpec, EventPayload, EntityRow, EntityWith, FieldValue, EventKey } from "@almadar/core";
+import { Skeleton } from "../molecules/Skeleton";
 import type { RelationFieldCardinality } from "../molecules/RelationSelect";
 import type { ItemActionPayload } from "@almadar/core/patterns";
 import { ArrowLeft, FileText, X } from "lucide-react";
 import type { IconInput } from "../atoms/Icon";
 import {
-  Card,
   Badge,
   Typography,
   Icon,
@@ -50,6 +50,8 @@ import { useRowActions, useRowActionPayload } from "../../../hooks/useRowActions
 import type { RowActionCondition, RowActionPayload } from "../../../lib/row-action-when";
 import { useTranslate, useFormatContext } from "../../../hooks/useTranslate";
 import { usePendingAction } from "../../../lib/pendingDispatch";
+import { useContentSurface, SurfaceBoundary } from "../../../providers/SurfaceContext";
+import type { SurfaceMode } from "@almadar/core";
 import { useNavStack } from "../../../providers/NavStackContext";
 import { useRenderSlot } from "../../../providers/RenderSlotContext";
 import type { DisplayStateProps } from "./types";
@@ -421,6 +423,8 @@ export interface DetailPanelStatus {
  * @fieldsContract display
  */
 export interface DetailPanelProps extends DisplayStateProps, A11yProps {
+  /** Skeleton drawn while loading, and the shape an empty slot shows while this element's server render is in flight (`none` opts out). */
+  skeleton?: SkeletonSpec;
   /** RECORD-cardinality: renders ONE record (see body collapse below). */
   entity?: EntityRow;
   title?: string;
@@ -456,6 +460,8 @@ export interface DetailPanelProps extends DisplayStateProps, A11yProps {
   closeEvent?: EventKey;
   footer?: React.ReactNode;
   slideOver?: boolean;
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. Inline mode only; the slide-over is itself a surface. */
+  surface?: SurfaceMode;
 
   /** Fields to display: field names, or declared fields ({ name, label, variant, format, colorMap, labels }) */
   fields: readonly (FieldDef | DetailField)[];
@@ -526,6 +532,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   closeEvent,
   footer,
   slideOver = false,
+  surface = 'auto',
   showActions = true,
   className,
   entity,
@@ -533,6 +540,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   fieldNames,
   initialData,
   isLoading = false,
+  skeleton = 'detail',
   error,
   relationsData,
   look = "panel",
@@ -554,6 +562,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   tabs,
   ...a11yRest
 }) => {
+  const contentSurface = useContentSurface(surface);
   const eventBus = useEventBus();
   const rowActions = useRowActions();
   const actionPayload = useRowActionPayload();
@@ -724,10 +733,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 
   if (isLoading) {
     return (
-      <LoadingState
-        message={t('common.loading')}
-        className={className}
-      />
+      <Skeleton spec={skeleton} className={className} />
     );
   }
 
@@ -1081,9 +1087,11 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   if (!slideOver) {
     return (
       <Box {...domPassthrough(a11yRest)} className={className}>
-        <Card variant="elevated" data-testid="detail-card">
-          {content}
-        </Card>
+        {contentSurface.provide(
+          <Box className={cn(contentSurface.className, "rounded-container")} data-testid="detail-card">
+            {content}
+          </Box>,
+        )}
       </Box>
     );
   }
@@ -1112,7 +1120,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         className={cn(contained ? "absolute" : "fixed", "inset-y-0 right-0 z-50 w-full max-w-2xl overflow-y-auto bg-card surface-material shadow-elevation-dialog p-6", className)}
         data-testid="detail-slide-over"
       >
-        {content}
+        <SurfaceBoundary>{content}</SurfaceBoundary>
       </Box>
     </>
   );

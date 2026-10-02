@@ -236,6 +236,11 @@ These separate artistic styles (Art Deco vs Win95 vs wabi-sabi) along dimensions
 | `surface.cardImage` | `--surface-card-image` | `.surface-material`: `background-image` over the card color | `none` |
 | `surface.pageImage` | `--surface-page-image` | `.surface-page` (app shells, themed orbital roots) | `none` |
 | `surface.pageImageSize` | `--surface-page-image-size` | `.surface-page` | `auto` |
+| `surface.contentBg` | `--surface-content-bg` | `.surface-content`: the background behind every content block (table, calendar, list, chart …) and the default `Card` | `--color-card` |
+| `surface.contentBorderWidth` | `--surface-content-border-width` | `.surface-content` | `--border-width` |
+| `surface.contentBorderColor` | `--surface-content-border-color` | `.surface-content` | `--color-border` |
+| `surface.contentRadius` | `--surface-content-radius` | `.surface-content` | `--radius-container` |
+| `surface.contentShadow` | `--surface-content-shadow` | `.surface-content` | `--elevation-card` |
 
 | `motion.shapes.modalEnter` / `modalExit` | `--motion-modal-enter-from-transform` / `--motion-modal-exit-to-transform` | `Modal` (every modal slot: runtime, contained preview, compiled) | `scale(.96) translateY(8px)` / `scale(.92) translateY(16px)` |
 | `motion.shapes.popoverEnter` / `popoverExit` | `--motion-popover-enter-from-transform` / `--motion-popover-exit-to-transform` | `Popover`, menus | `scale(.95)` |

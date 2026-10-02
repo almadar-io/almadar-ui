@@ -14,6 +14,7 @@ import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Presence, usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
+import { SurfaceBoundary } from '../../../providers/SurfaceContext';
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 
@@ -143,7 +144,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         </Box>
 
         {/* Content */}
-        <Box className="p-4 flex-1 overflow-y-auto">{children}</Box>
+        <Box className="p-4 flex-1 overflow-y-auto"><SurfaceBoundary>{children}</SurfaceBoundary></Box>
       </Aside>
     </>
   );

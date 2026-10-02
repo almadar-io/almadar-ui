@@ -27,29 +27,32 @@ import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'r
 import type {
   EntityRow,
   EventPayload,
+  MountSeed,
   OrbitalDefinition,
   ResolvedTraitBinding,
   ServiceParams,
   TraitConfig,
   UserContext,
 } from '@almadar/core';
-import { LIFECYCLE_EVENTS, type EventTransport, type PersistenceAdapter, type TraitState } from '@almadar/runtime';
+import { collectListenerTargets, LIFECYCLE_EVENTS, type ClientKernelOutcome, type EventTransport, type PersistenceAdapter, type TraitState } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from './useEventBus';
 import { useUser } from '../providers/UserContext';
 import type { EntityBindingSource } from '../providers/EntityBindingContext';
+import type { AwaitingSkeletonSource } from '../providers/AwaitingSkeletonContext';
 import { ALL_SLOTS } from './useUISlots';
 import { registerTrait, unregisterTrait, type TraitDebugInfo } from '../lib/traitRegistry';
 import { bindTraitStateGetter, registerTraitSnapshot } from '../lib/verificationRegistry';
 import { createCircuitVerificationObserver, recordDispatchVerdict } from '../lib/circuitVerificationObserver';
 import type { TraitStateSnapshot } from '@almadar/core';
 import type { useUISlots } from '../providers/UISlotContext';
-import { useCircuitKernel } from './circuit/useCircuitKernel';
+import { getTabClientId, useCircuitKernel } from './circuit/useCircuitKernel';
 import { useBusIngress } from './circuit/useBusIngress';
 import { useSlotFlush, type SlotCheckpoint } from './circuit/useSlotFlush';
 import { useCallsiteCapture } from './circuit/useCallsiteCapture';
 import { useClientTicks } from './circuit/useClientTicks';
 import { useEntityBindingSource } from './circuit/useEntityBindingSource';
+import { useAwaitingSkeletonSource } from './circuit/useAwaitingSkeletonSource';
 
 const stateLog = createLogger('almadar:ui:state-transitions');
 
@@ -82,6 +85,8 @@ export interface TraitStateMachineResult {
   canHandleEvent: (traitName: string, eventKey: string) => boolean;
   /** Live per-trait binding surface for `EntityBindingContext`. */
   entityBindingSource: EntityBindingSource;
+  /** Awaiting-server skeletons for `AwaitingSkeletonContext`. */
+  awaitingSkeletonSource: AwaitingSkeletonSource;
 }
 
 export interface UseTraitStateMachineOptions {
@@ -124,7 +129,7 @@ export function useTraitStateMachine(
 
   const observer = useMemo(() => createCircuitVerificationObserver(), []);
 
-  const { kernel, store, traitIndex } = useCircuitKernel(traitBindings, {
+  const { kernel, store, traitIndex, transport } = useCircuitKernel(traitBindings, {
     orbitals: options.orbitals,
     ...(options.traitConfigsByName !== undefined ? { traitConfigsByName: options.traitConfigsByName } : {}),
     ...(options.transport !== undefined ? { transport: options.transport } : {}),
@@ -158,6 +163,7 @@ export function useTraitStateMachine(
   });
 
   const entityBindingSource = useEntityBindingSource(store, traitIndex);
+  const awaitingSkeletonSource = useAwaitingSkeletonSource(store, traitIndex, options.embeddedTraits);
 
   // Traits mounted on THIS page (`useSlotFlush.applyClientEffects`'s
   // off-page filter, Gap #11). Ref-backed so a late-settling dispatch is
@@ -219,6 +225,57 @@ export function useTraitStateMachine(
     };
   }, [traitBindings, store, traitIndex]);
 
+  // A transitioned dispatch re-renders its callsite-capture children; a child
+  // the response already repainted was composed under the payload that really
+  // fired (a fetch's success, not this dispatch's INIT) — its frame stays.
+  const afterSettle = useCallback(async (
+    traitName: string,
+    eventKey: string,
+    payload: EventPayload | undefined,
+    transitioned: boolean,
+    repaints: ReadonlyArray<{ traitName: string }>,
+    composedBefore: ReadonlyMap<string, EventPayload>,
+  ): Promise<void> => {
+    if (transitioned) {
+      const entityByTrait: Record<string, EntityRow> = {};
+      for (const [name, entry] of traitIndex.byName) {
+        const row = store.frames.get(entry.frameKey);
+        if (row !== undefined) entityByTrait[name] = row;
+      }
+      const repainted = new Set(repaints.map((e) => e.traitName));
+      const serverComposed = new Set([...store.callsitePayloads].filter(([child, composed]) => composedBefore.get(child) !== composed).map(([child]) => child));
+      await reRenderCallsiteCaptureChildren(traitName, payload ?? {}, entityByTrait, repainted, serverComposed);
+    }
+    options.onEventProcessed?.(eventKey, payload);
+  }, [traitIndex, store, reRenderCallsiteCaptureChildren, options.onEventProcessed]);
+
+  // Paint a kernel outcome's settled effects, republish its emits and run the
+  // capture-children repaint — every dispatch lane ends here.
+  const settleOutcome = useCallback(async (
+    traitName: string,
+    eventKey: string,
+    payload: EventPayload | undefined,
+    outcome: ClientKernelOutcome,
+    composedBefore: ReadonlyMap<string, EventPayload>,
+  ): Promise<void> => {
+    recordDispatchVerdict(traitIndex.byName.get(traitName)?.orbitalName ?? traitName, eventKey, { response: outcome.response });
+    const settledEffects = outcome.localPainted && outcome.serverEffects !== undefined ? outcome.serverEffects : outcome.response;
+    slotFlush.applyClientEffects(
+      settledEffects.clientEffects ?? [],
+      settledEffects.clientEffectsByTrait,
+      options.navigate,
+      options.navigateBack,
+      activeTraitNamesRef.current,
+    );
+    // The kernel already delivered these to its own listeners; republish for
+    // bus subscribers outside it (providers, components, other hook instances).
+    for (const emitted of outcome.response.emittedEvents) {
+      eventBus.emit(`UI:${emitted.event}`, emitted.payload, { ...(emitted.source ?? {}), dispatched: true });
+    }
+    stateLog.debug('dispatch:settled', { traitName, eventKey, mode: outcome.mode, transitioned: outcome.response.transitioned });
+    await afterSettle(traitName, eventKey, payload, outcome.response.transitioned, outcome.response.clientEffectsByTrait ?? [], composedBefore);
+  }, [slotFlush, traitIndex, eventBus, options.navigate, options.navigateBack, afterSettle]);
+
   const dispatchAndSettle = useCallback(async (traitName: string, eventKey: string, payload: EventPayload | undefined, tick?: string): Promise<void> => {
     const entityId = typeof payload?.entityId === 'string' ? payload.entityId : undefined;
     const orbitalName = traitIndex.byName.get(traitName)?.orbitalName ?? traitName;
@@ -252,38 +309,75 @@ export function useTraitStateMachine(
       recordDispatchVerdict(orbitalName, eventKey, { error: err instanceof Error ? err : String(err) });
       throw err;
     }
-    recordDispatchVerdict(orbitalName, eventKey, { response: outcome.response });
     if (outcome.localPainted && !outcome.response.success && beforeLocalPaint !== undefined) {
       slotFlush.rollback(beforeLocalPaint);
     }
-    const settledEffects = outcome.localPainted && outcome.serverEffects !== undefined ? outcome.serverEffects : outcome.response;
-    slotFlush.applyClientEffects(
-      settledEffects.clientEffects ?? [],
-      settledEffects.clientEffectsByTrait,
-      options.navigate,
-      options.navigateBack,
-      activeTraitNamesRef.current,
-    );
-    // The kernel already delivered these to its own listeners; republish for
-    // bus subscribers outside it (providers, components, other hook instances).
-    for (const emitted of outcome.response.emittedEvents) {
-      eventBus.emit(`UI:${emitted.event}`, emitted.payload, { ...(emitted.source ?? {}), dispatched: true });
-    }
-    stateLog.debug('dispatch:settled', { traitName, eventKey, mode: outcome.mode, transitioned: outcome.response.transitioned });
-    if (outcome.response.transitioned) {
-      const entityByTrait: Record<string, EntityRow> = {};
-      for (const [name, entry] of traitIndex.byName) {
-        const row = store.frames.get(entry.frameKey);
-        if (row !== undefined) entityByTrait[name] = row;
+    await settleOutcome(traitName, eventKey, payload, outcome, composedBefore);
+  }, [kernel, slotFlush, traitIndex, store, options.navigate, options.navigateBack, settleOutcome]);
+
+  // A live message of this tab's own running call: the progress lane, outside
+  // the FIFO that is still waiting on that call.
+  const progressAndSettle = useCallback(async (traitName: string, eventKey: string, payload: EventPayload | undefined): Promise<void> => {
+    const entityId = typeof payload?.entityId === 'string' ? payload.entityId : undefined;
+    const composedBefore = new Map(store.callsitePayloads);
+    const outcome = await kernel.dispatchProgress({
+      event: eventKey,
+      ...(payload !== undefined ? { payload } : {}),
+      ...(entityId !== undefined ? { entityId } : {}),
+      targetTrait: traitName,
+    });
+    await settleOutcome(traitName, eventKey, payload, outcome, composedBefore);
+  }, [kernel, store, settleOutcome]);
+
+  // Server-pushed events (Almadar_Live_Push.md) reach their listeners through
+  // the same settle as a bus-entered dispatch, so they repaint.
+  useEffect(() => {
+    if (!transport?.subscribe) return;
+    return transport.subscribe((emitted, target) => {
+      for (const t of collectListenerTargets(traitIndex, emitted.source, emitted.event, emitted.payload)) {
+        void (target === 'origin'
+          ? progressAndSettle(t.listenerTrait, t.triggers, t.payload)
+          : dispatchAndSettle(t.listenerTrait, t.triggers, t.payload));
       }
-      // A child the response already repainted was composed under the payload that
-      // really fired (a fetch's success, not this dispatch's INIT) — its frame stays.
-      const repainted = new Set((outcome.response.clientEffectsByTrait ?? []).map((e) => e.traitName));
-      const serverComposed = new Set([...store.callsitePayloads].filter(([child, composed]) => composedBefore.get(child) !== composed).map(([child]) => child));
-      await reRenderCallsiteCaptureChildren(traitName, payload ?? {}, entityByTrait, repainted, serverComposed);
+    }, { clientId: getTabClientId() });
+  }, [transport, traitIndex, progressAndSettle, dispatchAndSettle]);
+
+
+  // Mount in one round trip: every entering trait's lifecycle arm runs and
+  // paints at once, then one mount leg is posted and folded.
+  const mountAndSettle = useCallback(async (seeds: MountSeed[], payload: EventPayload): Promise<void> => {
+    const composedBefore = new Map(store.callsitePayloads);
+    let beforeLocalPaint: SlotCheckpoint | undefined;
+    let outcome: Awaited<ReturnType<typeof kernel.dispatchMount>>;
+    try {
+      outcome = await kernel.dispatchMount(seeds, {
+        onLocal: (_trait, local) => {
+          if (beforeLocalPaint === undefined) beforeLocalPaint = slotFlush.checkpoint();
+          slotFlush.applyClientEffects(local.clientEffects ?? [], local.clientEffectsByTrait, options.navigate, options.navigateBack, activeTraitNamesRef.current);
+        },
+      }, { payload });
+    } catch (err: unknown) {
+      if (beforeLocalPaint !== undefined) slotFlush.rollback(beforeLocalPaint);
+      for (const seed of seeds) {
+        recordDispatchVerdict(traitIndex.byName.get(seed.trait)?.orbitalName ?? seed.trait, seed.event, { error: err instanceof Error ? err : String(err) });
+      }
+      throw err;
     }
-    options.onEventProcessed?.(eventKey, payload);
-  }, [kernel, slotFlush, traitIndex, store, eventBus, reRenderCallsiteCaptureChildren, options.navigate, options.navigateBack, options.onEventProcessed]);
+    if (!outcome.success && beforeLocalPaint !== undefined) slotFlush.rollback(beforeLocalPaint);
+    slotFlush.applyClientEffects(outcome.serverEffects.clientEffects ?? [], outcome.serverEffects.clientEffectsByTrait, options.navigate, options.navigateBack, activeTraitNamesRef.current);
+    const emitted = [...outcome.seeds.flatMap((seed) => seed.local.emittedEvents), ...outcome.emittedEvents];
+    for (const e of emitted) {
+      eventBus.emit(`UI:${e.event}`, e.payload, { ...(e.source ?? {}), dispatched: true });
+    }
+    const serverRepaints = outcome.serverEffects.clientEffectsByTrait ?? [];
+    for (const seed of outcome.seeds) {
+      recordDispatchVerdict(traitIndex.byName.get(seed.trait)?.orbitalName ?? seed.trait, seed.event, {
+        response: { ...seed.local, success: outcome.success, ...(outcome.error !== undefined ? { error: outcome.error } : {}) },
+      });
+      stateLog.debug('mount:settled', { traitName: seed.trait, eventKey: seed.event, mode: seed.mode, transitioned: seed.local.transitioned });
+      await afterSettle(seed.trait, seed.event, payload, seed.local.transitioned, [...(seed.local.clientEffectsByTrait ?? []), ...serverRepaints], composedBefore);
+    }
+  }, [kernel, slotFlush, traitIndex, store, eventBus, options.navigate, options.navigateBack, afterSettle]);
 
   useBusIngress(traitBindings, traitIndex, dispatchAndSettle, eventBus);
 
@@ -338,20 +432,22 @@ export function useTraitStateMachine(
     store.mount.unmounted(left);
     // Every entering trait awaits its own lifecycle event BEFORE any of them
     // dispatches: a sibling's INIT cascade must not reach it first.
-    const entering: Array<{ traitName: string; lifecycleEvent: string }> = [];
+    const entering: MountSeed[] = [];
     for (const binding of traitBindings) {
       const traitName = binding.trait.name;
       if (mount.initialized.has(traitName)) continue;
       mount.initialized.add(traitName);
-      const lifecycleEvent = LIFECYCLE_EVENTS.find((evt: string) => store.manager.canHandleEvent(traitName, evt));
-      if (lifecycleEvent !== undefined) entering.push({ traitName, lifecycleEvent });
+      const lifecycleEvent = LIFECYCLE_EVENTS.find((evt) => store.manager.canHandleEvent(traitName, evt));
+      if (lifecycleEvent !== undefined) entering.push({ trait: traitName, event: lifecycleEvent });
     }
-    store.mount.mounting(entering.map((e) => e.traitName));
-    for (const { traitName, lifecycleEvent } of entering) {
-      void dispatchAndSettle(traitName, lifecycleEvent, { ...(options.initPayload ?? {}) });
+    store.mount.mounting(entering.map((e) => e.trait));
+    if (entering.length > 0) {
+      void mountAndSettle(entering, { ...(options.initPayload ?? {}) }).catch((err) => {
+        stateLog.warn('mount:failed', { traits: entering.map((e) => e.trait), error: String(err) });
+      });
     }
     mountedRef.current = mount;
-  }, [traitBindings, store, dispatchAndSettle, mountKey]);
+  }, [traitBindings, store, mountAndSettle, mountKey]);
 
   // Re-render on every committed circuit change (mirrors the old hook's own
   // `setTraitStates(manager.getAllStates())` after each dispatch) — the
@@ -360,5 +456,5 @@ export function useTraitStateMachine(
   useSyncExternalStore(store.subscribe, store.getVersion, store.getVersion);
   const traitStates = useMemo(() => store.manager.getAllStates(), [store, store.getVersion()]);
 
-  return { traitStates, sendEvent, getTraitState, canHandleEvent, entityBindingSource };
+  return { traitStates, sendEvent, getTraitState, canHandleEvent, entityBindingSource, awaitingSkeletonSource };
 }

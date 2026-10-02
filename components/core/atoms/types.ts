@@ -66,10 +66,10 @@ export type BadgeColor = BadgeVariant | 'destructive';
 
 /** How a display field renders: `h3`/`h4` is the record's title, `badge` a
  *  status pill, `progress` a progress bar, `body` a prose block. */
-export type DisplayFieldVariant = 'h3' | 'h4' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
+export type DisplayFieldVariant = 'h3' | 'h4' | 'overline' | 'avatar' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
 
 /** How a display field's value is formatted. */
-export type DisplayFieldFormat = 'date' | 'datetime' | 'currency' | 'number' | 'boolean' | 'percent';
+export type DisplayFieldFormat = 'date' | 'time' | 'datetime' | 'currency' | 'number' | 'boolean' | 'percent';
 
 /**
  * One field of a record shown by a data display (DataGrid, DataList, List,

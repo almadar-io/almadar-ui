@@ -24,6 +24,7 @@ import { Typography } from "../atoms/Typography";
 import { Overlay } from "../atoms/Overlay";
 import { usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
+import { SurfaceBoundary } from '../../../providers/SurfaceContext';
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
@@ -218,7 +219,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         )}
 
         {/* Content */}
-        <Box className="flex-1 overflow-y-auto p-6">{children}</Box>
+        <Box className="flex-1 overflow-y-auto p-6"><SurfaceBoundary>{children}</SurfaceBoundary></Box>
 
         {/* Footer */}
         {footer && (

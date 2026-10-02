@@ -412,6 +412,7 @@ function emitMotion(m: MotionTokens | undefined, vars: Record<string, string>): 
   if (m.entry?.default !== undefined) vars['--motion-enter-default'] = enterKeyframe(m.entry.default);
   if (m.entry?.stagger !== undefined) vars['--motion-enter-stagger'] = m.entry.stagger;
   if (m.busyDelay !== undefined) vars['--motion-busy-delay'] = m.busyDelay;
+  if (m.awaitingSkeleton !== undefined) vars['--awaiting-skeleton-display'] = m.awaitingSkeleton ? 'block' : 'none';
 }
 
 /** The keyframe name an entry keyword plays (`none` stays `none`). */

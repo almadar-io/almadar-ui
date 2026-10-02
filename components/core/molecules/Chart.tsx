@@ -19,10 +19,13 @@
 import React, { useMemo, useCallback } from "react";
 import { cn } from "../../../lib/cn";
 import { pressableProps } from "../../../lib/pressable";
-import type { A11yProps } from "@almadar/core";
+import type { A11yProps, SkeletonSpec } from "@almadar/core";
+import { Skeleton } from "./Skeleton";
 import { domPassthrough } from "../../../lib/domPassthrough";
 import { formatValue } from "../../../lib/format";
-import { Card, Typography, Badge, Box } from "../atoms/index";
+import { Typography, Badge, Box } from "../atoms/index";
+import { useContentSurface } from "../../../providers/SurfaceContext";
+import type { SurfaceMode } from '@almadar/core';
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
@@ -98,6 +101,8 @@ export interface ChartAction {
 }
 
 export interface ChartProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
+    /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+    surface?: SurfaceMode;
     /** Chart title */
     title?: string;
     /** Chart subtitle / description */
@@ -138,6 +143,8 @@ export interface ChartProps extends Omit<React.AriaAttributes, keyof A11yProps>,
     actions?: readonly ChartAction[];
     /** Loading state */
     isLoading?: boolean;
+    /** Skeleton drawn while loading, and the shape an empty slot shows while this element's server render is in flight (`none` opts out). */
+    skeleton?: SkeletonSpec;
     /** Error state */
     error?: UiError | null;
     /** Additional CSS classes */
@@ -162,17 +169,9 @@ const CHART_COLORS = [
 const seriesColor = (series: ChartSeries, idx: number): string =>
     series.color ?? CHART_COLORS[idx % CHART_COLORS.length];
 
-// A single bar series carries no series identity to encode, so its bars cycle
-// the palette per category — parity with donut/pie point colors. Multi-series
-// keeps series-indexed colors (legend identity).
-const barColor = (
-    series: ChartSeries,
-    sIdx: number,
-    catIdx: number,
-    seriesCount: number,
-): string =>
-    series.color ??
-    CHART_COLORS[(seriesCount === 1 ? catIdx : sIdx) % CHART_COLORS.length];
+// Bar length already encodes the category; hue encodes only series identity, so
+// one series is one colour (a rainbow implies a legend that isn't there).
+const barColor = (series: ChartSeries, sIdx: number): string => seriesColor(series, sIdx);
 
 /** Granularity of a time-axis bucket — the `period` a bucketing atom grouped by. */
 export type ChartTimePeriod = "day" | "week" | "month" | "quarter" | "year";
@@ -293,7 +292,7 @@ const BarChart: React.FC<{
                                                 ? 0
                                                 : (value / total) * 100
                                             : (value / maxValue) * 100;
-                                    const color = barColor(s, sIdx, catIdx, series.length);
+                                    const color = barColor(s, sIdx);
                                     return (
                                         <Box
                                             key={s.name}
@@ -353,7 +352,7 @@ const BarChart: React.FC<{
                                 {series.map((s, sIdx) => {
                                     const value = valueAt(s, label);
                                     const barHeight = (value / maxValue) * 100;
-                                    const color = barColor(s, sIdx, catIdx, series.length);
+                                    const color = barColor(s, sIdx);
                                     return (
                                         <Box
                                             key={s.name}
@@ -413,7 +412,7 @@ const BarChart: React.FC<{
                                             ? 0
                                             : (value / total) * 100
                                         : (value / maxValue) * 100;
-                                const color = barColor(s, sIdx, catIdx, series.length);
+                                const color = barColor(s, sIdx);
                                 return (
                                     <Box
                                         key={s.name}
@@ -873,10 +872,13 @@ export const Chart: React.FC<ChartProps> = ({
     drillEvent,
     actions,
     isLoading = false,
+    skeleton = 'card',
     error,
     className,
+    surface = 'auto',
     ...rest
 }) => {
+    const contentSurface = useContentSurface(surface);
     const resolvedLook: ChartLook =
         look ?? (chartType ? LOOK_FROM_CHART_TYPE[chartType] : "bar-vertical");
     const eventBus = useEventBus();
@@ -917,7 +919,7 @@ export const Chart: React.FC<ChartProps> = ({
             : normalizedSeries.some((s) => s.data.length > 0);
 
     if (isLoading) {
-        return <LoadingState message={t('common.loading')} className={className} />;
+        return <Skeleton spec={skeleton} className={className} />;
     }
 
     if (error) {
@@ -934,8 +936,8 @@ export const Chart: React.FC<ChartProps> = ({
         return <EmptyState title={t('empty.noData')} className={className} />;
     }
 
-    return (
-        <Card className={cn("p-6", className)} {...domPassthrough(rest)}>
+    return contentSurface.provide(
+        <Box className={cn(contentSurface.className, "p-6 rounded-container", className)} {...domPassthrough(rest)}>
             <VStack gap="md">
                 {(title || subtitle || (actions && actions.length > 0)) && (
                     <HStack justify="between" align="start">
@@ -1066,7 +1068,7 @@ export const Chart: React.FC<ChartProps> = ({
                     </HStack>
                 )}
             </VStack>
-        </Card>
+        </Box>,
     );
 };
 

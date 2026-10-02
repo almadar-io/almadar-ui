@@ -71,7 +71,10 @@ describe('DataList row click', () => {
         <DataList entity={rows} fields={[{ name: 'name', variant: 'h4' }]} itemActions={actions} itemClickEvent="ROW" />
       </>,
     );
-    fireEvent.click(container.querySelector('[data-entity-row]') as HTMLElement);
+    // The row opens through its one stretched control (the title), whose
+    // ::after covers the row in a real layout.
+    const row = container.querySelector('[data-entity-row]') as HTMLElement;
+    fireEvent.click(row.querySelector('[role=button]:not([data-testid])') as HTMLElement);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 

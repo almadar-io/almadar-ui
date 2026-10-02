@@ -73,7 +73,7 @@ describe('std-api-gateway — Create Route button opens the form', () => {
         <BrowserPlayground schema={schema} viewer={{ id: 'gw-viewer', role: 'viewer' }} fit />
       </MemoryRouter>,
     );
-    await screen.findByText('Routes', {}, { timeout: 15_000 });
+    await screen.findAllByText('Routes', {}, { timeout: 15_000 });
     expect(screen.queryByTestId('action-CREATE')).toBeNull();
   }, 60_000);
 });

@@ -29,6 +29,8 @@ import { useUISlots } from "../../../providers/UISlotContext";
 import type { SlotContent } from "../../../hooks/useUISlots";
 import { TraitScopeProvider } from "../../../providers/TraitScopeProvider";
 import { useEntitySchemaOptional } from "../../../providers/EntitySchemaContext";
+import { useAwaitingSkeleton } from "../../../providers/AwaitingSkeletonContext";
+import { SkeletonTree } from "../molecules/Skeleton";
 
 // `UISlotRenderer.tsx` imports from this file via
 // `trait-binding-resolver`, which embeds `<TraitFrame>` — a static import
@@ -103,6 +105,7 @@ export function TraitFrame({
   fallback = null,
 }: TraitFrameProps): React.ReactElement | null {
   const content = useTraitContent(traitName);
+  const awaiting = useAwaitingSkeleton({ trait: traitName });
   // Look up the embedded trait's owning orbital so we can wrap its
   // rendered subtree in a `<TraitScopeProvider>` scoped to that
   // (orbital, trait) pair. Without this wrap, bare `UI:CLEAR`-style
@@ -116,7 +119,7 @@ export function TraitFrame({
   const orbital = entitySchema?.orbitalsByTrait.get(traitName);
 
   if (!content) {
-    return <>{fallback}</>;
+    return awaiting !== undefined ? <SkeletonTree node={awaiting} /> : <>{fallback}</>;
   }
 
   // We lean on the existing slot-renderer machinery so children of

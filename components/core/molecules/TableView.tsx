@@ -13,9 +13,13 @@
  * Icon, Checkbox, Divider.
  */
 import React from 'react';
-import type { A11yProps, EntityRow, EntityWith, FieldValue, EventKey, EventEmit } from '@almadar/core';
+import type { A11yProps, SkeletonSpec, EntityRow, EntityWith, FieldValue, EventKey, EventEmit } from '@almadar/core';
+import { Skeleton } from "./Skeleton";
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
+import { useContentSurface } from '../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
+import { entityRows } from '../../../lib/entityRows';
 import { formatValue, type FormatContext } from '../../../lib/format';
 import { resolveRelationCellDisplay } from '../../../lib/relationLabel';
 import type { RelationOption } from './RelationSelect';
@@ -41,7 +45,7 @@ import { EmptyState, type EmptyStateSlotProps } from './EmptyState';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
 import type { BadgeColor, UiError } from '../atoms/types';
 import { badgeVariantFor, valueLabelFor } from '../../../lib/displayField';
-import { pressableProps, rowActivationProps } from '../../../lib/pressable';
+import { pressableProps, rowOpenControlProps, STRETCHED_CONTROL, STRETCHED_ABOVE } from '../../../lib/pressable';
 import { domPassthrough } from '../../../lib/domPassthrough';
 
 // ── Column Definition ────────────────────────────────────────────────
@@ -113,6 +117,8 @@ export interface TableViewProps extends DataDndProps, EmptyStateSlotProps, A11yP
   columns?: readonly TableViewColumn[];
   /** Alias for `columns`. */
   fields?: readonly TableViewColumn[];
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   /** Per-row actions, collected under a trailing kebab overflow menu. */
   itemActions?: readonly TableViewItemAction[];
   /** @deprecated Row actions always render as a kebab menu now (UX doctrine: row actions behind an overflow menu; a pinned inline button strip paints over cells during horizontal scroll). Accepted and ignored. */
@@ -140,6 +146,8 @@ export interface TableViewProps extends DataDndProps, EmptyStateSlotProps, A11yP
   emptyMessage?: string;
   /** Loading state. */
   isLoading?: boolean;
+  /** Skeleton drawn while loading, and the shape an empty slot shows while this element's server render is in flight (`none` opts out). */
+  skeleton?: SkeletonSpec;
   /** Error state. */
   error?: UiError | null;
   /** Group rows under section headers by a field value. */
@@ -282,12 +290,14 @@ export function TableView({
   emptyDescription,
   emptyAction,
   isLoading = false,
+  skeleton = 'table',
   error = null,
   groupBy,
   pageSize = 0,
   children,
   renderItem: _schemaRenderItem,
   look = 'dense',
+  surface = 'auto',
   // DnD props consumed by useDataDnd.
   dragGroup,
   accepts,
@@ -322,7 +332,7 @@ export function TableView({
   // over the data columns beside it (observed 2026-09-17 on std-browse
   // dense tables, e.g. PF Timesheets: View/Edit covering the Status pill).
   const { fire: fireRowAction, isRowPending } = useRowActionFire<TableViewItemAction>();
-  const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const allDataRaw = entityRows(entity);
 
   const dnd = useDataDnd({
     items: allDataRaw as readonly EntityRow[],
@@ -426,9 +436,7 @@ export function TableView({
   // avoids this by keeping <thead> and putting the empty check inside the table;
   // the three states now collapse to one status row rendered UNDER the header.
   const statusNode = isLoading ? (
-    <Box className="text-center py-8">
-      <Typography variant="body" color="secondary">{t('loading.items')}</Typography>
-    </Box>
+    <Skeleton spec={skeleton} />
   ) : error ? (
     <Box className="text-center py-8">
       <Typography variant="body" color="error">{error.message}</Typography>
@@ -443,7 +451,9 @@ export function TableView({
     />
   ) : null;
 
+  const contentSurface = useContentSurface(surface);
   const lk = LOOKS[look];
+  const openColKey = (colDefs.find((c) => c.variant === 'h3' || c.variant === 'h4') ?? colDefs[0])?.key;
 
   // Shared CSS-grid track template so columns line up across every row
   // (flex-per-row sizes each row independently → misaligned columns). The
@@ -472,7 +482,9 @@ export function TableView({
       className={cn(
         'hidden @sm/table:grid items-center gap-3 sticky top-0 z-10',
         'bg-[var(--color-surface-subtle)] border-b border-[var(--color-border)]',
-        'text-muted-foreground uppercase text-xs font-semibold tracking-wide',
+        // No font size here: track floors are `ch`, resolved per row, so the
+        // header row must share the body's font size or columns drift.
+        'text-muted-foreground uppercase font-semibold tracking-wide',
         lk.headPad,
       )}
     >
@@ -493,7 +505,7 @@ export function TableView({
             <Box
               {...pressableProps(col.sortable && sortEvent ? () => handleSort(col) : undefined)}
               className={cn(
-                'flex items-center gap-1 min-w-0',
+                'flex items-center gap-1 min-w-0 text-xs',
                 col.sortable && sortEvent && 'cursor-pointer select-none hover:text-foreground',
               )}
             >
@@ -520,6 +532,7 @@ export function TableView({
   const renderRow = (row: EntityRow, index: number) => {
     const id = String(row[idField] ?? index);
     const rowClickEvent = itemClickEvent || undefined;
+    const onOpen = rowClickEvent ? handleRowClick(row) : undefined;
     const overflowActions = rowActions(actionDefs, row);
     const rowInner = (
       <Box
@@ -529,7 +542,7 @@ export function TableView({
         data-row-pending={isRowPending(id) || undefined}
         aria-busy={isRowPending(id) || undefined}
         aria-selected={selectable ? selected.has(id) : undefined}
-        {...rowActivationProps(rowClickEvent ? handleRowClick(row) : undefined)}
+        onClick={onOpen}
         style={!hasRenderProp ? { gridTemplateColumns } : undefined}
         className={cn(
           'group relative transition-colors duration-fast',
@@ -543,7 +556,7 @@ export function TableView({
         )}
       >
         {selectable && (
-          <Box role="cell" className="flex items-center" onClick={rowClickEvent ? (e) => e.stopPropagation() : undefined}>
+          <Box role="cell" className={cn('flex items-center', STRETCHED_ABOVE)} onClick={rowClickEvent ? (e) => e.stopPropagation() : undefined}>
             <Checkbox
               checked={selected.has(id)}
               onChange={() => toggleRow(id)}
@@ -552,10 +565,27 @@ export function TableView({
           </Box>
         )}
         {hasRenderProp ? (
-          <Box className="flex-1 min-w-0">{children(row, index)}</Box>
+          <Box role="cell" className="relative flex-1 min-w-0">
+            {onOpen && (
+              <Box
+                {...rowOpenControlProps(true)}
+                aria-label={t('aria.openRow', { position: index + 1 })}
+                className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+              />
+            )}
+            <Box className={cn(onOpen && 'relative')}>
+              {children(row, index)}
+            </Box>
+          </Box>
         ) : (
           colDefs.map((col) => {
             const raw = asFieldValue(getNestedValue(row, col.field ?? col.key));
+            // The open control lives in the title column (else the first): its
+            // ::after stretches over the row, so actions stay sibling cells.
+            const opens = onOpen !== undefined && col.key === openColKey;
+            const asControl = (node: React.ReactNode): React.ReactNode => opens
+              ? <Box {...rowOpenControlProps(true)} className={cn('min-w-0', STRETCHED_CONTROL)}>{node}</Box>
+              : node;
             // Narrow: the declared title column heads the card; every other
             // cell is a label ⟷ value line (the header row is hidden there).
             const isTitle = col.variant === 'h3' || col.variant === 'h4';
@@ -574,24 +604,26 @@ export function TableView({
             );
             if (col.format === 'badge' && raw != null && raw !== '') {
               const relationDisplay = resolveRelationCellDisplay(raw, relationsData?.[col.field ?? col.key]);
-              const label = relationDisplay ?? valueLabelFor(String(raw), col.labels);
+              const label = relationDisplay ?? col.labels?.[String(raw)]
+                ?? (typeof raw === 'boolean' ? formatValue(raw, 'boolean', fmt) : valueLabelFor(String(raw), col.labels));
               return (
                 <Box key={col.key} role="cell" className={cellBase}>
                   {stackedLabel}
-                  <Badge variant={badgeVariantFor(String(raw), col.colorMap)} size="sm" className="whitespace-nowrap">{label}</Badge>
+                  {asControl(<Badge variant={badgeVariantFor(String(raw), col.colorMap)} size="sm" className="whitespace-nowrap">{label}</Badge>)}
                 </Box>
               );
             }
             return (
               <Box key={col.key} role="cell" className={cellBase}>
                 {stackedLabel}
-                <span className="truncate text-foreground">{formatCell(raw, col.format, relationsData?.[col.field ?? col.key], fmt)}</span>
+                {asControl(<span className="truncate text-foreground">{formatCell(raw, col.format, relationsData?.[col.field ?? col.key], fmt)}</span>)}
               </Box>
             );
           })
         )}
         {hasActions && (
           <HStack
+            role="cell"
             gap="xs"
             // The Menu's item onClick has no stopPropagation of its own, so
             // the whole actions cell shields the row click instead.
@@ -658,11 +690,11 @@ export function TableView({
   // BODY only, and one `wrapContainer` keeps an empty list a valid drop target.
   const showHeader = colDefs.length > 0 || hasRenderProp;
 
-  return (
+  return contentSurface.provide(
     <Box
       role="table"
       {...domPassthrough(rest)}
-      className={cn('@container/table w-full text-sm', className)}
+      className={cn('@container/table w-full text-sm', contentSurface.className && cn(contentSurface.className, 'overflow-hidden'), className)}
     >
       {showHeader && header}
       {dnd.wrapContainer(statusNode ? <Box role="rowgroup">{statusNode}</Box> : body)}

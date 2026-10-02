@@ -6,11 +6,13 @@
  * Molecule-level replacement for the stats (StatCard) organism in behavior schemas.
  * No entity prop, no data fetching, no hooks beyond icon resolution.
  */
-import type { A11yProps } from '@almadar/core';
+import type { A11yProps, SkeletonSpec } from '@almadar/core';
+import { Skeleton } from "./Skeleton";
 import React, { useCallback } from 'react';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
-import { Card } from '../atoms/Card';
+import { useContentSurface } from '../../../providers/SurfaceContext';
+import type { SurfaceMode } from '@almadar/core';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
 import { HStack, VStack } from '../atoms/Stack';
@@ -32,7 +34,7 @@ export type StatDisplayLook =
 
 const lookStyles: Record<StatDisplayLook, string> = {
   elevated: '',
-  flat: 'shadow-none border-[length:var(--border-width)] border-border',
+  flat: 'shadow-none',
   'progress-backed': '',
   gauge: '',
   sparkline: '',
@@ -77,10 +79,14 @@ export interface StatDisplayProps extends A11yProps {
   compact?: boolean;
   /** Layer 2 visual treatment. */
   look?: StatDisplayLook;
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
   /** Additional CSS classes */
   className?: string;
   /** Loading state */
   isLoading?: boolean;
+  /** Skeleton drawn while loading, and the shape an empty slot shows while this element's server render is in flight (`none` opts out). */
+  skeleton?: SkeletonSpec;
   /** Error state */
   error?: UiError | null;
 }
@@ -132,9 +138,12 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   look = 'elevated',
   className,
   isLoading = false,
+  skeleton = { variant: 'stats', columns: 1 },
   error = null,
+  surface = 'auto',
   ...rest
 }) => {
+  const contentSurface = useContentSurface(surface);
   const eventBus = useEventBus();
   const fmt = useFormatContext();
   const handleClick = useCallback(() => {
@@ -160,22 +169,15 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   const trendLabel = showTrend ? `${trendUp ? '↑' : '↓'} ${trendMagnitude}${trendSuffix}` : '';
 
   if (error) {
-    return (
-      <Card {...domPassthrough(rest)} className={cn(padSizes[size], className)}>
+    return contentSurface.provide(
+      <Box {...domPassthrough(rest)} className={cn(contentSurface.className, 'rounded-container', padSizes[size], className)}>
         <Typography variant="small" color="error">{error.message}</Typography>
-      </Card>
+      </Box>,
     );
   }
 
   if (isLoading) {
-    return (
-      <Card {...domPassthrough(rest)} className={cn(padSizes[size], className)}>
-        <VStack gap="sm" className="animate-pulse">
-          <Box className="h-3 bg-muted rounded w-16" />
-          <Box className="h-6 bg-muted rounded w-12" />
-        </VStack>
-      </Card>
-    );
+    return <Skeleton spec={skeleton} className={className} />;
   }
 
   // Compact mode: inline badge style
@@ -205,10 +207,10 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   }
 
   // Card mode (default)
-  return (
-    <Card
+  return contentSurface.provide(
+    <Box
       {...domPassthrough(rest)}
-      className={cn(padSizes[size], lookStyles[look], clickEvent && 'cursor-pointer hover:shadow-elevation-dialog transition-shadow', className)}
+      className={cn(contentSurface.className, 'rounded-container', padSizes[size], lookStyles[look], clickEvent && 'cursor-pointer hover:shadow-elevation-dialog transition-shadow', className)}
       {...pressableProps(clickEvent ? handleClick : undefined)}
     >
       <HStack align="start" justify="between">
@@ -247,7 +249,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
           )}
         </VStack>
       </HStack>
-    </Card>
+    </Box>,
   );
 };
 

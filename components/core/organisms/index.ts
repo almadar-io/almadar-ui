@@ -11,12 +11,6 @@ export {
 } from "./types";
 
 // Shell organisms - common UI patterns
-export {
-  DataTable,
-  type DataTableProps,
-  type Column,
-  type RowAction,
-} from "./DataTable";
 export { StatCard, type StatCardProps } from "./StatCard";
 
 export {
@@ -29,9 +23,6 @@ export {
 // Migrated organisms
 export { Form, type FormProps } from "./Form";
 
-export { List, type ListProps, type ListItem } from "./List";
-export { CardGrid, type CardGridProps, type CardGridGap } from "./CardGrid";
-export { MasterDetail, type MasterDetailProps } from "./MasterDetail";
 
 // Dialog organisms
 

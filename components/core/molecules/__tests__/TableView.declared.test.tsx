@@ -55,7 +55,9 @@ describe('TableView row click', () => {
         <TableView entity={rows} columns={columns} itemActions={actions} itemClickEvent="ROW" />
       </>,
     );
-    fireEvent.click(container.querySelector('[data-entity-row]') as HTMLElement);
+    // The row opens through its one stretched control (title or first column).
+    const row = container.querySelector('[data-entity-row]') as HTMLElement;
+    fireEvent.click(row.querySelector('[role=cell] [role=button]:not([data-testid])') as HTMLElement);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 

@@ -47,8 +47,7 @@ export interface ProgressBarProps extends A11yProps {
   variant?: ProgressBarVariant;
 
   /**
-   * Color variant (alias for variant)
-   * @default 'primary'
+   * Color variant (alias for variant; `variant` applies when omitted)
    */
   color?: ProgressBarColor;
 

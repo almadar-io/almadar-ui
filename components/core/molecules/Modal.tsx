@@ -13,6 +13,7 @@ import { Button } from "../atoms/Button";
 import { Dialog } from "../atoms/Dialog";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
+import { SurfaceBoundary } from '../../../providers/SurfaceContext';
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
@@ -268,7 +269,7 @@ export const Modal: React.FC<ModalProps> = ({
           )}
 
           {/* Content */}
-          <Box className="flex-1 overflow-y-auto p-6">{children}</Box>
+          <Box className="flex-1 overflow-y-auto p-6"><SurfaceBoundary>{children}</SurfaceBoundary></Box>
 
           {/* Footer */}
           {footer && (

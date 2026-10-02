@@ -3,8 +3,6 @@ import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { EventBusProvider } from '../providers/EventBusProvider';
-import { CardGrid } from '../components/core/organisms/CardGrid';
-import { DataTable } from '../components/core/organisms/DataTable';
 import { StatCard } from '../components/core/organisms/StatCard';
 import { Timeline } from '../components/core/organisms/Timeline';
 import { MediaGallery } from '../components/core/organisms/MediaGallery';
@@ -22,8 +20,6 @@ type Case = { name: string; element: (a: A11y) => React.ReactElement };
 const counter = { id: 'c1', count: 1, decrementLabel: '-', incrementLabel: '+', resetLabel: 'reset' };
 
 const cases: Case[] = [
-  { name: 'CardGrid', element: (a) => <CardGrid fields={['name']} entity={[{ id: '1', name: 'A' }]} {...a} /> },
-  { name: 'DataTable', element: (a) => <DataTable fields={['name']} entity={[{ id: '1', name: 'A' }]} {...a} /> },
   { name: 'StatCard', element: (a) => <StatCard label="Users" value={3} {...a} /> },
   { name: 'StatCard loading branch', element: (a) => <StatCard label="Users" value={3} isLoading {...a} /> },
   { name: 'Timeline', element: (a) => <Timeline items={[{ id: '1', title: 'x' }]} {...a} /> },

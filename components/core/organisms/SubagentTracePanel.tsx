@@ -144,20 +144,9 @@ function coordinatorToActivityItems(activities: TraceActivity[], t: TranslateFun
   return activities.flatMap((a): TraceActivityItem[] => {
     switch (a.type) {
       case 'tool_call':
-        return [{
-          type: 'tool_call',
-          tool: a.tool,
-          args: a.args,
-          timestamp: a.timestamp,
-        }];
+        return [{ type: 'tool_call', tool: a.tool, argsText: a.argsText, timestamp: a.timestamp }];
       case 'tool_result':
-        return [{
-          type: 'tool_result',
-          tool: a.tool,
-          result: a.result,
-          success: a.success,
-          timestamp: a.timestamp,
-        }];
+        return [{ type: 'tool_result', tool: a.tool, resultText: a.resultText, success: a.success, timestamp: a.timestamp }];
       case 'message':
         return [{
           type: 'message',
@@ -244,9 +233,9 @@ const InlineActivityRow: React.FC<InlineRowProps> = ({ activity }) => {
           <Typography as="span" variant="caption" weight="semibold" className="text-[11px] font-mono">
             {activity.tool}
           </Typography>
-          {activity.args !== undefined && (
+          {activity.argsText !== '' && activity.argsText !== '{}' && (
             <Typography as="span" variant="caption" color="muted" className="text-[11px] font-mono">
-              {' '}{compactJson(activity.args)}
+              {' '}{activity.argsText}
             </Typography>
           )}
         </Typography>
@@ -271,7 +260,7 @@ const InlineActivityRow: React.FC<InlineRowProps> = ({ activity }) => {
             {activity.tool}:{' '}
           </Typography>
           <Typography as="span" variant="caption" className="text-[11px] font-mono">
-            {compactJson(activity.result)}
+            {activity.resultText}
           </Typography>
         </Typography>
         <Typography variant="caption" color="muted" className="text-[10px] flex-shrink-0 tabular-nums mt-0.5">
@@ -441,7 +430,7 @@ function subagentMessagesToActivities(messages: TraceSubagentMessage[]): TraceAc
       return {
         type: 'tool_call',
         tool: m.tool,
-        args: { preview: m.message },
+        argsText: m.message,
         timestamp: m.timestamp,
       };
     }
@@ -737,8 +726,8 @@ function timelineItemPreview(item: TimelineItem, t: TranslateFunction): string {
     case 'activity': {
       const a = item.data;
       switch (a.type) {
-        case 'tool_call': return `${a.tool}(${summarizeArgs(a.args)})`;
-        case 'tool_result': return `${a.tool}: ${compactJson(a.result)}`;
+        case 'tool_call': return `${a.tool}(${previewText(a.argsText, 120)})`;
+        case 'tool_result': return `${a.tool}: ${previewText(a.resultText, 120)}`;
         case 'message': return previewText(a.content, 120);
         case 'error': return previewText(a.message, 120);
         case 'file_operation': return `${t(`subagentTrace.fileOperation.${a.operation}`)} ${a.path}`;
@@ -820,7 +809,7 @@ function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElemen
                 <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp, locale)}</Typography>
               </HStack>
               <Typography variant="body2">{a.tool}</Typography>
-              <CodeBlock code={JSON.stringify(a.args, null, 2)} language="json" maxHeight="60vh" />
+              <CodeBlock code={a.argsText} language="json" maxHeight="60vh" />
             </VStack>
           );
         case 'tool_result':
@@ -833,7 +822,7 @@ function TraceDetailContent({ item }: { item: TimelineItem }): React.ReactElemen
                 <Typography variant="caption" color="muted">{formatHHMMSS(a.timestamp, locale)}</Typography>
               </HStack>
               <Typography variant="body2">{a.tool}</Typography>
-              <CodeBlock code={JSON.stringify(a.result, null, 2)} language="json" maxHeight="60vh" />
+              <CodeBlock code={a.resultText} language="json" maxHeight="60vh" />
             </VStack>
           );
         case 'message':

@@ -14,6 +14,8 @@ import { Typography } from "../atoms/Typography";
 
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useContentSurface } from "../../../providers/SurfaceContext";
+import type { SurfaceMode } from '@almadar/core';
 
 import { domPassthrough } from '../../../lib/domPassthrough';
 export interface AccordionItem {
@@ -80,6 +82,9 @@ export interface AccordionProps extends A11yProps {
    */
   onItemToggle?: (itemId: string, isOpen: boolean) => void;
 
+  /** Content surface: `auto` paints the theme's surface behind this block unless it already sits on one (a card, dialog or another block); `none` opts out. */
+  surface?: SurfaceMode;
+
   /**
    * Additional CSS classes
    */
@@ -120,8 +125,10 @@ export const Accordion: React.FC<AccordionProps> = ({
   onItemToggle,
   className,
   toggleEvent,
+  surface = 'auto',
   ...rest
 }) => {
+  const contentSurface = useContentSurface(surface);
   const eventBus = useEventBus();
   // Normalize items to ensure id and header are always present
   const normalizedItems = items.map((item, index) =>
@@ -170,22 +177,24 @@ export const Accordion: React.FC<AccordionProps> = ({
     if (toggleEvent) eventBus.emit(`UI:${toggleEvent}`, { itemId, isOpen: !isOpen });
   };
 
-  return (
-    <div {...domPassthrough(rest)} className={cn("w-full", className)}>
-      {normalizedItems.map((item, index) => {
+  return contentSurface.provide(
+    <div
+      {...domPassthrough(rest)}
+      className={cn("w-full divide-y divide-border", contentSurface.className && cn(contentSurface.className, "overflow-hidden"), className)}
+    >
+      {normalizedItems.map((item) => {
         const isOpen = openItemsSet.has(item.id);
         const isDisabled = item.disabled;
 
         return (
-          <div key={item.id} className={index > 0 ? "mt-2" : ""}>
-            <div className="border-heavy border-border overflow-hidden">
+          <div key={item.id}>
+            <div className="overflow-hidden">
               <button
                 type="button"
                 onClick={() => !isDisabled && handleToggle(item.id)}
                 disabled={isDisabled}
                 className={cn(
                   "w-full flex items-center justify-between px-4 py-3",
-                  "bg-card",
                   "hover:bg-muted",
                   "transition-colors duration-fast",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
@@ -217,7 +226,7 @@ export const Accordion: React.FC<AccordionProps> = ({
               {isOpen && (
                 <div
                   id={`accordion-content-${item.id}`}
-                  className="px-4 py-3 bg-card border-t-heavy border-border"
+                  className="px-4 py-3 border-t-heavy border-border"
                 >
                   {item.content}
                 </div>
@@ -226,7 +235,7 @@ export const Accordion: React.FC<AccordionProps> = ({
           </div>
         );
       })}
-    </div>
+    </div>,
   );
 };
 

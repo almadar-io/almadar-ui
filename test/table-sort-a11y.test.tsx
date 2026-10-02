@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { EventBusProvider } from '../providers/EventBusProvider';
 import { useEventBus } from '../hooks/useEventBus';
-import { DataTable } from '../components/core/organisms/DataTable';
 import { TableView } from '../components/core/molecules/TableView';
 
 const rows = [
@@ -16,32 +15,6 @@ function Listen({ event, spy }: { event: string; spy: (p: unknown) => void }) {
   React.useEffect(() => bus.on(event, (e) => spy(e.payload)), [bus, event, spy]);
   return null;
 }
-
-describe('DataTable sortable headers', () => {
-  it('announce sort state and sort from the keyboard', () => {
-    const spy = vi.fn();
-    render(
-      <EventBusProvider debug={false}>
-        <Listen event="UI:SORT" spy={spy} />
-        <DataTable entity={rows} fields={[{ key: 'name', header: 'Name', sortable: true }, { key: 'amount', header: 'Amount' }]} sortBy="name" sortDirection="asc" />
-      </EventBusProvider>,
-    );
-    const header = screen.getByRole('columnheader', { name: /Name/ });
-    expect(header.getAttribute('aria-sort')).toBe('ascending');
-    expect(screen.getByRole('columnheader', { name: 'Amount' }).getAttribute('aria-sort')).toBeNull();
-    fireEvent.keyDown(screen.getByRole('button', { name: /Name/ }), { key: 'Enter' });
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ field: 'name', direction: 'desc' }));
-  });
-
-  it('control: rows without a view action are not tab stops', () => {
-    render(
-      <EventBusProvider debug={false}>
-        <DataTable entity={rows} fields={['name']} />
-      </EventBusProvider>,
-    );
-    expect(screen.getByText('Alpha').closest('tr')?.getAttribute('tabindex')).toBeNull();
-  });
-});
 
 describe('TableView sortable headers', () => {
   it('announce sort state and sort from the keyboard', () => {
