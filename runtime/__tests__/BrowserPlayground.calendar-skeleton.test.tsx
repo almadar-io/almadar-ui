@@ -33,7 +33,8 @@ async function resolveCalendar(): Promise<OrbitalSchema> {
   return result.data.schema;
 }
 
-const WEBSITE_CATALOG = join(__dirname, '../../../../almadar/orb/static/playground/behaviors/std-calendar.json');
+// orb.almadar.io's catalog entry for std-calendar, vendored so the test never reads a sibling repo.
+const WEBSITE_CATALOG = join(__dirname, 'fixtures/std-calendar.website-catalog.json');
 
 describe('std-calendar in the browser playground', () => {
   it('website catalog schema in mock mode (orb.almadar.io /playground default) renders without React #31', async () => {
