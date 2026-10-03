@@ -130,6 +130,8 @@ export {
 // i18n — translation hook + provider
 export {
   useTranslate,
+  useRenderI18n,
+  type RenderI18n,
   useFormatContext,
   I18nProvider,
   createTranslate,

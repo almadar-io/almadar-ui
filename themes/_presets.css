@@ -5,6 +5,7 @@
  */
 
 @import "./almadar.css";
+@import "./almadar-heritage.css";
 @import "./almadar-website.css";
 @import "./aqua.css";
 @import "./arabesque.css";
@@ -42,6 +43,7 @@
 @import "./neumorphic.css";
 @import "./newsprint.css";
 @import "./notion-editorial.css";
+@import "./orb.css";
 @import "./pixel.css";
 @import "./prism.css";
 @import "./retro.css";

@@ -26,7 +26,14 @@
  */
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { createRequire } from 'module';
 import { join, relative } from 'path';
+
+const requireCjs = createRequire(import.meta.url);
+const { compileTailwindClasses } = requireCjs('../tailwind-compile.cjs') as {
+  compileTailwindClasses: (classes: string[]) => Promise<string>;
+};
+const { safelist: loadedSafelist } = requireCjs('../tailwind-preset.cjs') as { safelist: Array<string | { pattern: RegExp }> };
 
 const ROOT = join(import.meta.dirname, '..');
 const PRESET_PATH = join(ROOT, 'tailwind-preset.cjs');
@@ -38,7 +45,8 @@ const SCAN_DIRS = ['components', 'runtime', 'renderer', 'context', 'providers', 
 
 // Matches arbitrary value classes: bg-[var(...)], min-h-[200px], w-[300px], etc.
 // Requires a hyphen before the bracket to avoid matching JS array access like arr[0]
-const ARBITRARY_RE = /(?:^|\s|["'`])([a-z][a-z0-9]*(?::[a-z][a-z0-9-]*)+-\[[^\]]+\]|[a-z][a-z0-9]*-[a-z0-9-]*-\[[^\]]+\]|[a-z][a-z0-9]*-\[[^\]]+\])/g;
+// A bracket followed by `:` is a variant (`data-[active=true]:`), not a class.
+const ARBITRARY_RE = /(?:^|\s|["'`])([a-z][a-z0-9]*(?::[a-z][a-z0-9-]*)+-\[[^\]]+\]|[a-z][a-z0-9]*-[a-z0-9-]*-\[[^\]]+\]|[a-z][a-z0-9]*-\[[^\]]+\])(?!:)/g;
 
 // Matches opacity modifiers on semantic colors: bg-primary/10, text-foreground/60
 const OPACITY_RE = /(?:^|\s|["'`])((?:bg|text|border|ring|from|to|via|hover:bg|hover:text|hover:border|dark:bg|dark:hover:bg|group-hover:bg|group-hover:text|peer-focus:ring|focus:ring)-(?:primary|secondary|muted|accent|foreground|card|surface|background|border|error|success|warning|info|ring|input|muted-foreground|card-foreground|primary-foreground|secondary-foreground|error-foreground|success-foreground|warning-foreground|info-foreground)\/\d+)/g;
@@ -183,6 +191,18 @@ const filtered = missing.filter(m => needsSafelist(m.cls));
 const skipped = missing.filter(m => !needsSafelist(m.cls));
 missing.length = 0;
 missing.push(...filtered);
+
+// A class Tailwind generates no CSS for paints nothing whether or not it is safelisted
+// (`justify-[inherit]`: Tailwind 3 has no arbitrary justify-content) — fail on it.
+const dead: Array<{ cls: string; files: string[] }> = [];
+for (const cls of new Set([...loadedSafelist.filter((e): e is string => typeof e === 'string'), ...missing.map((m) => m.cls)])) {
+  if ((await compileTailwindClasses([cls])) === '') dead.push({ cls, files: Array.from(allCandidates.get(cls) ?? []) });
+}
+if (dead.length > 0) {
+  console.log('Classes that generate no CSS (fix the class at its source, or drop the safelist entry):');
+  for (const { cls, files } of dead) console.log(`  ${cls}${files.length > 0 ? `  <- ${files.join(', ')}` : '  (safelist only)'}`);
+  process.exit(1);
+}
 
 // Report
 console.log(`Current safelist: ${currentSafelist.size} entries`);

@@ -24,6 +24,7 @@ import React from 'react';
 import { interpolateValue, createContextFromBindings } from '@almadar/runtime';
 import { isRenderBindingMarker, type EntityRow, type TraitConfig } from '@almadar/core';
 import type { SlotProps, SlotPropValue } from '../providers/UISlotContext';
+import type { RenderI18n } from '../hooks/useTranslate';
 
 /** Evaluate one marker against the trait's live bindings. */
 function resolveMarkerExpression(
@@ -31,12 +32,14 @@ function resolveMarkerExpression(
   entity: EntityRow,
   config: TraitConfig | undefined,
   state: string,
+  i18n: RenderI18n | undefined,
 ): SlotPropValue {
   const ctx = createContextFromBindings({
     entity,
     payload: {},
     state,
     ...(config !== undefined ? { config } : {}),
+    ...(i18n !== undefined ? { locale: i18n.locale, messages: i18n.messages } : {}),
   });
   return interpolateValue(expression, ctx) as SlotPropValue;
 }
@@ -68,6 +71,7 @@ interface MarkerResolution {
   entity: EntityRow;
   config: TraitConfig | undefined;
   state: string;
+  i18n: RenderI18n | undefined;
   resolved: SlotPropValue;
 }
 const markerResolutionCache = new WeakMap<object, MarkerResolution>();
@@ -79,6 +83,7 @@ interface ContainerResolution {
   entity: EntityRow;
   config: TraitConfig | undefined;
   state: string;
+  i18n: RenderI18n | undefined;
   scopeTrait: string | undefined;
   resolved: SlotPropValue;
 }
@@ -90,9 +95,10 @@ function cachedContainer(
   entity: EntityRow,
   config: TraitConfig | undefined,
   state: string,
+  i18n: RenderI18n | undefined,
 ): SlotPropValue | undefined {
   const hit = containerResolutionCache.get(value);
-  return hit !== undefined && hit.entity === entity && hit.config === config && hit.state === state && hit.scopeTrait === scopeTrait
+  return hit !== undefined && hit.entity === entity && hit.config === config && hit.state === state && hit.i18n === i18n && hit.scopeTrait === scopeTrait
     ? hit.resolved
     : undefined;
 }
@@ -151,14 +157,15 @@ function walkValue(
   entity: EntityRow,
   config: TraitConfig | undefined,
   state: string,
+  i18n: RenderI18n | undefined,
 ): { resolved: SlotPropValue; changed: boolean } {
   if (isRenderBindingMarker(value)) {
     const cached = markerResolutionCache.get(value);
-    if (cached !== undefined && cached.entity === entity && cached.config === config && cached.state === state) {
+    if (cached !== undefined && cached.entity === entity && cached.config === config && cached.state === state && cached.i18n === i18n) {
       return { resolved: cached.resolved, changed: true };
     }
-    const resolved = resolveMarkerExpression(value.expression, entity, config, state);
-    markerResolutionCache.set(value, { entity, config, state, resolved });
+    const resolved = resolveMarkerExpression(value.expression, entity, config, state, i18n);
+    markerResolutionCache.set(value, { entity, config, state, i18n, resolved });
     // Evaluator output is data: brand it so both the marker scan and the
     // trait-ref scan skip it (see the WeakSet notes above).
     if (resolved !== null && typeof resolved === 'object' && !React.isValidElement(resolved) && !(resolved instanceof Date)) {
@@ -172,7 +179,7 @@ function walkValue(
       brandResolved(value);
       return { resolved: value as SlotPropValue, changed: false };
     }
-    const cachedArray = cachedContainer(value, scopeTrait, entity, config, state);
+    const cachedArray = cachedContainer(value, scopeTrait, entity, config, state, i18n);
     if (cachedArray !== undefined) return { resolved: cachedArray, changed: true };
     // A marker in array position may evaluate to an array itself (an
     // `array/map` children expression) — splice it flat so consumers keep
@@ -182,7 +189,7 @@ function walkValue(
     for (const item of value) {
       const element = item as SlotPropValue;
       const wasMarker = isRenderBindingMarker(element);
-      const { resolved, changed: itemChanged } = walkValue(element, scopeTrait, entity, config, state);
+      const { resolved, changed: itemChanged } = walkValue(element, scopeTrait, entity, config, state, i18n);
       if (wasMarker && Array.isArray(resolved)) {
         out.push(...(resolved as SlotPropValue[]));
         changed = true;
@@ -193,7 +200,7 @@ function walkValue(
     }
     brandResolved(out);
     if (!changed) return { resolved: value as SlotPropValue, changed: false };
-    containerResolutionCache.set(value, { entity, config, state, scopeTrait, resolved: out as SlotPropValue });
+    containerResolutionCache.set(value, { entity, config, state, i18n, scopeTrait, resolved: out as SlotPropValue });
     return { resolved: out as SlotPropValue, changed: true };
   }
   if (isPlainObject(value)) {
@@ -208,18 +215,18 @@ function walkValue(
     if (typeof sourceTrait === 'string' && sourceTrait !== scopeTrait) {
       return { resolved: value as SlotPropValue, changed: false };
     }
-    const cachedObject = cachedContainer(value, scopeTrait, entity, config, state);
+    const cachedObject = cachedContainer(value, scopeTrait, entity, config, state, i18n);
     if (cachedObject !== undefined) return { resolved: cachedObject, changed: true };
     const out: Record<string, SlotPropValue> = {};
     let changed = false;
     for (const [key, item] of Object.entries(value)) {
-      const { resolved, changed: itemChanged } = walkValue(item as SlotPropValue, scopeTrait, entity, config, state);
+      const { resolved, changed: itemChanged } = walkValue(item as SlotPropValue, scopeTrait, entity, config, state, i18n);
       out[key] = resolved;
       if (itemChanged) changed = true;
     }
     brandResolved(out as SlotPropValue);
     if (!changed) return { resolved: value as SlotPropValue, changed: false };
-    containerResolutionCache.set(value, { entity, config, state, scopeTrait, resolved: out as SlotPropValue });
+    containerResolutionCache.set(value, { entity, config, state, i18n, scopeTrait, resolved: out as SlotPropValue });
     return { resolved: out as SlotPropValue, changed: true };
   }
   return { resolved: value, changed: false };
@@ -238,6 +245,7 @@ export function resolveRenderBindingMarkers(
   entity: EntityRow,
   config: TraitConfig | undefined,
   state: string,
+  i18n?: RenderI18n,
 ): SlotProps | string {
   // A bare-string slot payload (`(render-ui main "@trait.X")`) is not a
   // props object — `Object.entries` on a string would explode it into
@@ -249,17 +257,17 @@ export function resolveRenderBindingMarkers(
   // the whole tree; nested SlotContentRenderers re-enter per pattern) — the
   // brand certifies marker-free, so re-walking would only re-scan.
   if (resolvedMarkerFree.has(props)) return props;
-  const cached = cachedContainer(props, scopeTrait, entity, config, state);
+  const cached = cachedContainer(props, scopeTrait, entity, config, state, i18n);
   if (cached !== undefined) return cached as SlotProps;
   const out: Record<string, SlotPropValue> = {};
   let changed = false;
   for (const [key, value] of Object.entries(props)) {
-    const { resolved, changed: propChanged } = walkValue(value, scopeTrait, entity, config, state);
+    const { resolved, changed: propChanged } = walkValue(value, scopeTrait, entity, config, state, i18n);
     out[key] = resolved;
     if (propChanged) changed = true;
   }
   brandResolved(out as SlotProps);
   if (!changed) return props;
-  containerResolutionCache.set(props, { entity, config, state, scopeTrait, resolved: out as SlotPropValue });
+  containerResolutionCache.set(props, { entity, config, state, i18n, scopeTrait, resolved: out as SlotPropValue });
   return out as SlotProps;
 }

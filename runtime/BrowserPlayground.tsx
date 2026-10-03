@@ -23,9 +23,11 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { createInProcessTransport, type EventTransport } from '@almadar/runtime';
-import type { OrbitalSchema, UserContext } from '@almadar/core';
+import type { MessageCatalogs, OrbitalSchema, UserContext } from '@almadar/core';
+import { localeDirection } from '@almadar/core/i18n';
 import { createLogger } from '@almadar/logger';
 import { OrbPreview } from './OrbPreview';
+import { I18nProvider, createTranslate, type I18nContextValue } from '../hooks/useTranslate';
 
 const playgroundLog = createLogger('almadar:ui:browser-playground');
 
@@ -48,6 +50,10 @@ export interface BrowserPlaygroundProps {
   onPageChange?: (path: string) => void;
   /** Who is viewing (`@user`). Default: the app's first seeded persona. */
   viewer?: UserContext;
+  /** The program's message catalogs (`orb resolve`'s `<stem>.<locale>.json`), for a schema that declares `locales`. */
+  messages?: MessageCatalogs;
+  /** The viewer's locale. Default: the schema's first declared locale. */
+  locale?: string;
 }
 
 export function BrowserPlayground({
@@ -60,6 +66,8 @@ export function BrowserPlayground({
   fit,
   onPageChange,
   viewer,
+  messages,
+  locale,
 }: BrowserPlaygroundProps): React.ReactElement {
   const [runtime] = useState(
     () => new OrbitalServerRuntime({ mode, debug: false, ...(viewer !== undefined ? { defaultUser: viewer } : {}) }),
@@ -91,10 +99,10 @@ export function BrowserPlayground({
   const registrationReady = useMemo(() => {
     const orbitalNames = schema.orbitals.map((o) => o.name);
     playgroundLog.debug('register:start', { schema: schema.name, orbitalNames });
-    return runtime.register(schema).then(() => {
+    return runtime.register(schema, messages !== undefined ? { messages } : {}).then(() => {
       playgroundLog.debug('register:done', { schema: schema.name, orbitalNames });
     });
-  }, [runtime, schema]);
+  }, [runtime, schema, messages]);
 
   // Deferred unmount cleanup. React StrictMode in dev runs every effect's
   // setup → cleanup → setup at mount to surface effect bugs. A naive
@@ -151,7 +159,14 @@ export function BrowserPlayground({
     [runtime, registrationReady],
   );
 
-  return (
+  const viewerLocale = locale ?? schema.locales?.[0];
+  const i18n = useMemo<I18nContextValue | undefined>(() => {
+    if (viewerLocale === undefined || messages === undefined) return undefined;
+    const catalog = messages[viewerLocale] ?? {};
+    return { locale: viewerLocale, direction: localeDirection(viewerLocale), t: createTranslate(catalog), messages: catalog };
+  }, [viewerLocale, messages]);
+
+  const preview = (
     <OrbPreview
       schema={schema}
       transport={transport}
@@ -170,6 +185,7 @@ export function BrowserPlayground({
       isolated
     />
   );
+  return i18n !== undefined ? <I18nProvider value={i18n}>{preview}</I18nProvider> : preview;
 }
 
 export default BrowserPlayground;

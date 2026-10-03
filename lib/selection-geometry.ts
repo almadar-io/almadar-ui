@@ -214,14 +214,14 @@ export function marqueeHits(marquee: OverlayRect, boxes: readonly OverlayRect[])
 /**
  * An element's offsets under a constraint, from where it sits now: px to the
  * pinned side(s), the offset of its centre from the parent's centre, or (scale)
- * its distances as % of the parent. Unmeasured → all 0.
+ * its distances as % of the parent. Needs the measured offset — callers wait for it.
  */
-export function axisPositionFrom(axis: 'x' | 'y', constraint: DesignConstraint, offset: OffsetInParent | undefined): DesignAxisPosition {
-  const start = offset ? (axis === 'x' ? offset.left : offset.top) : 0;
-  const end = offset ? (axis === 'x' ? offset.right : offset.bottom) : 0;
+export function axisPositionFrom(axis: 'x' | 'y', constraint: DesignConstraint, offset: OffsetInParent): DesignAxisPosition {
+  const start = axis === 'x' ? offset.left : offset.top;
+  const end = axis === 'x' ? offset.right : offset.bottom;
   if (constraint === 'center') return { constraint, start: (start - end) / 2, end: 0 };
   if (constraint !== 'scale') return { constraint, start, end };
-  const size = offset ? (axis === 'x' ? offset.parentWidth : offset.parentHeight) : 0;
+  const size = axis === 'x' ? offset.parentWidth : offset.parentHeight;
   return size > 0 ? { constraint, start: (start / size) * 100, end: (end / size) * 100 } : { constraint, start: 0, end: 0 };
 }
 

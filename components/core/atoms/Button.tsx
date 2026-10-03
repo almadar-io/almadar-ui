@@ -258,7 +258,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <Loader2 className="h-icon-default w-icon-default animate-spin" />
           </span>
         )}
-        <span className={cn("inline-flex items-center justify-center gap-2", busy && "almadar-busy-content")}>
+        {/* Fills the button and takes its justify-content, so a caller's alignment reaches the content. */}
+        <span className={cn("inline-flex flex-1 min-w-0 items-center [justify-content:inherit] gap-2", busy && "almadar-busy-content")}>
         {resolvedLeftIcon && (
           <span className="flex-shrink-0">{resolvedLeftIcon}</span>
         )}

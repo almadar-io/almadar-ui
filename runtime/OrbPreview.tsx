@@ -27,7 +27,7 @@ import { UISlotProvider, useUISlots } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
 import { useTranslate } from '../hooks/useTranslate';
-import type { OrbitalSchema, EntityData, ResolvedTraitBinding, OrbitalDefinition, ThemeRef } from '@almadar/core';
+import type { OrbitalSchema, EntityData, ResolvedTraitBinding, OrbitalDefinition, ThemeRef, LazyPage } from '@almadar/core';
 import { buildResolvedTraitConfigs, collectCallsiteCaptureChildren } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { matchPathAmong } from '../providers/navigation';
@@ -42,7 +42,10 @@ import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
 import { NavStackProvider, useNavStack, type NavStackApi, type NavPageDecl } from '../providers/NavStackContext';
 import { prepareSchemaForPreview } from '../lib/prepareSchemaForPreview';
-import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
+import { InMemoryPersistence, loadLazyPage, type PersistenceAdapter, type SchemaLoader } from '@almadar/runtime';
+import { LoadingState } from '../components/core/molecules/LoadingState';
+import { ErrorState } from '../components/core/molecules/ErrorState';
+import { useBrowserStore } from '../hooks/circuit/useBrowserStore';
 import { createLogger } from '@almadar/logger';
 import { fitContentTransform, slotContentRect, type FitTransform } from './fitContent';
 
@@ -102,7 +105,7 @@ function appPathFromHref(href: string, hostHrefBase: string): string | null {
  * its own `sendEvent`/mount-time dispatch resolves — this component only
  * decides WHICH transport (or none) the kernel dispatches through.
  */
-function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, traitConfigsByName, embeddedTraits, callsiteCaptureChildrenByTrait, hasBridge, children }: {
+function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate, onNavigateBack, onLocalFallback, localFallbackTimeoutMs, persistence, browserStore, traitConfigsByName, embeddedTraits, callsiteCaptureChildrenByTrait, hasBridge, children }: {
   traits: ResolvedTraitBinding[];
   /** Route params from a parameterized page path — merged into every INIT payload. */
   routeParams?: Record<string, string>;
@@ -130,6 +133,8 @@ function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate,
    * when `autoMock` is active and no `serverUrl`/`transport` is supplied.
    */
   persistence?: PersistenceAdapter;
+  /** The browser store for `[persistent: x, local]` entities. */
+  browserStore?: PersistenceAdapter;
   /**
    * Set of trait names referenced via `@trait.X` by some sibling layout
    * in the resolved schema. When an effect's `traitName` is in this set,
@@ -180,6 +185,7 @@ function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate,
     ...(hasBridge
       ? { transport: bridge.transport, carriesCircuitState: bridge.carriesCircuitState, awaitTopology: !bridge.topologyKnown }
       : { persistence }),
+    ...(browserStore !== undefined ? { browserStore } : {}),
   });
 
   return (
@@ -509,6 +515,8 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
   }, [schema, pageName]);
 
   const activeOrbitalTheme = useMemo(() => resolvePreviewTheme(schema, pageName), [schema, pageName]);
+  const { locale } = useTranslate();
+  const browserStore = useBrowserStore(schema.name ?? 'app', schema.orbitals, locale);
 
   const inner = (
     <VerificationProvider enabled>
@@ -531,6 +539,7 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
           onLocalFallback={onLocalFallback}
           localFallbackTimeoutMs={localFallbackTimeoutMs}
           persistence={persistence}
+          {...(browserStore.status === 'ready' ? { browserStore: browserStore.store } : {})}
         >
         {/* Sizing model:
             - `h-full` resolves to 100% of the parent's `style.height`. When
@@ -561,6 +570,11 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
       </EntitySchemaProvider>
     </VerificationProvider>
   );
+
+  if (browserStore.status === 'opening') return <LoadingState />;
+  if (browserStore.status === 'failed') {
+    return <ErrorState data-testid="browser-store-error" message={browserStore.error.message} />;
+  }
 
   if (serverUrl || transport) {
     return (
@@ -665,7 +679,28 @@ export interface OrbPreviewProps {
    * picker). Omitted → each page renders in its own orbital's theme.
    */
   themeOverride?: string;
+  /**
+   * Loads the behavior behind a `lazyPages` entry (`uses lazy`) when its page
+   * is opened. Without it, opening a lazy page shows a load error.
+   */
+  lazyLoader?: SchemaLoader;
+  /** Where `schema` was loaded from — a lazy page's `orbRef` resolves against it. */
+  schemaPath?: string;
+  /**
+   * Called with a path that matches none of this schema's pages — a lazily
+   * loaded behavior hands links back to the schema that imported it.
+   */
+  onUnmatchedNavigate?: (path: string) => void;
 }
+
+type LazyLoad =
+  | { status: 'loading' }
+  | { status: 'ready'; schema: OrbitalSchema }
+  | { status: 'error'; error: string };
+
+type RouteHit<P> =
+  | { kind: 'page'; entry: P; params: Record<string, string> }
+  | { kind: 'lazy'; page: LazyPage; params: Record<string, string> };
 
 /**
  * The theme a preview page's orbital declares: the orbital owning `pageName`
@@ -719,6 +754,9 @@ export function OrbPreview({
   user = null,
   localFallbackTimeoutMs,
   themeOverride,
+  lazyLoader,
+  schemaPath,
+  onUnmatchedNavigate,
 }: OrbPreviewProps): React.ReactElement {
   if (serverUrl && transport) {
     throw new Error('OrbPreview accepts serverUrl OR transport, not both');
@@ -808,19 +846,57 @@ export function OrbPreview({
     }
   }, [parsedSchema]);
 
+  const lazyPages = useMemo<LazyPage[]>(() => parsedSchema?.lazyPages ?? [], [parsedSchema]);
+
+  // One ranking over the schema's own pages and its lazy pages: a static
+  // route outranks a `:param` sibling whichever side declares it.
+  const matchRoute = useCallback((path: string): RouteHit<(typeof pages)[number]> | null => {
+    const candidates = [
+      ...pages.map((entry) => ({ kind: 'page' as const, entry, path: entry.page.path })),
+      ...lazyPages.map((page) => ({ kind: 'lazy' as const, page, path: page.path })),
+    ];
+    const hit = matchPathAmong(candidates, path, (c) => c.path);
+    if (!hit) return null;
+    return hit.candidate.kind === 'page'
+      ? { kind: 'page', entry: hit.candidate.entry, params: hit.params }
+      : { kind: 'lazy', page: hit.candidate.page, params: hit.params };
+  }, [pages, lazyPages]);
+
   // Seed from `initialPagePath` (gap #13 / runtime-verify per-trait
   // navigation): resolve the path against the schema's pages to get the
   // page NAME (the keying useResolvedSchema expects). Falls back to
   // undefined → SchemaRunner picks the schema's first page.
+  const initialRoute = useMemo(
+    () => (initialPagePath ? matchRoute(initialPagePath) : null),
+    [matchRoute, initialPagePath],
+  );
   const initialPageMatch = useMemo(() => {
-    if (!initialPagePath) return undefined;
     // Pattern-aware: a concrete `/threads/abc` URL must land on the declared
     // `/threads/:id` page, with the route params extracted for INIT — and a
     // static sibling outranks the `:param` route whatever the declaration order.
-    const hit = matchPathAmong(pages, initialPagePath, (entry) => entry.page.path);
-    if (!hit) return undefined;
-    return { name: hit.candidate.page.name, params: hit.params };
-  }, [pages, initialPagePath]);
+    if (initialRoute?.kind !== 'page' || !initialRoute.entry.page.name) return undefined;
+    return { name: initialRoute.entry.page.name, params: initialRoute.params };
+  }, [initialRoute]);
+  const [lazyRoute, setLazyRoute] = useState<{ page: LazyPage; path: string } | null>(
+    initialRoute?.kind === 'lazy' && initialPagePath ? { page: initialRoute.page, path: initialPagePath } : null,
+  );
+  const [lazyLoad, setLazyLoad] = useState<LazyLoad>({ status: 'loading' });
+  useEffect(() => {
+    if (!lazyRoute) return;
+    if (!lazyLoader) {
+      setLazyLoad({ status: 'error', error: `No loader for lazy page ${lazyRoute.page.path} (${lazyRoute.page.orbRef})` });
+      return;
+    }
+    let cancelled = false;
+    setLazyLoad({ status: 'loading' });
+    void loadLazyPage(lazyLoader, lazyRoute.page, schemaPath).then((result) => {
+      if (cancelled) return;
+      setLazyLoad(result.success ? { status: 'ready', schema: result.data } : { status: 'error', error: result.error });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lazyRoute?.page, lazyLoader, schemaPath]);
   const initialPageName = initialPageMatch?.name;
   const [currentPage, setCurrentPage] = useState<string | undefined>(initialPageName);
   const [routeParams, setRouteParams] = useState<Record<string, string>>(initialPageMatch?.params ?? {});
@@ -840,8 +916,9 @@ export function OrbPreview({
       prevInitialPagePathRef.current = initialPagePath;
       setCurrentPage(initialPageName);
       setRouteParams(initialPageMatch?.params ?? {});
+      setLazyRoute(initialRoute?.kind === 'lazy' && initialPagePath ? { page: initialRoute.page, path: initialPagePath } : null);
     }
-  }, [initialPagePath, initialPageName, initialPageMatch]);
+  }, [initialPagePath, initialPageName, initialPageMatch, initialRoute]);
 
   // Resolved path of the page actually on screen (currentPage is a page
   // NAME, not a path — DashboardLayout's sidebar highlighting needs the
@@ -880,6 +957,24 @@ export function OrbPreview({
   // page refresh lands on the same orbital page (the playground reads
   // `?page=...` on mount as `initialPagePath`). MemoryRouter doesn't
   // sync to the URL on its own — we drive that explicitly here.
+  // A sandboxed preview navigates in memory only — the host page's URL and
+  // history belong to the host.
+  const announcePage = useCallback((path: string) => {
+    if (onPageChange) {
+      onPageChange(path);
+    } else if (!isolated && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', path);
+      window.history.pushState({}, '', url.toString());
+      // Notify the host's popstate listener (main.tsx App) so its
+      // `initialPagePath` state reflects the new URL. Without this,
+      // OrbPreview's "sync from initialPageName" useEffect would see
+      // a stale initialPageName and force currentPage back to the
+      // mount-time page right after the user-driven swap.
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  }, [isolated, onPageChange]);
+
   const handleNavigate = useCallback((path: string, navState?: Record<string, string>) => {
     // Pattern-aware page matching: `/threads/abc` matches the declared
     // `/threads/:id` (exact paths still match — matchPath handles both).
@@ -894,9 +989,19 @@ export function OrbPreview({
     // `{...routeParams, ...initPayload}` — orbital-shell-typescript
     // backend/pages.rs + codegen/effect/client.rs). Explicit state wins over
     // the pattern match, same precedence as the compiled merge.
-    const hit = matchPathAmong(pages, path, (entry) => entry.page.path);
-    const match: { page: { name?: string; path?: string } } | undefined = hit?.candidate;
-    const params: Record<string, string> = { ...(hit?.params ?? {}), ...(navState ?? {}) };
+    const route = matchRoute(path);
+    if (!route) {
+      onUnmatchedNavigate?.(path);
+      return;
+    }
+    if (route.kind === 'lazy') {
+      setLazyRoute({ page: route.page, path });
+      announcePage(path);
+      return;
+    }
+    setLazyRoute(null);
+    const match: { page: { name?: string; path?: string } } = route.entry;
+    const params: Record<string, string> = { ...route.params, ...(navState ?? {}) };
     navLog.debug('handleNavigate', () => ({
       path,
       matched: match?.page.name ?? null,
@@ -904,26 +1009,12 @@ export function OrbPreview({
       navState: navState ? JSON.stringify(navState) : undefined,
       availablePaths: pages.map((p) => p.page.path),
     }));
-    if (match?.page.name) {
+    if (match.page.name) {
       setRouteParams(params);
       setCurrentPage(match.page.name);
-      // A sandboxed preview navigates in memory only — the host page's URL
-      // and history belong to the host.
-      if (onPageChange) {
-        onPageChange(path);
-      } else if (!isolated && typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.set('page', path);
-        window.history.pushState({}, '', url.toString());
-        // Notify the host's popstate listener (main.tsx App) so its
-        // `initialPagePath` state reflects the new URL. Without this,
-        // OrbPreview's "sync from initialPageName" useEffect would see
-        // a stale initialPageName and force currentPage back to the
-        // mount-time page right after the user-driven swap.
-        window.dispatchEvent(new PopStateEvent('popstate'));
-      }
+      announcePage(path);
     }
-  }, [pages, isolated, onPageChange]);
+  }, [pages, matchRoute, announcePage, onUnmatchedNavigate]);
 
   // Effect-facing navigate: stages the nav-stack crumb (when the navigate
   // effect carried one) before the page switch; the provider's sync consumes
@@ -1010,6 +1101,35 @@ export function OrbPreview({
     navLog.info('interceptor:installed', { pageCount: pages.length, paths: pages.map((p) => p.page.path) });
     return () => el.removeEventListener('click', handler, true);
   }, [pages, handleNavigate, isolated, hostHrefBase]);
+
+  if (lazyRoute) {
+    return (
+      <Box ref={containerRef} className={`overflow-auto ${className ?? ''}`} style={{ height }}>
+        {lazyLoad.status === 'loading' && <LoadingState />}
+        {lazyLoad.status === 'error' && <ErrorState data-testid="lazy-page-error" message={lazyLoad.error} />}
+        {lazyLoad.status === 'ready' && (
+          <OrbPreview
+            key={lazyRoute.page.orbRef}
+            schema={lazyLoad.schema}
+            autoMock={autoMock}
+            height="100%"
+            className="border-0"
+            serverUrl={serverUrl}
+            transport={transport}
+            getAccessToken={getAccessToken}
+            initialPagePath={lazyRoute.path}
+            user={user}
+            isolated={isolated}
+            fit={fit}
+            onPageChange={announcePage}
+            themeOverride={themeOverride}
+            lazyLoader={lazyLoader}
+            onUnmatchedNavigate={handleNavigate}
+          />
+        )}
+      </Box>
+    );
+  }
 
   return (
     <Box

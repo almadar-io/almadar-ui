@@ -73,10 +73,8 @@ module.exports = {
   'hover:border-[var(--color-border-hover)]',
   'hover:border-l-[var(--color-muted)]',
   // Gradient partials with opacity
-  'from-[var(--color-primary)]/5',
-  'to-[var(--color-secondary)]/5',
   // Opacity variants on semantic colors (used in components)
-  'bg-primary/10', 'bg-primary/8', 'bg-accent/10',
+  'bg-primary/10', 'bg-accent/10',
   'bg-muted/20', 'bg-muted/30', 'bg-muted/50', 'bg-muted/60',
   'bg-surface/60', 'bg-surface/80',
   'bg-background/10', 'bg-background/80',
@@ -150,7 +148,6 @@ module.exports = {
   'bg-muted/60',
   'bg-primary/10',
   'bg-primary/20',
-  'bg-primary/8',
   'bg-success/10',
   'bg-success/20',
   'bg-surface/60',
@@ -177,7 +174,6 @@ module.exports = {
   'border-x-[length:var(--border-width)]',
   'dark:bg-foreground/70',
   'dark:hover:bg-error/20',
-  'data-[active=true]',
   'duration-[var(--transition-fast)]',
   'duration-[var(--transition-normal)]',
   'focus:ring-[length:var(--focus-ring-width)]',
@@ -332,7 +328,6 @@ module.exports = {
   'border-warning/60',
   'border-y-[length:var(--border-width)]',
   'bottom-[15%]',
-  'data-[empty=true]',
   'focus-visible:ring-[length:var(--focus-ring-width)]',
   'focus-visible:ring-offset-[length:var(--focus-ring-offset)]',
   'focus-within:border-[var(--color-primary)]',
@@ -460,6 +455,10 @@ module.exports = {
   'shadow-[var(--shadow-lg)]',
   'text-[var(--color-primary-foreground)]',
   'z-[850]',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-10-03)
+  '[justify-content:inherit]',
+  'bg-primary/[0.08]',
 ],
   theme: {
     fontFamily: {

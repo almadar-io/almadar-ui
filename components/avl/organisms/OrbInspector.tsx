@@ -1330,12 +1330,15 @@ function AppearanceSection({ patternConfig, themeManifest, onPropChange, onToken
         const write = (next: typeof position) => onPropChange('className', withPosition(classes, next).join(' '));
         return (
           <Box className="flex flex-col gap-1.5" data-testid="inspector-position">
+            {/* Pinning needs the element's measured place; leaving the flow waits for it, returning to it does not. */}
             <Switch
               checked={position.absolute}
               label={t('orbInspector.absolute')}
-              onChange={(on) => write(on
-                ? { absolute: true, x: axisPositionFrom('x', 'start', offsetInParent), y: axisPositionFrom('y', 'start', offsetInParent) }
-                : { ...position, absolute: false })}
+              disabled={!offsetInParent && !position.absolute}
+              onChange={(on) => {
+                if (!on) write({ ...position, absolute: false });
+                else if (offsetInParent) write({ absolute: true, x: axisPositionFrom('x', 'start', offsetInParent), y: axisPositionFrom('y', 'start', offsetInParent) });
+              }}
             />
             {position.absolute && (['x', 'y'] as const).map((axis) => (
               <Box key={axis} className="flex items-center gap-2" data-testid={`inspector-constraint-${axis}`}>
@@ -1346,9 +1349,10 @@ function AppearanceSection({ patternConfig, themeManifest, onPropChange, onToken
                   value={position[axis].constraint}
                   aria-label={t(axis === 'x' ? 'orbInspector.constraintHorizontal' : 'orbInspector.constraintVertical')}
                   options={CONSTRAINTS.map((c) => ({ value: c, label: t(CONSTRAINT_LABELS[axis][c]) }))}
+                  disabled={!offsetInParent}
                   onValueChange={(v) => {
                     const constraint = CONSTRAINTS.find((c) => c === v);
-                    if (constraint) write({ ...position, [axis]: axisPositionFrom(axis, constraint, offsetInParent) });
+                    if (constraint && offsetInParent) write({ ...position, [axis]: axisPositionFrom(axis, constraint, offsetInParent) });
                   }}
                   className="flex-1 text-xs h-6"
                 />

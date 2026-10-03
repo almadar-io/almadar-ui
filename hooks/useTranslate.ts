@@ -34,6 +34,8 @@ export interface I18nContextValue {
   direction: 'ltr' | 'rtl';
   /** Translate a key, with optional interpolation params */
   t: TranslateFunction;
+  /** The active locale's program catalog (qualified `<behavior>:<key>` → message): the runtime evaluates `i18n/t` against it. */
+  messages?: Readonly<Record<string, string>>;
   /** ISO 4217 currency of the app's money values, declared by the host with the locale (e.g. `SAR` for an ar-SA app) */
   currency?: string;
 }
@@ -86,6 +88,18 @@ export function I18nProvider({ value, children, documentRoot }: I18nProviderProp
  */
 export function useTranslate(): I18nContextValue {
   return useContext(I18nContext);
+}
+
+/** The viewer's locale and its catalog, for `i18n/t` / `@locale` evaluated in the browser. */
+export interface RenderI18n {
+  locale: string;
+  messages: Readonly<Record<string, string>>;
+}
+
+/** The provider's locale + catalog as one identity-stable value; undefined when the host supplied no catalog. */
+export function useRenderI18n(): RenderI18n | undefined {
+  const { locale, messages } = useContext(I18nContext);
+  return useMemo(() => (messages !== undefined ? { locale, messages } : undefined), [locale, messages]);
 }
 
 /** The app's formatting settings for `formatValue`: its locale, currency and translated Yes/No. */

@@ -57,6 +57,7 @@
   "status.draft": "مسودة",
   "status.archived": "مؤرشف",
   "error.generic": "حدث خطأ ما",
+  "error.traitMountFailed": "تعذّر بدء {{trait}}",
   "error.retry": "حاول مرة أخرى",
   "error.notFound": "غير موجود",
   "error.loadFailed": "فشل التحميل: {{message}}",

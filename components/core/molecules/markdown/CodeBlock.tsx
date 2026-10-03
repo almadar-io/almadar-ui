@@ -36,6 +36,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-light.js'
 import createHighlightElement from 'react-syntax-highlighter/dist/esm/create-element.js';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js';
+import light from 'react-syntax-highlighter/dist/esm/styles/prism/vs.js';
 import { orbLanguage, loloLanguage, ORB_COLORS, translateLolo, translateOrb } from '@almadar/syntax';
 import { coreTables, type LanguageCode } from '@almadar/core/i18n';
 
@@ -217,52 +218,64 @@ async function loadPrismLanguage(lang: string): Promise<void> {
   }
 }
 
-// AVL-aligned style overrides for .orb token classes
-const orbStyleOverrides: Record<string, React.CSSProperties> = {
-  'orb-binding':     { color: ORB_COLORS.dark.binding, fontWeight: 'bold' },
-  'orb-effect':      { color: ORB_COLORS.dark.effect, fontWeight: 'bold' },
-  'orb-event':       { color: ORB_COLORS.dark.event },
-  'orb-slot':        { color: ORB_COLORS.dark.uiSlot },
-  'orb-structural':  { color: ORB_COLORS.dark.structural },
-  'orb-field-type':  { color: ORB_COLORS.dark.fieldType },
-  'orb-persistence': { color: ORB_COLORS.dark.persistence },
-  'orb-pattern':     { color: ORB_COLORS.dark.pattern },
-  'orb-behavior':    { color: ORB_COLORS.dark.behavior },
-  'orb-unknown-op':  { color: ORB_COLORS.dark.error, textDecoration: 'wavy underline' },
-  'orb-op-arithmetic': { color: ORB_COLORS.dark.arithmetic, fontWeight: 'bold' },
-  'orb-op-comparison': { color: ORB_COLORS.dark.comparison },
-  'orb-op-logic':    { color: ORB_COLORS.dark.logic },
-  'orb-op-string':   { color: ORB_COLORS.dark.string },
-  'orb-op-collection': { color: ORB_COLORS.dark.collection },
-  'orb-op-time':     { color: ORB_COLORS.dark.time },
-  'orb-op-control':  { color: ORB_COLORS.dark.control },
-  'orb-op-async':    { color: ORB_COLORS.dark.async },
-};
+type SyntaxScheme = 'light' | 'dark';
+type SyntaxPalette = (typeof ORB_COLORS)[SyntaxScheme];
 
-const orbStyle: Record<string, React.CSSProperties> = { ...dark, ...orbStyleOverrides };
+// AVL-aligned style overrides for .orb token classes
+const orbStyleOverrides = (c: SyntaxPalette): Record<string, React.CSSProperties> => ({
+  'orb-binding':     { color: c.binding, fontWeight: 'bold' },
+  'orb-effect':      { color: c.effect, fontWeight: 'bold' },
+  'orb-event':       { color: c.event },
+  'orb-slot':        { color: c.uiSlot },
+  'orb-structural':  { color: c.structural },
+  'orb-field-type':  { color: c.fieldType },
+  'orb-persistence': { color: c.persistence },
+  'orb-pattern':     { color: c.pattern },
+  'orb-behavior':    { color: c.behavior },
+  'orb-unknown-op':  { color: c.error, textDecoration: 'wavy underline' },
+  'orb-op-arithmetic': { color: c.arithmetic, fontWeight: 'bold' },
+  'orb-op-comparison': { color: c.comparison },
+  'orb-op-logic':    { color: c.logic },
+  'orb-op-string':   { color: c.string },
+  'orb-op-collection': { color: c.collection },
+  'orb-op-time':     { color: c.time },
+  'orb-op-control':  { color: c.control },
+  'orb-op-async':    { color: c.async },
+});
 
 // AVL-aligned style overrides for .lolo token classes (Haskell-inspired palette)
-const loloStyleOverrides: Record<string, React.CSSProperties> = {
-  'lolo-binding':       { color: ORB_COLORS.dark.binding, fontWeight: 'bold' },
-  'lolo-event':         { color: ORB_COLORS.dark.event },
-  'lolo-effect':        { color: ORB_COLORS.dark.effect, fontWeight: 'bold' },
-  'keyword':            { color: ORB_COLORS.dark.loloKeyword },
-  'lolo-constructor':   { color: ORB_COLORS.dark.loloConstructor },
-  'lolo-arrow':         { color: ORB_COLORS.dark.loloArrow },
-  'lolo-reference':     { color: ORB_COLORS.dark.loloReference },
-  'lolo-type':          { color: ORB_COLORS.dark.fieldType },
-  'lolo-persistence':   { color: ORB_COLORS.dark.persistence },
-  'lolo-unknown-op':    { color: ORB_COLORS.dark.error },
-  'lolo-op-arithmetic': { color: ORB_COLORS.dark.arithmetic, fontWeight: 'bold' },
-  'lolo-op-comparison': { color: ORB_COLORS.dark.comparison },
-  'lolo-op-logic':      { color: ORB_COLORS.dark.logic },
-  'lolo-op-string':     { color: ORB_COLORS.dark.string },
-  'lolo-op-collection': { color: ORB_COLORS.dark.collection },
-  'lolo-op-time':       { color: ORB_COLORS.dark.time },
-  'lolo-op-control':    { color: ORB_COLORS.dark.control },
-  'lolo-op-async':      { color: ORB_COLORS.dark.async },
+const loloStyleOverrides = (c: SyntaxPalette): Record<string, React.CSSProperties> => ({
+  'lolo-binding':       { color: c.binding, fontWeight: 'bold' },
+  'lolo-event':         { color: c.event },
+  'lolo-effect':        { color: c.effect, fontWeight: 'bold' },
+  'keyword':            { color: c.loloKeyword },
+  'lolo-constructor':   { color: c.loloConstructor },
+  'lolo-arrow':         { color: c.loloArrow },
+  'lolo-reference':     { color: c.loloReference },
+  'lolo-type':          { color: c.fieldType },
+  'lolo-persistence':   { color: c.persistence },
+  'lolo-unknown-op':    { color: c.error },
+  'lolo-op-arithmetic': { color: c.arithmetic, fontWeight: 'bold' },
+  'lolo-op-comparison': { color: c.comparison },
+  'lolo-op-logic':      { color: c.logic },
+  'lolo-op-string':     { color: c.string },
+  'lolo-op-collection': { color: c.collection },
+  'lolo-op-time':       { color: c.time },
+  'lolo-op-control':    { color: c.control },
+  'lolo-op-async':      { color: c.async },
+});
+
+const SCHEME_BASE: Record<SyntaxScheme, Record<string, React.CSSProperties>> = { dark, light };
+const HIGHLIGHT_STYLES: Record<SyntaxScheme, Record<'orb' | 'lolo', Record<string, React.CSSProperties>>> = {
+  dark: {
+    orb: { ...dark, ...orbStyleOverrides(ORB_COLORS.dark) },
+    lolo: { ...dark, ...loloStyleOverrides(ORB_COLORS.dark) },
+  },
+  light: {
+    orb: { ...light, ...orbStyleOverrides(ORB_COLORS.light) },
+    lolo: { ...light, ...loloStyleOverrides(ORB_COLORS.light) },
+  },
 };
-const loloStyle: Record<string, React.CSSProperties> = { ...dark, ...loloStyleOverrides };
 
 // ── Fold region computation ──────────────────────────────────────────
 
@@ -344,6 +357,46 @@ function renderWithTokenTypes({ rows, stylesheet, useInlineStyles }: HighlightRo
   return rows.map((node, i) => createHighlightElement({ node: withTokenTypes(node), stylesheet, useInlineStyles, key: `code-segment-${i}` }));
 }
 
+/** A run of English letters/digits, read as one LTR word inside RTL code (identifiers, `@entity.total`, `?amount`, numbers). */
+const LTR_WORD = /[A-Za-z0-9_$@?][A-Za-z0-9_$@?.!-]*/g;
+const LTR_ISLAND_STYLE: React.CSSProperties = { unicodeBidi: 'isolate', direction: 'ltr' };
+/** A string literal keeps its own first-strong direction, so an English sentence reads whole and an Arabic one reads RTL. */
+const STRING_ISLAND_STYLE: React.CSSProperties = { unicodeBidi: 'plaintext' };
+
+function island(value: string, style: React.CSSProperties): HighlightNode {
+  return { type: 'element', tagName: 'span', properties: { className: [], 'data-bidi-island': '', style }, children: [{ type: 'text', value }] };
+}
+
+function splitLtrWords(value: string): HighlightNode[] {
+  const out: HighlightNode[] = [];
+  let last = 0;
+  for (const match of value.matchAll(LTR_WORD)) {
+    const start = match.index ?? 0;
+    if (start > last) out.push({ type: 'text', value: value.slice(last, start) });
+    out.push(island(match[0], LTR_ISLAND_STYLE));
+    last = start + match[0].length;
+  }
+  if (last < value.length) out.push({ type: 'text', value: value.slice(last) });
+  return out;
+}
+
+/** RTL code: brackets, arrows and spaces stay in the RTL flow (so they mirror); each English word or string is an isolated island. */
+function withBidiIslands(node: HighlightNode): HighlightNode[] {
+  if (node.type === 'text') return splitLtrWords(String(node.value ?? ''));
+  if (node.type !== 'element') return [node];
+  const classes = node.properties?.className;
+  if (Array.isArray(classes) && classes.includes('string')) {
+    return [{ ...node, properties: { ...node.properties, className: classes, 'data-bidi-island': '', style: STRING_ISLAND_STYLE } }];
+  }
+  return [{ ...node, ...(node.children ? { children: node.children.flatMap(withBidiIslands) } : {}) }];
+}
+
+function renderRtlCode({ rows, stylesheet, useInlineStyles }: HighlightRows): React.ReactNode {
+  return rows.map((node, i) =>
+    withBidiIslands(node).map((n, j) => createHighlightElement({ node: n, stylesheet, useInlineStyles, key: `code-rtl-${i}-${j}` })),
+  );
+}
+
 /** The token types of the highlighted text at `offset` (`comment`, `string`, …); empty when unstyled. */
 function tokenClassAt(layer: HTMLElement, offset: number): string {
   const walker = document.createTreeWalker(layer, NodeFilter.SHOW_TEXT);
@@ -383,6 +436,7 @@ const EDITOR_LINE_PX = 19.5;
 import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
+import { useTheme } from '../../../../providers/ThemeContext';
 import { createLogger } from '@almadar/logger';
 import type { A11yProps, EventEmit, EventKey, EventListen } from "@almadar/core";
 import { domPassthrough } from "../../../../lib/domPassthrough";
@@ -775,15 +829,14 @@ function useLanguageReady(language: string): boolean {
 /** Shared monospace font stack for every SyntaxHighlighter-backed code
  *  surface in this file. */
 const MONO_FONT_FAMILY =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace';
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", "IBM Plex Sans Arabic", "Noto Sans Arabic", monospace';
 
 /** Resolve the AVL-aligned Prism style sheet for a language id — `orb`/`lolo`
  *  get their token-class overrides, everything else uses the base VS Code
  *  Dark+ theme. Module-scope constants, so callers get a stable reference. */
-function resolveHighlightStyle(lang: string): Record<string, React.CSSProperties> {
-  if (lang === 'orb') return orbStyle;
-  if (lang === 'lolo') return loloStyle;
-  return dark;
+function resolveHighlightStyle(lang: string, scheme: SyntaxScheme): Record<string, React.CSSProperties> {
+  if (lang === 'orb' || lang === 'lolo') return HIGHLIGHT_STYLES[scheme][lang];
+  return SCHEME_BASE[scheme];
 }
 
 /** The `code[class*="language-"]` foreground color a style sheet defines —
@@ -833,6 +886,15 @@ const VIEWER_LINE_NUMBER_STYLE: React.CSSProperties = {
   minWidth: '2.5em',
   paddingRight: '1rem',
   textAlign: 'right',
+  userSelect: 'none',
+  opacity: 0.5,
+  fontVariantNumeric: 'tabular-nums',
+};
+const VIEWER_LINE_NUMBER_STYLE_RTL: React.CSSProperties = {
+  minWidth: '2.5em',
+  paddingRight: 0,
+  paddingLeft: '1rem',
+  textAlign: 'left',
   userSelect: 'none',
   opacity: 0.5,
   fontVariantNumeric: 'tabular-nums',
@@ -942,10 +1004,14 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const naturalTabs = !editable && naturalLanguages && naturalLanguages.length > 1
       ? naturalLanguages
       : undefined;
-    const [naturalLanguage, setNaturalLanguage] = useState<LanguageCode>(() => naturalTabs?.[0] ?? 'en');
+    const { locale: pageLocale } = useTranslate();
+    const [naturalLanguage, setNaturalLanguage] = useState<LanguageCode>(
+      () => naturalTabs?.find((lang) => lang === pageLocale) ?? naturalTabs?.[0] ?? 'en',
+    );
     const activeNaturalLanguage: LanguageCode = naturalTabs?.includes(naturalLanguage) === true
       ? naturalLanguage
       : (naturalTabs?.[0] ?? 'en');
+    const codeDir: 'ltr' | 'rtl' = naturalTabs && coreTables[activeNaturalLanguage].meta.rtl ? 'rtl' : 'ltr';
     // One translation per (source, language), kept across tab switches — a
     // re-render, or coming back to a tab, must never re-run the renderer.
     const translationCache = useMemo(() => new Map<string, string>(), [englishCode, files]);
@@ -987,11 +1053,12 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       </Box>
     ) : null;
 
-    const activeStyle = resolveHighlightStyle(language);
+    const activeStyle = resolveHighlightStyle(language, 'dark');
     const overCapacity = code.length > HIGHLIGHT_CAPACITY_BYTES;
     const plainCodeColor = plainCodeColorOf(activeStyle);
     const eventBus = useEventBus();
     const { t } = useTranslate();
+    const { resolvedMode } = useTheme();
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const codeRef = useRef<HTMLDivElement | null>(null);
     const savedScrollLeftRef = useRef<number>(0);
@@ -1010,7 +1077,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     // equals `language` whenever `files` isn't used (standard/editable), and
     // resolves the selected file's own grammar when it is (viewer).
     const languageReady = useLanguageReady(activeLanguage);
-    const viewerStyle = resolveHighlightStyle(activeLanguage);
+    // The viewer sits on the theme surface; the standard and editable blocks paint their own dark box.
+    const viewerStyle = resolveHighlightStyle(activeLanguage, resolvedMode);
     const viewerPlainCodeColor = plainCodeColorOf(viewerStyle);
 
     const diffLines = useMemo(() => {
@@ -1432,8 +1500,9 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           wrapLines
           wrapLongLines={wrap}
           showLineNumbers={showLineNumbers}
-          lineNumberStyle={VIEWER_LINE_NUMBER_STYLE}
+          lineNumberStyle={codeDir === 'rtl' ? VIEWER_LINE_NUMBER_STYLE_RTL : VIEWER_LINE_NUMBER_STYLE}
           lineProps={viewerLineProps}
+          renderer={codeDir === 'rtl' ? renderRtlCode : undefined}
           customStyle={{
             backgroundColor: 'transparent',
             borderRadius: 0,
@@ -1444,13 +1513,15 @@ export const CodeBlock = React.memo<CodeBlockProps>(
             fontFamily: MONO_FONT_FAMILY,
             fontSize: '12px',
             lineHeight: '1.6',
+            direction: codeDir,
+            textAlign: 'start',
           }}
-          codeTagProps={{ style: { fontFamily: MONO_FONT_FAMILY, fontSize: '12px', lineHeight: '1.6' } }}
+          codeTagProps={{ style: { fontFamily: MONO_FONT_FAMILY, fontSize: '12px', lineHeight: '1.6', direction: codeDir, textAlign: 'start' } }}
         >
           {activeCode}
         </SyntaxHighlighter>
         ),
-      [activeCode, viewerOverCapacity, viewerPlainCodeColor, activeLanguage, viewerStyle, wrap, showLineNumbers, viewerLineProps, languageReady],
+      [activeCode, viewerOverCapacity, viewerPlainCodeColor, activeLanguage, viewerStyle, wrap, showLineNumbers, viewerLineProps, languageReady, codeDir],
     );
 
     // ── Memoized diff-mode row highlighting ──
@@ -1770,7 +1841,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 ))}
               </HStack>
             </HStack>
-            <Box className="overflow-auto bg-muted/20" style={{ maxHeight }} dir="ltr">
+            <Box className="overflow-auto bg-muted/20" style={{ maxHeight }} dir={codeDir}>
               {diffLines ? (
                 <div style={{ display: 'flex', flexDirection: 'column' }} className="font-mono text-xs">
                   {diffRowElements}
@@ -1785,38 +1856,39 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     }
 
     // ── Standard PrismLight code block (original behavior) ────────────────────
-    const hasHeader = showLanguageBadge || effectiveCopy;
+    // A copy button alone floats over the code box; only a language badge earns a header bar.
+    const hasHeader = showLanguageBadge;
+    const copyButton = effectiveCopy ? (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleCopy}
+        className={`opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-muted-foreground hover:text-foreground${hasHeader ? '' : ' absolute top-2 end-2 z-10'}`}
+        aria-label={t('common.copy')}
+      >
+        {copied ? (
+          <Icon name="check" className="w-4 h-4 text-success" />
+        ) : (
+          <Icon name="copy" className="w-4 h-4" />
+        )}
+      </Button>
+    ) : null;
 
     return (
       <Box {...domPassthrough(a11yRest)} className={`relative group not-prose ${className || ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        {hasHeader && (
+        {hasHeader ? (
           <HStack
             justify="between"
             align="center"
             className="px-3 py-2 bg-[var(--color-card)] rounded-t-container border-b border-border"
+            data-testid="code-block-header"
           >
-            {showLanguageBadge && (
-              <Badge variant="default" size="sm">
-                {language}
-              </Badge>
-            )}
-            {effectiveCopy && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopy}
-                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-                aria-label={t('common.copy')}
-              >
-                {copied ? (
-                  <Icon name="check" className="w-4 h-4 text-success" />
-                ) : (
-                  <Icon name="copy" className="w-4 h-4" />
-                )}
-              </Button>
-            )}
+            <Badge variant="default" size="sm">
+              {language}
+            </Badge>
+            {copyButton}
           </HStack>
-        )}
+        ) : copyButton}
         {naturalTabStrip}
 
         {/* Code content */}

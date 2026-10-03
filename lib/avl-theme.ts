@@ -184,7 +184,7 @@ export const OPERATOR_CATEGORY_COLORS: Record<OperatorCategory, string> = {
   'std-math': 'var(--color-primary)', 'std-str': 'var(--color-success)', 'std-array': 'var(--color-info)',
   'std-object': avlBlend('var(--color-info)', 60, 'var(--color-foreground)'), 'std-validate': 'var(--color-warning)',
   'std-json': avlBlend('var(--color-success)', 60, 'var(--color-foreground)'), 'std-time': avlBlend('var(--color-info)', 50, 'var(--color-success)'),
-  'std-format': avlBlend('var(--color-success)', 60, 'var(--color-background)'), 'std-async': avlBlend('var(--color-accent)', 50, 'var(--color-error)'),
+  'std-format': avlBlend('var(--color-success)', 60, 'var(--color-background)'), 'std-i18n': avlBlend('var(--color-info)', 60, 'var(--color-background)'), 'std-async': avlBlend('var(--color-accent)', 50, 'var(--color-error)'),
   'std-nn': avlBlend('var(--color-primary)', 60, 'var(--color-accent)'), 'std-tensor': avlBlend('var(--color-primary)', 60, 'var(--color-info)'),
   'std-train': avlBlend('var(--color-primary)', 60, 'var(--color-warning)'), 'std-prob': avlBlend('var(--color-accent)', 60, 'var(--color-warning)'),
   'std-os': avlBlend('var(--color-muted-foreground)', 60, 'var(--color-primary)'), 'std-browser': avlBlend('var(--color-muted-foreground)', 60, 'var(--color-info)'),

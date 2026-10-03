@@ -39,7 +39,7 @@ import { Toast } from "../molecules/Toast";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../../hooks/useEventBus";
-import { useTranslate } from "../../../hooks/useTranslate";
+import { useTranslate, useRenderI18n } from "../../../hooks/useTranslate";
 import { slotLog, refId } from "../../../types/slot-types";
 import { cn } from "../../../lib/cn";
 import type { EnterAnimation, SkeletonNode } from "@almadar/core";
@@ -690,6 +690,7 @@ function UISlotComponentInner({
   // sourceTrait — both passes are identity-preserving when no markers
   // are present.
   const binding = useEntityBindingSnapshot(rawContent?.sourceTrait);
+  const i18n = useRenderI18n();
   const content = useMemo(() => {
     if (!rawContent) return rawContent;
     const resolvedProps = resolveRenderBindingMarkers(
@@ -698,9 +699,10 @@ function UISlotComponentInner({
       binding.entity,
       binding.config,
       binding.state,
+      i18n,
     );
     return resolvedProps === rawContent.props ? rawContent : { ...rawContent, props: resolvedProps };
-  }, [rawContent, binding.entity, binding.config, binding.state]);
+  }, [rawContent, binding.entity, binding.config, binding.state, i18n]);
 
   // Modal/drawer slots stay mounted through their exit animation (runtime
   // content and compiled children alike) — see useSlotPresence.
@@ -1829,9 +1831,10 @@ function SlotContentRenderer({
   const ambientScope = useTraitScope();
   const bindingTrait = content.sourceTrait ?? ambientScope?.trait;
   const binding = useEntityBindingSnapshot(bindingTrait);
+  const i18n = useRenderI18n();
   const liveProps = useMemo(
-    () => resolveRenderBindingMarkers(content.props, bindingTrait, binding.entity, binding.config, binding.state),
-    [content.props, bindingTrait, binding.entity, binding.config, binding.state],
+    () => resolveRenderBindingMarkers(content.props, bindingTrait, binding.entity, binding.config, binding.state, i18n),
+    [content.props, bindingTrait, binding.entity, binding.config, binding.state, i18n],
   );
   // V2 (post-Phase-6): entity data arrives pre-resolved in `content.props.entity`
   // as a value (array or record). String-entity bindings — the EntityStore

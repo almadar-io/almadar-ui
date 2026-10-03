@@ -58,6 +58,7 @@
   "status.draft": "Draft",
   "status.archived": "Archived",
   "error.generic": "Something went wrong",
+  "error.traitMountFailed": "{{trait}} failed to start",
   "error.retry": "Try again",
   "error.notFound": "Not found",
   "error.loadFailed": "Failed to load: {{message}}",

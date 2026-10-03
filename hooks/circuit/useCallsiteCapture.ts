@@ -17,7 +17,7 @@
  * @packageDocumentation
  */
 import { useCallback } from 'react';
-import type { EventPayload, EntityRow, PatternConfig, ResolvedPatternProps, ResolvedTraitBinding, UserContext } from '@almadar/core';
+import { traitsEmbeddedByEffects, type EventPayload, type EntityRow, type PatternConfig, type ResolvedPatternProps, type ResolvedTraitBinding, type UserContext } from '@almadar/core';
 import type { CircuitStore, TraitIndex } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 import { runCircuitEffects } from '../../lib/circuitEffectRunner';
@@ -43,6 +43,8 @@ export type ReRenderCallsiteCaptureChildren = (
   serverComposed?: ReadonlySet<string>,
   /** Walking through a child that was not repainted: its children keep the payload they were last composed with. */
   keepComposed?: boolean,
+  /** The children the firing transition composes; the others keep their last payload. Top level only. */
+  composedBy?: ReadonlySet<string>,
 ) => Promise<void>;
 
 export function useCallsiteCapture(
@@ -59,12 +61,14 @@ export function useCallsiteCapture(
     visited: Set<string> = new Set(),
     serverComposed: ReadonlySet<string> = new Set(),
     keepComposed = false,
+    composedBy?: ReadonlySet<string>,
   ): Promise<void> {
     const children = options.callsiteCaptureChildrenByTrait?.get(traitName);
     if (!children || children.size === 0) return;
     const bindingMap = new Map(traitBindings.map((b) => [b.trait.name, b]));
 
     for (const childName of children) {
+      if (composedBy !== undefined && !composedBy.has(childName)) continue;
       if (visited.has(childName)) continue;
       visited.add(childName);
       const childBinding = bindingMap.get(childName);
@@ -129,7 +133,8 @@ export function useCallsiteCapture(
         );
       }
 
-      await reRender(childName, composedWith, entityByTrait, visited, serverComposed, keepComposed);
+      // Below a repainted child, only what its repainted transition composes.
+      await reRender(childName, composedWith, entityByTrait, visited, serverComposed, keepComposed, traitsEmbeddedByEffects(indexed.irTrait, entry.result.effects));
     }
   }, [traitBindings, store, traitIndex, slotFlush, options.callsiteCaptureChildrenByTrait, options.eventBus, options.navigate, options.navigateBack, options.user]);
 }

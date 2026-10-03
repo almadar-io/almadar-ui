@@ -49,7 +49,7 @@ import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
 import type { DisplayField, UiError } from '../atoms/types';
-import { badgeVariantFor, titleFieldOf } from '../../../lib/displayField';
+import { badgeVariantFor, titleFieldOf, valueLabelFor } from '../../../lib/displayField';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
@@ -583,7 +583,7 @@ export function DataList({
                             // `format` applies here too — a boolean field badged
                             // without it renders the raw "false" instead of "No".
                             <Badge key={f.name} variant={badgeVariantFor(String(v), f.colorMap)}>
-                              {formatValue(v as FieldValue, f.format, fmt, relationsData?.[f.name])}
+                              {valueLabelFor(formatValue(v as FieldValue, f.format, fmt, relationsData?.[f.name]), f.labels)}
                             </Badge>
                           ) : (
                             <Typography
@@ -768,7 +768,7 @@ export function DataList({
                   <HStack key={field.name} gap="xs" className="items-center flex-shrink-0">
                     {field.icon && renderIconInput(field.icon, { size: 'xs' })}
                     <Badge variant={badgeVariantFor(String(val), field.colorMap)}>
-                      {formatValue(val as FieldValue, field.format, fmt, relationsData?.[field.name])}
+                      {valueLabelFor(formatValue(val as FieldValue, field.format, fmt, relationsData?.[field.name]), field.labels)}
                     </Badge>
                   </HStack>
                 );

@@ -210,8 +210,7 @@ describe('axisPositionFrom (where an element is now → its offsets under a cons
     expect(axisPositionFrom('y', 'scale', offset)).toEqual({ constraint: 'scale', start: 10, end: 30 });
   });
 
-  it('without a measurement everything is 0; a zero-size parent scales to 0', () => {
-    expect(axisPositionFrom('x', 'end', undefined)).toEqual({ constraint: 'end', start: 0, end: 0 });
+  it('edge: a zero-size parent scales to 0 instead of dividing by zero', () => {
     expect(axisPositionFrom('x', 'scale', { ...offset, parentWidth: 0 })).toEqual({ constraint: 'scale', start: 0, end: 0 });
   });
 });

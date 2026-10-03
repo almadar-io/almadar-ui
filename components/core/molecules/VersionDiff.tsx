@@ -397,10 +397,10 @@ const VersionDiffInner: React.FC<VersionDiffProps> = ({
                     ) : activeView === "side-by-side" ? (
                         <Box className="grid grid-cols-1 md:grid-cols-2">
                             {/* Below md the columns stack, so the separator flips from right-edge to bottom-edge. */}
-                            <Box className="border-b md:border-b-0 md:border-r border-border" data-testid="version-diff-before">
+                            <Box className="min-w-0 overflow-x-auto border-b md:border-b-0 md:border-r border-border" data-testid="version-diff-before">
                                 {renderColumn("before")}
                             </Box>
-                            <Box data-testid="version-diff-after">{renderColumn("after")}</Box>
+                            <Box className="min-w-0 overflow-x-auto" data-testid="version-diff-after">{renderColumn("after")}</Box>
                         </Box>
                     ) : (
                         <VStack gap="none" className="font-mono text-xs">

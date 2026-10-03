@@ -158,3 +158,29 @@ describe('resolveRenderBindingMarkers', () => {
     expect(b).not.toBe(a);
   });
 });
+
+describe('resolveRenderBindingMarkers — i18n/t in a deferred expression', () => {
+  const props = (): SlotProps => ({ content: marker(['i18n/t', 'site:posts.count', { n: '@entity.count' }]) });
+  const en = { locale: 'en', messages: { 'site:posts.count': '{{n}} posts' } };
+  const ar = { locale: 'ar', messages: { 'site:posts.count': '{{n}} منشورات' } };
+
+  it('evaluates with the viewer\'s locale and catalog', () => {
+    const out = resolveRenderBindingMarkers(props(), 'Blog', { count: 3 }, undefined, 'idle', ar);
+    if (typeof out === 'string') throw new Error('expected object props');
+    expect(out.content).toBe('3 منشورات');
+  });
+
+  it('edge: the same props under another locale re-resolve instead of hitting the cache', () => {
+    const shared = props();
+    const entity = { count: 2 };
+    const first = resolveRenderBindingMarkers(shared, 'Blog', entity, undefined, 'idle', en);
+    const second = resolveRenderBindingMarkers(shared, 'Blog', entity, undefined, 'idle', ar);
+    if (typeof first === 'string' || typeof second === 'string') throw new Error('expected object props');
+    expect(first.content).toBe('2 posts');
+    expect(second.content).toBe('2 منشورات');
+  });
+
+  it('control: without a catalog the evaluator reports the missing message', () => {
+    expect(() => resolveRenderBindingMarkers(props(), 'Blog', { count: 1 }, undefined, 'idle')).toThrow('no `unset` message');
+  });
+});

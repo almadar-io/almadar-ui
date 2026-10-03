@@ -73,9 +73,9 @@ describe('capture walk through a reloading child', () => {
     expect(m.leafLabel()).toBe('Mine');
   });
 
-  it('edge: the ancestor\'s payload never leaks through the reloading child (mount already composed the grandchild)', async () => {
+  it('edge: a grandchild never composed yet (it waits for its composer at mount) takes the ancestor\'s payload', async () => {
     const m = await mounted();
     await m.send('PING', { label: 'Host' });
-    expect(m.leafLabel()).toBeUndefined();
+    expect(m.leafLabel()).toBe('Host');
   });
 });

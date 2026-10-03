@@ -152,6 +152,11 @@ export interface HeaderProps extends A11yProps {
   onLogoClick?: () => void;
 
   /**
+   * Where the brand (logo + name) links to, usually the home page; empty leaves it unlinked
+   */
+  brandHref?: string;
+
+  /**
    * Additional CSS classes
    */
   className?: string;
@@ -187,11 +192,35 @@ export const Header: React.FC<HeaderProps> = ({
   variant = "mobile",
   look = "compact-bar",
   onLogoClick,
+  brandHref,
   className,
   ...rest
 }) => {
   const { t } = useTranslate();
   const resolvedSearchPlaceholder = searchPlaceholder ?? t('common.search');
+
+  const brandContent = (
+    <>
+      {logo ? (
+        typeof logo === "string" ? (
+          <Avatar src={logo} alt={brandName} size="sm" />
+        ) : (
+          logo
+        )
+      ) : logoSrc ? (
+        <Avatar src={logoSrc} alt={brandName} size="sm" />
+      ) : null}
+
+      {brandName && (
+        <Typography
+          variant="h5"
+          className="text-lg text-foreground"
+        >
+          {brandName}
+        </Typography>
+      )}
+    </>
+  );
 
   // Get user initials
   const userInitials =
@@ -225,35 +254,29 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Logo/Brand */}
-        <HStack
-          gap="none"
-          align="center"
-          className={cn(
-            "gap-2",
-            onLogoClick && "cursor-pointer",
-          )}
-          {...pressableProps(onLogoClick)}
-          aria-label={onLogoClick ? brandName : undefined}
-        >
-          {logo ? (
-            typeof logo === "string" ? (
-              <Avatar src={logo} alt={brandName} size="sm" />
-            ) : (
-              logo
-            )
-          ) : logoSrc ? (
-            <Avatar src={logoSrc} alt={brandName} size="sm" />
-          ) : null}
-
-          {brandName && (
-            <Typography
-              variant="h5"
-              className="text-lg text-foreground"
-            >
-              {brandName}
-            </Typography>
-          )}
-        </HStack>
+        {brandHref ? (
+          <Button
+            variant="ghost"
+            href={brandHref}
+            aria-label={brandName}
+            className="gap-2 px-0 hover:bg-transparent"
+          >
+            {brandContent}
+          </Button>
+        ) : (
+          <HStack
+            gap="none"
+            align="center"
+            className={cn(
+              "gap-2",
+              onLogoClick && "cursor-pointer",
+            )}
+            {...pressableProps(onLogoClick)}
+            aria-label={onLogoClick ? brandName : undefined}
+          >
+            {brandContent}
+          </HStack>
+        )}
       </HStack>
 
       {/* Center section: Navigation (desktop variant) or Search */}

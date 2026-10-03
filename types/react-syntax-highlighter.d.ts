@@ -11,6 +11,10 @@ declare module 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js'
   export { default } from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus';
 }
 
+declare module 'react-syntax-highlighter/dist/esm/styles/prism/vs.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/styles/prism/vs';
+}
+
 declare module 'react-syntax-highlighter/dist/esm/languages/prism/json.js' {
   export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/json';
 }

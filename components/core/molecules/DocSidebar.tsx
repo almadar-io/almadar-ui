@@ -116,7 +116,7 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
       className={cn(
         'h-auto w-full justify-start rounded-interactive px-3 py-1.5 text-sm font-normal',
         depth > 0 && 'ml-2',
-        item.active ? 'bg-primary/8 text-foreground font-semibold' : 'text-muted-foreground',
+        item.active ? 'bg-primary/[0.08] text-foreground font-semibold' : 'text-muted-foreground',
       )}
     >
       {label}

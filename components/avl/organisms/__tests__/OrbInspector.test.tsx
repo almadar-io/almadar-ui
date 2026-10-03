@@ -513,10 +513,32 @@ describe('OrbInspector Appearance — absolute position + constraints', () => {
     expect(onEvent).toHaveBeenLastCalledWith(expect.objectContaining({ value: 'absolute left-[12px] top-[10%] bottom-[30%]' }));
   });
 
-  it('without a measured position, turning absolute on pins it at the top-left', () => {
+  it('not measured yet: absolute cannot be turned on, so nothing is pinned at a guessed 0,0', () => {
     const { onEvent } = renderAppearance('p-4');
+    expect(absoluteSwitch().hasAttribute('disabled')).toBe(true);
     fireEvent.click(absoluteSwitch());
-    expect(onEvent).toHaveBeenLastCalledWith(expect.objectContaining({ value: 'p-4 absolute left-0 top-0' }));
+    expect(onEvent).not.toHaveBeenCalled();
+  });
+
+  it('not measured yet: the constraint pickers wait for the measurement instead of writing 0', () => {
+    const { onEvent } = renderAppearance('absolute left-[12px] top-[8px]');
+    const x = within(screen.getByTestId('inspector-constraint-x')).getByRole('combobox');
+    expect(x.hasAttribute('disabled')).toBe(true);
+    fireEvent.change(x, { target: { value: 'center' } });
+    expect(onEvent).not.toHaveBeenCalled();
+  });
+
+  it('control: measured, the switch and the pickers are live', () => {
+    renderAppearance('absolute left-[12px] top-[8px]', offset);
+    expect(absoluteSwitch().hasAttribute('disabled')).toBe(false);
+    expect(within(screen.getByTestId('inspector-constraint-x')).getByRole('combobox').hasAttribute('disabled')).toBe(false);
+  });
+
+  it('edge: an absolute element can be put back in the flow before it is measured', () => {
+    const { onEvent } = renderAppearance('p-4 absolute left-[12px] top-[8px]');
+    expect(absoluteSwitch().hasAttribute('disabled')).toBe(false);
+    fireEvent.click(absoluteSwitch());
+    expect(onEvent).toHaveBeenLastCalledWith(expect.objectContaining({ value: 'p-4' }));
   });
 });
 

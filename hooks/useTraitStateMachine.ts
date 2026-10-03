@@ -34,17 +34,18 @@ import type {
   TraitConfig,
   UserContext,
 } from '@almadar/core';
-import { collectListenerTargets, LIFECYCLE_EVENTS, type ClientKernelOutcome, type EventTransport, type PersistenceAdapter, type TraitState } from '@almadar/runtime';
+import { collectListenerTargets, LIFECYCLE_EVENTS, TraitMountError, type ClientKernelOutcome, type EventTransport, type PersistenceAdapter, type TraitState } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from './useEventBus';
 import { useUser } from '../providers/UserContext';
+import { useTranslate } from './useTranslate';
 import type { EntityBindingSource } from '../providers/EntityBindingContext';
 import type { AwaitingSkeletonSource } from '../providers/AwaitingSkeletonContext';
 import { ALL_SLOTS } from './useUISlots';
 import { registerTrait, unregisterTrait, type TraitDebugInfo } from '../lib/traitRegistry';
 import { bindTraitStateGetter, registerTraitSnapshot } from '../lib/verificationRegistry';
 import { createCircuitVerificationObserver, recordDispatchVerdict } from '../lib/circuitVerificationObserver';
-import type { TraitStateSnapshot } from '@almadar/core';
+import { TRAIT_MOUNT_ERROR_TESTID, configReferencesCallsitePayload, traitReferencesCallsitePayload, traitsEmbeddedByEvent, type TraitStateSnapshot } from '@almadar/core';
 import type { useUISlots } from '../providers/UISlotContext';
 import { getTabClientId, useCircuitKernel } from './circuit/useCircuitKernel';
 import { useBusIngress } from './circuit/useBusIngress';
@@ -53,6 +54,9 @@ import { useCallsiteCapture } from './circuit/useCallsiteCapture';
 import { useClientTicks } from './circuit/useClientTicks';
 import { useEntityBindingSource } from './circuit/useEntityBindingSource';
 import { useAwaitingSkeletonSource } from './circuit/useAwaitingSkeletonSource';
+
+/** The slot source a failed lifecycle step's error renders under, cleared on the next mount. */
+const MOUNT_ERROR_SOURCE = '$mount';
 
 const stateLog = createLogger('almadar:ui:state-transitions');
 
@@ -106,6 +110,8 @@ export interface UseTraitStateMachineOptions {
   /** Hold every dispatch until the transport's topology is known. */
   awaitTopology?: boolean;
   persistence?: PersistenceAdapter;
+  /** The browser store for `[persistent: x, local]` entities (see `useCircuitKernel`). */
+  browserStore?: PersistenceAdapter;
   callService?: (service: string, action: string, params?: ServiceParams) => Promise<EventPayload>;
   traitConfigsByName?: Record<string, TraitConfig>;
   embeddedTraits?: ReadonlySet<string>;
@@ -125,6 +131,7 @@ export function useTraitStateMachine(
 ): TraitStateMachineResult {
   const eventBus = useEventBus();
   const { user: contextViewer } = useUser();
+  const { t } = useTranslate();
   const userContext = (options.user ?? contextViewer ?? undefined) as UserContext | undefined;
 
   const observer = useMemo(() => createCircuitVerificationObserver(), []);
@@ -136,6 +143,7 @@ export function useTraitStateMachine(
     ...(options.carriesCircuitState !== undefined ? { carriesCircuitState: options.carriesCircuitState } : {}),
     ...(options.awaitTopology !== undefined ? { awaitTopology: options.awaitTopology } : {}),
     ...(options.persistence !== undefined ? { persistence: options.persistence } : {}),
+    ...(options.browserStore !== undefined ? { browserStore: options.browserStore } : {}),
     ...(options.callService !== undefined ? { callService: options.callService } : {}),
     ...(userContext !== undefined ? { user: userContext } : {}),
     ...(options.debug !== undefined ? { debug: options.debug } : {}),
@@ -244,7 +252,9 @@ export function useTraitStateMachine(
       }
       const repainted = new Set(repaints.map((e) => e.traitName));
       const serverComposed = new Set([...store.callsitePayloads].filter(([child, composed]) => composedBefore.get(child) !== composed).map(([child]) => child));
-      await reRenderCallsiteCaptureChildren(traitName, payload ?? {}, entityByTrait, repainted, serverComposed);
+      const irTrait = traitIndex.byName.get(traitName)?.irTrait;
+      const composedBy = irTrait !== undefined ? traitsEmbeddedByEvent(irTrait, eventKey) : undefined;
+      await reRenderCallsiteCaptureChildren(traitName, payload ?? {}, entityByTrait, repainted, serverComposed, false, composedBy);
     }
     options.onEventProcessed?.(eventKey, payload);
   }, [traitIndex, store, reRenderCallsiteCaptureChildren, options.onEventProcessed]);
@@ -433,21 +443,45 @@ export function useTraitStateMachine(
     // Every entering trait awaits its own lifecycle event BEFORE any of them
     // dispatches: a sibling's INIT cascade must not reach it first.
     const entering: MountSeed[] = [];
+    const embeddedChildren = new Set([...(options.callsiteCaptureChildrenByTrait?.values() ?? [])].flatMap((c) => [...c]));
     for (const binding of traitBindings) {
       const traitName = binding.trait.name;
       if (mount.initialized.has(traitName)) continue;
       mount.initialized.add(traitName);
+      // An embedded child that reads its composer's payload and only repaints on mount waits
+      // for that composer (the capture pass paints it), as the compiled path renders it inline.
+      const indexed = traitIndex.byName.get(traitName);
+      if (
+        embeddedChildren.has(traitName) &&
+        indexed !== undefined &&
+        (traitReferencesCallsitePayload(indexed.irTrait) || configReferencesCallsitePayload(indexed.config)) &&
+        store.manager.repaintLifecycleEvent(traitName) !== undefined &&
+        !store.callsitePayloads.has(traitName)
+      ) {
+        continue;
+      }
       const lifecycleEvent = LIFECYCLE_EVENTS.find((evt) => store.manager.canHandleEvent(traitName, evt));
       if (lifecycleEvent !== undefined) entering.push({ trait: traitName, event: lifecycleEvent });
     }
     store.mount.mounting(entering.map((e) => e.trait));
     if (entering.length > 0) {
+      uiSlots.clearBySource('main', MOUNT_ERROR_SOURCE);
       void mountAndSettle(entering, { ...(options.initPayload ?? {}) }).catch((err) => {
-        stateLog.warn('mount:failed', { traits: entering.map((e) => e.trait), error: String(err) });
+        const traits = entering.map((e) => e.trait);
+        const message = err instanceof Error ? err.message : String(err);
+        const failed = err instanceof TraitMountError ? err.trait : traits.join(', ');
+        const cause = err instanceof TraitMountError ? err.original : err;
+        stateLog.warn('mount:failed', { traits, failed, error: message, stack: cause instanceof Error ? cause.stack : undefined });
+        uiSlots.render({
+          target: 'main',
+          pattern: 'error-state',
+          props: { title: t('error.traitMountFailed', { trait: failed }), message, 'data-testid': TRAIT_MOUNT_ERROR_TESTID },
+          sourceTrait: MOUNT_ERROR_SOURCE,
+        });
       });
     }
     mountedRef.current = mount;
-  }, [traitBindings, store, mountAndSettle, mountKey]);
+  }, [traitBindings, store, mountAndSettle, mountKey, uiSlots, traitIndex, options.callsiteCaptureChildrenByTrait, t]);
 
   // Re-render on every committed circuit change (mirrors the old hook's own
   // `setTraitStates(manager.getAllStates())` after each dispatch) — the

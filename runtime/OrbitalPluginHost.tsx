@@ -65,6 +65,7 @@ import type {
 import { UI_SLOTS } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../hooks/useEventBus';
+import { useTranslate } from '../hooks/useTranslate';
 import { useUISlots, type UISlotManager } from '../providers/UISlotContext';
 import type { EventTransport } from '@almadar/runtime';
 import type { KeyCaptureEntry, KeyCaptureTable } from '../hooks/useKeyboardRouter';
@@ -328,6 +329,7 @@ function PluginRuntimeMount({
   onError,
 }: PluginRuntimeMountProps): null {
   const bus = useEventBus();
+  const { locale } = useTranslate();
   const slots = useUISlots();
   const slotsRef = useRef(slots);
   slotsRef.current = slots;
@@ -543,9 +545,10 @@ function PluginRuntimeMount({
           event: row.trigger,
           payload,
           targetTrait: row.trait,
+          locale,
         });
       } else if (mode === 'server' && transport) {
-        response = await transport.send(row.orbital, { event: row.trigger, payload });
+        response = await transport.send(row.orbital, { event: row.trigger, payload, locale });
       } else {
         return;
       }
@@ -581,7 +584,7 @@ function PluginRuntimeMount({
       }
       onDispatched(plugin.id, row.trigger, states);
     },
-    [registrationReady, mockRuntime, mode, transport, plugin, bus, ownOrbitals, inboundBusEvents, onError, onTransition, onDispatched],
+    [registrationReady, mockRuntime, mode, transport, locale, plugin, bus, ownOrbitals, inboundBusEvents, onError, onTransition, onDispatched],
   );
 
   useEffect(() => {

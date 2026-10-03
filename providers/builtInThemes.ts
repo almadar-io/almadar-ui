@@ -7,6 +7,7 @@ import type { UIThemeDefinition } from './ThemeContext';
 
 export const BUILT_IN_THEMES: UIThemeDefinition[] = [
   { name: "almadar", displayName: "Almadar", hasLightMode: true, hasDarkMode: true },
+  { name: "almadar-heritage", displayName: "Almadar Heritage", hasLightMode: true, hasDarkMode: true },
   { name: "almadar-website", displayName: "Almadar Website", hasLightMode: true, hasDarkMode: true },
   { name: "aqua", displayName: "Aqua Gel", hasLightMode: true, hasDarkMode: true },
   { name: "arabesque", displayName: "Arabesque", hasLightMode: true, hasDarkMode: true },
@@ -44,6 +45,7 @@ export const BUILT_IN_THEMES: UIThemeDefinition[] = [
   { name: "neumorphic", displayName: "Neumorphic", hasLightMode: true, hasDarkMode: true },
   { name: "newsprint", displayName: "Newsprint", hasLightMode: true, hasDarkMode: true },
   { name: "notion-editorial", displayName: "Notion Editorial", hasLightMode: true, hasDarkMode: true },
+  { name: "orb", displayName: "Orb", hasLightMode: true, hasDarkMode: true },
   { name: "pixel", displayName: "Pixel Quest", hasLightMode: true, hasDarkMode: true },
   { name: "prism", displayName: "Prism", hasLightMode: true, hasDarkMode: true },
   { name: "retro", displayName: "Retro", hasLightMode: true, hasDarkMode: true },

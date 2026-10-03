@@ -40,10 +40,9 @@ import {
   buildTraitIndex,
   collectListenerTargets,
   createClientKernel,
-  createIndexStageRunner,
-  createInProcessTransport,
+  createLocalStoreTransport,
   createMemoryCircuitStore,
-  evaluateOrbitalEvent,
+  createResidenceTransport,
   type CircuitStore,
   type ClientKernel,
   type ClientKernelOutcome,
@@ -57,6 +56,7 @@ import {
 } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 import { recordingTransport } from '../../lib/verificationRegistry';
+import { useTranslate, useRenderI18n } from '../useTranslate';
 
 export interface UseCircuitKernelOptions {
   /** The resolved schema's full orbital set (`OrbitalSchema.orbitals`) —
@@ -78,6 +78,9 @@ export interface UseCircuitKernelOptions {
   awaitTopology?: boolean;
   /** Offline-preview persistence layer (plan G7). */
   persistence?: PersistenceAdapter;
+  /** The browser store for `[persistent: x, local]` entities: legs over their
+   *  data run in-process against it, every other leg goes to `transport`. */
+  browserStore?: PersistenceAdapter;
   /** Consumer `call-service` hook for the offline in-process evaluator. */
   callService?: (service: string, action: string, params?: ServiceParams) => Promise<EventPayload>;
   user?: UserContext;
@@ -115,10 +118,10 @@ export function getTabClientId(): string {
 
 const log = createLogger('almadar:ui:circuit-kernel');
 
-function postUnmounts(transport: EventTransport, traits: ReadonlyArray<readonly [string, string]>): void {
+function postUnmounts(transport: EventTransport, traits: ReadonlyArray<readonly [string, string]>, locale: string): void {
   for (const [traitName, orbitalName] of traits) {
     transport
-      .send(orbitalName, { event: UNMOUNT_EVENT, targetTrait: traitName, clientId: getTabClientId() })
+      .send(orbitalName, { event: UNMOUNT_EVENT, targetTrait: traitName, clientId: getTabClientId(), locale })
       .catch((err) => log.warn('unmount-post-failed', { trait: traitName, orbital: orbitalName, error: String(err) }));
   }
 }
@@ -156,6 +159,10 @@ export function useCircuitKernel(
   // Runtime Spec Clause 8.3: a trait leaving the page (or the page tearing down) is unmounted on
   // the server, pausing its mount-scoped ticks. Held with dispatch until the topology registers.
   const mountedRef = useRef(new Map<string, string>());
+  const { locale } = useTranslate();
+  const i18n = useRenderI18n();
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const transport = options.transport;
   const topologyPending = options.awaitTopology === true;
   useEffect(() => {
@@ -164,12 +171,12 @@ export function useCircuitKernel(
     const dropped = [...mounted].filter(([name]) => !traitIndex.byName.has(name));
     mounted.clear();
     for (const [name, entry] of traitIndex.byName) mounted.set(name, entry.orbitalName);
-    postUnmounts(transport, dropped);
+    postUnmounts(transport, dropped, localeRef.current);
   }, [traitIndex, transport, topologyPending]);
   useEffect(() => {
     if (transport === undefined) return;
     const mounted = mountedRef.current;
-    return () => postUnmounts(transport, [...mounted]);
+    return () => postUnmounts(transport, [...mounted], localeRef.current);
   }, [transport]);
 
   const store = useMemo(() => {
@@ -182,55 +189,34 @@ export function useCircuitKernel(
     return createMemoryCircuitStore(traitDefs, config, options.observer);
   }, [traitIndex, options.guardMode, options.strictBindings, options.contextExtensions, options.observer]);
 
-  const offlineTransport = useMemo(() => {
-    if (options.transport !== undefined || options.persistence === undefined) return undefined;
-    const persistence = options.persistence;
-    return createInProcessTransport(
-      async (_orbitalName: string, request: import('@almadar/core').OrbitalEventRequest) => {
-        const runEffects = createIndexStageRunner({
-          traitIndex,
-          persistence,
-          frames: store.frames,
-          manager: store.manager,
-          ...(options.callService !== undefined
-            ? { extraEffectHandlers: { callService: options.callService } }
-            : {}),
-          ...(options.debug !== undefined ? { debug: options.debug } : {}),
-        });
-        return evaluateOrbitalEvent(
-          {
-            traitIndex,
-            manager: store.manager,
-            persistence,
-            frames: store.frames,
-            runEffects,
-            ...(options.user !== undefined ? { user: options.user } : {}),
-            ...(options.guardMode !== undefined ? { guardMode: options.guardMode } : {}),
-            ...(options.strictBindings !== undefined ? { strictBindings: options.strictBindings } : {}),
-            ...(options.contextExtensions !== undefined ? { contextExtensions: options.contextExtensions } : {}),
-            ...(options.debug !== undefined ? { debug: options.debug } : {}),
-            ...(options.logContext !== undefined ? { logContext: options.logContext } : {}),
-          },
-          request,
-        );
-      },
-      { carriesCircuitState: false },
-    );
-  }, [
-    options.transport,
-    options.persistence,
+  const localTransportOptions = {
     traitIndex,
     store,
-    options.callService,
-    options.user,
-    options.guardMode,
-    options.strictBindings,
-    options.contextExtensions,
-    options.debug,
-    options.logContext,
-  ]);
+    ...(options.callService !== undefined ? { callService: options.callService } : {}),
+    ...(options.user !== undefined ? { user: options.user } : {}),
+    ...(options.guardMode !== undefined ? { guardMode: options.guardMode } : {}),
+    ...(options.strictBindings !== undefined ? { strictBindings: options.strictBindings } : {}),
+    ...(options.contextExtensions !== undefined ? { contextExtensions: options.contextExtensions } : {}),
+    ...(options.debug !== undefined ? { debug: options.debug } : {}),
+    ...(options.logContext !== undefined ? { logContext: options.logContext } : {}),
+  };
+  const offlineTransport = useMemo(
+    () => (options.transport !== undefined || options.persistence === undefined
+      ? undefined
+      : createLocalStoreTransport({ ...localTransportOptions, persistence: options.persistence })),
+    [options.transport, options.persistence, traitIndex, store, options.callService, options.user,
+      options.guardMode, options.strictBindings, options.contextExtensions, options.debug, options.logContext],
+  );
+  const routedTransport = useMemo(() => {
+    if (options.browserStore === undefined) return undefined;
+    // The client relays a browser leg's emits itself, as a compiled client does.
+    const local = createLocalStoreTransport({ ...localTransportOptions, traitIndex: fullTraitIndex, persistence: options.browserStore, clientRelays: true });
+    const remote = options.transport ?? offlineTransport;
+    return createResidenceTransport({ local, ...(remote !== undefined ? { remote } : {}), traitIndex: fullTraitIndex });
+  }, [options.browserStore, options.transport, offlineTransport, fullTraitIndex, store, options.callService, options.user,
+    options.guardMode, options.strictBindings, options.contextExtensions, options.debug, options.logContext]);
 
-  const baseTransport = options.transport ?? offlineTransport;
+  const baseTransport = routedTransport ?? options.transport ?? offlineTransport;
   const effectiveTransport = useMemo(
     () => (baseTransport === undefined ? undefined : recordingTransport(baseTransport)),
     [baseTransport],
@@ -257,6 +243,8 @@ export function useCircuitKernel(
     store,
     ...(options.persistence !== undefined ? { persistence: options.persistence } : {}),
     ...(options.user !== undefined ? { user: options.user } : {}),
+    locale,
+    ...(i18n !== undefined ? { messages: { [i18n.locale]: i18n.messages } } : {}),
     ...(options.guardMode !== undefined ? { guardMode: options.guardMode } : {}),
     ...(options.strictBindings !== undefined ? { strictBindings: options.strictBindings } : {}),
     ...(options.contextExtensions !== undefined ? { contextExtensions: options.contextExtensions } : {}),
@@ -272,6 +260,8 @@ export function useCircuitKernel(
     store,
     options.persistence,
     options.user,
+    locale,
+    i18n,
     options.guardMode,
     options.strictBindings,
     options.contextExtensions,
@@ -281,19 +271,23 @@ export function useCircuitKernel(
     effectiveTransport,
   ]);
 
-  // Stamp the per-tab clientId onto every dispatch that doesn't already
-  // carry one, so callers (`useBusIngress`, the composer) never have to
+  // Stamp the per-tab clientId and the viewer's locale onto every dispatch
+  // that doesn't already carry them, so callers (`useBusIngress`, the composer) never have to
   // know about tab identity — same posted-leg field the old
   // `ServerBridge.tsx`'s `buildEventRequest` stamped by hand.
-  const kernel = useMemo<ClientKernel>(() => ({
-    store: rawKernel.store,
-    dispatch: (request, hooks) =>
-      rawKernel.dispatch(request.clientId !== undefined ? request : { ...request, clientId: getTabClientId() }, hooks),
-    dispatchMount: (seeds, hooks, base = {}) =>
-      rawKernel.dispatchMount(seeds, hooks, base.clientId !== undefined ? base : { ...base, clientId: getTabClientId() }),
-    dispatchProgress: (request: import('@almadar/core').OrbitalEventRequest) =>
-      rawKernel.dispatchProgress(request.clientId !== undefined ? request : { ...request, clientId: getTabClientId() }),
-  }), [rawKernel]);
+  const kernel = useMemo<ClientKernel>(() => {
+    const stamp = <R extends { clientId?: string; locale?: string }>(request: R): R => ({
+      ...request,
+      clientId: request.clientId ?? getTabClientId(),
+      locale: request.locale ?? locale,
+    });
+    return {
+      store: rawKernel.store,
+      dispatch: (request, hooks) => rawKernel.dispatch(stamp(request), hooks),
+      dispatchMount: (seeds, hooks, base = {}) => rawKernel.dispatchMount(seeds, hooks, stamp(base)),
+      dispatchProgress: (request: import('@almadar/core').OrbitalEventRequest) => rawKernel.dispatchProgress(stamp(request)),
+    };
+  }, [rawKernel, locale]);
 
   return { kernel, store, traitIndex, transport: effectiveTransport };
 }

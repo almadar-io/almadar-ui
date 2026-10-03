@@ -57,6 +57,7 @@
   "status.draft": "Osnutek",
   "status.archived": "Arhivirano",
   "error.generic": "Nekaj je šlo narobe",
+  "error.traitMountFailed": "{{trait}} se ni zagnal",
   "error.retry": "Poskusite znova",
   "error.notFound": "Ni najdeno",
   "error.loadFailed": "Nalaganje ni uspelo: {{message}}",
