@@ -15,7 +15,8 @@
 
 import * as React from 'react';
 import { useEffect, useId, useRef, useCallback, useMemo, useState } from 'react';
-import type { A11yProps } from '@almadar/core';
+import type { A11yProps, EventKey } from '@almadar/core';
+import { useKeyMapEvents } from '../../../hooks/useKeyMapEvents';
 import { Box } from '../../core/atoms/Box';
 import { domPassthrough } from '../../../lib/domPassthrough';
 import { cn } from '../../../lib/cn';
@@ -25,16 +26,29 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import type { UiError } from '../../core/atoms/types';
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
+import { resolveDrawableColors } from '../../../lib/drawable/themeDrawables';
 import type { Projector } from '../../../lib/drawable/contract';
-import { THEME_SERIES, resolveThemeColor } from '../../../lib/theme-color';
-
-/** Canvas 2D `ctx.font` cannot resolve CSS vars — read the theme contract's
- *  body slot off the element so in-canvas text follows the active theme. */
-function themeBodyFont(el: HTMLCanvasElement): string {
-  if (typeof getComputedStyle !== 'function') return 'system-ui, sans-serif';
-  const v = getComputedStyle(el).getPropertyValue('--font-family-body').trim();
-  return v || 'system-ui, sans-serif';
-}
+import { THEME_SERIES } from '../../../lib/theme-color';
+import type { CanvasTheme, DiagramMarkRoles, DiagramStrokeWeight, DiagramTone } from '@almadar/core';
+import {
+  applyLineCharacter,
+  arcPoints,
+  drawMarker,
+  fillMark,
+  labelFont,
+  labelText,
+  fillLabel,
+  outlineStroke,
+  outlineCarriesFill,
+  markColor,
+  markDash,
+  markStrokeWidth,
+  tracePolyline,
+} from '../../../lib/canvasTheme';
+import { useCanvasTheme } from '../../../hooks/useCanvasTheme';
+import { withSeries } from '../../../lib/canvasTheme';
+import { useContainerWidth } from '../../../hooks/useContainerWidth';
+import { Typography } from '../../core/atoms/Typography';
 
 export type LearningShapeType =
   | 'line'
@@ -54,7 +68,12 @@ export interface LearningPoint {
   y: number;
 }
 
-export interface LearningShape {
+/**
+ * A drawn mark. Style comes from the theme by role (`tone`, `stroke`, `text`, `font`,
+ * `fillStyle`); a literal field on the same mark (`color`, `lineWidth`, `fontSize`) overrides its
+ * role. `color` and `fill` also accept a tone name.
+ */
+export interface LearningShape extends DiagramMarkRoles {
   type: LearningShapeType;
   /** Optional stable id for interaction payloads. */
   id?: string;
@@ -79,8 +98,11 @@ export interface LearningShape {
   min?: number;
   max?: number;
   step?: number;
+  /** Stroke/text color: a tone name (`ink`, `guide`, `series-2`, …), a `var()` token or a literal. Overrides `tone`. */
   color?: string;
+  /** Fill color: a tone name, a `var()` token or a literal. A literal fills solid unless `fillStyle` says otherwise. */
   fill?: string;
+  /** Stroke width in px. Overrides `stroke`. */
   lineWidth?: number;
   opacity?: number;
   /** Ellipse arc start, in degrees (screen convention: 0 = +x, clockwise). Omit with `endAngle` for a full ellipse. */
@@ -101,7 +123,7 @@ export interface LearningReadout {
   label: string;
   /** Chip value, shown after the label. */
   value: string | number;
-  /** Chip fill/border color (default `var(--color-foreground)`). */
+  /** Accent of the chip's marker dot: a tone name, token or literal (default `highlight`). */
   color?: string;
 }
 
@@ -153,8 +175,14 @@ export interface LearningCanvasProps extends A11yProps {
   width?: number;
   /** Canvas height in CSS pixels. */
   height?: number;
-  /** Background color (default transparent). */
+  /** Canvas ground: a tone name, `var()` token or literal (default the theme's `--surface-diagram`). */
   backgroundColor?: string;
+  /**
+   * Overrides the theme's categorical palette for this canvas: `series-1…N` resolve to these
+   * colors instead. For real-world conventions (CPK atom colors, resistor bands); unset, the
+   * theme's `--color-series-*` apply.
+   */
+  series?: string[];
   /** Canvas text font family. Falls back to the theme's --font-family-body. */
   fontFamily?: string;
   /** Declarative shapes to draw. */
@@ -179,6 +207,10 @@ export interface LearningCanvasProps extends A11yProps {
    * @synonyms sparkline, time series, history plot
    */
   traces?: LearningTracePanel[];
+  /** Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` — to a SEMANTIC event emitted as `UI:{event}` (e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`); keystrokes inside inputs never route. */
+  keyMap?: Record<string, EventKey>;
+  /** Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`. */
+  keyUpMap?: Record<string, EventKey>;
   /** Enable pointer interaction (click/hover). */
   interactive?: boolean;
   /** Enable continuous redraw loop. */
@@ -193,27 +225,6 @@ export interface LearningCanvasProps extends A11yProps {
   isLoading?: boolean;
   /** Error state. */
   error?: UiError | null;
-}
-
-/** `value` resolved if it's a `var()` token, passed through unchanged if it's a literal, or null if the token is undefined. */
-function resolveTokenOrLiteral(value: string, ctx: CanvasRenderingContext2D): string | null {
-  if (!value.startsWith('var(')) return value;
-  return resolveThemeColor(value, ctx.canvas)?.css ?? null;
-}
-
-export function resolveColor(
-  color: string | undefined,
-  ctx: CanvasRenderingContext2D,
-  fallback: string,
-): string {
-  // `fallback` may itself be a token (a default drawn from the theme) — resolve it
-  // too, rather than handing an unparsed `var()` string to a 2D context. If even the
-  // fallback's token is undefined, the raw fallback expression is the honest last resort.
-  if (color) {
-    const resolved = resolveTokenOrLiteral(color, ctx);
-    if (resolved !== null) return resolved;
-  }
-  return resolveTokenOrLiteral(fallback, ctx) ?? fallback;
 }
 
 function shapeBounds(shape: LearningShape): { x: number; y: number; w: number; h: number } | null {
@@ -268,21 +279,25 @@ function shapeBounds(shape: LearningShape): { x: number; y: number; w: number; h
   }
 }
 
-function drawArrowHead(
-  ctx: CanvasRenderingContext2D,
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  size: number,
-) {
-  const angle = Math.atan2(y2 - y1, x2 - x1);
-  ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
-  ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
-  ctx.closePath();
-  ctx.fill();
+const DEFAULT_TONE: Partial<Record<LearningShapeType, DiagramTone>> = {
+  grid: 'grid',
+  axis: 'axis',
+  text: 'label',
+};
+
+const DEFAULT_STROKE: Partial<Record<LearningShapeType, DiagramStrokeWeight>> = {
+  grid: 'thin',
+};
+
+/** True when `value` is a color the author wrote out, rather than a theme role. */
+function isLiteralColor(value: string | undefined): boolean {
+  return value !== undefined && value !== '' && !value.startsWith('var(') && !/^[a-z]+(-\d)?$/.test(value);
+}
+
+function strokeMark(ctx: CanvasRenderingContext2D, color: string, width: number): void {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.stroke();
 }
 
 function drawShape(
@@ -291,23 +306,30 @@ function drawShape(
   width: number,
   height: number,
   allShapes: readonly LearningShape[],
+  theme: CanvasTheme,
   fontFamily?: string,
 ) {
+  const scope = ctx.canvas;
   ctx.save();
-  const opacity = shape.opacity ?? 1;
-  ctx.globalAlpha = opacity;
-  const stroke = resolveColor(shape.color, ctx, 'var(--color-foreground)');
-  const fill = shape.fill ? resolveColor(shape.fill, ctx, 'var(--color-muted)') : undefined;
-  ctx.lineWidth = shape.lineWidth ?? 2;
-  const dashPattern = shape.dash ? DASH_PATTERNS[shape.dash] : undefined;
-  if (dashPattern) ctx.setLineDash([...dashPattern]);
+  ctx.globalAlpha = shape.opacity ?? 1;
+  const fillValue = shape.fill ?? shape.fillTone;
+  const fill = fillValue !== undefined ? markColor(theme, fillValue, scope, 'fill') : undefined;
+  const fillStyle = shape.fillStyle ?? (isLiteralColor(shape.fill) ? 'solid' : theme.fillStyle);
+  const stroke = outlineStroke(markColor(theme, shape.color ?? shape.tone, scope, DEFAULT_TONE[shape.type] ?? 'ink'), fill, fillStyle, fillValue);
+  const declaredWidth = markStrokeWidth(theme, shape.lineWidth, shape.stroke, DEFAULT_STROKE[shape.type] ?? 'normal');
+  const lineWidth = outlineCarriesFill(fill, fillStyle, fillValue) ? Math.max(declaredWidth, theme.strokes.bold) : declaredWidth;
+  applyLineCharacter(ctx, theme, stroke);
+  ctx.setLineDash([...markDash(theme, shape.dash)]);
+
+  const closedMark = (points: { x: number; y: number }[]) => {
+    tracePolyline(ctx, theme, points, true);
+    if (fill) fillMark(ctx, theme, fill, fillStyle);
+    strokeMark(ctx, stroke, lineWidth);
+  };
 
   switch (shape.type) {
     case 'grid': {
       const step = shape.step ?? 40;
-      ctx.strokeStyle = stroke;
-      ctx.globalAlpha = opacity * 0.25;
-      ctx.lineWidth = 1;
       ctx.beginPath();
       for (let x = 0; x <= width; x += step) {
         ctx.moveTo(x, 0);
@@ -317,116 +339,94 @@ function drawShape(
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
       }
-      ctx.stroke();
+      strokeMark(ctx, stroke, lineWidth);
       break;
     }
     case 'axis': {
-      const axis = shape.axis ?? 'x';
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = shape.lineWidth ?? 2;
-      ctx.beginPath();
-      if (axis === 'x') {
-        ctx.moveTo(0, height / 2);
-        ctx.lineTo(width, height / 2);
-      } else {
-        ctx.moveTo(width / 2, 0);
-        ctx.lineTo(width / 2, height);
-      }
-      ctx.stroke();
+      const horizontal = (shape.axis ?? 'x') === 'x';
+      tracePolyline(ctx, theme, horizontal ? [{ x: 0, y: height / 2 }, { x: width, y: height / 2 }] : [{ x: width / 2, y: 0 }, { x: width / 2, y: height }], false);
+      strokeMark(ctx, stroke, lineWidth);
       break;
     }
-    case 'line': {
-      if (shape.x1 == null || shape.y1 == null || shape.x2 == null || shape.y2 == null) break;
-      ctx.strokeStyle = stroke;
-      ctx.beginPath();
-      ctx.moveTo(shape.x1, shape.y1);
-      ctx.lineTo(shape.x2, shape.y2);
-      ctx.stroke();
-      break;
-    }
+    case 'line':
     case 'arrow': {
       if (shape.x1 == null || shape.y1 == null || shape.x2 == null || shape.y2 == null) break;
-      ctx.strokeStyle = stroke;
-      ctx.fillStyle = stroke;
-      ctx.beginPath();
-      ctx.moveTo(shape.x1, shape.y1);
-      ctx.lineTo(shape.x2, shape.y2);
-      ctx.stroke();
-      drawArrowHead(ctx, shape.x1, shape.y1, shape.x2, shape.y2, 10);
+      tracePolyline(ctx, theme, [{ x: shape.x1, y: shape.y1 }, { x: shape.x2, y: shape.y2 }], false);
+      strokeMark(ctx, stroke, lineWidth);
+      if (shape.type === 'arrow') drawMarker(ctx, theme, shape.x1, shape.y1, shape.x2, shape.y2, stroke, lineWidth);
       break;
     }
     case 'circle': {
       if (shape.x == null || shape.y == null || shape.radius == null) break;
-      ctx.beginPath();
-      ctx.arc(shape.x, shape.y, shape.radius, 0, Math.PI * 2);
-      if (fill) {
-        ctx.fillStyle = fill;
-        ctx.fill();
+      if (theme.roughness > 0) closedMark(arcPoints(shape.x, shape.y, shape.radius, shape.radius));
+      else {
+        ctx.beginPath();
+        ctx.arc(shape.x, shape.y, shape.radius, 0, Math.PI * 2);
+        if (fill) fillMark(ctx, theme, fill, fillStyle);
+        strokeMark(ctx, stroke, lineWidth);
       }
-      ctx.strokeStyle = stroke;
-      ctx.stroke();
       break;
     }
     case 'ellipse': {
       if (shape.x == null || shape.y == null || shape.width == null || shape.height == null) break;
-      const startAngle = ((shape.startAngle ?? 0) * Math.PI) / 180;
-      const endAngle = ((shape.endAngle ?? 360) * Math.PI) / 180;
-      ctx.beginPath();
-      ctx.ellipse(shape.x, shape.y, shape.width / 2, shape.height / 2, 0, startAngle, endAngle);
-      if (fill) {
-        ctx.fillStyle = fill;
-        ctx.fill();
+      const start = ((shape.startAngle ?? 0) * Math.PI) / 180;
+      const end = ((shape.endAngle ?? 360) * Math.PI) / 180;
+      const whole = Math.abs(end - start) >= Math.PI * 2 - 1e-6;
+      if (theme.roughness > 0) {
+        tracePolyline(ctx, theme, arcPoints(shape.x, shape.y, shape.width / 2, shape.height / 2, start, end), whole);
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(shape.x, shape.y, shape.width / 2, shape.height / 2, 0, start, end);
       }
-      ctx.strokeStyle = stroke;
-      ctx.stroke();
+      if (fill) fillMark(ctx, theme, fill, fillStyle);
+      strokeMark(ctx, stroke, lineWidth);
       break;
     }
     case 'rect': {
       if (shape.x == null || shape.y == null || shape.width == null || shape.height == null) break;
-      if (fill) {
-        ctx.fillStyle = fill;
-        ctx.fillRect(shape.x, shape.y, shape.width, shape.height);
+      if (theme.roughness > 0 || theme.corner <= 0 || typeof ctx.roundRect !== 'function') {
+        closedMark([
+          { x: shape.x, y: shape.y },
+          { x: shape.x + shape.width, y: shape.y },
+          { x: shape.x + shape.width, y: shape.y + shape.height },
+          { x: shape.x, y: shape.y + shape.height },
+        ]);
+      } else {
+        ctx.beginPath();
+        ctx.roundRect(shape.x, shape.y, shape.width, shape.height, Math.min(theme.corner, shape.width / 2, shape.height / 2));
+        if (fill) fillMark(ctx, theme, fill, fillStyle);
+        strokeMark(ctx, stroke, lineWidth);
       }
-      ctx.strokeStyle = stroke;
-      ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
       break;
     }
     case 'polygon': {
       if (!shape.points || shape.points.length < 2) break;
-      ctx.beginPath();
-      ctx.moveTo(shape.points[0].x, shape.points[0].y);
-      for (let i = 1; i < shape.points.length; i++) {
-        ctx.lineTo(shape.points[i].x, shape.points[i].y);
-      }
-      ctx.closePath();
-      if (fill) {
-        ctx.fillStyle = fill;
-        ctx.fill();
-      }
-      ctx.strokeStyle = stroke;
-      ctx.stroke();
+      closedMark(shape.points);
       break;
     }
     case 'path': {
-      if (!shape.path) break;
+      if (!shape.path || typeof Path2D === 'undefined') break;
       const p = new Path2D(shape.path);
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      if (fill) {
+      if (fill && fillStyle !== 'outline') {
+        ctx.save();
+        ctx.globalAlpha *= fillStyle === 'tint' ? theme.fillOpacity : 1;
         ctx.fillStyle = fill;
         ctx.fill(p);
+        ctx.restore();
       }
       ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
       ctx.stroke(p);
       break;
     }
     case 'text': {
       if (shape.x == null || shape.y == null || !shape.text) break;
+      ctx.shadowBlur = 0;
       ctx.fillStyle = stroke;
-      ctx.font = `${shape.fontSize ?? 14}px ${shape.fontFamily ?? fontFamily ?? themeBodyFont(ctx.canvas)}`;
+      ctx.font = labelFont(theme, shape, shape.fontSize, shape.fontFamily ?? fontFamily).font;
       ctx.textAlign = shape.align ?? 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(shape.text, shape.x, shape.y);
+      fillLabel(ctx, theme, labelText(theme, shape.text, shape.textCase), shape.x, shape.y);
       break;
     }
     case 'venn-region': {
@@ -443,7 +443,7 @@ function drawShape(
             : [];
         });
       const inside = resolveCircles(shape.inside);
-      if (inside.length === 0) break;
+      if (inside.length === 0 || typeof Path2D === 'undefined') break;
       const outside = resolveCircles(shape.outside);
       const off = document.createElement('canvas');
       off.width = ctx.canvas.width;
@@ -456,9 +456,11 @@ function drawShape(
         p.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
         octx.clip(p);
       }
+      octx.globalAlpha = fillStyle === 'tint' ? theme.fillOpacity * 2 : 1;
       octx.fillStyle = fill ?? stroke;
       octx.fillRect(0, 0, width, height);
       octx.globalCompositeOperation = 'destination-out';
+      octx.globalAlpha = 1;
       for (const c of outside) {
         const p = new Path2D();
         p.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
@@ -475,39 +477,38 @@ function drawShape(
   ctx.restore();
 }
 
-function readoutShapes(readouts: LearningReadout[], width: number, fontFamily?: string): LearningShape[] {
+/**
+ * Readouts as quiet theme chips along the top-right edge: a hairline card on the drawing ground with
+ * the value in the label face, and the readout's accent as a small leading dot.
+ */
+export function readoutShapes(readouts: LearningReadout[], width: number, theme: CanvasTheme, fontFamily?: string): LearningShape[] {
   const out: LearningShape[] = [];
-  const chipH = 18;
+  const px = theme.text.xs;
+  const chipH = Math.round(px * 1.9);
+  const pad = Math.round(px * 0.75);
+  const dot = Math.max(3, Math.round(px * 0.3));
   const gap = 6;
-  let rightEdge = width - 6;
-  let rowY = 6;
+  const charW = px * 0.62;
+  let rightEdge = width - 8;
+  let rowY = 8;
   for (const readout of readouts) {
-    const text = `${readout.label}: ${String(readout.value)}`;
-    const chipW = Math.min(170, Math.max(34, text.length * 6 + 12));
+    const text = labelText(theme, `${readout.label} ${String(readout.value)}`, 'verbatim');
+    const chipW = Math.max(40, Math.round(text.length * charW + pad * 2 + dot * 3));
     let chipX = rightEdge - chipW;
-    if (chipX < 4) {
+    if (chipX < 8) {
       rowY += chipH + 4;
-      rightEdge = width - 6;
+      rightEdge = width - 8;
       chipX = rightEdge - chipW;
     }
-    const color = readout.color ?? 'var(--color-foreground)';
-    out.push({ type: 'rect', x: chipX, y: rowY, width: chipW, height: chipH, color, fill: color });
-    out.push({
-      type: 'text',
-      x: chipX + chipW / 2,
-      y: rowY + chipH / 2,
-      text,
-      color: 'var(--color-primary-foreground)',
-      fontSize: 10,
-      align: 'center',
-      fontFamily,
-    });
+    out.push({ type: 'rect', x: chipX, y: rowY, width: chipW, height: chipH, tone: 'grid', fill: theme.ground, fillStyle: 'solid', stroke: 'thin', opacity: 0.94 });
+    out.push({ type: 'circle', x: chipX + pad + dot, y: rowY + chipH / 2, radius: dot, color: readout.color ?? 'highlight', fill: readout.color ?? 'highlight', fillStyle: 'solid', stroke: 'thin' });
+    out.push({ type: 'text', x: chipX + pad + dot * 3, y: rowY + chipH / 2, text: `${readout.label} ${String(readout.value)}`, tone: 'ink', textCase: 'verbatim', textSize: 'xs', fontFamily });
     rightEdge = chipX - gap;
   }
   return out;
 }
 
-function traceShapes(panel: LearningTracePanel, k: number, width: number, height: number, fontFamily?: string): LearningShape[] {
+export function traceShapes(panel: LearningTracePanel, k: number, width: number, height: number, theme: CanvasTheme, fontFamily?: string): LearningShape[] {
   const w = panel.width ?? Math.round(width * 0.32);
   const h = panel.height ?? Math.round(height * 0.28);
   const x = panel.x ?? width - w - 8;
@@ -527,8 +528,6 @@ function traceShapes(panel: LearningTracePanel, k: number, width: number, height
     yHi += 1;
   }
 
-  const backgroundColor = panel.backgroundColor ?? 'var(--color-card)';
-  const frameColor = panel.frameColor ?? 'var(--color-border)';
   const out: LearningShape[] = [];
   out.push({
     type: 'rect',
@@ -536,14 +535,16 @@ function traceShapes(panel: LearningTracePanel, k: number, width: number, height
     y,
     width: w,
     height: h,
-    color: backgroundColor,
-    fill: backgroundColor,
-    opacity: panel.backgroundOpacity ?? 0.85,
+    color: panel.frameColor ?? 'grid',
+    fill: panel.backgroundColor ?? theme.ground,
+    fillStyle: 'solid',
+    stroke: 'thin',
+    opacity: panel.backgroundOpacity ?? 0.92,
   });
-  out.push({ type: 'rect', x, y, width: w, height: h, color: frameColor, lineWidth: 1 });
 
+  const showLegend = panel.series.length > 1 || !panel.yLabel;
   panel.series.forEach((series, j) => {
-    const color = series.color ?? TRACE_SERIES_COLORS[j % TRACE_SERIES_COLORS.length];
+    const color = series.color ?? `series-${(j % 8) + 1}`;
     const mapped = series.samples.map((p) => ({
       x: x + 4 + ((p.x - xLo) / (xHi - xLo)) * (w - 8),
       y: y + h - 4 - ((p.y - yLo) / (yHi - yLo)) * (h - 8),
@@ -556,23 +557,25 @@ function traceShapes(panel: LearningTracePanel, k: number, width: number, height
         x2: mapped[i].x,
         y2: mapped[i].y,
         color,
-        lineWidth: 1.5,
+        stroke: 'normal',
       });
     }
     if (mapped.length > 0) {
       const last = mapped[mapped.length - 1];
-      out.push({ type: 'circle', x: last.x, y: last.y, radius: 2, color, fill: color });
+      out.push({ type: 'circle', x: last.x, y: last.y, radius: 2.5, color, fill: color, fillStyle: 'solid', stroke: 'thin' });
     }
-    if (series.label) {
-      out.push({ type: 'text', x: x + 6, y: y + 10 + 11 * j, text: series.label, color, fontSize: 9, fontFamily });
+    if (series.label && showLegend) {
+      const ly = y + 10 + 13 * j;
+      out.push({ type: 'line', id: `trace-swatch-${j}`, x1: x + 6, y1: ly, x2: x + 16, y2: ly, color, stroke: 'bold' });
+      out.push({ type: 'text', x: x + 20, y: ly, text: series.label, tone: 'label', textCase: 'verbatim', textSize: 'xs', fontFamily });
     }
   });
 
   if (panel.yLabel) {
-    out.push({ type: 'text', x: x + w - 6, y: y + 10, text: panel.yLabel, color: 'var(--color-muted-foreground)', fontSize: 9, align: 'right', fontFamily });
+    out.push({ type: 'text', x: x + w - 6, y: y + 10, text: panel.yLabel, tone: 'label', textCase: 'verbatim', textSize: 'xs', align: 'right', fontFamily });
   }
   if (panel.xLabel) {
-    out.push({ type: 'text', x: x + w - 6, y: y + h - 6, text: panel.xLabel, color: 'var(--color-muted-foreground)', fontSize: 9, align: 'right', fontFamily });
+    out.push({ type: 'text', x: x + w - 6, y: y + h - 8, text: panel.xLabel, tone: 'label', textCase: 'verbatim', textSize: 'xs', align: 'right', fontFamily });
   }
 
   return out;
@@ -594,12 +597,15 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
   width = 600,
   height = 400,
   backgroundColor,
+  series,
   fontFamily,
   shapes = [],
   drawables,
   projector,
   readouts,
   traces,
+  keyMap,
+  keyUpMap,
   interactive = false,
   animate = false,
   onShapeClick,
@@ -610,6 +616,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
   ...rest
 }) => {
   const descId = useId();
+  useKeyMapEvents(keyMap, keyUpMap);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -636,58 +643,64 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     return -1;
   }, [shapes, width, height]);
 
+  const { theme: baseTheme, version: themeVersion } = useCanvasTheme(canvasRef);
+  const seriesKey = series ? series.join('|') : '';
+  const theme = useMemo(() => withSeries(baseTheme, series, canvasRef.current), [baseTheme, seriesKey]);
+  const displayWidth = useContainerWidth(canvasRef);
+
   const derivedShapes = useMemo(() => {
-    if (!traces?.length && !readouts?.length) return shapes;
-    const traceOut = (traces ?? []).flatMap((panel, k) => traceShapes(panel, k, width, height, fontFamily));
-    const readoutOut = readouts?.length ? readoutShapes(readouts, width, fontFamily) : [];
+    if (!theme || (!traces?.length && !readouts?.length)) return shapes;
+    const traceOut = (traces ?? []).flatMap((panel, k) => traceShapes(panel, k, width, height, theme, fontFamily));
+    const readoutOut = readouts?.length ? readoutShapes(readouts, width, theme, fontFamily) : [];
     return [...shapes, ...traceOut, ...readoutOut];
-  }, [shapes, traces, readouts, width, height, fontFamily]);
+  }, [shapes, traces, readouts, width, height, fontFamily, theme]);
 
   const draw = useCallback(() => {
     const _perfT = perfStart('learningcanvas:paint');
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !theme) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Shapes live in a width×height scene; the canvas paints that scene at its displayed size.
     const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-    canvas.width = Math.max(1, Math.floor(width * dpr));
-    canvas.height = Math.max(1, Math.floor(height * dpr));
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const scale = (displayWidth && displayWidth > 0 ? displayWidth : width) / width;
+    canvas.width = Math.max(1, Math.floor(width * scale * dpr));
+    canvas.height = Math.max(1, Math.floor(height * scale * dpr));
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
 
     ctx.clearRect(0, 0, width, height);
-    if (backgroundColor) {
-      ctx.fillStyle = resolveColor(backgroundColor, ctx, backgroundColor);
-      ctx.fillRect(0, 0, width, height);
-    }
+    ctx.fillStyle = markColor(theme, backgroundColor, canvas, 'fill');
+    if (!backgroundColor) ctx.fillStyle = theme.ground;
+    ctx.fillRect(0, 0, width, height);
 
     // Text always renders in a final top pass so labels are never buried under paths/fills.
     for (const shape of derivedShapes) {
-      if (shape.type !== 'text') drawShape(ctx, shape, width, height, derivedShapes, fontFamily);
+      if (shape.type !== 'text') drawShape(ctx, shape, width, height, derivedShapes, theme, fontFamily);
     }
     for (const shape of derivedShapes) {
-      if (shape.type === 'text') drawShape(ctx, shape, width, height, derivedShapes, fontFamily);
+      if (shape.type === 'text') drawShape(ctx, shape, width, height, derivedShapes, theme, fontFamily);
     }
 
     // Game drawables paint on top of the math world using the supplied projector.
     if (drawables?.length && projector) {
       const painter = createWebPainter(ctx, invalidateRef.current);
-      const timeMs = needsAnim && typeof performance !== 'undefined' ? performance.now() : 0;
-      const dctx = { projector, time: timeMs, invalidate: invalidateRef.current, fontFamily: fontFamily || themeBodyFont(canvas) };
-      for (const node of drawables) {
+      const timeMs = needsAnim && theme.motion.enabled && typeof performance !== 'undefined' ? performance.now() : 0;
+      const dctx = { projector, time: timeMs, invalidate: invalidateRef.current, fontFamily: fontFamily || theme.faces[theme.label.font] };
+      for (const node of resolveDrawableColors(drawables, (c) => markColor(theme, c, canvas, 'ink'))) {
         paintDrawable(painter, node, dctx);
       }
     }
 
     perfEnd('learningcanvas:paint', _perfT);
-  }, [width, height, backgroundColor, derivedShapes, drawables, projector, needsAnim]);
+  }, [width, height, backgroundColor, derivedShapes, drawables, projector, needsAnim, theme, themeVersion, displayWidth, fontFamily]);
 
   useEffect(() => {
     draw();
   }, [draw, drawVersion]);
 
   useEffect(() => {
-    const shouldAnimate = animate || needsAnim;
+    const shouldAnimate = (animate || needsAnim) && theme?.motion.enabled === true;
     if (!shouldAnimate) return;
     const loop = () => {
       draw();
@@ -695,7 +708,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     };
     animRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animRef.current);
-  }, [animate, needsAnim, draw]);
+  }, [animate, needsAnim, draw, theme]);
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -730,27 +743,22 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
 
   if (isLoading || error) {
     return (
-      <div
-        className={cn(
-          'flex items-center justify-center rounded border border-border bg-surface',
-          className,
-        )}
-        style={{ width, height }}
+      <Box
+        className={cn('flex w-full items-center justify-center rounded-container bg-[var(--surface-diagram)]', className)}
+        style={{ aspectRatio: `${width} / ${height}` }}
       >
-        {error ? (
-          <span className="text-sm text-destructive">{error.message}</span>
-        ) : (
-          <span className="text-sm text-muted-foreground">{t('learningCanvas.loading')}</span>
-        )}
-      </div>
+        <Typography variant="body2" color={error ? 'error' : 'muted'}>
+          {error ? error.message : t('learningCanvas.loading')}
+        </Typography>
+      </Box>
     );
   }
 
   const canvas = (
     <canvas
       ref={canvasRef}
-      className={cn('block touch-none rounded border border-border', className)}
-      style={{ width, maxWidth: '100%', height: 'auto', aspectRatio: `${width} / ${height}` }}
+      className={cn('mx-auto block touch-none rounded-container', className)}
+      style={{ width: '100%', maxWidth: `min(100%, calc(70vh * ${width} / ${height}))`, height: 'auto', aspectRatio: `${width} / ${height}` }}
       onClick={handleClick}
       onPointerMove={handlePointerMove}
       role="img"

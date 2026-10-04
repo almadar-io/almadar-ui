@@ -361,3 +361,64 @@ body {
 .ui-slot-renderer {
     padding-inline-end: var(--almadar-dock-contained-inset, 0px);
 }
+
+/* --------------------------------------------------------------------
+ * Drawing surfaces — canvas, chart, diagram, game board, 3D scene.
+ * Defaults derived from each theme's own tokens, so a theme that sets no
+ * `diagram`/`scene` axis still draws in its own palette, border weight,
+ * faces and corners. Declared on every theme scope (not only :root): a
+ * var() alias resolves where it is declared, so a :root-only default would
+ * freeze the root theme's colors inside a [data-theme] subtree.
+ * -------------------------------------------------------------------- */
+:root,
+[data-theme],
+[data-orbital-theme] {
+    --surface-diagram: var(--color-card);
+
+    --color-diagram-ink: var(--color-foreground);
+    --color-diagram-label: var(--color-muted-foreground);
+    --color-diagram-guide: var(--color-muted-foreground);
+    --color-diagram-axis: var(--color-foreground);
+    --color-diagram-grid: var(--color-border);
+    --color-diagram-highlight: var(--color-primary);
+    --color-diagram-fill: var(--color-muted);
+
+    /* A categorical palette carries no status meaning: the theme's primary
+     * turned around the hue wheel at its own lightness and chroma. */
+    --color-series-1: var(--color-primary);
+    --color-series-2: oklch(from var(--color-primary) clamp(0.45, l, 0.72) max(c, 0.12) calc(h + 45));
+    --color-series-3: oklch(from var(--color-primary) clamp(0.45, l, 0.72) max(c, 0.12) calc(h + 90));
+    --color-series-4: oklch(from var(--color-primary) clamp(0.45, l, 0.72) max(c, 0.12) calc(h + 135));
+    --color-series-5: oklch(from var(--color-primary) clamp(0.45, l, 0.72) max(c, 0.12) calc(h + 180));
+    --color-series-6: oklch(from var(--color-primary) clamp(0.45, l, 0.72) max(c, 0.12) calc(h + 225));
+    --color-series-7: oklch(from var(--color-primary) clamp(0.45, l, 0.72) max(c, 0.12) calc(h + 270));
+    --color-series-8: oklch(from var(--color-primary) clamp(0.45, l, 0.72) max(c, 0.12) calc(h + 315));
+
+    --diagram-stroke-thin: var(--border-hairline, var(--border-width-thin, 1px));
+    --diagram-stroke-normal: calc(var(--border-standard, var(--border-width, 1px)) * 1.5);
+    --diagram-stroke-bold: calc(var(--border-heavy, var(--border-width-thick, 2px)) * 1.5);
+    --diagram-line-cap: round;
+    --diagram-line-join: round;
+    --diagram-dash: 6 4;
+    --diagram-dot: 1 4;
+    --diagram-fill-style: tint;
+    --diagram-fill-opacity: 0.18;
+    --diagram-roughness: 0;
+    --diagram-glow: 0;
+    --diagram-shadow: none;
+    --diagram-marker: triangle;
+    --diagram-label-font: body;
+    --diagram-label-size: sm;
+    --diagram-label-weight: var(--font-weight-medium, 500);
+    --diagram-label-case: none;
+    --diagram-corner: var(--radius-sm, 4px);
+
+    --material-roughness: 0.6;
+    --material-metalness: 0;
+    --material-flat: 0;
+    --material-outline: 0;
+    --light-ambient: 0.55;
+    --light-key: 1;
+    --light-key-color: #ffffff;
+    --scene-fog: 0;
+}

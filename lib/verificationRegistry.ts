@@ -337,7 +337,9 @@ export function recordOrbitalResponse(orbitalName: string, request: OrbitalEvent
 /** `transport` with every answered post recorded on the verification timeline; the one place the circuit client's server responses are captured. */
 export function recordingTransport(transport: EventTransport): EventTransport {
   const subscribe = transport.subscribe?.bind(transport);
+  const subscribeHostDispatches = transport.subscribeHostDispatches?.bind(transport);
   return {
+    ...(transport.hostsBrowserStore !== undefined ? { hostsBrowserStore: transport.hostsBrowserStore } : {}),
     register: (schema) => transport.register(schema),
     unregister: () => transport.unregister(),
     send: async (orbitalName, request) => {
@@ -346,6 +348,7 @@ export function recordingTransport(transport: EventTransport): EventTransport {
       return response;
     },
     ...(subscribe !== undefined ? { subscribe } : {}),
+    ...(subscribeHostDispatches !== undefined ? { subscribeHostDispatches } : {}),
   };
 }
 

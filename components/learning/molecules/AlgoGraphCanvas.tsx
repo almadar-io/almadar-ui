@@ -16,7 +16,7 @@
  */
 
 import * as React from 'react';
-import type { A11yProps } from '@almadar/core';
+import type { A11yProps, DiagramTone, EventKey } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
 import { useCallback, useMemo } from 'react';
 import { Card, Typography } from '../../core/atoms/index';
@@ -66,6 +66,12 @@ export interface AlgoGraphCanvasProps extends Omit<React.AriaAttributes, keyof A
   height?: number;
   title?: string;
   backgroundColor?: string;
+  /** Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply. */
+  series?: string[];
+  /** Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route. */
+  keyMap?: Record<string, EventKey>;
+  /** Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`. */
+  keyUpMap?: Record<string, EventKey>;
   nodes?: AlgoGraphNode[];
   edges?: AlgoGraphEdge[];
   /** Deterministic layout to compute node positions; `manual` passes through `x`/`y`. */
@@ -83,21 +89,21 @@ export interface AlgoGraphCanvasProps extends Omit<React.AriaAttributes, keyof A
   error?: UiError | null;
 }
 
-export const NODE_STATE_COLOR: Record<AlgoGraphNodeState, string> = {
-  unvisited: 'var(--color-muted-foreground)',
-  frontier: 'var(--color-warning)',
-  current: 'var(--color-primary)',
-  visited: 'var(--color-success)',
-  goal: 'var(--color-accent)',
-  path: 'var(--color-info)',
+export const NODE_STATE_COLOR: Record<AlgoGraphNodeState, DiagramTone> = {
+  unvisited: 'ink',
+  frontier: 'highlight',
+  current: 'primary',
+  visited: 'muted',
+  goal: 'success',
+  path: 'accent',
 };
 
-export const EDGE_STATE_COLOR: Record<AlgoGraphEdgeState, string> = {
-  default: 'var(--color-border)',
-  tree: 'var(--color-success)',
-  relaxed: 'var(--color-warning)',
-  candidate: 'var(--color-primary)',
-  path: 'var(--color-info)',
+export const EDGE_STATE_COLOR: Record<AlgoGraphEdgeState, DiagramTone> = {
+  default: 'ink',
+  tree: 'muted',
+  relaxed: 'primary',
+  candidate: 'highlight',
+  path: 'accent',
 };
 
 const DEFAULT_NODE_RADIUS = 18;
@@ -305,6 +311,9 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
   height = 400,
   title,
   backgroundColor,
+  series,
+  keyMap,
+  keyUpMap,
   nodes = [],
   edges = [],
   layout = 'manual',
@@ -376,7 +385,7 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
         x2: g.x2,
         y2: g.y2,
         color: g.color,
-        lineWidth: 2,
+        stroke: 'normal',
       });
     }
     for (const g of edgeGeoms) {
@@ -393,9 +402,9 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
         x: midX + perpX * 10,
         y: midY + perpY * 10,
         text: g.label,
-        fontSize: 11,
+        textSize: 'sm',
         align: 'center',
-        color: 'var(--color-foreground)',
+        tone: 'label',
       });
     }
 
@@ -415,7 +424,7 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
     }
 
     for (const g of nodeGeoms) {
-      out.push({ type: 'circle', id: g.id, x: g.x, y: g.y, radius: g.radius, color: g.color, fill: `color-mix(in srgb, ${g.color} 20%, transparent)` });
+      out.push({ type: 'circle', id: g.id, x: g.x, y: g.y, radius: g.radius, color: g.color, fill: g.color, fillStyle: 'tint', stroke: 'normal' });
     }
 
     const badgeGeoms: { cx: number; cy: number; w: number; h: number; color: string; text: string }[] = [];
@@ -428,16 +437,15 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
         cy: g.y - g.radius * 0.75,
         w,
         h: 14,
-        // Borderless pill: same color drives both stroke and fill.
-        color: g.badge.color ?? 'var(--color-foreground)',
+        color: g.badge.color ?? 'ink',
         text: g.badge.text,
       });
     }
     for (const b of badgeGeoms) {
-      out.push({ type: 'rect', x: b.cx - b.w / 2, y: b.cy - b.h / 2, width: b.w, height: b.h, color: b.color, fill: b.color });
+      out.push({ type: 'rect', x: b.cx - b.w / 2, y: b.cy - b.h / 2, width: b.w, height: b.h, color: b.color, fillTone: 'fill', fillStyle: 'solid', stroke: 'thin' });
     }
     for (const b of badgeGeoms) {
-      out.push({ type: 'text', x: b.cx, y: b.cy, text: b.text, fontSize: 9, align: 'center', color: 'var(--color-primary-foreground)' });
+      out.push({ type: 'text', x: b.cx, y: b.cy, text: b.text, textSize: 'xs', align: 'center', tone: 'ink' });
     }
 
     for (const g of nodeGeoms) {
@@ -447,9 +455,9 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
         x: g.x,
         y: g.y + g.radius + 14,
         text: g.label,
-        fontSize: 12,
+        textSize: 'sm',
         align: 'center',
-        color: 'var(--color-foreground)',
+        tone: 'ink',
       });
     }
 
@@ -479,6 +487,9 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
           width={width}
           height={height}
           backgroundColor={backgroundColor}
+          series={series}
+          keyMap={keyMap}
+          keyUpMap={keyUpMap}
           shapes={derivedShapes}
           interactive={interactive}
           animate={animate}

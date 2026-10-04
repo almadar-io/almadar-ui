@@ -22,7 +22,7 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
-import { createInProcessTransport, type EventTransport } from '@almadar/runtime';
+import { createInProcessTransport, loadLazyPage, type EventTransport, type SchemaLoader } from '@almadar/runtime';
 import type { MessageCatalogs, OrbitalSchema, UserContext } from '@almadar/core';
 import { localeDirection } from '@almadar/core/i18n';
 import { createLogger } from '@almadar/logger';
@@ -54,6 +54,10 @@ export interface BrowserPlaygroundProps {
   messages?: MessageCatalogs;
   /** The viewer's locale. Default: the schema's first declared locale. */
   locale?: string;
+  /** Loads each `lazyPages` behavior (`uses lazy`): the in-browser runtime runs them with the program, as a server does. */
+  lazyLoader?: SchemaLoader;
+  /** Where `schema` was loaded from — a lazy page's `orbRef` resolves against it. */
+  schemaPath?: string;
 }
 
 export function BrowserPlayground({
@@ -68,6 +72,8 @@ export function BrowserPlayground({
   viewer,
   messages,
   locale,
+  lazyLoader,
+  schemaPath,
 }: BrowserPlaygroundProps): React.ReactElement {
   const [runtime] = useState(
     () => new OrbitalServerRuntime({ mode, debug: false, ...(viewer !== undefined ? { defaultUser: viewer } : {}) }),
@@ -99,10 +105,20 @@ export function BrowserPlayground({
   const registrationReady = useMemo(() => {
     const orbitalNames = schema.orbitals.map((o) => o.name);
     playgroundLog.debug('register:start', { schema: schema.name, orbitalNames });
-    return runtime.register(schema, messages !== undefined ? { messages } : {}).then(() => {
+    const lazyPages = schema.lazyPages ?? [];
+    const lazy = lazyPages.length > 0 && lazyLoader !== undefined
+      ? Promise.all(lazyPages.map(async (page) => {
+          const loaded = await loadLazyPage(lazyLoader, page, schemaPath);
+          if (!loaded.success) throw new Error(loaded.error);
+          return loaded.data;
+        }))
+      : Promise.resolve([]);
+    return lazy.then((lazySchemas) =>
+      runtime.register(schema, { ...(messages !== undefined ? { messages } : {}), lazy: lazySchemas }),
+    ).then(() => {
       playgroundLog.debug('register:done', { schema: schema.name, orbitalNames });
     });
-  }, [runtime, schema, messages]);
+  }, [runtime, schema, messages, lazyLoader, schemaPath]);
 
   // Deferred unmount cleanup. React StrictMode in dev runs every effect's
   // setup → cleanup → setup at mount to surface effect bugs. A naive
@@ -150,7 +166,8 @@ export function BrowserPlayground({
         return runtime.processOrbitalEvent(orbitalName, request);
       },
       {
-        onRegister: (s) => runtime.register(s),
+        // The program (lazy behaviors included) is registered above; the bridge only waits for it.
+        onRegister: () => registrationReady,
         onUnregister: () => {
           runtime.unregisterAll();
         },
@@ -176,6 +193,8 @@ export function BrowserPlayground({
       fit={fit}
       onPageChange={onPageChange}
       user={viewer ?? null}
+      lazyLoader={lazyLoader}
+      schemaPath={schemaPath}
       // BrowserPlayground is always a sandboxed in-process preview embedded in
       // a host (studio canvas / preview tab). Its bus must stay context-local
       // and must NOT clobber the host's global event bus — otherwise a host

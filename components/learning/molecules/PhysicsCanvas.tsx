@@ -11,11 +11,11 @@
  */
 
 import * as React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { createLogger } from '@almadar/logger';
-import type { A11yProps, Camera } from '@almadar/core';
+import type { A11yProps, Camera, DiagramTone, EventKey } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
-import { Card, Typography } from '../../core/atoms/index';
+import { Box, Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { LearningCanvas } from '../atoms/LearningCanvas';
 import type { LearningReadout, LearningShape, LearningTracePanel } from '../atoms/LearningCanvas';
@@ -30,7 +30,6 @@ import {
   cylinderBetween,
   get3DClickPayload,
   heightFieldMesh,
-  labelColorForBackground,
   meshSphere,
   polylineTube,
   type Learning3DPoint,
@@ -45,6 +44,7 @@ export interface LearningPhysicsBody {
   /** 3D mode only: height in scene cells (2D ignores it). */
   z?: number;
   radius?: number;
+  /** Body color: a tone name, token or literal (default the `series-1`..`series-8` tone by body index). */
   color?: string;
   label?: string;
   vx?: number;
@@ -60,6 +60,7 @@ export interface LearningPhysicsBody {
 export interface LearningPhysicsConstraint {
   from: string;
   to: string;
+  /** Constraint color: a tone name, token or literal (default the `ink` tone). */
   color?: string;
   /** Draw style: rigid line (default), zigzag coil, or dashed tether. 2D only — 3D always draws a rod. */
   kind?: 'rod' | 'spring' | 'string';
@@ -91,9 +92,9 @@ export interface PhysicsSceneObject {
   width?: number;
   /** Box height. */
   height?: number;
-  /** Stroke + hatch color (default '#334155'). */
+  /** Stroke + hatch color: a tone name, token or literal (default the `ink` tone). */
   color?: string;
-  /** Fill color; ramp defaults to '#e2e8f0'. */
+  /** Fill color: a tone name, token or literal; ramp defaults to the `fill` tone. */
   fill?: string;
   /** Fixture label. */
   label?: string;
@@ -116,7 +117,7 @@ export interface PhysicsVector {
   dy: number;
   /** Multiplies `dx`/`dy` (default 1). */
   scale?: number;
-  /** Arrow + label color (default '#dc2626'). */
+  /** Arrow + label color: a tone name, token or literal (default the `series-5` tone). */
   color?: string;
   /** Label drawn at the tip, offset 8px further along the arrow direction. */
   label?: string;
@@ -140,9 +141,9 @@ export interface PhysicsTrail {
   /** Authoring handle only — not clickable. */
   id?: string;
   points: PhysicsTrailPoint[];
-  /** Line color (default '#94a3b8'). */
+  /** Line color: a tone name, token or literal (default the `guide` tone). */
   color?: string;
-  /** 2D: stroke width in pixels (default 2). 3D: tube radius in scene cells (default 0.05). */
+  /** 2D: stroke width in pixels (default the theme's normal stroke). 3D: tube radius in scene cells (default 0.05). */
   width?: number;
   /** Multiplies the per-segment fade opacity (default 1). */
   opacity?: number;
@@ -177,7 +178,7 @@ export interface PhysicsSurface3D {
   y?: number;
   /** Elevation color bands; omitted → a single flat-colored sheet. */
   bands?: PhysicsSurfaceBand[];
-  /** Fallback color when `bands` is omitted (default '#64748b'). */
+  /** Fallback color when `bands` is omitted: a tone name, token or literal (default the `series-1` tone). */
   color?: string;
   opacity?: number;
   /** Faceted low-poly shading (default true). */
@@ -202,7 +203,7 @@ export interface PhysicsVector3D {
   dy: number;
   /** Height component (default 0). */
   dz?: number;
-  /** Arrow + label color (default '#dc2626'). */
+  /** Arrow + label color: a tone name, token or literal (default the `series-5` tone). */
   color?: string;
   /** Billboard label at the tip. */
   label?: string;
@@ -223,7 +224,7 @@ export interface PhysicsAngleMarker {
   to: number;
   /** Arc radius in pixels (default 26). */
   radius?: number;
-  /** Arc + label color (default '#0ea5e9'). */
+  /** Arc + label color: a tone name, token or literal (default the `series-4` tone). */
   color?: string;
   /** Label drawn past the arc, along the bisecting bearing. */
   label?: string;
@@ -241,7 +242,7 @@ export interface PhysicsField {
   angle?: number;
   /** Glyph size in pixels (default 14). */
   size?: number;
-  /** Glyph color (default '#94a3b8'). */
+  /** Glyph color: a tone name, token or literal (default the `guide` tone). */
   color?: string;
   /** Region left edge (default 0). */
   x?: number;
@@ -262,11 +263,15 @@ export interface PhysicsMeter {
   value: number;
   /** Full-bar value (default: the max value across all meters, so bars stay comparable). */
   max?: number;
-  /** Bar + value color (default '#3b82f6'). */
+  /** Bar color: a tone name, token or literal (default the `series-1`..`series-8` tone by meter index). */
   color?: string;
 }
 
-const PHYSICS_LABEL_COLOR = '#374151';
+const SERIES_TONES: readonly DiagramTone[] = ['series-1', 'series-2', 'series-3', 'series-4', 'series-5', 'series-6', 'series-7', 'series-8'];
+
+function seriesTone(i: number): DiagramTone {
+  return SERIES_TONES[i % SERIES_TONES.length];
+}
 
 function formatMeterValue(v: number): string {
   return Number.isInteger(v) ? String(v) : String(Number(v.toFixed(2)));
@@ -274,15 +279,15 @@ function formatMeterValue(v: number): string {
 
 function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasHeight: number): LearningShape[] {
   const out: LearningShape[] = [];
-  const color = obj.color ?? '#334155';
+  const color = obj.color ?? 'ink';
   switch (obj.kind) {
     case 'ground': {
       const xStart = obj.x1 ?? 0;
       const xEnd = obj.x2 ?? canvasWidth;
       const y = obj.y ?? 0;
-      out.push({ type: 'line', x1: xStart, y1: y, x2: xEnd, y2: y, color, lineWidth: 2 });
+      out.push({ type: 'line', x1: xStart, y1: y, x2: xEnd, y2: y, color, stroke: 'normal' });
       for (let hx = xStart + 7; hx <= xEnd; hx += 14) {
-        out.push({ type: 'line', x1: hx, y1: y, x2: hx - 7, y2: y + 7, color, lineWidth: 1 });
+        out.push({ type: 'line', x1: hx, y1: y, x2: hx - 7, y2: y + 7, color, stroke: 'thin' });
       }
       if (obj.label) {
         out.push({
@@ -290,8 +295,8 @@ function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasH
           x: (xStart + xEnd) / 2,
           y: y - 10,
           text: obj.label,
-          color: PHYSICS_LABEL_COLOR,
-          fontSize: 11,
+          tone: 'label',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -301,9 +306,9 @@ function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasH
       const yStart = obj.y1 ?? 0;
       const yEnd = obj.y2 ?? canvasHeight;
       const x = obj.x ?? 0;
-      out.push({ type: 'line', x1: x, y1: yStart, x2: x, y2: yEnd, color, lineWidth: 2 });
+      out.push({ type: 'line', x1: x, y1: yStart, x2: x, y2: yEnd, color, stroke: 'normal' });
       for (let hy = yStart + 7; hy <= yEnd; hy += 14) {
-        out.push({ type: 'line', x1: x, y1: hy, x2: x - 7, y2: hy + 7, color, lineWidth: 1 });
+        out.push({ type: 'line', x1: x, y1: hy, x2: x - 7, y2: hy + 7, color, stroke: 'thin' });
       }
       if (obj.label) {
         out.push({
@@ -311,8 +316,8 @@ function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasH
           x: x + 12,
           y: (yStart + yEnd) / 2,
           text: obj.label,
-          color: PHYSICS_LABEL_COLOR,
-          fontSize: 11,
+          tone: 'label',
+          textSize: 'sm',
           align: 'left',
         });
       }
@@ -331,8 +336,8 @@ function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasH
           { x: x1, y: y2 },
         ],
         color,
-        fill: obj.fill ?? '#e2e8f0',
-        lineWidth: 2,
+        fill: obj.fill ?? 'fill',
+        stroke: 'normal',
       });
       if (obj.label) {
         out.push({
@@ -340,8 +345,8 @@ function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasH
           x: (2 * x1 + x2) / 3,
           y: (y1 + 2 * y2) / 3,
           text: obj.label,
-          color: PHYSICS_LABEL_COLOR,
-          fontSize: 11,
+          tone: 'label',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -352,15 +357,15 @@ function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasH
       const y = obj.y ?? 0;
       const w = obj.width ?? 40;
       const h = obj.height ?? 40;
-      out.push({ type: 'rect', x, y, width: w, height: h, color, fill: obj.fill, lineWidth: 2 });
+      out.push({ type: 'rect', x, y, width: w, height: h, color, fill: obj.fill, stroke: 'normal' });
       if (obj.label) {
         out.push({
           type: 'text',
           x: x + w / 2,
           y: y + h / 2,
           text: obj.label,
-          color: PHYSICS_LABEL_COLOR,
-          fontSize: 11,
+          tone: 'label',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -369,20 +374,20 @@ function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasH
     case 'pivot': {
       const x = obj.x ?? 0;
       const y = obj.y ?? 0;
-      out.push({ type: 'circle', x, y, radius: 5, color, fill: color });
-      out.push({ type: 'line', x1: x - 14, y1: y - 8, x2: x + 14, y2: y - 8, color, lineWidth: 1 });
+      out.push({ type: 'circle', x, y, radius: 5, color, fill: color, fillStyle: 'solid' });
+      out.push({ type: 'line', x1: x - 14, y1: y - 8, x2: x + 14, y2: y - 8, color, stroke: 'thin' });
       for (let k = 0; k < 5; k++) {
         const hx = x - 14 + 7 * k;
-        out.push({ type: 'line', x1: hx, y1: y - 8, x2: hx - 6, y2: y - 14, color, lineWidth: 1 });
+        out.push({ type: 'line', x1: hx, y1: y - 8, x2: hx - 6, y2: y - 14, color, stroke: 'thin' });
       }
       if (obj.label) {
         out.push({
           type: 'text',
           x,
-          y: y - 20,
+          y: y - 30,
           text: obj.label,
-          color: PHYSICS_LABEL_COLOR,
-          fontSize: 11,
+          tone: 'label',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -395,8 +400,7 @@ function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasH
 function trailShapes(trail: PhysicsTrail): LearningShape[] {
   const n = trail.points.length;
   if (n < 2) return [];
-  const color = trail.color ?? '#94a3b8';
-  const lineWidth = trail.width ?? 2;
+  const color = trail.color ?? 'guide';
   const fade = trail.fade ?? true;
   const globalOpacity = trail.opacity ?? 1;
   const out: LearningShape[] = [];
@@ -411,7 +415,8 @@ function trailShapes(trail: PhysicsTrail): LearningShape[] {
       x2: b.x,
       y2: b.y,
       color,
-      lineWidth,
+      lineWidth: trail.width,
+      stroke: 'normal',
       opacity: segmentOpacity * globalOpacity,
     });
   }
@@ -424,13 +429,13 @@ function constraintShapes(
   a: LearningPhysicsBody,
   b: LearningPhysicsBody,
 ): LearningShape[] {
-  const color = c.color ?? '#9ca3af';
+  const color = c.color ?? 'ink';
   const kind = c.kind ?? 'rod';
   if (kind === 'rod') {
-    return [{ type: 'line', x1: a.x, y1: a.y, x2: b.x, y2: b.y, color, lineWidth: 2 }];
+    return [{ type: 'line', x1: a.x, y1: a.y, x2: b.x, y2: b.y, color, stroke: 'normal' }];
   }
   if (kind === 'string') {
-    return [{ type: 'line', x1: a.x, y1: a.y, x2: b.x, y2: b.y, color, lineWidth: 2, dash: 'dashed' }];
+    return [{ type: 'line', x1: a.x, y1: a.y, x2: b.x, y2: b.y, color, stroke: 'normal', dash: 'dashed' }];
   }
 
   const COILS = 8;
@@ -466,7 +471,7 @@ function constraintShapes(
       x2: polyline[i].x,
       y2: polyline[i].y,
       color,
-      lineWidth: 2,
+      stroke: 'normal',
     });
   }
   return out;
@@ -475,32 +480,36 @@ function constraintShapes(
 function vectorShapes(v: PhysicsVector, bodyById: Map<string, LearningPhysicsBody>): LearningShape[] {
   let ax: number;
   let ay: number;
+  let anchorRadius = 0;
   if (v.body) {
     const anchor = bodyById.get(v.body);
     if (!anchor) return [];
     ax = anchor.x;
     ay = anchor.y;
+    anchorRadius = anchor.radius ?? 12;
   } else {
     ax = v.x ?? 0;
     ay = v.y ?? 0;
   }
   const scale = v.scale ?? 1;
-  const color = v.color ?? '#dc2626';
+  const color = v.color ?? 'series-5';
   const tx = ax + v.dx * scale;
   const ty = ay + v.dy * scale;
 
-  const out: LearningShape[] = [{ type: 'arrow', x1: ax, y1: ay, x2: tx, y2: ty, color, lineWidth: 2, dash: v.dash }];
+  const out: LearningShape[] = [{ type: 'arrow', x1: ax, y1: ay, x2: tx, y2: ty, color, stroke: 'bold', dash: v.dash }];
   if (v.label) {
-    const dist = Math.max(1e-6, Math.hypot(tx - ax, ty - ay));
-    const ux = (tx - ax) / dist;
-    const uy = (ty - ay) / dist;
+    const len = Math.hypot(tx - ax, ty - ay);
+    const ux = len > 1e-6 ? (tx - ax) / len : 0;
+    const uy = len > 1e-6 ? (ty - ay) / len : -1;
+    const reach = Math.max(len, anchorRadius) + 8;
     out.push({
       type: 'text',
-      x: tx + 8 * ux,
-      y: ty + 8 * uy,
+      x: ax + reach * ux,
+      y: ay + reach * uy,
       text: v.label,
+      textCase: 'verbatim',
       color,
-      fontSize: 11,
+      textSize: 'sm',
       align: 'center',
     });
   }
@@ -509,7 +518,7 @@ function vectorShapes(v: PhysicsVector, bodyById: Map<string, LearningPhysicsBod
 
 function angleMarkerShapes(a: PhysicsAngleMarker): LearningShape[] {
   const radius = a.radius ?? 26;
-  const color = a.color ?? '#0ea5e9';
+  const color = a.color ?? 'series-4';
   const out: LearningShape[] = [
     {
       type: 'ellipse',
@@ -520,7 +529,7 @@ function angleMarkerShapes(a: PhysicsAngleMarker): LearningShape[] {
       startAngle: a.from,
       endAngle: a.to,
       color,
-      lineWidth: 2,
+      stroke: 'normal',
     },
   ];
   if (a.label) {
@@ -530,8 +539,9 @@ function angleMarkerShapes(a: PhysicsAngleMarker): LearningShape[] {
       x: a.x + (radius + 13) * Math.cos(mid),
       y: a.y + (radius + 13) * Math.sin(mid),
       text: a.label,
+      textCase: 'verbatim',
       color,
-      fontSize: 11,
+      textSize: 'sm',
       align: 'center',
     });
   }
@@ -541,7 +551,7 @@ function angleMarkerShapes(a: PhysicsAngleMarker): LearningShape[] {
 function fieldShapes(field: PhysicsField, canvasWidth: number, canvasHeight: number): LearningShape[] {
   const spacing = field.spacing ?? 48;
   const size = field.size ?? 14;
-  const color = field.color ?? '#94a3b8';
+  const color = field.color ?? 'guide';
   const regionX = field.x ?? 0;
   const regionY = field.y ?? 0;
   const regionW = field.width ?? canvasWidth;
@@ -554,17 +564,17 @@ function fieldShapes(field: PhysicsField, canvasWidth: number, canvasHeight: num
         const rad = ((field.angle ?? 0) * Math.PI) / 180;
         const hx = (Math.cos(rad) * size) / 2;
         const hy = (Math.sin(rad) * size) / 2;
-        out.push({ type: 'arrow', x1: gx - hx, y1: gy - hy, x2: gx + hx, y2: gy + hy, color, lineWidth: 2 });
+        out.push({ type: 'arrow', x1: gx - hx, y1: gy - hy, x2: gx + hx, y2: gy + hy, color, stroke: 'normal' });
       } else if (field.kind === 'into') {
         const r = size / 3;
         const d = 0.6 * r * Math.SQRT1_2;
         out.push({ type: 'circle', x: gx, y: gy, radius: r, color });
-        out.push({ type: 'line', x1: gx - d, y1: gy - d, x2: gx + d, y2: gy + d, color, lineWidth: 1 });
-        out.push({ type: 'line', x1: gx - d, y1: gy + d, x2: gx + d, y2: gy - d, color, lineWidth: 1 });
+        out.push({ type: 'line', x1: gx - d, y1: gy - d, x2: gx + d, y2: gy + d, color, stroke: 'thin' });
+        out.push({ type: 'line', x1: gx - d, y1: gy + d, x2: gx + d, y2: gy - d, color, stroke: 'thin' });
       } else {
         const r = size / 3;
         out.push({ type: 'circle', x: gx, y: gy, radius: r, color });
-        out.push({ type: 'circle', x: gx, y: gy, radius: 1.5, color, fill: color });
+        out.push({ type: 'circle', x: gx, y: gy, radius: 1.5, color, fill: color, fillStyle: 'solid' });
       }
     }
   }
@@ -577,18 +587,18 @@ function meterShapes(meters: PhysicsMeter[], canvasHeight: number): LearningShap
   const sharedMax = Math.max(1e-6, ...meters.map((m) => m.value));
   meters.forEach((meter, i) => {
     const rowY = canvasHeight - 10 - 16 * (n - i);
-    const color = meter.color ?? '#3b82f6';
+    const color = meter.color ?? seriesTone(i);
     const M = meter.max ?? sharedMax;
     const w = Math.round(Math.min(1, Math.max(0, meter.value / M)) * 110);
-    out.push({ type: 'text', x: 8, y: rowY + 8, text: meter.label, color: PHYSICS_LABEL_COLOR, fontSize: 10 });
-    out.push({ type: 'rect', x: 52, y: rowY, width: w, height: 10, color, fill: color });
+    out.push({ type: 'text', x: 8, y: rowY + 8, text: meter.label, tone: 'label', textSize: 'xs' });
+    out.push({ type: 'rect', x: 52, y: rowY, width: w, height: 10, color, fill: color, fillStyle: 'solid' });
     out.push({
       type: 'text',
       x: 166,
       y: rowY + 8,
       text: formatMeterValue(meter.value),
-      color: '#6b7280',
-      fontSize: 9,
+      tone: 'label',
+      textSize: 'xs',
     });
   });
   return out;
@@ -600,6 +610,12 @@ export interface PhysicsCanvasProps extends Omit<React.AriaAttributes, keyof A11
   height?: number;
   title?: string;
   backgroundColor?: string;
+  /** Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply. */
+  series?: string[];
+  /** Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route. */
+  keyMap?: Record<string, EventKey>;
+  /** Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`. */
+  keyUpMap?: Record<string, EventKey>;
   /** Painter: 2D raster (default) or 3D mesh scene via the lazy three.js host. */
   mode?: '2d' | '3d';
   /** 3D only: neutral camera pose ({ mode, zoom, fov, azimuth, target }). */
@@ -657,6 +673,9 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
   height = 400,
   title,
   backgroundColor,
+  series,
+  keyMap,
+  keyUpMap,
   mode = '2d',
   camera,
   lighting,
@@ -688,6 +707,7 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
   error,
   ...rest
 }) => {
+
   const derivedShapes: LearningShape[] = useMemo(() => {
     const out: LearningShape[] = [];
     const bodyById = new Map<string, LearningPhysicsBody>();
@@ -708,14 +728,16 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
       out.push(...constraintShapes(c, a, b));
     }
 
-    for (const b of bodies) {
+    bodies.forEach((b, bi) => {
+      const bodyColor = b.color ?? seriesTone(bi);
       out.push({
         type: 'circle',
         x: b.x,
         y: b.y,
         radius: b.radius ?? 12,
-        color: b.color ?? '#2563eb',
-        fill: b.color ?? '#2563eb',
+        color: bodyColor,
+        fill: bodyColor,
+        fillStyle: 'solid',
         id: b.id,
       });
       if (b.label) {
@@ -724,8 +746,8 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
           x: b.x + (b.radius ?? 12) + 6,
           y: b.y - (b.radius ?? 12) - 6,
           text: b.label,
-          color: '#111827',
-          fontSize: 12,
+          tone: 'ink',
+          textSize: 'sm',
         });
       }
       if (showVelocity && b.vx != null && b.vy != null && (b.vx !== 0 || b.vy !== 0)) {
@@ -735,8 +757,8 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
           y1: b.y,
           x2: b.x + b.vx * velocityScale,
           y2: b.y + b.vy * velocityScale,
-          color: '#16a34a',
-          lineWidth: 2,
+          color: 'series-3',
+          stroke: 'bold',
         });
       }
       if (showForces && b.fx != null && b.fy != null && (b.fx !== 0 || b.fy !== 0)) {
@@ -746,11 +768,11 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
           y1: b.y,
           x2: b.x + b.fx * forceScale,
           y2: b.y + b.fy * forceScale,
-          color: '#dc2626',
-          lineWidth: 2,
+          color: 'series-5',
+          stroke: 'bold',
         });
       }
-    }
+    });
 
     for (const v of vectors) out.push(...vectorShapes(v, bodyById));
 
@@ -780,6 +802,8 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
 
   const drawables3D: DrawableNode[] = useMemo(() => {
     if (mode !== '3d') return [];
+    // The 3D host resolves tone names against the theme.
+    const tone3d = (value: string | undefined, fallback: DiagramTone): string => value ?? fallback;
     if (shapes.length > 0) {
       physicsLog.debug('shapes ignored in 3D mode (pixel-authored 2D vocabulary)', { count: shapes.length });
     }
@@ -802,7 +826,7 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
       physicsLog.debug('animate ignored in 3D mode (motion is entity-state driven)');
     }
     const out: DrawableNode[] = [];
-    const labelColor = labelColorForBackground(backgroundColor);
+    const labelColor = 'ink';
     const bodyById = new Map<string, LearningPhysicsBody>();
     for (const b of bodies) {
       if (b.id) bodyById.set(b.id, b);
@@ -813,14 +837,14 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
       const b = bodyById.get(c.to);
       if (!a || !b) continue;
       const rodRadius = Math.max(0.05, Math.min(a.radius ?? 0.5, b.radius ?? 0.5) * 0.15);
-      const rod = cylinderBetween([a.x, a.y, a.z ?? 0], [b.x, b.y, b.z ?? 0], rodRadius, c.color ?? '#9ca3af');
+      const rod = cylinderBetween([a.x, a.y, a.z ?? 0], [b.x, b.y, b.z ?? 0], rodRadius, tone3d(c.color, 'ink'));
       if (rod) out.push(rod);
     }
 
-    for (const b of bodies) {
+    bodies.forEach((b, bi) => {
       const radius = b.radius ?? 0.5;
       const bz = b.z ?? 0;
-      out.push(meshSphere(b.id, b.x, b.y, bz, radius, b.color ?? '#2563eb'));
+      out.push(meshSphere(b.id, b.x, b.y, bz, radius, tone3d(b.color, seriesTone(bi))));
       if (b.label) {
         out.push(billboardLabel(b.label, b.x, b.y, bz + radius, { color: labelColor }));
       }
@@ -832,7 +856,7 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
         const arrow = arrowBetween(
           [b.x, b.y, bz],
           [b.x + vx * velocityScale, b.y + vy * velocityScale, bz + vz * velocityScale],
-          '#16a34a',
+          tone3d('series-3', 'series-3'),
           arrowRadius,
         );
         if (arrow) out.push(arrow);
@@ -844,12 +868,12 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
         const arrow = arrowBetween(
           [b.x, b.y, bz],
           [b.x + fx * forceScale, b.y + fy * forceScale, bz + fz * forceScale],
-          '#dc2626',
+          tone3d('series-5', 'series-5'),
           arrowRadius,
         );
         if (arrow) out.push(arrow);
       }
-    }
+    });
 
     for (const trail of trails) {
       if (trail.fade !== undefined) {
@@ -857,14 +881,20 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
       }
       const points: Learning3DPoint[] = trail.points.map((p) => [p.x, p.y, p.z ?? 0]);
       out.push(
-        ...polylineTube(points, trail.width ?? 0.05, trail.color ?? '#94a3b8', {
+        ...polylineTube(points, trail.width ?? 0.05, tone3d(trail.color, 'guide'), {
           ...(trail.opacity !== undefined ? { opacity: trail.opacity } : {}),
         }),
       );
     }
 
     if (surface3d) {
-      out.push(...heightFieldMesh(surface3d));
+      out.push(
+        ...heightFieldMesh({
+          ...surface3d,
+          color: tone3d(surface3d.color, 'series-1'),
+          bands: surface3d.bands?.map((band) => ({ ...band, color: tone3d(band.color, 'series-1') })),
+        }),
+      );
     }
 
     if (vectors3d.length > 0) {
@@ -874,7 +904,7 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
             id: v.id,
             from: [v.x, v.y, v.z ?? 0] as Learning3DPoint,
             delta: [v.dx, v.dy, v.dz ?? 0] as Learning3DPoint,
-            color: v.color,
+            color: tone3d(v.color, 'series-5'),
             label: v.label,
             width: v.width,
           })),
@@ -922,45 +952,49 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
 
   if (mode === '3d') {
     return (
-      <LearningScene3D
-        {...domPassthrough(rest)}
-        className={className}
-        width={width}
-        height={height}
-        title={title}
-        backgroundColor={backgroundColor}
-        drawables={drawables3D}
-        camera={camera}
-        lighting={lighting}
-        post={post}
-        showGrid={showGrid}
-        shadows={shadows}
-        interactive={interactive}
-        isLoading={isLoading}
-        error={error}
-        onItemClick={get3DClickPayload(onShapeClick, bodyIndexById)}
-      />
+        <LearningScene3D
+          {...domPassthrough(rest)}
+          className={className}
+          width={width}
+          height={height}
+          title={title}
+          backgroundColor={backgroundColor}
+          series={series}
+          drawables={drawables3D}
+          camera={camera}
+          lighting={lighting}
+          post={post}
+          showGrid={showGrid}
+          shadows={shadows}
+          interactive={interactive}
+          isLoading={isLoading}
+          error={error}
+          onItemClick={get3DClickPayload(onShapeClick, bodyIndexById)}
+        />
     );
   }
 
   return (
-    <Card {...domPassthrough(rest)} className={className}>
-      <VStack gap="sm">
-        {title ? <Typography variant="h4">{title}</Typography> : null}
-        <LearningCanvas
-          width={width}
-          height={height}
-          backgroundColor={backgroundColor}
-          shapes={derivedShapes}
-          readouts={readouts}
-          traces={traces}
-          interactive={interactive ?? false}
-          animate={animate}
-          onShapeClick={onShapeClick}
-          isLoading={isLoading}
-          error={error}
-        />
-      </VStack>
-    </Card>
+      <Card {...domPassthrough(rest)} className={className}>
+        <VStack gap="sm">
+          {title ? <Typography variant="h4">{title}</Typography> : null}
+          <LearningCanvas
+            width={width}
+            height={height}
+            backgroundColor={backgroundColor}
+          series={series}
+          keyMap={keyMap}
+          keyUpMap={keyUpMap}
+            shapes={derivedShapes}
+            readouts={readouts}
+            traces={traces}
+            interactive={interactive ?? false}
+            animate={animate}
+            onShapeClick={onShapeClick}
+            isLoading={isLoading}
+            error={error}
+          />
+        </VStack>
+      </Card>
   );
 };

@@ -183,6 +183,7 @@
   "template.ourTeam": "فريقنا",
   "template.caseStudies": "دراسات الحالة",
   "versionDiff.compare": "مقارنة",
+  "versionDiff.changes": "التغييرات",
   "versionDiff.to": "إلى",
   "versionDiff.beforeRevision": "المراجعة السابقة",
   "versionDiff.afterRevision": "المراجعة اللاحقة",
@@ -913,6 +914,7 @@
   "gridPicker.moreRefine": "+{{count}} أخرى — دقّق بحثك",
   "graphCanvas.noNodes": "لا توجد عقد لعرضها.",
   "codeBlock.noCode": "لا يوجد كود لعرضه.",
+  "codeBlock.region": "الشيفرة البرمجية",
   "fab.action": "إجراء",
   "fab.closeActions": "إغلاق الإجراءات",
   "fab.openActions": "فتح الإجراءات",
@@ -1229,5 +1231,12 @@
   "agentActivity.earlierConversations": "المحادثات السابقة ({{count}})",
   "agentActivity.earlierActivity": "نشاط سابق",
   "tabs.scrollStart": "مرّر علامات التبويب للخلف",
-  "tabs.scrollEnd": "مرّر علامات التبويب للأمام"
+  "tabs.scrollEnd": "مرّر علامات التبويب للأمام",
+  "agentChat.workedThrough": "أنجز {{count}} خطوات",
+  "agentChat.newMessages": "رسائل جديدة",
+  "agentChat.copy": "نسخ الرد",
+  "agentChat.copied": "تم النسخ",
+  "agentChat.today": "اليوم",
+  "agentChat.yesterday": "أمس",
+  "agentChat.emptyDescription": "اسأل بكلماتك — يستطيع المساعد البحث عن المعلومات وإجراء التغييرات نيابةً عنك."
 }

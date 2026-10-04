@@ -69,7 +69,8 @@ const variantStyles = {
     "active:scale-[var(--active-scale)] active:shadow-elevation-pressed",
   ].join(" "),
   secondary: [
-    "bg-transparent text-accent",
+    // The accent is often a signature bright that fails as text on a light page.
+    "bg-transparent text-foreground",
     "border border-accent",
     "hover:bg-accent hover:text-accent-foreground hover:border-accent",
     "active:scale-[var(--active-scale)]",

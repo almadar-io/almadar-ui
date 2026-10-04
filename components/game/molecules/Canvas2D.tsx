@@ -51,6 +51,9 @@ import { resolveKeyMapEvent } from '../../../lib/keyMapEvent';
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { create2DProjector, type Projection2D } from '../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
+import { resolveDrawableColors } from '../../../lib/drawable/themeDrawables';
+import { markColor } from '../../../lib/canvasTheme';
+import { useCanvasTheme } from '../../../hooks/useCanvasTheme';
 import { isAnimatedShape } from '../atoms/DrawShape';
 import { isAnimatedSprite } from '../atoms/DrawSprite';
 import { isAnimatedGroup } from '../atoms/DrawGroup';
@@ -230,7 +233,8 @@ function normalizeBackdrop(bg: AssetUrl | Asset | undefined): Asset | undefined 
 }
 
 /** Edit-mode selection ring color + corner-handle size (painter px). */
-const EDIT_SELECTION_COLOR = '#3b82f6';
+/** The selection ring wears the theme's highlight; resolved with the rest of the drawables. */
+const EDIT_SELECTION_COLOR = 'highlight';
 const EDIT_HANDLE_SIZE_PX = 8;
 const EDIT_SELECTION_CORNERS: ReadonlyArray<readonly [number, number]> = [[0, 0], [1, 0], [0, 1], [1, 1]];
 
@@ -354,6 +358,7 @@ export function Canvas2D({
     // -- Refs --
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const { theme: canvasTheme } = useCanvasTheme(containerRef);
     const lerpRafRef = useRef(0);
 
     // -- Viewport size --
@@ -563,6 +568,7 @@ export function Canvas2D({
 
         const scheduleAnimation = (nodes: readonly DrawableNode[]): void => {
             if (!nodes.some(drawableIsAnimated)) return;
+            if (canvasTheme && !canvasTheme.motion.enabled) return;
             cancelAnimationFrame(animRafRef.current);
             animRafRef.current = requestAnimationFrame(() => drawTimeRef.current(performance.now()));
         };
@@ -576,7 +582,11 @@ export function Canvas2D({
 
         // Background: the colour is the base layer; an image (once it resolves)
         // paints over it, so an unset or loading image never leaves a hole.
-        ctx.fillStyle = bgColor ?? BACKGROUND_FALLBACK_COLOR;
+        const themed = (nodes: readonly DrawableNode[]): DrawableNode[] =>
+            canvasTheme ? resolveDrawableColors(nodes, (c) => markColor(canvasTheme, c, canvas, 'ink')) : [...nodes];
+        ctx.fillStyle = canvasTheme
+            ? (bgColor !== undefined ? markColor(canvasTheme, bgColor, canvas, 'fill') : canvasTheme.ground)
+            : (bgColor ?? BACKGROUND_FALLBACK_COLOR);
         ctx.fillRect(0, 0, viewportSize.width, viewportSize.height);
         if (backgroundImage?.url) {
             const bgImg = getImage(backgroundImage.url);
@@ -619,7 +629,7 @@ export function Canvas2D({
             painter0.scale(cam0.zoom, cam0.zoom);
             painter0.translate(-viewportSize.width / 2 - cam0.x, -viewportSize.height / 2 - cam0.y);
             const dctx0: DrawContext = { projector, time: timeMs, invalidate: bumpAtlas };
-            for (const node of childDrawables) paintDrawable(painter0, node, dctx0);
+            for (const node of themed(childDrawables)) paintDrawable(painter0, node, dctx0);
             painter0.restore();
             scheduleAnimation(childDrawables);
             return;
@@ -665,10 +675,10 @@ export function Canvas2D({
                 paintNodes = [...paintNodes, ...selectionOverlayNodes(projector, overlaySource)];
             }
         }
-        for (const node of paintNodes) paintDrawable(painter, node, dctx);
+        for (const node of themed(paintNodes)) paintDrawable(painter, node, dctx);
         painter.restore();
         scheduleAnimation(paintNodes);
-    }, [viewportSize, backgroundImage, bgColor, drawables, projector, cameraRef, bumpAtlas, getImage, cameraPos, defaultGridFocus, camera, dragDistance, editable, selectedId, drawnItems]);
+    }, [viewportSize, backgroundImage, bgColor, drawables, projector, cameraRef, bumpAtlas, getImage, cameraPos, defaultGridFocus, camera, dragDistance, editable, selectedId, drawnItems, canvasTheme]);
     useEffect(() => {
         drawTimeRef.current = draw;
     }, [draw]);

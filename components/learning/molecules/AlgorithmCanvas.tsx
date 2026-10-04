@@ -22,7 +22,7 @@
  */
 
 import * as React from 'react';
-import type { A11yProps } from '@almadar/core';
+import type { A11yProps, DiagramTone, EventKey } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
 import { useMemo } from 'react';
 import { Card, Typography } from '../../core/atoms/index';
@@ -120,6 +120,12 @@ export interface AlgorithmCanvasProps extends Omit<React.AriaAttributes, keyof A
   height?: number;
   title?: string;
   backgroundColor?: string;
+  /** Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply. */
+  series?: string[];
+  /** Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route. */
+  keyMap?: Record<string, EventKey>;
+  /** Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`. */
+  keyUpMap?: Record<string, EventKey>;
   /** Sorting/histogram bars; laid out left-to-right, height proportional to value. */
   bars?: AlgorithmBar[];
   /** Grid/array/DP cells; laid out on a row/col lattice sized to the extent. */
@@ -151,10 +157,10 @@ export interface AlgorithmCanvasProps extends Omit<React.AriaAttributes, keyof A
   error?: UiError | null;
 }
 
-export const DEFAULT_BAR_COLOR = 'var(--color-primary)';
-export const DEFAULT_CELL_COLOR = 'var(--color-muted)';
-export const DEFAULT_POINTER_COLOR = 'var(--color-error)';
-const POINTER_BAND = 34;
+export const DEFAULT_BAR_COLOR: DiagramTone = 'series-1';
+export const DEFAULT_CELL_COLOR: DiagramTone = 'fill';
+export const DEFAULT_POINTER_COLOR: DiagramTone = 'highlight';
+const POINTER_BAND = 40;
 // Reserves the label band above the tallest bar: 8px offset + an 11px centered label.
 const TOP_PAD = 26;
 
@@ -163,7 +169,7 @@ const PANEL_FAMILY_ORDER = ['bars', 'slots', 'cells', 'buckets', 'frames'] as co
 type PanelFamily = (typeof PANEL_FAMILY_ORDER)[number];
 
 // ranges
-export const RANGE_COLOR_DEFAULT = 'var(--color-primary)';
+export const RANGE_COLOR_DEFAULT: DiagramTone = 'highlight';
 const RANGE_FILL_OPACITY = 0.15;
 // 16 (not 8) so the first bracket's label at bracketY - 6 clears the panel's top edge.
 const BRACKET_TOP_OFFSET = 16;
@@ -172,24 +178,18 @@ const BRACKET_TICK_H = 6;
 const BRACKET_LABEL_OFFSET = 6;
 
 // slots
-export const SLOT_EMPTY_FILL = 'var(--color-muted)';
-export const SLOT_EMPTY_STROKE = 'var(--color-border)';
-export const SLOT_FILLED_STROKE = 'var(--color-muted-foreground)';
-export const SLOT_HIGHLIGHT_DEFAULT = 'var(--color-warning)';
-export const SLOT_VALUE_TEXT_COLOR = 'var(--color-primary-foreground)';
+export const SLOT_EMPTY_FILL: DiagramTone = 'fill';
+export const SLOT_EMPTY_STROKE: DiagramTone = 'guide';
+export const SLOT_FILLED_STROKE: DiagramTone = 'ink';
+export const SLOT_HIGHLIGHT_DEFAULT: DiagramTone = 'highlight';
+export const SLOT_VALUE_TEXT_COLOR: DiagramTone = 'ink';
 
 // frames
-export const FRAME_ACTIVE_COLOR = 'var(--color-primary)';
-export const FRAME_RETURNING_COLOR = 'var(--color-warning)';
-export const FRAME_DONE_COLOR = 'var(--color-muted-foreground)';
-// Rims are a darker-toward-foreground shade of the fill, one per frame state.
-export const FRAME_RIM_COLOR: Record<string, string> = {
-  active: 'color-mix(in srgb, var(--color-primary) 70%, var(--color-foreground))',
-  returning: 'color-mix(in srgb, var(--color-warning) 70%, var(--color-foreground))',
-  done: 'color-mix(in srgb, var(--color-muted-foreground) 70%, var(--color-foreground))',
-};
-export const FRAME_LABEL_COLOR = 'var(--color-primary-foreground)';
-export const FRAME_DETAIL_COLOR = 'color-mix(in srgb, var(--color-primary-foreground) 80%, transparent)';
+export const FRAME_ACTIVE_COLOR: DiagramTone = 'primary';
+export const FRAME_RETURNING_COLOR: DiagramTone = 'highlight';
+export const FRAME_DONE_COLOR: DiagramTone = 'muted';
+export const FRAME_LABEL_COLOR: DiagramTone = 'ink';
+export const FRAME_DETAIL_COLOR: DiagramTone = 'label';
 const FRAME_TWO_LINE_MIN_H = 22;
 // Strips are fixed-height slabs stacked from the panel bottom (a real call
 // stack silhouette) — never stretched to fill the panel; they only compress
@@ -200,22 +200,19 @@ const FRAME_BOTTOM_PAD = 8;
 const FRAME_MIN_H = 12;
 
 // buckets
-export const BUCKET_INDEX_FILL = 'var(--color-muted)';
-export const BUCKET_INDEX_STROKE = 'var(--color-muted-foreground)';
-export const BUCKET_INDEX_TEXT = 'var(--color-foreground)';
-export const BUCKET_ENTRY_TEXT = 'var(--color-primary-foreground)';
-export const BUCKET_ENTRY_DEFAULT = 'var(--color-primary)';
-export const BUCKET_ENTRY_HIGHLIGHT = 'var(--color-warning)';
-export const BUCKET_ENTRY_PROBING = 'var(--color-info)';
+export const BUCKET_INDEX_FILL: DiagramTone = 'fill';
+export const BUCKET_INDEX_STROKE: DiagramTone = 'ink';
+export const BUCKET_INDEX_TEXT: DiagramTone = 'ink';
+export const BUCKET_ENTRY_TEXT: DiagramTone = 'ink';
+export const BUCKET_ENTRY_DEFAULT: DiagramTone = 'series-1';
+export const BUCKET_ENTRY_HIGHLIGHT: DiagramTone = 'highlight';
+export const BUCKET_ENTRY_PROBING: DiagramTone = 'accent';
 const BUCKET_ENTRY_MIN_W = 24;
 const BUCKET_ENTRY_MAX_W = 64;
 
 // cells: rowLabels/colLabels/corner decorations
-export const AXIS_LABEL_COLOR = 'var(--color-muted-foreground)';
-const AXIS_LABEL_FONT_SIZE = 10;
-// Near-black like the cell value label — mid-gray corners washed out on colored cell fills.
-export const CORNER_TEXT_COLOR = 'var(--color-foreground)';
-const CORNER_FONT_SIZE = 7;
+export const AXIS_LABEL_COLOR: DiagramTone = 'label';
+export const CORNER_TEXT_COLOR: DiagramTone = 'ink';
 const CORNER_MIN_CELL = 28;
 const CORNER_INSET_X = 3;
 const CORNER_INSET_Y = 6;
@@ -231,6 +228,9 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
   height = 400,
   title,
   backgroundColor,
+  series,
+  keyMap,
+  keyUpMap,
   bars = [],
   cells = [],
   pointers = [],
@@ -306,6 +306,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
           height: bh,
           color,
           fill: color,
+          fillStyle: 'tint',
+          stroke: 'normal',
         });
         const label = bar.label ?? (bars.length <= 24 ? String(v) : undefined);
         if (label) {
@@ -314,8 +316,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             x: x + barW / 2,
             y: baseline - bh - 8,
             text: label,
-            color: 'var(--color-foreground)',
-            fontSize: 11,
+            tone: 'label',
+            textSize: 'xs',
             align: 'center',
           });
         }
@@ -333,6 +335,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
           height: primaryH,
           color,
           fill: color,
+          fillStyle: 'solid',
+          stroke: 'thin',
           opacity: RANGE_FILL_OPACITY,
         });
         if (r.label) {
@@ -342,8 +346,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             // Sits below the bracket block (if any) so fill and bracket labels never collide.
             y: panelYBars + 10 + bracketHeadroom,
             text: r.label,
-            color,
-            fontSize: 10,
+            tone: 'label',
+            textSize: 'xs',
             align: 'left',
           });
         }
@@ -354,17 +358,17 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
         const x1 = r.from * slot + slot * 0.1;
         const x2 = (r.to + 1) * slot - slot * 0.1;
         const color = r.color ?? RANGE_COLOR_DEFAULT;
-        out.push({ type: 'line', x1, y1: bracketY, x2, y2: bracketY, color, lineWidth: 2 });
-        out.push({ type: 'line', x1, y1: bracketY, x2: x1, y2: bracketY + BRACKET_TICK_H, color, lineWidth: 2 });
-        out.push({ type: 'line', x1: x2, y1: bracketY, x2: x2, y2: bracketY + BRACKET_TICK_H, color, lineWidth: 2 });
+        out.push({ type: 'line', x1, y1: bracketY, x2, y2: bracketY, color, stroke: 'normal' });
+        out.push({ type: 'line', x1, y1: bracketY, x2: x1, y2: bracketY + BRACKET_TICK_H, color, stroke: 'normal' });
+        out.push({ type: 'line', x1: x2, y1: bracketY, x2: x2, y2: bracketY + BRACKET_TICK_H, color, stroke: 'normal' });
         if (r.label) {
           out.push({
             type: 'text',
             x: (x1 + x2) / 2,
             y: bracketY - BRACKET_LABEL_OFFSET,
             text: r.label,
-            color,
-            fontSize: 10,
+            tone: 'label',
+            textSize: 'xs',
             align: 'center',
           });
         }
@@ -392,6 +396,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             height: bh,
             color,
             fill: color,
+            fillStyle: 'tint',
+            stroke: 'normal',
           });
           const label = bar.label ?? (auxBars.length <= 24 ? String(v) : undefined);
           if (label) {
@@ -400,8 +406,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x: x + w / 2,
               y: auxBaseline - bh - 8,
               text: label,
-              color: 'var(--color-foreground)',
-              fontSize: 11,
+              tone: 'label',
+              textSize: 'xs',
               align: 'center',
             });
           }
@@ -409,27 +415,33 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
       }
 
       // Bars win the pointer tie-break: pointers only retarget slots when bars is empty (below).
+      const pointersByIndex = new Map<number, AlgorithmPointer>();
       pointers.forEach((p) => {
+        const prev = pointersByIndex.get(p.index);
+        const label = [prev?.label, p.label].filter((l): l is string => !!l).join(' · ');
+        pointersByIndex.set(p.index, { ...(prev ?? p), label: label || undefined });
+      });
+      pointersByIndex.forEach((p) => {
         if (p.index < 0 || p.index >= bars.length) return;
         const cx = p.index * slot + slot / 2;
         const color = p.color ?? DEFAULT_POINTER_COLOR;
         out.push({
           type: 'arrow',
           x1: cx,
-          y1: panelYBars + primaryH - 18,
+          y1: baseline + 15,
           x2: cx,
-          y2: baseline + 4,
+          y2: baseline + 3,
           color,
-          lineWidth: 2,
+          stroke: 'normal',
         });
         if (p.label) {
           out.push({
             type: 'text',
             x: cx,
-            y: panelYBars + primaryH - 8,
+            y: panelYBars + primaryH - 10,
             text: p.label,
             color,
-            fontSize: 11,
+            textSize: 'sm',
             align: 'center',
           });
         }
@@ -475,6 +487,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
           height: box.height,
           color: stroke,
           fill,
+          fillStyle: 'tint',
+          stroke: 'normal',
         });
         if (s.value != null && state !== 'empty') {
           out.push({
@@ -482,8 +496,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             x: box.x + box.width / 2,
             y: box.y + box.height / 2,
             text: String(s.value),
-            color: SLOT_VALUE_TEXT_COLOR,
-            fontSize: 12,
+            tone: SLOT_VALUE_TEXT_COLOR,
+            textSize: 'sm',
             align: 'center',
           });
         }
@@ -503,7 +517,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x2: box.x + box.width + 4,
               y2: cy,
               color,
-              lineWidth: 2,
+              stroke: 'normal',
             });
             if (p.label) {
               out.push({
@@ -512,7 +526,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
                 y: cy,
                 text: p.label,
                 color,
-                fontSize: 11,
+                textSize: 'sm',
                 align: 'left',
               });
             }
@@ -525,7 +539,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x2: cx,
               y2: box.y + box.height + 4,
               color,
-              lineWidth: 2,
+              stroke: 'normal',
             });
             if (p.label) {
               out.push({
@@ -534,7 +548,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
                 y: panelYSlots + panelHeight - 8,
                 text: p.label,
                 color,
-                fontSize: 11,
+                textSize: 'sm',
                 align: 'center',
               });
             }
@@ -566,8 +580,9 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
           y: y + 1,
           width: cw - 2,
           height: ch - 2,
-          color: 'var(--color-border)',
+          color: 'ink',
           fill: color,
+          stroke: 'thin',
         });
         const label = c.label ?? (c.value != null ? String(c.value) : undefined);
         if (label && cw >= 18 && ch >= 14) {
@@ -576,8 +591,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             x: x + cw / 2,
             y: y + ch / 2,
             text: label,
-            color: 'var(--color-foreground)',
-            fontSize: 12,
+            tone: 'ink',
+            textSize: 'sm',
             align: 'center',
           });
         }
@@ -589,8 +604,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x: x + CORNER_INSET_X,
               y: y + CORNER_INSET_Y,
               text: tl,
-              color: CORNER_TEXT_COLOR,
-              fontSize: CORNER_FONT_SIZE,
+              tone: CORNER_TEXT_COLOR,
+              textSize: 'xs',
               align: 'left',
             });
           }
@@ -600,8 +615,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x: x + cw - CORNER_INSET_X,
               y: y + CORNER_INSET_Y,
               text: tr,
-              color: CORNER_TEXT_COLOR,
-              fontSize: CORNER_FONT_SIZE,
+              tone: CORNER_TEXT_COLOR,
+              textSize: 'xs',
               align: 'right',
             });
           }
@@ -611,8 +626,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x: x + CORNER_INSET_X,
               y: y + ch - CORNER_INSET_Y,
               text: bl,
-              color: CORNER_TEXT_COLOR,
-              fontSize: CORNER_FONT_SIZE,
+              tone: CORNER_TEXT_COLOR,
+              textSize: 'xs',
               align: 'left',
             });
           }
@@ -622,8 +637,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x: x + cw - CORNER_INSET_X,
               y: y + ch - CORNER_INSET_Y,
               text: br,
-              color: CORNER_TEXT_COLOR,
-              fontSize: CORNER_FONT_SIZE,
+              tone: CORNER_TEXT_COLOR,
+              textSize: 'xs',
               align: 'right',
             });
           }
@@ -637,7 +652,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
           y: panelYCells + colLabelH / 2,
           text: l.text,
           color: l.color ?? AXIS_LABEL_COLOR,
-          fontSize: AXIS_LABEL_FONT_SIZE,
+          textSize: 'xs',
           align: 'center',
         });
       });
@@ -648,7 +663,7 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
           y: gridY0 + l.index * ch + ch / 2,
           text: l.text,
           color: l.color ?? AXIS_LABEL_COLOR,
-          fontSize: AXIS_LABEL_FONT_SIZE,
+          textSize: 'xs',
           align: 'right',
         });
       });
@@ -675,14 +690,15 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
           height: rowH - 4,
           color: BUCKET_INDEX_STROKE,
           fill: BUCKET_INDEX_FILL,
+          stroke: 'thin',
         });
         out.push({
           type: 'text',
           x: 2 + (indexColW - 4) / 2,
           y: rowY + rowH / 2,
           text: String(b.index),
-          color: BUCKET_INDEX_TEXT,
-          fontSize: 10,
+          tone: BUCKET_INDEX_TEXT,
+          textSize: 'xs',
           align: 'center',
         });
 
@@ -707,6 +723,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             height: rowH - 4,
             color: fill,
             fill,
+            fillStyle: 'tint',
+            stroke: 'normal',
           });
           if (entryW >= 20 && rowH >= 16) {
             out.push({
@@ -714,8 +732,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x: ex + (entryW - 2) / 2,
               y: rowY + rowH / 2,
               text: entry.label,
-              color: BUCKET_ENTRY_TEXT,
-              fontSize: 10,
+              tone: BUCKET_ENTRY_TEXT,
+              textSize: 'xs',
               align: 'center',
             });
           }
@@ -731,14 +749,16 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             height: rowH - 4,
             color: BUCKET_ENTRY_DEFAULT,
             fill: BUCKET_ENTRY_DEFAULT,
+            fillStyle: 'tint',
+            stroke: 'normal',
           });
           out.push({
             type: 'text',
             x: ex + (entryW - 2) / 2,
             y: rowY + rowH / 2,
             text: `+${b.entries.length - visibleCount}`,
-            color: BUCKET_ENTRY_TEXT,
-            fontSize: 10,
+            tone: BUCKET_ENTRY_TEXT,
+            textSize: 'xs',
             align: 'center',
           });
         }
@@ -765,16 +785,15 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             : state === 'done'
               ? (f.color ?? FRAME_DONE_COLOR)
               : (f.color ?? FRAME_ACTIVE_COLOR);
-        const rim = f.color ?? FRAME_RIM_COLOR[state] ?? FRAME_RIM_COLOR.active;
-        out.push({ type: 'rect', id: `frame-${i}`, x, y, width: w, height: frameH, color: rim, fill });
+        out.push({ type: 'rect', id: `frame-${i}`, x, y, width: w, height: frameH, color: fill, fill, fillStyle: 'tint', stroke: 'normal' });
         if (frameH >= FRAME_TWO_LINE_MIN_H) {
           out.push({
             type: 'text',
             x: 16,
             y: y + frameH * 0.35,
             text: f.label,
-            color: FRAME_LABEL_COLOR,
-            fontSize: 11,
+            tone: FRAME_LABEL_COLOR,
+            textSize: 'sm',
             align: 'left',
           });
           if (f.detail) {
@@ -783,8 +802,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
               x: 16,
               y: y + frameH * 0.72,
               text: f.detail,
-              color: FRAME_DETAIL_COLOR,
-              fontSize: 10,
+              tone: FRAME_DETAIL_COLOR,
+              textSize: 'xs',
               align: 'left',
             });
           }
@@ -794,8 +813,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             x: 16,
             y: y + frameH / 2,
             text: f.label,
-            color: FRAME_LABEL_COLOR,
-            fontSize: 10,
+            tone: FRAME_LABEL_COLOR,
+            textSize: 'xs',
             align: 'left',
           });
         }
@@ -814,6 +833,9 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
           width={width}
           height={height}
           backgroundColor={backgroundColor}
+          series={series}
+          keyMap={keyMap}
+          keyUpMap={keyUpMap}
           shapes={derivedShapes}
           interactive={interactive}
           animate={animate}

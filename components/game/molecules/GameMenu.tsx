@@ -47,6 +47,9 @@ export interface GameMenuProps extends Omit<React.AriaAttributes, keyof A11yProp
   className?: string;
 }
 
+/** True inside `GameShell`'s overlay layer: the menu is a banner over the arena, not a full screen. */
+export const GameOverlayContext = React.createContext(false);
+
 const DEFAULT_MENU_OPTION_KEYS: ReadonlyArray<{ labelKey: string; event: EventKey; variant: string }> = [
   { labelKey: 'gameMenu.newGame', event: 'NEW_GAME', variant: 'primary' },
   { labelKey: 'gameMenu.continue', event: 'CONTINUE', variant: 'secondary' },
@@ -76,6 +79,7 @@ export function GameMenu({
   const resolvedOptions = (options?.length ? options : undefined) ?? (menuItems?.length ? menuItems : undefined) ?? defaultOptions;
 
   const eventBus = useEventBus();
+  const inOverlay = React.useContext(GameOverlayContext);
 
   const handleOptionClick = React.useCallback(
     (option: MenuOption) => {
@@ -100,9 +104,12 @@ export function GameMenu({
   return (
     <Box
       {...domPassthrough(rest)}
+      data-game-menu=""
       className={cn(
-        "min-h-screen w-full flex flex-col items-center justify-center p-8",
-        !background && "bg-background",
+        inOverlay
+          ? "flex flex-col items-center justify-center"
+          : "min-h-screen w-full flex flex-col items-center justify-center p-8",
+        !background && !inOverlay && "bg-background",
         className,
       )}
       style={background ? { background } : undefined}

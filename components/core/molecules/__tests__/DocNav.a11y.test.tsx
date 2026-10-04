@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { DocSidebar } from '../DocSidebar';
 import { DocPagination } from '../DocPagination';
 import { DocTOC } from '../DocTOC';
+import { DocBreadcrumb } from '../DocBreadcrumb';
 import { NavStackProvider } from '../../../../providers/NavStackContext';
 import { axeViolations, describeViolations } from '../../../../test/axe';
 
@@ -99,5 +100,24 @@ describe('DocTOC a11y', () => {
     expect(scroll).toHaveBeenCalled();
     expect(describeViolations(await axeViolations(container))).toEqual([]);
     target.remove();
+  });
+});
+
+describe('DocBreadcrumb', () => {
+  const crumbs = [{ label: 'Docs', href: '/docs' }, { label: 'Core concepts', href: '/docs/core-concepts' }, { label: 'Traits' }];
+
+  it('ancestors are real links that navigate through the nav stack', async () => {
+    const { container, navigate } = withNav(<DocBreadcrumb items={crumbs} />);
+    const docs = screen.getByRole('link', { name: 'Docs' });
+    expect(docs.getAttribute('href')).toBe('/docs');
+    fireEvent.click(docs);
+    expect(navigate).toHaveBeenCalledWith('/docs');
+    expect(describeViolations(await axeViolations(container))).toEqual([]);
+  });
+
+  it('control: the current page is plain text, not a link', () => {
+    withNav(<DocBreadcrumb items={crumbs} />);
+    expect(screen.queryByRole('link', { name: 'Traits' })).toBeNull();
+    expect(screen.getByText('Traits')).toBeTruthy();
   });
 });

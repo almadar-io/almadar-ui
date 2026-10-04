@@ -793,6 +793,40 @@ const HIDDEN_LINE_NUMBERS: React.CSSProperties = { display: 'none' };
  */
 export const HIGHLIGHT_CAPACITY_BYTES = 512 * 1024;
 
+/** Lines per laid-out chunk of an over-capacity document. */
+export const PLAIN_CODE_CHUNK_LINES = 400;
+
+/**
+ * An over-capacity document as fixed-size line chunks with `content-visibility: auto`: the browser
+ * skips layout and paint for offscreen chunks (a single multi-MB text node cost ~10s of layout),
+ * while every line stays in the DOM for find-in-page, selection and copy. The wrapper keeps the
+ * widest line's width so horizontal scroll does not depend on which chunks are on screen.
+ */
+function PlainCodeChunks({ code, style }: { code: string; style: React.CSSProperties }): React.ReactElement {
+  const { chunks, widest } = useMemo(() => {
+    const lines = code.split('\n');
+    const out: Array<{ text: string; lines: number }> = [];
+    for (let i = 0; i < lines.length; i += PLAIN_CODE_CHUNK_LINES) {
+      const slice = lines.slice(i, i + PLAIN_CODE_CHUNK_LINES);
+      out.push({ text: slice.join('\n'), lines: slice.length });
+    }
+    return { chunks: out, widest: lines.reduce((w, l) => Math.max(w, l.length), 0) };
+  }, [code]);
+  return (
+    <Box style={{ ...style, minWidth: `max(100%, ${widest}ch)` }}>
+      {chunks.map((chunk, i) => (
+        <Box
+          key={i}
+          data-code-chunk={i}
+          style={{ contentVisibility: 'auto', containIntrinsicBlockSize: `auto ${chunk.lines}lh` }}
+        >
+          {chunk.text}
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
 /**
  * What the editable overlay paints for `value`. A textarea ending in a newline
  * shows an empty last line; a block element drops a trailing newline. Painting a
@@ -1432,16 +1466,14 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const highlightedElement = useMemo(
       () =>
         overCapacity ? (
-          <div
+          <PlainCodeChunks
+            code={code}
             style={{
               margin: 0,
               whiteSpace: 'pre',
-              minWidth: '100%',
               color: plainCodeColor,
             }}
-          >
-            {code}
-          </div>
+          />
         ) : (
         <SyntaxHighlighter
           PreTag="div"
@@ -1478,10 +1510,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const viewerHighlightedElement = useMemo(
       () =>
         viewerOverCapacity ? (
-          <div
-            className="px-4 py-0.5"
+          <PlainCodeChunks
+            code={activeCode}
             style={{
               margin: 0,
+              padding: '0.125rem 1rem',
               whiteSpace: wrap ? 'pre-wrap' : 'pre',
               wordBreak: wrap ? 'break-all' : 'normal',
               color: viewerPlainCodeColor,
@@ -1489,9 +1522,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               fontSize: '12px',
               lineHeight: '1.6',
             }}
-          >
-            {activeCode}
-          </div>
+          />
         ) : (
         <SyntaxHighlighter
           PreTag="div"
@@ -1841,7 +1872,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 ))}
               </HStack>
             </HStack>
-            <Box className="overflow-auto bg-muted/20" style={{ maxHeight }} dir={codeDir}>
+            <Box className="overflow-auto bg-muted/20" style={{ maxHeight }} dir={codeDir} role="region" tabIndex={0} aria-label={title ?? t('codeBlock.region')}>
               {diffLines ? (
                 <div style={{ display: 'flex', flexDirection: 'column' }} className="font-mono text-xs">
                   {diffRowElements}
@@ -2271,6 +2302,9 @@ export const CodeBlock = React.memo<CodeBlockProps>(
             // paints a light box behind every token. Strip it for descendants
             // — same resets CodePreviewTabs used to apply locally per call site.
             className="[&_code]:!bg-transparent [&_code]:!p-0 [&_code]:!border-0 [&_code]:!shadow-none [&_span]:!bg-transparent"
+            role="region"
+            tabIndex={0}
+            aria-label={title ?? t('codeBlock.region')}
             style={{
               flex: 1,
               minHeight: 0,

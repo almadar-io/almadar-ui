@@ -47,6 +47,16 @@ const PAIRS = [
   ['--color-foreground', '--color-surface'],
 ];
 
+// Drawing surfaces: labels are text (4.5:1); marks are graphics (WCAG 1.4.11, 3:1). Measured
+// against the drawing ground, which falls back to the card when a theme sets none.
+const DIAGRAM_TEXT = ['--color-diagram-label'];
+const DIAGRAM_GRAPHICS = [
+  '--color-diagram-ink',
+  '--color-diagram-axis',
+  '--color-diagram-highlight',
+  ...Array.from({ length: 8 }, (_, i) => `--color-series-${i + 1}`),
+];
+
 let violations = 0;
 for (const mode of loadThemeModes(themesDir, filter)) {
   const results = [];
@@ -57,11 +67,20 @@ for (const mode of loadThemeModes(themesDir, filter)) {
       results.push({ pair: `${fgName} on ${bgName}`, ratio: ratio.toFixed(2), fg: mode.raw(fgName), bg: mode.raw(bgName) });
     }
   }
+  const groundName = mode.color('--surface-diagram') ? '--surface-diagram' : '--color-card';
+  for (const [names, min] of [[DIAGRAM_TEXT, 4.5], [DIAGRAM_GRAPHICS, 3]]) {
+    for (const fgName of names) {
+      const ratio = pairContrast(mode, mode.color(fgName), mode.color(groundName));
+      if (ratio !== null && ratio < min) {
+        results.push({ pair: `${fgName} on ${groundName} (needs ${min}:1)`, ratio: ratio.toFixed(2), fg: mode.raw(fgName), bg: mode.raw(groundName) });
+      }
+    }
+  }
   if (results.length) {
     violations += results.length;
     console.log(`\n${mode.name}  (${mode.file})`);
     for (const r of results) console.log(`  FAIL ${r.ratio}:1  ${r.pair}   fg=${r.fg} bg=${r.bg}`);
   }
 }
-console.log(violations === 0 ? '\nAll theme pairs pass WCAG AA (4.5:1).' : `\n${violations} violation(s).`);
+console.log(violations === 0 ? '\nAll theme pairs pass WCAG AA (text 4.5:1, drawing marks 3:1).' : `\n${violations} violation(s).`);
 process.exit(violations === 0 ? 0 : 1);

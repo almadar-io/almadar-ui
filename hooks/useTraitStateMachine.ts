@@ -136,7 +136,7 @@ export function useTraitStateMachine(
 
   const observer = useMemo(() => createCircuitVerificationObserver(), []);
 
-  const { kernel, store, traitIndex, transport } = useCircuitKernel(traitBindings, {
+  const { kernel, store, traitIndex, appTraitNames, transport } = useCircuitKernel(traitBindings, {
     orbitals: options.orbitals,
     ...(options.traitConfigsByName !== undefined ? { traitConfigsByName: options.traitConfigsByName } : {}),
     ...(options.transport !== undefined ? { transport: options.transport } : {}),
@@ -352,6 +352,19 @@ export function useTraitStateMachine(
     }, { clientId: getTabClientId() });
   }, [transport, traitIndex, progressAndSettle, dispatchAndSettle]);
 
+  // A dispatch the host ran on its own (a declared input) shows here as the host's result; it never
+  // runs again in this view.
+  useEffect(() => {
+    if (!transport?.subscribeHostDispatches) return;
+    return transport.subscribeHostDispatches((_orbitalName, request, response) => {
+      const traitName = request.targetTrait;
+      if (traitName === undefined || !traitIndex.byName.has(traitName)) return;
+      const composedBefore = new Map(store.callsitePayloads);
+      void kernel.foldHostDispatch(request, response).then((outcome) =>
+        settleOutcome(traitName, request.event, request.payload, outcome, composedBefore));
+    });
+  }, [transport, traitIndex, kernel, store, settleOutcome]);
+
 
   // Mount in one round trip: every entering trait's lifecycle arm runs and
   // paints at once, then one mount leg is posted and folded.
@@ -389,7 +402,7 @@ export function useTraitStateMachine(
     }
   }, [kernel, slotFlush, traitIndex, store, eventBus, options.navigate, options.navigateBack, afterSettle]);
 
-  useBusIngress(traitBindings, traitIndex, dispatchAndSettle, eventBus);
+  useBusIngress(traitBindings, traitIndex, dispatchAndSettle, eventBus, appTraitNames);
 
   const sendEvent = useCallback((eventKey: string, payload?: EventPayload): void => {
     const normalized = normalizeEventKey(eventKey);

@@ -12,7 +12,7 @@
  * callers that convert pixels pass the rendered size of each step.
  */
 
-import type { JsonValue, OrbitalSchema } from '@almadar/core';
+import type { JsonValue, OrbitalDefinition, OrbitalSchema } from '@almadar/core';
 
 /** Color tokens the preset maps to `--color-<token>` (`tailwind-preset.cjs` `colors`). */
 export const DESIGN_COLOR_TOKENS = [
@@ -473,29 +473,48 @@ export function isArbitraryClass(className: string): boolean {
   return /^[a-z0-9:@/-]*-\[[^\]\s]+\]$/i.test(className);
 }
 
+function collectClasses(value: JsonValue, found: Set<string>): void {
+  if (Array.isArray(value)) {
+    for (const item of value) collectClasses(item, found);
+    return;
+  }
+  if (value === null || typeof value !== 'object') return;
+  for (const [key, child] of Object.entries(value)) {
+    if (key === 'className' && typeof child === 'string') {
+      for (const cls of child.split(/\s+/)) if (cls && isArbitraryClass(cls)) found.add(cls);
+    } else {
+      collectClasses(child, found);
+    }
+  }
+}
+
+/** One boundary hop from a typed schema part to plain JSON, then its classes. */
+function classesOfPart(part: object): string[] {
+  const found = new Set<string>();
+  collectClasses(JSON.parse(JSON.stringify(part)), found);
+  return [...found];
+}
+
+/** Previews build many schemas around the same orbital objects; each orbital is walked once. */
+const classesByOrbital = new WeakMap<OrbitalDefinition, readonly string[]>();
+
 /**
  * Every arbitrary-value class in the schema's literal `className`s, once,
  * sorted. Tailwind only compiles classes it saw at build time, so a runtime
  * that renders a schema compiles these on demand (the scale and token classes
  * are safelisted by the preset). Bound (expression) classNames are skipped.
+ * `_metadata` and `ledger` are provenance and identity records, never render trees.
  */
 export function arbitraryClassesOf(schema: OrbitalSchema): string[] {
-  const found = new Set<string>();
-  const visit = (value: JsonValue): void => {
-    if (Array.isArray(value)) {
-      value.forEach(visit);
-      return;
+  const { orbitals, _metadata: _provenance, ledger: _identities, ...rest } = schema;
+  const found = new Set<string>(classesOfPart(rest));
+  for (const orbital of orbitals ?? []) {
+    let classes = classesByOrbital.get(orbital);
+    if (!classes) {
+      classes = classesOfPart(orbital);
+      classesByOrbital.set(orbital, classes);
     }
-    if (value === null || typeof value !== 'object') return;
-    for (const [key, child] of Object.entries(value)) {
-      if (key === 'className' && typeof child === 'string') {
-        for (const cls of child.split(/\s+/)) if (cls && isArbitraryClass(cls)) found.add(cls);
-      } else {
-        visit(child);
-      }
-    }
-  };
-  // One boundary hop from the typed schema to plain JSON.
-  visit(JSON.parse(JSON.stringify(schema)));
+    for (const cls of classes) found.add(cls);
+  }
   return [...found].sort();
 }

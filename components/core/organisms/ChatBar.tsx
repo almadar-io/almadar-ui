@@ -12,7 +12,7 @@
  * the Button atom raises) — it owns no app-specific state.
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { Box } from '../atoms/Box';
 import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -57,6 +57,9 @@ function getJepaBadgeVariant(probability: number): 'success' | 'warning' | 'dang
   return 'danger';
 }
 
+/** About six lines of the input's text. */
+const INPUT_MAX_HEIGHT_PX = 160;
+
 // ─── Component ─────────────────────────────────────────────
 
 export function ChatBar({
@@ -78,6 +81,16 @@ export function ChatBar({
   const [requestedPlaceholder, setRequestedPlaceholder] = useState<string | null>(null);
   // Contextual-edit focus chip: shows the canvas element the user picked.
   const [focus, setFocus] = useState<EditFocus | null>(null);
+
+  // Grow with the text up to about six lines, then scroll inside the input.
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const fitted = Math.min(el.scrollHeight, INPUT_MAX_HEIGHT_PX);
+    el.style.height = `${fitted}px`;
+    el.style.overflowY = el.scrollHeight > INPUT_MAX_HEIGHT_PX ? 'auto' : 'hidden';
+  }, [inputValue]);
 
   const clearFocus = useCallback(() => {
     setFocus(null);

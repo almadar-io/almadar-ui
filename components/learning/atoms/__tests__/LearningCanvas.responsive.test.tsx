@@ -48,9 +48,10 @@ function displayAt(canvas: HTMLCanvasElement, width: number, height: number): vo
 }
 
 describe('LearningCanvas on narrow screens', () => {
-  it('is capped at its container width and keeps its aspect ratio', () => {
+  it('fills its container width, keeps its aspect ratio, and never grows taller than 70% of the viewport', () => {
     const canvas = mount(() => undefined);
-    expect(canvas.style.maxWidth).toBe('100%');
+    expect(canvas.style.width).toBe('100%');
+    expect(canvas.style.maxWidth).toBe('min(100%, calc(70vh * 600 / 400))');
     expect(canvas.style.height).toBe('auto');
     expect(canvas.style.aspectRatio).toBe('600 / 400');
   });

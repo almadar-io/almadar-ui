@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { DIAGRAM_TONES } from '@almadar/core';
 import * as AlgorithmCanvasModule from '../AlgorithmCanvas';
 
-const LITERAL = /#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(/i;
+const LITERAL = /#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(|\bvar\(|color-mix\(/i;
 
 const COLOR_EXPORT_NAMES = [
   'DEFAULT_BAR_COLOR',
@@ -29,16 +30,20 @@ const COLOR_EXPORT_NAMES = [
   'CORNER_TEXT_COLOR',
 ] as const;
 
-describe('AlgorithmCanvas color constants hold no literal color', () => {
-  it.each(COLOR_EXPORT_NAMES)('%s is a theme token or color-mix expression, never a literal', (name) => {
+describe('AlgorithmCanvas color constants are role tones, never a literal', () => {
+  it.each(COLOR_EXPORT_NAMES)('%s is a DiagramTone name', (name) => {
     const value = AlgorithmCanvasModule[name];
-    expect(typeof value, name).toBe('string');
-    expect(value, `${name}: ${value}`).not.toMatch(LITERAL);
+    expect(DIAGRAM_TONES, `${name}: ${value}`).toContain(value);
+    expect(value).not.toMatch(LITERAL);
   });
 
-  it('FRAME_RIM_COLOR (active/returning/done) is theme-derived for every state', () => {
-    const rim = AlgorithmCanvasModule.FRAME_RIM_COLOR;
-    expect(Object.keys(rim)).toEqual(['active', 'returning', 'done']);
-    for (const [state, c] of Object.entries(rim)) expect(c, `${state}: ${c}`).not.toMatch(LITERAL);
+  it('control: the literal matcher catches a hex, var() and color-mix()', () => {
+    for (const bad of ['#3b82f6', 'var(--color-primary)', 'color-mix(in srgb, red 20%, blue)']) expect(bad).toMatch(LITERAL);
+  });
+
+  it('state semantics: bars default to a series tone, pointers to highlight, done frames to muted', () => {
+    expect(AlgorithmCanvasModule.DEFAULT_BAR_COLOR).toBe('series-1');
+    expect(AlgorithmCanvasModule.DEFAULT_POINTER_COLOR).toBe('highlight');
+    expect(AlgorithmCanvasModule.FRAME_DONE_COLOR).toBe('muted');
   });
 });

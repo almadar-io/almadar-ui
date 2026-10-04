@@ -9,8 +9,10 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { OrbitalSchema } from '@almadar/core';
-import { createHttpLoader } from '@almadar/runtime';
+import { createHttpLoader, createInProcessTransport, type EventTransport } from '@almadar/runtime';
+import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { OrbPreview } from '../OrbPreview';
+import { BrowserPlayground } from '../BrowserPlayground';
 
 class ResizeObserverStub {
   observe(): void {}
@@ -103,5 +105,63 @@ describe('lazy pages on the interpreter', () => {
     renderSite('/blog/why');
     const alert = await screen.findByTestId('lazy-page-error', {}, { timeout: 10_000 });
     expect(alert.textContent).toContain('https://site.test/lazy/BlogWhy.orb');
+  }, 30_000);
+});
+
+describe('lazy pages behind a server', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  // The host registered the whole program, lazy behaviors included (as `registerFromFile` does).
+  async function hostTransport(lifecycle: string[]): Promise<EventTransport> {
+    const runtime = new OrbitalServerRuntime();
+    await runtime.register(site, { lazy: [post] });
+    return createInProcessTransport((orbital, request) => runtime.processOrbitalEvent(orbital, request), {
+      onRegister: (s) => { lifecycle.push(`register ${s.name}`); },
+      onUnregister: () => { lifecycle.push('unregister'); },
+    });
+  }
+
+  function renderServed(transport: EventTransport, initialPagePath: string) {
+    return render(
+      <MemoryRouter>
+        <OrbPreview schema={site} initialPagePath={initialPagePath} lazyLoader={loader()} schemaPath="https://site.test/site.orb" transport={transport} isolated />
+      </MemoryRouter>,
+    );
+  }
+
+  it('opening a lazy page keeps the program registered and never registers the lazy behavior', async () => {
+    serve({ 'https://site.test/lazy/BlogWhy.orb': post });
+    const lifecycle: string[] = [];
+    renderServed(await hostTransport(lifecycle), '/');
+    fireEvent.click(await screen.findByTestId('action-GO', {}, { timeout: 10_000 }));
+    await screen.findByText('Why we started', {}, { timeout: 10_000 });
+    expect(lifecycle).toEqual(['register site']);
+  }, 30_000);
+
+  it('control: unmounting the preview still unregisters the program once', async () => {
+    serve({ 'https://site.test/lazy/BlogWhy.orb': post });
+    const lifecycle: string[] = [];
+    const view = renderServed(await hostTransport(lifecycle), '/blog/why');
+    await screen.findByText('Why we started', {}, { timeout: 10_000 });
+    view.unmount();
+    expect(lifecycle).toEqual(['register site', 'unregister']);
+  }, 30_000);
+});
+
+describe('lazy pages in the in-browser playground', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('a lazy page runs on the in-browser runtime', async () => {
+    const requested = serve({ 'https://site.test/lazy/BlogWhy.orb': post });
+    render(<BrowserPlayground schema={site} initialPagePath="/" lazyLoader={loader()} schemaPath="https://site.test/site.orb" />);
+    fireEvent.click(await screen.findByTestId('action-GO', {}, { timeout: 10_000 }));
+    await screen.findByText('Why we started', {}, { timeout: 10_000 });
+    expect(requested).toContain('https://site.test/lazy/BlogWhy.orb');
+  }, 30_000);
+
+  it('edge: opening the lazy page directly runs it too', async () => {
+    serve({ 'https://site.test/lazy/BlogWhy.orb': post });
+    render(<BrowserPlayground schema={site} initialPagePath="/blog/why" lazyLoader={loader()} schemaPath="https://site.test/site.orb" />);
+    await screen.findByText('Why we started', {}, { timeout: 10_000 });
   }, 30_000);
 });

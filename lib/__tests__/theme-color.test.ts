@@ -25,8 +25,22 @@ describe('parseComputedColor', () => {
 
   it('returns null for an unresolved var() or unsupported space instead of guessing', () => {
     expect(parseComputedColor('var(--color-primary)')).toBeNull();
-    expect(parseComputedColor('oklch(0.7 0.1 180)')).toBeNull();
+    expect(parseComputedColor('lab(50 20 30)')).toBeNull();
     expect(parseComputedColor('')).toBeNull();
+  });
+
+  it('converts oklch(), the serialization of a relative color like the default series', () => {
+    expect(parseComputedColor('oklch(0.627955 0.257683 29.2339)')?.css).toBe('rgb(255, 0, 0)');
+    expect(parseComputedColor('oklch(0.519752 0.176858 142.495 / 0.5)')).toEqual({ r: 0, g: 128, b: 0, a: 0.5, css: 'rgb(0, 128, 0)' });
+  });
+
+  it('edge: an achromatic oklch with a `none` hue is a grey, and percentages scale', () => {
+    expect(parseComputedColor('oklch(0.6 0 none)')?.css).toBe('rgb(128, 128, 128)');
+    expect(parseComputedColor('oklch(100% 0 0)')?.css).toBe('rgb(255, 255, 255)');
+  });
+
+  it('converts oklab()', () => {
+    expect(parseComputedColor('oklab(0 0 0)')?.css).toBe('rgb(0, 0, 0)');
   });
 });
 
@@ -49,6 +63,6 @@ describe('resolveThemeColor', () => {
 
 describe('THEME_SERIES', () => {
   it('is token-only — no literal colors', () => {
-    for (const c of THEME_SERIES) expect(c).toMatch(/^var\(--color-[a-z-]+\)$/);
+    for (const c of THEME_SERIES) expect(c).toMatch(/^var\(--color-series-[1-8]\)$/);
   });
 });

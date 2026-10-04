@@ -30,31 +30,47 @@ function instanceOf(orbital: string, orbitalId: OrbitalId | undefined, ref: Trai
   return null;
 }
 
-/** Every emitter → listener delivery between two different traits, in schema order. */
+interface IndexedListen {
+  listener: TraitInstance;
+  matcher: ReturnType<typeof parseListenSource>['matcher'];
+}
+
+const wiresBySchema = new WeakMap<OrbitalSchema, TraitEventWire[]>();
+
+/** Every emitter → listener delivery between two different traits, in schema order; computed once per schema object. */
 export function traitEventWires(schema: OrbitalSchema): TraitEventWire[] {
+  const cached = wiresBySchema.get(schema);
+  if (cached) return cached;
   const instances = (schema.orbitals ?? []).flatMap((o) =>
     (o.traits ?? []).map((ref) => instanceOf(o.name, o.id, ref)).filter((i): i is TraitInstance => i !== null),
   );
+  const listensByEvent = new Map<string, IndexedListen[]>();
+  for (const listener of instances) {
+    for (const listen of listener.trait.listens ?? []) {
+      const { bareEvent, matcher } = parseListenSource(listen, listener.orbital);
+      const bucket = listensByEvent.get(bareEvent);
+      if (bucket) bucket.push({ listener, matcher });
+      else listensByEvent.set(bareEvent, [{ listener, matcher }]);
+    }
+  }
   const wires: TraitEventWire[] = [];
   for (const emitter of instances) {
+    // The emitter's ids go with its names: a listen that names its source by id matches by id only.
+    const source = { orbital: emitter.orbital, trait: emitter.name, ...(emitter.orbitalId ? { orbitalId: emitter.orbitalId } : {}), ...(emitter.trait.id ? { traitId: emitter.trait.id } : {}) };
     for (const emit of emitter.trait.emits ?? []) {
-      for (const listener of instances) {
+      for (const { listener, matcher } of listensByEvent.get(emit.event) ?? []) {
         if (listener.orbital === emitter.orbital && listener.name === emitter.name) continue;
-        for (const listen of listener.trait.listens ?? []) {
-          const { bareEvent, matcher } = parseListenSource(listen, listener.orbital);
-          // The emitter's ids go with its names: a listen that names its source by id matches by id only.
-          const source = { orbital: emitter.orbital, trait: emitter.name, ...(emitter.orbitalId ? { orbitalId: emitter.orbitalId } : {}), ...(emitter.trait.id ? { traitId: emitter.trait.id } : {}) };
-          if (bareEvent !== emit.event || !matcher(source)) continue;
-          wires.push({
-            emitterOrbital: emitter.orbital,
-            emitterTrait: emitter.name,
-            listenerOrbital: listener.orbital,
-            listenerTrait: listener.name,
-            event: emit.event,
-          });
-        }
+        if (!matcher(source)) continue;
+        wires.push({
+          emitterOrbital: emitter.orbital,
+          emitterTrait: emitter.name,
+          listenerOrbital: listener.orbital,
+          listenerTrait: listener.name,
+          event: emit.event,
+        });
       }
     }
   }
+  wiresBySchema.set(schema, wires);
   return wires;
 }

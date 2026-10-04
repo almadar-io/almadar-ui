@@ -106,6 +106,16 @@ async function seedMessageInOpenConversation(h: Harness, content: string): Promi
   await h.persistence.create('ChatMessage', { channel, content, sender: h.viewer(), senderName: 'Dev Viewer', timestamp: '2026-09-24T00:00:00.000Z' });
 }
 
+/** The rail titles the viewer's memberships should show: a DM by the person,
+ *  a channel as a place ("# design"). Read from the seed, so the assertion holds
+ *  whichever mix of channels and DMs the seeded stream draws. */
+async function expectedRailTitles(h: Harness): Promise<string[]> {
+  await h.ready;
+  return (await h.persistence.list('ChannelMember'))
+    .filter((m) => m['member'] === h.viewer())
+    .map((m) => (m['isDirect'] === true ? String(m['channelName']) : `# ${String(m['channelName'])}`));
+}
+
 const topologies: Array<['stateful' | 'stateless', string]> = [
   ['stateful', CHAT_ORB],
   ['stateless', CHAT_ORB],
@@ -116,10 +126,12 @@ const topologies: Array<['stateful' | 'stateless', string]> = [
 describe.each(topologies)('chat (%s, %s)', (topology, orbPath) => {
   it('lists the seeded conversations in the rail', async () => {
     const h = harness(await resolveChat(orbPath), topology);
+    const titles = await expectedRailTitles(h);
+    expect(titles.length).toBeGreaterThan(0);
     render(<MemoryRouter>{h.element}</MemoryRouter>);
     await waitFor(() => {
       expect(screen.queryByText('No conversations yet.')).toBeNull();
-      expect(screen.getAllByText(/^# /).length).toBeGreaterThan(0);
+      for (const title of titles) expect(screen.getAllByText(title).length).toBeGreaterThan(0);
     }, { timeout: 15_000 });
   }, 60_000);
 
@@ -145,8 +157,9 @@ describe.each(topologies)('chat (%s, %s)', (topology, orbPath) => {
 
   it('typing and pressing Send shows the message in the thread', async () => {
     const h = harness(await resolveChat(orbPath), topology);
+    const [firstTitle] = await expectedRailTitles(h);
     render(<MemoryRouter>{h.element}</MemoryRouter>);
-    await waitFor(() => expect(screen.getAllByText(/^# /).length).toBeGreaterThan(0), { timeout: 15_000 });
+    await waitFor(() => expect(screen.getAllByText(firstTitle).length).toBeGreaterThan(0), { timeout: 15_000 });
     const box = await screen.findByPlaceholderText('Write a message…', {}, { timeout: 15_000 });
     fireEvent.change(box, { target: { value: 'typed and sent' } });
     fireEvent.click(screen.getByRole('button', { name: /Send/ }));

@@ -16,7 +16,7 @@
 
 import type { A11yProps } from '@almadar/core';
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform, type UrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -34,6 +34,11 @@ function samePassthrough(a: MarkdownContentProps, b: MarkdownContentProps): bool
   const keys = Object.keys(pa);
   return keys.length === Object.keys(pb).length && keys.every((k) => pa[k] === pb[k]);
 }
+
+// A behavior can carry its own figures, so an image src may be a `data:image/` URL;
+// every other URL keeps react-markdown's safe-protocol filter.
+const urlTransform: UrlTransform = (url, key, node) =>
+  key === 'src' && node.tagName === 'img' && /^data:image\//i.test(url) ? url : defaultUrlTransform(url);
 
 export interface MarkdownContentProps extends A11yProps {
   /** The markdown content to render */
@@ -74,6 +79,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
         } as React.CSSProperties}
       >
         <ReactMarkdown
+          urlTransform={urlTransform}
           remarkPlugins={[remarkMath, remarkGfm]}
           rehypePlugins={[
             [rehypeKatex, { strict: false, throwOnError: false }],

@@ -187,6 +187,7 @@
   "template.ourTeam": "Our Team",
   "template.caseStudies": "Case Studies",
   "versionDiff.compare": "Compare",
+  "versionDiff.changes": "Changes",
   "versionDiff.to": "to",
   "versionDiff.beforeRevision": "Before revision",
   "versionDiff.afterRevision": "After revision",
@@ -913,6 +914,7 @@
   "gridPicker.moreRefine": "+{{count}} more — refine your search",
   "graphCanvas.noNodes": "No nodes to display.",
   "codeBlock.noCode": "No code to display.",
+  "codeBlock.region": "Code",
   "fab.action": "Action",
   "fab.closeActions": "Close actions",
   "fab.openActions": "Open actions",
@@ -1229,5 +1231,12 @@
   "agentActivity.earlierConversations": "Earlier conversations ({{count}})",
   "agentActivity.earlierActivity": "Earlier activity",
   "tabs.scrollStart": "Scroll tabs back",
-  "tabs.scrollEnd": "Scroll tabs forward"
+  "tabs.scrollEnd": "Scroll tabs forward",
+  "agentChat.workedThrough": "Worked through {{count}} steps",
+  "agentChat.newMessages": "New messages",
+  "agentChat.copy": "Copy reply",
+  "agentChat.copied": "Copied",
+  "agentChat.today": "Today",
+  "agentChat.yesterday": "Yesterday",
+  "agentChat.emptyDescription": "Ask in your own words — the assistant can look things up and make changes for you."
 }

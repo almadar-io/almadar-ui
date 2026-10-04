@@ -5,7 +5,7 @@
  * the token applies only when the theme's family is the one rendering.
  */
 import React from 'react';
-import { afterEach, describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { Icon } from '../Icon';
 
@@ -19,7 +19,10 @@ function strokeStyleOf(container: HTMLElement): string {
   return container.querySelector('svg')?.style.strokeWidth ?? '';
 }
 
-afterEach(() => themed(null, null));
+afterEach(() => {
+  themed(null, null);
+  vi.restoreAllMocks();
+});
 
 describe('Icon stroke under a theme icon family', () => {
   it.each(['fa-solid', 'phosphor-fill'])('a %s theme does not zero the Lucide stroke', async (family) => {
@@ -80,5 +83,41 @@ describe('Icon stroke under a theme icon family', () => {
     themed('fa-solid', '0');
     const { container } = render(<Icon name="flame" strokeWidth={3} />);
     expect(container.querySelector('svg')?.getAttribute('stroke-width')).toBe('3');
+  });
+
+  it('an icon outside any scoped theme reads no ancestor style: the document value applies', async () => {
+    themed('lucide', '1.5');
+    const spy = vi.spyOn(window, 'getComputedStyle');
+    const { container } = render(<div><div><div><section><Icon name="flame" /></section></div></div></div>);
+    await waitFor(() => expect(strokeStyleOf(container)).toContain('--icon-stroke-width'));
+    const ancestors = new Set<Element>(Array.from(container.querySelectorAll('div, section')));
+    expect(spy.mock.calls.filter(([el]) => ancestors.has(el))).toHaveLength(0);
+  });
+
+  it('control: an icon in a scoped theme reads that scope once, not every ancestor', async () => {
+    themed('lucide', '1.5');
+    const spy = vi.spyOn(window, 'getComputedStyle');
+    const { container } = render(
+      <div data-theme="kiosk-light" style={{ ['--icon-family' as string]: 'fa-solid' }}>
+        <div><div><Icon name="flame" /></div></div>
+      </div>,
+    );
+    await waitFor(() => expect(strokeStyleOf(container)).not.toContain('--icon-stroke-width'));
+    const scope = container.firstElementChild;
+    const inner = new Set<Element>(Array.from(scope?.querySelectorAll('div') ?? []));
+    expect(spy.mock.calls.filter(([el]) => el === scope).length).toBeGreaterThan(0);
+    expect(spy.mock.calls.filter(([el]) => inner.has(el))).toHaveLength(0);
+  });
+
+  it('many icons in one scoped theme read that scope once, not once per icon', async () => {
+    themed('lucide', '1.5');
+    const spy = vi.spyOn(window, 'getComputedStyle');
+    const { container } = render(
+      <div data-theme="kiosk-light" style={{ ['--icon-family' as string]: 'fa-solid' }}>
+        {Array.from({ length: 8 }, (_, i) => <Icon key={i} name="flame" />)}
+      </div>,
+    );
+    await waitFor(() => expect(strokeStyleOf(container)).not.toContain('--icon-stroke-width'));
+    expect(spy.mock.calls.filter(([el]) => el === container.firstElementChild)).toHaveLength(1);
   });
 });

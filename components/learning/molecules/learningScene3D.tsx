@@ -60,6 +60,8 @@ export interface LearningScene3DProps extends A11yProps {
   height?: number;
   title?: string;
   backgroundColor?: string;
+  /** Overrides the theme's categorical palette (`series-1…N`) for this scene. */
+  series?: string[];
   /** Neutral drawable descriptors derived from the molecule's vocabulary. */
   drawables: DrawableNode[];
   /** Neutral camera pose; `mode` defaults to 'perspective' for learning scenes. */
@@ -86,6 +88,7 @@ export function LearningScene3D({
   height = 400,
   title,
   backgroundColor,
+  series,
   drawables,
   camera,
   lighting,
@@ -129,6 +132,7 @@ export function LearningScene3D({
     ...(camera?.elevation !== undefined ? { elevation: camera.elevation } : {}),
     ...(camera?.target !== undefined ? { followTarget: camera.target } : {}),
     backgroundColor,
+    ...(series !== undefined ? { series } : {}),
     showGrid,
     ...(shadows !== undefined ? { shadows } : {}),
     ...(interactive !== undefined ? { controlsEnabled: interactive } : {}),
@@ -142,8 +146,8 @@ export function LearningScene3D({
       <VStack gap="sm">
         {title ? <Typography variant="h4">{title}</Typography> : null}
         <Box
-          className="flex"
-          style={{ width, height }}
+          className="mx-auto flex w-full overflow-hidden rounded-container"
+          style={{ aspectRatio: `${width} / ${height}`, maxWidth: `min(100%, calc(70vh * ${width} / ${height}))` }}
           role="img"
           aria-label={title ?? t('aria.scene3d')}
           aria-describedby={description ? descId : undefined}
@@ -293,22 +297,8 @@ export function billboardLabel(
     type: 'draw-text',
     text,
     position: { x, y, z },
-    color: opts?.color ?? '#111827',
+    color: opts?.color ?? 'ink',
   };
-}
-
-/** Label color contrasting the scene background: dark text on the (light) default
- *  stage, light text once a dark `backgroundColor` is authored. Hex `#rgb`/`#rrggbb`
- *  only; anything else falls back to the light-stage default. */
-export function labelColorForBackground(backgroundColor?: string): string {
-  const m = /^#(?:([0-9a-f]{3})|([0-9a-f]{6}))$/i.exec(backgroundColor ?? '');
-  if (!m) return '#111827';
-  const hex = m[1] !== undefined ? m[1].split('').map((c) => c + c).join('') : m[2]!;
-  const r = parseInt(hex.slice(0, 2), 16) / 255;
-  const g = parseInt(hex.slice(2, 4), 16) / 255;
-  const b = parseInt(hex.slice(4, 6), 16) / 255;
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance < 0.5 ? '#e5e7eb' : '#111827';
 }
 
 /**
@@ -382,7 +372,7 @@ export interface HeightFieldSpec {
   y?: number;
   /** Elevation color bands, sorted ascending by `min`; omitted → a single flat-colored sheet. */
   bands?: HeightFieldBand[];
-  /** Fallback color when `bands` is omitted (default '#64748b'). */
+  /** Fallback color when `bands` is omitted: a tone name, token or literal (default `series-1`). */
   color?: string;
   opacity?: number;
   /** Faceted low-poly shading (default true). */
@@ -438,7 +428,7 @@ export function heightFieldMesh(spec: HeightFieldSpec): DrawMeshProps[] {
       vertices,
       faces,
       pivot: 'center',
-      material: { color: band?.color ?? spec.color ?? '#64748b', flatShading, side: 'double' },
+      material: { color: band?.color ?? spec.color ?? 'series-1', flatShading, side: 'double' },
       ...(spec.opacity !== undefined ? { opacity: spec.opacity } : {}),
     });
   }
@@ -474,7 +464,7 @@ export function arrowField(vectors: ArrowFieldEntry[], opts?: ArrowFieldOpts): D
       v.from[1] + v.delta[1] * scale,
       v.from[2] + v.delta[2] * scale,
     ];
-    const arrow = arrowBetween(v.from, to, v.color ?? '#dc2626', v.width, v.id);
+    const arrow = arrowBetween(v.from, to, v.color ?? 'series-5', v.width, v.id);
     if (arrow) out.push(arrow);
     if (v.label) out.push(billboardLabel(v.label, to[0], to[1], to[2], { color: opts?.labelColor }));
   }
@@ -484,7 +474,7 @@ export function arrowField(vectors: ArrowFieldEntry[], opts?: ArrowFieldOpts): D
 export interface HelixRung {
   /** Clickable when present — stamped on this rung's marker sphere. */
   id?: string;
-  /** Rung cylinder + marker color (default '#94a3b8'). */
+  /** Rung cylinder + marker color: a tone name, token or literal (default `muted`). */
   color?: string;
   /** Marker sphere radius override (e.g. selection enlargement); default = the spec's `rungRadius`. */
   radius?: number;
@@ -530,8 +520,8 @@ export function helixDrawables(spec: HelixSpec, opts?: { labelColor?: string }):
   const radius = spec.radius ?? 1;
   const rise = spec.rise ?? 0.34;
   const twistRad = (spec.twistDeg ?? 36) * (Math.PI / 180);
-  const strandAColor = spec.strandAColor ?? '#38bdf8';
-  const strandBColor = spec.strandBColor ?? '#fb923c';
+  const strandAColor = spec.strandAColor ?? 'series-1';
+  const strandBColor = spec.strandBColor ?? 'series-2';
   const backboneRadius = spec.backboneRadius ?? 0.16;
   const rungRadius = spec.rungRadius ?? 0.12;
   const cx = spec.x ?? 0;
@@ -561,7 +551,7 @@ export function helixDrawables(spec: HelixSpec, opts?: { labelColor?: string }):
       if (segB) out.push(segB);
     }
     const rung = rungs[i];
-    const rungColor = rung.color ?? '#94a3b8';
+    const rungColor = rung.color ?? 'muted';
     const rod = cylinderBetween(strandA[i], strandB[i], rungRadius, rungColor);
     if (rod) out.push(rod);
     const mid: Learning3DPoint = [
@@ -584,7 +574,7 @@ export interface LatticeSite {
   dy: number;
   dz: number;
   element?: string;
-  /** Marker color (default '#2563eb'). */
+  /** Marker color: a tone name, token or literal (default `series-1`). */
   color?: string;
   /** Marker radius (default 0.3). */
   radius?: number;
@@ -624,7 +614,7 @@ export interface LatticeSpec {
   showLabels?: boolean;
   /** Generated site id (`lat-{key}-{i}-{j}-{k}`) to enlarge and recolor as the selection. */
   selectedId?: string;
-  /** Selected-site color (default '#f59e0b'). */
+  /** Selected-site color: a tone name, token or literal (default `highlight`). */
   selectedColor?: string;
 }
 
@@ -641,10 +631,10 @@ export function latticeDrawables(spec: LatticeSpec, opts?: { labelColor?: string
   const latticeConstant = spec.latticeConstant ?? 2;
   const bondRadius = spec.bondRadius ?? 0.06;
   const highlightCell = spec.highlightCell ?? false;
-  const dimColor = spec.dimColor ?? '#475569';
+  const dimColor = spec.dimColor ?? 'muted';
   const showLabels = spec.showLabels ?? false;
 
-  const selectedColor = spec.selectedColor ?? '#f59e0b';
+  const selectedColor = spec.selectedColor ?? 'highlight';
   const posByKey = new Map<string, Learning3DPoint>();
   const inCellByKey = new Map<string, boolean>();
   const out: DrawableNode[] = [];
@@ -666,7 +656,7 @@ export function latticeDrawables(spec: LatticeSpec, opts?: { labelColor?: string
           posByKey.set(key, pos);
           inCellByKey.set(key, inCell);
           const isSelected = spec.selectedId === `lat-${key}`;
-          const color = isSelected ? selectedColor : highlightCell && !inCell ? dimColor : site.color ?? '#2563eb';
+          const color = isSelected ? selectedColor : highlightCell && !inCell ? dimColor : site.color ?? 'series-1';
           const radius = (site.radius ?? 0.3) * (isSelected ? 1.4 : 1);
           out.push(meshSphere(`lat-${key}`, pos[0], pos[1], pos[2], radius, color));
           if (showLabels && site.element) {
@@ -704,7 +694,7 @@ export function latticeDrawables(spec: LatticeSpec, opts?: { labelColor?: string
           const toPos = posByKey.get(toKey);
           if (!fromPos || !toPos) continue;
           const dimmed = highlightCell && !(inCellByKey.get(fromKey) && inCellByKey.get(toKey));
-          const seg = cylinderBetween(fromPos, toPos, bondRadius, dimmed ? dimColor : bond.color ?? '#6b7280');
+          const seg = cylinderBetween(fromPos, toPos, bondRadius, dimmed ? dimColor : bond.color ?? 'ink');
           if (seg) out.push(seg);
         }
       }

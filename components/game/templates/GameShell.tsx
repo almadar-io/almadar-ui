@@ -17,6 +17,7 @@ import { Card } from "../../core/atoms/Card";
 import { Typography } from "../../core/atoms/Typography";
 import { AtlasPanel } from "../../core/atoms/AtlasImage";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { GameOverlayContext } from "../molecules/GameMenu";
 
 export interface GameShellProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
     /** Application / game title shown as a floating chip */
@@ -200,7 +201,9 @@ export const GameShell: React.FC<GameShellProps> = ({
                         justifyContent: "center",
                     }}
                 >
-                    <Box className="pointer-events-auto">{overlay}</Box>
+                    <Box className="pointer-events-auto">
+                        <GameOverlayContext.Provider value={true}>{overlay}</GameOverlayContext.Provider>
+                    </Box>
                 </Box>
             )}
         </Box>

@@ -10,11 +10,11 @@
  */
 
 import * as React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { createLogger } from '@almadar/logger';
-import type { A11yProps, Camera } from '@almadar/core';
+import type { A11yProps, Camera, DiagramTone, EventKey } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
-import { Card, Typography } from '../../core/atoms/index';
+import { Box, Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { LearningCanvas } from '../atoms/LearningCanvas';
 import type { LearningShape, LearningReadout, LearningTracePanel } from '../atoms/LearningCanvas';
@@ -27,7 +27,6 @@ import {
   billboardLabel,
   cylinderBetween,
   get3DClickPayload,
-  labelColorForBackground,
   latticeDrawables,
   meshSphere,
   type Learning3DPoint,
@@ -43,6 +42,7 @@ export interface ChemistryAtom {
   z?: number;
   element?: string;
   radius?: number;
+  /** Atom color: a tone name, token or literal (default a `series-1`..`series-8` tone per distinct element, in order of first appearance). */
   color?: string;
   /** Ionic charge label (e.g. '2+', '-'), drawn top-right of the atom. 2D only. */
   charge?: string;
@@ -54,6 +54,7 @@ export interface ChemistryBond {
   from: string;
   to: string;
   type?: 'single' | 'double' | 'triple';
+  /** Bond color: a tone name, token or literal (default by `state`). */
   color?: string;
   /** Reaction-state coloring (overridden by an explicit `color`). 2D only. */
   state?: ChemistryBondState;
@@ -62,12 +63,31 @@ export interface ChemistryBond {
 /** Bond reaction-state vocabulary: forming/breaking bonds also render dashed. */
 export type ChemistryBondState = 'default' | 'forming' | 'breaking' | 'highlight';
 
-const CHEM_BOND_STATE_COLOR: Record<ChemistryBondState, string> = {
-  default: '#6b7280',
-  forming: '#16a34a',
-  breaking: '#dc2626',
-  highlight: '#f59e0b',
+const CHEM_BOND_STATE_COLOR: Record<ChemistryBondState, DiagramTone> = {
+  default: 'ink',
+  forming: 'series-3',
+  breaking: 'series-2',
+  highlight: 'highlight',
 };
+
+const SERIES_TONES: readonly DiagramTone[] = ['series-1', 'series-2', 'series-3', 'series-4', 'series-5', 'series-6', 'series-7', 'series-8'];
+
+function seriesTone(i: number): DiagramTone {
+  return SERIES_TONES[i % SERIES_TONES.length];
+}
+
+/** Series tone per distinct element, in order of first appearance; atoms with no element share the first slot. */
+function elementTones(atoms: ChemistryAtom[]): Map<string, DiagramTone> {
+  const m = new Map<string, DiagramTone>();
+  for (const a of atoms) {
+    if (a.element !== undefined && !m.has(a.element)) m.set(a.element, seriesTone(m.size));
+  }
+  return m;
+}
+
+function atomTone(a: ChemistryAtom, tones: Map<string, DiagramTone>): DiagramTone {
+  return (a.element !== undefined ? tones.get(a.element) : undefined) ?? 'series-1';
+}
 
 /** Compass angles (degrees) for up to 4 lone-pair dot clusters around an atom. */
 const LONE_PAIR_ANGLES = [-90, 0, 90, 180];
@@ -78,11 +98,11 @@ export interface ChemistryContainer {
   y: number;
   width: number;
   height: number;
-  /** Outline + label color (default '#64748b'). */
+  /** Outline color: a tone name, token or literal (default the `ink` tone). */
   color?: string;
   /** Fill color for the outline rect itself (independent of the liquid level fill). */
   fill?: string;
-  /** Outline stroke width (default 2). */
+  /** Outline stroke width in px (default the theme's normal stroke). */
   lineWidth?: number;
   /** Vertical divider at the container's mid-width (default 'none'). */
   divider?: 'none' | 'solid' | 'dashed' | 'dotted';
@@ -96,7 +116,7 @@ export interface ChemistryContainer {
   label?: string;
   /** Liquid fill level, 0..1 from the bottom. */
   level?: number;
-  /** Liquid fill color (default '#60a5fa'). */
+  /** Liquid fill color: a tone name, token or literal (default the `series-1` tone). */
   levelColor?: string;
 }
 
@@ -105,6 +125,7 @@ export interface ChemistryArrow {
   y: number;
   angle?: number;
   length?: number;
+  /** Arrow color: a tone name, token or literal (default the `ink` tone). */
   color?: string;
   label?: string;
 }
@@ -118,7 +139,7 @@ export interface ChemistryLatticeSite {
   dy: number;
   dz: number;
   element?: string;
-  /** Marker color (default '#2563eb'). */
+  /** Marker color: a tone name, token or literal (default a `series-1`..`series-8` tone by basis index). */
   color?: string;
   /** Marker radius (default 0.3). */
   radius?: number;
@@ -140,7 +161,7 @@ export interface ChemistryLatticeBond {
   dx?: number;
   dy?: number;
   dz?: number;
-  /** Bond color (default '#6b7280'). */
+  /** Bond color: a tone name, token or literal (default the `ink` tone). */
   color?: string;
 }
 
@@ -163,13 +184,13 @@ export interface ChemistryLattice3D {
   bondRadius?: number;
   /** Dim every generated site outside unit cell (0,0,0) with `dimColor`; bonds with a dimmed endpoint dim too. */
   highlightCell?: boolean;
-  /** Dim color for `highlightCell` (default '#475569'). */
+  /** Dim color for `highlightCell`: a tone name, token or literal (default the `muted` tone). */
   dimColor?: string;
   /** Billboard each site's `element` above its marker (default false). */
   showLabels?: boolean;
   /** Generated site id (`lat-{key}-{i}-{j}-{k}`, as delivered by onShapeClick) to enlarge and recolor as the selection. */
   selectedId?: string;
-  /** Selected-site color (default '#f59e0b'). */
+  /** Selected-site color: a tone name, token or literal (default the `highlight` tone). */
   selectedColor?: string;
 }
 
@@ -179,6 +200,12 @@ export interface ChemistryCanvasProps extends Omit<React.AriaAttributes, keyof A
   height?: number;
   title?: string;
   backgroundColor?: string;
+  /** Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply. */
+  series?: string[];
+  /** Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route. */
+  keyMap?: Record<string, EventKey>;
+  /** Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`. */
+  keyUpMap?: Record<string, EventKey>;
   /** Painter: 2D raster (default) or 3D mesh scene via the lazy three.js host. */
   mode?: '2d' | '3d';
   /** 3D only: neutral camera pose ({ mode, zoom, fov, azimuth, target }). */
@@ -202,7 +229,7 @@ export interface ChemistryCanvasProps extends Omit<React.AriaAttributes, keyof A
    * @synonyms reaction equation, formula
    */
   equation?: string;
-  /** Equation text color (default '#111827'). */
+  /** Equation text color: a tone name, token or literal (default the `ink` tone). */
   equationColor?: string;
   /** A 3D crystal lattice block (simple cubic, BCC, FCC, rock salt, diamond, ...). 3D only. */
   lattice3d?: ChemistryLattice3D;
@@ -244,6 +271,9 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
   height = 400,
   title,
   backgroundColor,
+  series,
+  keyMap,
+  keyUpMap,
   mode = '2d',
   camera,
   lighting,
@@ -268,15 +298,17 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
   error,
   ...rest
 }) => {
+
   const derivedShapes: LearningShape[] = useMemo(() => {
     const out: LearningShape[] = [];
+    const tones = elementTones(atoms);
     const atomById = new Map<string, ChemistryAtom>();
     for (const a of atoms) {
       if (a.id) atomById.set(a.id, a);
     }
 
     for (const c of containers) {
-      const color = c.color ?? '#64748b';
+      const color = c.color ?? 'ink';
       if (c.level != null) {
         const lv = c.level;
         out.push({
@@ -285,8 +317,10 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
           y: c.y + c.height * (1 - lv),
           width: c.width - 2,
           height: c.height * lv - 1,
-          color: c.levelColor ?? '#60a5fa',
-          fill: c.levelColor ?? '#60a5fa',
+          color: c.levelColor ?? 'series-1',
+          fill: c.levelColor ?? 'series-1',
+          fillStyle: 'solid',
+          stroke: 'thin',
           opacity: 0.5,
         });
       }
@@ -298,7 +332,8 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
         height: c.height,
         color,
         fill: c.fill,
-        lineWidth: c.lineWidth ?? 2,
+        stroke: 'normal',
+        lineWidth: c.lineWidth,
       });
       const divider = c.divider ?? 'none';
       if (divider !== 'none') {
@@ -309,6 +344,7 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
           x2: c.x + c.width / 2,
           y2: c.y + c.height,
           color: c.dividerColor ?? color,
+          stroke: 'thin',
           ...(divider === 'dashed' || divider === 'dotted' ? { dash: divider } : {}),
         });
       }
@@ -318,8 +354,8 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
           x: c.x + c.width * 0.25,
           y: c.y + 12,
           text: c.leftLabel,
-          color: '#374151',
-          fontSize: 11,
+          tone: 'label',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -329,8 +365,8 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
           x: c.x + c.width * 0.75,
           y: c.y + 12,
           text: c.rightLabel,
-          color: '#374151',
-          fontSize: 11,
+          tone: 'label',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -340,8 +376,8 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
           x: c.x + c.width / 2,
           y: c.y + c.height + 12,
           text: c.label,
-          color: '#111827',
-          fontSize: 12,
+          tone: 'ink',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -371,7 +407,7 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
             x2: c.x + px * off,
             y2: c.y + py * off,
             color,
-            lineWidth: 2,
+            stroke: 'normal',
             ...(dash ? { dash } : {}),
           });
         }
@@ -401,8 +437,8 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
         y1: a.y,
         x2,
         y2,
-        color: a.color ?? '#dc2626',
-        lineWidth: 2,
+        color: a.color ?? 'ink',
+        stroke: 'bold',
       });
       if (a.label) {
         out.push({
@@ -410,8 +446,9 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
           x: (a.x + x2) / 2,
           y: (a.y + y2) / 2 - 10,
           text: a.label,
-          color: '#111827',
-          fontSize: 12,
+          textCase: 'verbatim',
+          tone: 'ink',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -423,8 +460,8 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
         x: a.x,
         y: a.y,
         radius: a.radius ?? 14,
-        color: a.color ?? '#2563eb',
-        fill: a.color ?? '#2563eb',
+        color: a.color ?? atomTone(a, tones),
+        fill: a.color ?? atomTone(a, tones),
         id: a.id,
       });
       if (a.element) {
@@ -433,8 +470,9 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
           x: a.x,
           y: a.y,
           text: a.element,
-          color: '#ffffff',
-          fontSize: 12,
+          textCase: 'verbatim',
+          tone: 'ink',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -445,8 +483,9 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
           x: a.x + r * 0.85,
           y: a.y - r * 0.85,
           text: a.charge,
-          color: '#111827',
-          fontSize: 9,
+          textCase: 'verbatim',
+          tone: 'ink',
+          textSize: 'xs',
           align: 'left',
         });
       }
@@ -463,8 +502,9 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
             x: cx + perpX * 2.5 * sign,
             y: cy + perpY * 2.5 * sign,
             radius: 1.5,
-            color: '#374151',
-            fill: '#374151',
+            color: 'ink',
+            fill: 'ink',
+            fillStyle: 'solid',
           });
         }
       }
@@ -476,8 +516,9 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
         x: width / 2,
         y: 14,
         text: equation,
-        color: equationColor ?? '#111827',
-        fontSize: 13,
+        textCase: 'verbatim',
+        color: equationColor ?? 'ink',
+        textSize: 'sm',
         align: 'center',
       });
     }
@@ -488,6 +529,9 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
 
   const drawables3D: DrawableNode[] = useMemo(() => {
     if (mode !== '3d') return [];
+    // The 3D host resolves tone names against the theme.
+    const tone3d = (value: string | undefined, fallback: DiagramTone): string => value ?? fallback;
+    const tones = elementTones(atoms);
     if (shapes.length > 0) {
       chemistryLog.debug('shapes ignored in 3D mode (pixel-authored 2D vocabulary)', { count: shapes.length });
     }
@@ -498,7 +542,7 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
       chemistryLog.debug('animate ignored in 3D mode (motion is entity-state driven)');
     }
     const out: DrawableNode[] = [];
-    const labelColor = labelColorForBackground(backgroundColor);
+    const labelColor = 'ink';
     const atomById = new Map<string, ChemistryAtom>();
     for (const a of atoms) {
       if (a.id) atomById.set(a.id, a);
@@ -508,7 +552,7 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
       const a = atomById.get(b.from);
       const c = atomById.get(b.to);
       if (!a || !c) continue;
-      const color = b.color ?? '#6b7280';
+      const color = tone3d(b.color, 'ink');
       const from: Learning3DPoint = [a.x, a.y, a.z ?? 0];
       const to: Learning3DPoint = [c.x, c.y, c.z ?? 0];
       const perp = bondPerpendicular(from, to);
@@ -531,7 +575,7 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
       const len = a.length ?? 60;
       const x2 = a.x + Math.cos(angle) * len;
       const y2 = a.y + Math.sin(angle) * len;
-      const arrow = arrowBetween([a.x, a.y, 0], [x2, y2, 0], a.color ?? '#dc2626');
+      const arrow = arrowBetween([a.x, a.y, 0], [x2, y2, 0], tone3d(a.color, 'ink'));
       if (arrow) out.push(arrow);
       if (a.label) {
         out.push(billboardLabel(a.label, (a.x + x2) / 2, (a.y + y2) / 2, 0, { color: labelColor }));
@@ -541,14 +585,25 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
     for (const a of atoms) {
       const radius = a.radius ?? 0.45;
       const az = a.z ?? 0;
-      out.push(meshSphere(a.id, a.x, a.y, az, radius, a.color ?? '#2563eb'));
+      out.push(meshSphere(a.id, a.x, a.y, az, radius, tone3d(a.color, atomTone(a, tones))));
       if (a.element) {
         out.push(billboardLabel(a.element, a.x, a.y, az + radius, { color: labelColor }));
       }
     }
 
     if (lattice3d) {
-      out.push(...latticeDrawables(lattice3d, { labelColor }));
+      out.push(
+        ...latticeDrawables(
+          {
+            ...lattice3d,
+            basis: lattice3d.basis.map((site, i) => ({ ...site, color: tone3d(site.color, seriesTone(i)) })),
+            bonds: lattice3d.bonds?.map((bond) => ({ ...bond, color: tone3d(bond.color, 'ink') })),
+            dimColor: tone3d(lattice3d.dimColor, 'muted'),
+            selectedColor: tone3d(lattice3d.selectedColor, 'highlight'),
+          },
+          { labelColor },
+        ),
+      );
     }
     return out;
   }, [mode, atoms, bonds, arrows, shapes, containers, lattice3d, animate, backgroundColor]);
@@ -563,45 +618,49 @@ export const ChemistryCanvas: React.FC<ChemistryCanvasProps> = ({
 
   if (mode === '3d') {
     return (
-      <LearningScene3D
-        {...domPassthrough(rest)}
-        className={className}
-        width={width}
-        height={height}
-        title={title}
-        backgroundColor={backgroundColor}
-        drawables={drawables3D}
-        camera={camera}
-        lighting={lighting}
-        post={post}
-        showGrid={showGrid}
-        shadows={shadows}
-        interactive={interactive}
-        isLoading={isLoading}
-        error={error}
-        onItemClick={get3DClickPayload(onShapeClick, atomIndexById)}
-      />
+        <LearningScene3D
+          {...domPassthrough(rest)}
+          className={className}
+          width={width}
+          height={height}
+          title={title}
+          backgroundColor={backgroundColor}
+          series={series}
+          drawables={drawables3D}
+          camera={camera}
+          lighting={lighting}
+          post={post}
+          showGrid={showGrid}
+          shadows={shadows}
+          interactive={interactive}
+          isLoading={isLoading}
+          error={error}
+          onItemClick={get3DClickPayload(onShapeClick, atomIndexById)}
+        />
     );
   }
 
   return (
-    <Card {...domPassthrough(rest)} className={className}>
-      <VStack gap="sm">
-        {title ? <Typography variant="h4">{title}</Typography> : null}
-        <LearningCanvas
-          width={width}
-          height={height}
-          backgroundColor={backgroundColor}
-          shapes={derivedShapes}
-          readouts={readouts}
-          traces={traces}
-          interactive={interactive ?? false}
-          animate={animate}
-          onShapeClick={onShapeClick}
-          isLoading={isLoading}
-          error={error}
-        />
-      </VStack>
-    </Card>
+      <Card {...domPassthrough(rest)} className={className}>
+        <VStack gap="sm">
+          {title ? <Typography variant="h4">{title}</Typography> : null}
+          <LearningCanvas
+            width={width}
+            height={height}
+            backgroundColor={backgroundColor}
+          series={series}
+          keyMap={keyMap}
+          keyUpMap={keyUpMap}
+            shapes={derivedShapes}
+            readouts={readouts}
+            traces={traces}
+            interactive={interactive ?? false}
+            animate={animate}
+            onShapeClick={onShapeClick}
+            isLoading={isLoading}
+            error={error}
+          />
+        </VStack>
+      </Card>
   );
 };

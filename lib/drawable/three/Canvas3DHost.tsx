@@ -58,7 +58,9 @@ import { BoneRegistryContext, BoneStore } from './BoneRegistry';
 import { create3DProjector } from '../projector3d';
 import type { DrawableNode } from '../paintDispatch';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../isometricTypes';
-import { GRID_COLORS_3D, DEFAULT_BACKGROUND_3D } from './game3dTheme';
+import { useCanvasTheme } from '../../../hooks/useCanvasTheme';
+import { markColor, withSeries } from '../../canvasTheme';
+import { applySceneMaterials, resolveDrawableColors } from '../themeDrawables';
 import { cn } from '../../cn';
 import './Canvas3DHost.css';
 
@@ -171,6 +173,8 @@ export interface Canvas3DHostProps {
     /** Enable shadows */
     shadows?: boolean;
     /** Background color */
+    /** Overrides the theme's categorical palette (`series-1…N`) for this scene. */
+    series?: string[];
     backgroundColor?: string;
     /** Declarative event: tile click. Emitted from a ground-plane raycast → scene cell
      *  `{ x, z }` (the FSM validates the cell). `tileId` is optional — the neutral host
@@ -261,7 +265,6 @@ const DEFAULT_GRID_CONFIG: GridConfig = {
 
 /** Edit-mode selection ring color + ground radius (world units), matching the
  *  2D host's selection overlay color. */
-const EDIT_SELECTION_COLOR = '#3b82f6';
 const EDIT_SELECTION_RADIUS = 0.6;
 
 /** One in-flight edit-mode drag gesture (a single pointer). */
@@ -351,7 +354,8 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             orientation = 'standard',
             overlay = 'default',
             shadows = true,
-            backgroundColor = DEFAULT_BACKGROUND_3D,
+            backgroundColor,
+            series,
             className,
             isLoading: externalLoading,
             error: externalError,
@@ -397,7 +401,19 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
         // arrive pre-merged in `drawables`: a DrawableRegistryContext provider in this
         // lazy chunk would be a different module instance from the one the drawable
         // atoms read, so registration must happen outside the three bundle.
-        const allDrawables = useMemo(() => drawables ?? [], [drawables]);
+        const { theme: baseCanvasTheme } = useCanvasTheme(containerRef);
+        const seriesKey = series ? series.join('|') : '';
+        const canvasTheme = useMemo(() => withSeries(baseCanvasTheme, series, containerRef.current), [baseCanvasTheme, seriesKey]);
+        // Tones and var() colors resolve once here; meshes take the theme's material response.
+        const allDrawables = useMemo(() => {
+            const raw = drawables ?? [];
+            const scope = containerRef.current;
+            if (!canvasTheme || !scope) return raw;
+            const resolved = resolveDrawableColors(raw, (c) => markColor(canvasTheme, c, scope, 'ink'));
+            return applySceneMaterials(resolved, canvasTheme);
+        }, [drawables, canvasTheme]);
+        const ground = backgroundColor ?? canvasTheme?.ground ?? 'transparent';
+        const selectionColor = canvasTheme?.tones.highlight ?? 'currentColor';
 
         // Keyboard → the board's SEMANTIC events via the declarative keyMap/keyUpMap.
         // The input layer only translates device keycodes; the FSM stays device-agnostic.
@@ -786,7 +802,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                             near: 0.1,
                             far: 1000,
                         }}
-                        style={{ background: backgroundColor, position: 'absolute', inset: 0 }}
+                        style={{ background: ground, position: 'absolute', inset: 0 }}
                         onClick={(e) => {
                             if (e.target === e.currentTarget) {
                                 eventHandlers.handleCanvasClick(e);
@@ -809,10 +825,10 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                             shadowCameraSize={5}
                             shadowCameraNear={0.5}
                             shadowCameraFar={500}
-                            ambientIntensity={lighting?.ambient?.intensity}
+                            ambientIntensity={lighting?.ambient?.intensity ?? canvasTheme?.scene.ambient}
                             ambientColor={lighting?.ambient?.color}
-                            directionalIntensity={lighting?.directional?.intensity}
-                            directionalColor={lighting?.directional?.color}
+                            directionalIntensity={lighting?.directional?.intensity ?? canvasTheme?.scene.key}
+                            directionalColor={lighting?.directional?.color ?? canvasTheme?.scene.keyColor}
                             directionalPosition={lighting?.directional?.position}
                             hemisphereIntensity={lighting?.hemisphere?.intensity}
                             hemisphereColor={lighting?.hemisphere?.color}
@@ -835,10 +851,10 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                                 ]}
                                 cellSize={1}
                                 cellThickness={1}
-                                cellColor={GRID_COLORS_3D.cell}
+                                cellColor={canvasTheme?.tones.grid ?? 'currentColor'}
                                 sectionSize={5}
                                 sectionThickness={1.5}
-                                sectionColor={GRID_COLORS_3D.section}
+                                sectionColor={canvasTheme?.tones.axis ?? 'currentColor'}
                                 fadeDistance={50}
                                 fadeStrength={1}
                             />
@@ -871,7 +887,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                                     shape: 'ellipse',
                                     position: selectionPos,
                                     radiusX: EDIT_SELECTION_RADIUS,
-                                    stroke: EDIT_SELECTION_COLOR,
+                                    stroke: selectionColor,
                                 }}
                                 projector={drawableProjector}
                             />

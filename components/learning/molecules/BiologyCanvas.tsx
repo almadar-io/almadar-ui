@@ -10,11 +10,11 @@
  */
 
 import * as React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { createLogger } from '@almadar/logger';
-import type { A11yProps, Camera } from '@almadar/core';
+import type { A11yProps, Camera, DiagramTone, EventKey } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
-import { Card, Typography } from '../../core/atoms/index';
+import { Box, Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { LearningCanvas } from '../atoms/LearningCanvas';
 import type { LearningShape, LearningPoint, LearningReadout, LearningTracePanel } from '../atoms/LearningCanvas';
@@ -28,7 +28,6 @@ import {
   cylinderBetween,
   get3DClickPayload,
   helixDrawables,
-  labelColorForBackground,
   meshSphere,
 } from './learningScene3D';
 
@@ -77,36 +76,40 @@ export interface BiologyCompartment {
   height: number;
   /** Centered near the top of the ellipse. */
   label?: string;
-  /** Outline color (default '#16a34a'). */
+  /** Outline color: a tone name, token or literal (default `ink`). */
   color?: string;
-  /** Fill color (default = `color` at ~10% alpha). */
+  /** Fill color: a tone name, token or literal (default = `color`, tinted). */
   fill?: string;
   dash?: 'dashed' | 'dotted';
-  /** Outline stroke width (default 2). */
+  /** Outline stroke width in px (default the theme's normal stroke). */
   lineWidth?: number;
 }
 
 /** A horizontal background stripe spanning the canvas (e.g. a trophic level or elevation zone). */
 export interface BiologyBand {
   label?: string;
-  /** Fill/stroke color (default cycles BIO_BAND_COLORS by index). */
+  /** Fill/stroke color: a tone name, token or literal (default cycles `series-1`..`series-8` by index). */
   color?: string;
 }
 
-const BIO_BAND_COLORS = ['#dcfce7', '#fef9c3', '#fee2e2', '#e0e7ff'];
+const SERIES_TONES: readonly DiagramTone[] = ['series-1', 'series-2', 'series-3', 'series-4', 'series-5', 'series-6', 'series-7', 'series-8'];
+
+function seriesTone(i: number): DiagramTone {
+  return SERIES_TONES[i % SERIES_TONES.length];
+}
 
 export type BiologyStageState = 'pending' | 'active' | 'done';
 
-const BIO_STAGE_FILL: Record<BiologyStageState, string> = {
-  pending: '#e2e8f0',
-  active: '#3b82f6',
-  done: '#94a3b8',
+const BIO_STAGE_FILL: Record<BiologyStageState, DiagramTone> = {
+  pending: 'fill',
+  active: 'primary',
+  done: 'muted',
 };
 
-const BIO_STAGE_TEXT: Record<BiologyStageState, string> = {
-  pending: '#64748b',
-  active: '#ffffff',
-  done: '#ffffff',
+const BIO_STAGE_TEXT: Record<BiologyStageState, DiagramTone> = {
+  pending: 'label',
+  active: 'ink',
+  done: 'ink',
 };
 
 /** A phase/step chip in a `stages` timeline or ring. */
@@ -114,7 +117,7 @@ export interface BiologyStage {
   label: string;
   /** Progress state driving fill/text color (default 'pending'). */
   state?: BiologyStageState;
-  /** Overrides the state-derived fill color. */
+  /** Overrides the state-derived fill: a tone name, token or literal. */
   color?: string;
 }
 
@@ -124,7 +127,7 @@ export interface BiologyHelixRung {
   a?: string;
   /** Base letter on strand B (bottom). */
   b?: string;
-  /** 'new' renders the rung in the newly-synthesized color (default '#16a34a'); 'open'/'paired' drive strand separation. */
+  /** 'new' renders the rung in the newly-synthesized color (default `accent`); 'open'/'paired' drive strand separation. */
   state?: 'paired' | 'open' | 'new';
   /** Overrides the state-derived rung color. */
   color?: string;
@@ -143,11 +146,11 @@ export interface BiologyHelix {
   rungs: BiologyHelixRung[];
   /** Unzipped fraction from the left, 0..1 (default 0 = fully paired). */
   fork?: number;
-  /** Strand A (top) color (default '#2563eb'). */
+  /** Strand A (top) color: a tone name, token or literal (default `series-1`). */
   colorA?: string;
-  /** Strand B (bottom) color (default '#dc2626'). */
+  /** Strand B (bottom) color: a tone name, token or literal (default `series-2`). */
   colorB?: string;
-  /** Default paired-rung color (default '#94a3b8'). */
+  /** Default paired-rung color: a tone name, token or literal (default `muted`). */
   rungColor?: string;
 }
 
@@ -155,7 +158,7 @@ export interface BiologyHelix {
 export interface BiologyHelixRung3D {
   /** Clickable when present — stamped on this rung's marker sphere. */
   id?: string;
-  /** Rung cylinder + marker color (default '#94a3b8'). */
+  /** Rung cylinder + marker color: a tone name, token or literal (default `muted`). */
   color?: string;
   /** Marker sphere radius override (e.g. selection enlargement). */
   radius?: number;
@@ -179,9 +182,9 @@ export interface BiologyHelix3D {
   rise?: number;
   /** Twist per rung in degrees (default 36). */
   twistDeg?: number;
-  /** Strand A (top) color (default '#38bdf8'). */
+  /** Strand A (top) color: a tone name, token or literal (default `series-1`). */
   strandAColor?: string;
-  /** Strand B (bottom) color (default '#fb923c'). */
+  /** Strand B (bottom) color: a tone name, token or literal (default `series-2`). */
   strandBColor?: string;
   /** Backbone strand cylinder + bead radius (default 0.16). */
   backboneRadius?: number;
@@ -203,6 +206,12 @@ export interface BiologyCanvasProps extends Omit<React.AriaAttributes, keyof A11
   height?: number;
   title?: string;
   backgroundColor?: string;
+  /** Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply. */
+  series?: string[];
+  /** Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route. */
+  keyMap?: Record<string, EventKey>;
+  /** Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`. */
+  keyUpMap?: Record<string, EventKey>;
   /** Painter: 2D raster (default) or 3D mesh scene via the lazy three.js host. */
   mode?: '2d' | '3d';
   /** 3D only: neutral camera pose ({ mode, zoom, fov, azimuth, target }). */
@@ -262,6 +271,9 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
   height = 400,
   title,
   backgroundColor,
+  series,
+  keyMap,
+  keyUpMap,
   mode = '2d',
   camera,
   lighting,
@@ -286,6 +298,7 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
   error,
   ...rest
 }) => {
+
   const derivedShapes: LearningShape[] = useMemo(() => {
     const out: LearningShape[] = [];
     const nodeById = new Map<string, BiologyNode>();
@@ -296,7 +309,7 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
     const bandCount = bands.length;
     for (let i = 0; i < bandCount; i++) {
       const band = bands[i];
-      const bandColor = band.color ?? BIO_BAND_COLORS[i % BIO_BAND_COLORS.length];
+      const bandColor = band.color ?? seriesTone(i);
       const bandY = (i * height) / bandCount;
       const bandH = height / bandCount;
       out.push({
@@ -307,6 +320,8 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
         height: bandH,
         color: bandColor,
         fill: bandColor,
+        fillStyle: 'tint',
+        stroke: 'thin',
         opacity: 0.45,
       });
       if (band.label) {
@@ -315,14 +330,14 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           x: 8,
           y: bandY + 14,
           text: band.label,
-          color: '#6b7280',
-          fontSize: 10,
+          tone: 'label',
+          textSize: 'xs',
         });
       }
     }
 
     for (const c of compartments) {
-      const color = c.color ?? '#16a34a';
+      const color = c.color ?? 'ink';
       out.push({
         type: 'ellipse',
         x: c.x,
@@ -330,8 +345,9 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
         width: c.width,
         height: c.height,
         color,
-        fill: c.fill ?? `${color}1A`,
-        lineWidth: c.lineWidth ?? 2,
+        fill: c.fill ?? color,
+        fillStyle: 'tint',
+        ...(c.lineWidth !== undefined ? { lineWidth: c.lineWidth } : { stroke: 'normal' as const }),
         ...(c.dash ? { dash: c.dash } : {}),
       });
       if (c.label) {
@@ -340,8 +356,8 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           x: c.x,
           y: c.y - c.height / 2 + 14,
           text: c.label,
-          color: '#111827',
-          fontSize: 11,
+          tone: 'ink',
+          textSize: 'sm',
           align: 'center',
         });
       }
@@ -355,9 +371,9 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
       const rungs = helix.rungs;
       const n = rungs.length;
       const cy = hy + hh / 2;
-      const colorA = helix.colorA ?? '#2563eb';
-      const colorB = helix.colorB ?? '#dc2626';
-      const rungColor = helix.rungColor ?? '#94a3b8';
+      const colorA = helix.colorA ?? 'series-1';
+      const colorB = helix.colorB ?? 'series-2';
+      const rungColor = helix.rungColor ?? 'muted';
       const fork = helix.fork ?? 0;
       const maxSep = Math.min(hh - 8, 96);
 
@@ -374,33 +390,33 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
         rungGeoms.push({ rx, sep, rung: rungs[i], paired });
       }
       for (let i = 1; i < n; i++) {
-        out.push({ type: 'line', x1: strandA[i - 1].x, y1: strandA[i - 1].y, x2: strandA[i].x, y2: strandA[i].y, color: colorA, lineWidth: 3 });
+        out.push({ type: 'line', x1: strandA[i - 1].x, y1: strandA[i - 1].y, x2: strandA[i].x, y2: strandA[i].y, color: colorA, stroke: 'bold' });
       }
       for (let i = 1; i < n; i++) {
-        out.push({ type: 'line', x1: strandB[i - 1].x, y1: strandB[i - 1].y, x2: strandB[i].x, y2: strandB[i].y, color: colorB, lineWidth: 3 });
+        out.push({ type: 'line', x1: strandB[i - 1].x, y1: strandB[i - 1].y, x2: strandB[i].x, y2: strandB[i].y, color: colorB, stroke: 'bold' });
       }
       for (const g of rungGeoms) {
-        const rColor = g.rung.color ?? (g.rung.state === 'new' ? '#16a34a' : rungColor);
+        const rColor = g.rung.color ?? (g.rung.state === 'new' ? 'accent' : rungColor);
         const topY = cy - g.sep / 2;
         const bottomY = cy + g.sep / 2;
         if (g.paired) {
-          out.push({ type: 'line', x1: g.rx, y1: topY, x2: g.rx, y2: bottomY, color: rColor });
+          out.push({ type: 'line', x1: g.rx, y1: topY, x2: g.rx, y2: bottomY, color: rColor, stroke: 'thin' });
           if (g.rung.a) {
-            out.push({ type: 'text', x: g.rx, y: cy - g.sep / 4, text: g.rung.a, fontSize: 9, align: 'center', color: '#374151' });
+            out.push({ type: 'text', x: g.rx, y: cy - g.sep / 4, text: g.rung.a, textSize: 'xs', align: 'center', tone: 'label' });
           }
           if (g.rung.b) {
-            out.push({ type: 'text', x: g.rx, y: cy + g.sep / 4, text: g.rung.b, fontSize: 9, align: 'center', color: '#374151' });
+            out.push({ type: 'text', x: g.rx, y: cy + g.sep / 4, text: g.rung.b, textSize: 'xs', align: 'center', tone: 'label' });
           }
         } else {
           const stubTopY = topY + 8;
           const stubBottomY = bottomY - 8;
-          out.push({ type: 'line', x1: g.rx, y1: topY, x2: g.rx, y2: stubTopY, color: rColor });
-          out.push({ type: 'line', x1: g.rx, y1: bottomY, x2: g.rx, y2: stubBottomY, color: rColor });
+          out.push({ type: 'line', x1: g.rx, y1: topY, x2: g.rx, y2: stubTopY, color: rColor, stroke: 'thin' });
+          out.push({ type: 'line', x1: g.rx, y1: bottomY, x2: g.rx, y2: stubBottomY, color: rColor, stroke: 'thin' });
           if (g.rung.a) {
-            out.push({ type: 'text', x: g.rx, y: stubTopY + 6, text: g.rung.a, fontSize: 9, align: 'center', color: '#374151' });
+            out.push({ type: 'text', x: g.rx, y: stubTopY + 6, text: g.rung.a, textSize: 'xs', align: 'center', tone: 'label' });
           }
           if (g.rung.b) {
-            out.push({ type: 'text', x: g.rx, y: stubBottomY - 6, text: g.rung.b, fontSize: 9, align: 'center', color: '#374151' });
+            out.push({ type: 'text', x: g.rx, y: stubBottomY - 6, text: g.rung.b, textSize: 'xs', align: 'center', tone: 'label' });
           }
         }
       }
@@ -410,7 +426,7 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
       const a = nodeById.get(e.from);
       const b = nodeById.get(e.to);
       if (!a || !b) continue;
-      const color = e.color ?? '#9ca3af';
+      const color = e.color ?? 'ink';
       if (e.directed) {
         const rA = a.radius ?? 16;
         const rB = b.radius ?? 16;
@@ -426,7 +442,7 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           x2: b.x - ux * rB,
           y2: b.y - uy * rB,
           color,
-          lineWidth: 2,
+          stroke: 'normal',
         });
       } else {
         out.push({
@@ -436,7 +452,7 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           x2: b.x,
           y2: b.y,
           color,
-          lineWidth: 2,
+          stroke: 'normal',
         });
       }
       if (e.label) {
@@ -445,22 +461,25 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           x: (a.x + b.x) / 2 + 4,
           y: (a.y + b.y) / 2 - 4,
           text: e.label,
-          color: '#374151',
-          fontSize: 11,
+          tone: 'label',
+          textSize: 'sm',
         });
       }
     }
 
-    for (const n of nodes) {
+    nodes.forEach((n, ni) => {
       const state = n.state ?? 'default';
       const muted = state === 'muted';
+      const nodeColor = n.color ?? seriesTone(ni);
       out.push({
         type: 'circle',
         x: n.x,
         y: n.y,
         radius: n.radius ?? 16,
-        color: n.color ?? '#16a34a',
-        fill: `${n.color ?? '#16a34a'}33`,
+        color: nodeColor,
+        fill: nodeColor,
+        fillStyle: 'tint',
+        stroke: 'normal',
         id: n.id,
         ...(muted ? { opacity: 0.35 } : {}),
       });
@@ -470,8 +489,8 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           x: n.x,
           y: n.y,
           radius: (n.radius ?? 16) + 4,
-          color: '#f59e0b',
-          lineWidth: 2,
+          tone: 'highlight',
+          stroke: 'normal',
         });
       }
       if (n.label) {
@@ -481,12 +500,12 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           y: n.y + (n.radius ?? 16) + 14,
           text: n.label,
           ...(muted ? { opacity: 0.35 } : {}),
-          color: '#111827',
-          fontSize: 12,
+          tone: 'ink',
+          textSize: 'sm',
           align: 'center',
         });
       }
-    }
+    });
 
     const stageCount = stages.length;
     if (stageCount > 0) {
@@ -514,7 +533,8 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
               y1: p1.y + uy * 46,
               x2: p2.x - ux * 46,
               y2: p2.y - uy * 46,
-              color: '#94a3b8',
+              tone: 'guide',
+              stroke: 'normal',
             });
           }
         }
@@ -525,8 +545,8 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           const w = Math.max(26, Math.min(84, stage.label.length * 6 + 10));
           const h = 18;
           const p = ringPoints[i];
-          out.push({ type: 'rect', x: p.x - w / 2, y: p.y - h / 2, width: w, height: h, color: fill, fill });
-          out.push({ type: 'text', x: p.x, y: p.y, text: stage.label, color: BIO_STAGE_TEXT[state], fontSize: 10, align: 'center' });
+          out.push({ type: 'rect', x: p.x - w / 2, y: p.y - h / 2, width: w, height: h, color: fill, fill, fillStyle: 'tint', stroke: 'normal' });
+          out.push({ type: 'text', x: p.x, y: p.y, text: stage.label, tone: BIO_STAGE_TEXT[state], textSize: 'xs', align: 'center' });
         }
       } else {
         const stripY = height - 32;
@@ -543,7 +563,8 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
             y1: midY,
             x2: chipGeoms[i + 1].x,
             y2: midY,
-            color: '#94a3b8',
+            tone: 'guide',
+            stroke: 'normal',
           });
         }
         for (let i = 0; i < stageCount; i++) {
@@ -551,14 +572,14 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           const state = stage.state ?? 'pending';
           const fill = stage.color ?? BIO_STAGE_FILL[state];
           const g = chipGeoms[i];
-          out.push({ type: 'rect', x: g.x, y: stripY, width: g.w, height: 26, color: fill, fill });
+          out.push({ type: 'rect', x: g.x, y: stripY, width: g.w, height: 26, color: fill, fill, fillStyle: 'tint', stroke: 'normal' });
           out.push({
             type: 'text',
             x: g.x + g.w / 2,
             y: stripY + 13,
             text: stage.label,
-            color: BIO_STAGE_TEXT[state],
-            fontSize: 10,
+            tone: BIO_STAGE_TEXT[state],
+            textSize: 'xs',
             align: 'center',
           });
         }
@@ -585,8 +606,10 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
     if (animate) {
       biologyLog.debug('animate ignored in 3D mode (motion is entity-state driven)');
     }
+    // The 3D host resolves tone names against the theme.
+    const tone3d = (value: string | undefined, fallback: DiagramTone): string => value ?? fallback;
     const out: DrawableNode[] = [];
-    const labelColor = labelColorForBackground(backgroundColor);
+    const labelColor = 'ink';
     const nodeById = new Map<string, BiologyNode>();
     for (const n of nodes) {
       if (n.id) nodeById.set(n.id, n);
@@ -597,7 +620,7 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
       const b = nodeById.get(e.to);
       if (!a || !b) continue;
       const edgeRadius = Math.max(0.04, Math.min(a.radius ?? 0.5, b.radius ?? 0.5) * 0.12);
-      const edge = cylinderBetween([a.x, a.y, a.z ?? 0], [b.x, b.y, b.z ?? 0], edgeRadius, e.color ?? '#9ca3af');
+      const edge = cylinderBetween([a.x, a.y, a.z ?? 0], [b.x, b.y, b.z ?? 0], edgeRadius, tone3d(e.color, 'ink'));
       if (edge) out.push(edge);
       if (e.label) {
         out.push(
@@ -612,17 +635,24 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
       }
     }
 
-    for (const n of nodes) {
+    nodes.forEach((n, ni) => {
       const radius = n.radius ?? 0.5;
       const nz = n.z ?? 0;
-      out.push(meshSphere(n.id, n.x, n.y, nz, radius, n.color ?? '#16a34a', { shape: n.shape, ...(n.opacity !== undefined ? { opacity: n.opacity } : {}) }));
+      out.push(meshSphere(n.id, n.x, n.y, nz, radius, tone3d(n.color, seriesTone(ni)), { shape: n.shape, ...(n.opacity !== undefined ? { opacity: n.opacity } : {}) }));
       if (n.label) {
         out.push(billboardLabel(n.label, n.x, n.y, nz + radius, { color: labelColor }));
       }
-    }
+    });
 
     if (helix3d) {
-      out.push(...helixDrawables(helix3d, { labelColor }));
+      const rungCount = helix3d.count ?? helix3d.rungs?.length ?? 0;
+      const resolvedHelix: BiologyHelix3D = {
+        ...helix3d,
+        strandAColor: tone3d(helix3d.strandAColor, 'series-1'),
+        strandBColor: tone3d(helix3d.strandBColor, 'series-2'),
+        rungs: Array.from({ length: rungCount }, (_, i) => ({ ...helix3d.rungs?.[i], color: tone3d(helix3d.rungs?.[i]?.color, 'muted') })),
+      };
+      out.push(...helixDrawables(resolvedHelix, { labelColor }));
     }
     return out;
   }, [mode, nodes, edges, shapes, compartments, bands, stages, helix, helix3d, animate, backgroundColor]);
@@ -651,6 +681,7 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
         height={height}
         title={title}
         backgroundColor={backgroundColor}
+          series={series}
         drawables={drawables3D}
         camera={camera}
         lighting={lighting}
@@ -673,6 +704,9 @@ export const BiologyCanvas: React.FC<BiologyCanvasProps> = ({
           width={width}
           height={height}
           backgroundColor={backgroundColor}
+          series={series}
+          keyMap={keyMap}
+          keyUpMap={keyUpMap}
           shapes={derivedShapes}
           readouts={readouts}
           traces={traces}

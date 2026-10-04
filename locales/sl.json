@@ -183,6 +183,7 @@
   "template.ourTeam": "Naša ekipa",
   "template.caseStudies": "Primeri uporabe",
   "versionDiff.compare": "Primerjaj",
+  "versionDiff.changes": "Spremembe",
   "versionDiff.to": "z",
   "versionDiff.beforeRevision": "Prejšnja revizija",
   "versionDiff.afterRevision": "Naslednja revizija",
@@ -913,6 +914,7 @@
   "gridPicker.moreRefine": "+še {{count}} — zožite iskanje",
   "graphCanvas.noNodes": "Ni vozlišč za prikaz.",
   "codeBlock.noCode": "Ni kode za prikaz.",
+  "codeBlock.region": "Koda",
   "fab.action": "Dejanje",
   "fab.closeActions": "Zapri dejanja",
   "fab.openActions": "Odpri dejanja",
@@ -1229,5 +1231,12 @@
   "agentActivity.earlierConversations": "Prejšnji pogovori ({{count}})",
   "agentActivity.earlierActivity": "Prejšnja dejavnost",
   "tabs.scrollStart": "Pomakni zavihke nazaj",
-  "tabs.scrollEnd": "Pomakni zavihke naprej"
+  "tabs.scrollEnd": "Pomakni zavihke naprej",
+  "agentChat.workedThrough": "Opravil {{count}} korakov",
+  "agentChat.newMessages": "Nova sporočila",
+  "agentChat.copy": "Kopiraj odgovor",
+  "agentChat.copied": "Kopirano",
+  "agentChat.today": "Danes",
+  "agentChat.yesterday": "Včeraj",
+  "agentChat.emptyDescription": "Vprašajte s svojimi besedami — pomočnik lahko poišče podatke in namesto vas naredi spremembe."
 }

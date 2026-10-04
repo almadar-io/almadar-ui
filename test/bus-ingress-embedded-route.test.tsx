@@ -54,7 +54,7 @@ function mount(routes: TraitEventListener[], chain: string[]) {
   );
   const { result } = renderHook(() => {
     const bus = useEventBus();
-    useBusIngress(bs, traitIndex, settle, bus);
+    useBusIngress(bs, traitIndex, settle, bus, new Set(traitIndex.byName.keys()));
     return bus;
   }, { wrapper });
   return { settle, bus: result };

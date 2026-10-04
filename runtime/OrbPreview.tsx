@@ -37,7 +37,7 @@ import { buildOrbitalsByTrait } from '../lib/orbitalsByTrait';
 import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
 import { EntityBindingContext } from '../providers/EntityBindingContext';
 import { AwaitingSkeletonContext } from '../providers/AwaitingSkeletonContext';
-import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport, type AccessTokenProvider } from '../providers/ServerBridge';
+import { ServerBridgeProvider, useHasServerBridge, useServerBridge, type ServerBridgeTransport, type AccessTokenProvider } from '../providers/ServerBridge';
 import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
 import { NavStackProvider, useNavStack, type NavStackApi, type NavPageDecl } from '../providers/NavStackContext';
@@ -205,6 +205,7 @@ function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate,
  * out at `CONTENT_STAGE_WIDTH` — and centers it (a palette tile, a drag image).
  */
 const CONTENT_STAGE_WIDTH = 480;
+const NO_ORBITALS: readonly OrbitalDefinition[] = [];
 
 function FitToBox({ children, mode = 'box' }: { children: React.ReactNode; mode?: 'box' | 'content' }) {
   const outerRef = useRef<HTMLDivElement>(null);
@@ -516,7 +517,8 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
 
   const activeOrbitalTheme = useMemo(() => resolvePreviewTheme(schema, pageName), [schema, pageName]);
   const { locale } = useTranslate();
-  const browserStore = useBrowserStore(schema.name ?? 'app', schema.orbitals, locale);
+  // A host that runs the whole program keeps its browser-stored entities; this view opens none.
+  const browserStore = useBrowserStore(schema.name ?? 'app', transport?.hostsBrowserStore === true ? NO_ORBITALS : schema.orbitals, locale);
 
   const inner = (
     <VerificationProvider enabled>
@@ -574,14 +576,6 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
   if (browserStore.status === 'opening') return <LoadingState />;
   if (browserStore.status === 'failed') {
     return <ErrorState data-testid="browser-store-error" message={browserStore.error.message} />;
-  }
-
-  if (serverUrl || transport) {
-    return (
-      <ServerBridgeProvider schema={schema} serverUrl={serverUrl} transport={transport} getAccessToken={getAccessToken}>
-        {inner}
-      </ServerBridgeProvider>
-    );
   }
 
   return inner;
@@ -788,6 +782,7 @@ export function OrbPreview({
     | { ok: true; schema: OrbitalSchema; mockData: EntityData }
     | { ok: false; error: string };
 
+  const hasOuterBridge = useHasServerBridge();
   const parseResult = useMemo<ParsedResult>(() => {
     let parsed: OrbitalSchema;
     if (typeof schema === 'string') {
@@ -1102,8 +1097,16 @@ export function OrbPreview({
     return () => el.removeEventListener('click', handler, true);
   }, [pages, handleNavigate, isolated, hostHrefBase]);
 
+  // One registration per program, above the lazy switch: the server runs the lazy behaviors as part of it.
+  const withBridge = (node: React.ReactElement): React.ReactElement =>
+    (serverUrl || transport) && !hasOuterBridge ? (
+      <ServerBridgeProvider schema={parseResult.schema} serverUrl={serverUrl} transport={transport} getAccessToken={getAccessToken}>
+        {node}
+      </ServerBridgeProvider>
+    ) : node;
+
   if (lazyRoute) {
-    return (
+    return withBridge(
       <Box ref={containerRef} className={`overflow-auto ${className ?? ''}`} style={{ height }}>
         {lazyLoad.status === 'loading' && <LoadingState />}
         {lazyLoad.status === 'error' && <ErrorState data-testid="lazy-page-error" message={lazyLoad.error} />}
@@ -1131,7 +1134,7 @@ export function OrbPreview({
     );
   }
 
-  return (
+  return withBridge(
     <Box
       ref={containerRef}
       className={`${fit ? 'overflow-hidden' : 'overflow-auto'} border border-[var(--color-border)] rounded-[var(--radius-md)] ${className ?? ''}`}

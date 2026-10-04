@@ -12,9 +12,7 @@
 
 import * as React from 'react';
 import { useEffect, useMemo } from 'react';
-import { useEventBus } from '../../../hooks/useEventBus';
 import { perfEnd, perfStart } from '../../../lib/perf';
-import { resolveKeyMapEvent } from '../../../lib/keyMapEvent';
 import { Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { resolveGameFontFamily } from '../../../lib/gameFonts';
@@ -62,7 +60,7 @@ export interface MathRegion {
   samples2?: LearningPoint[];
   /** Baseline y-value the region closes against when `samples2` is absent (default 0). */
   baseline?: number;
-  /** Fill/stroke color (default '#2563eb'). */
+  /** Fill/stroke color: a tone name, token or literal (default `series-1`, tinted). */
   color?: string;
   /** Fill opacity (default 0.2). */
   opacity?: number;
@@ -83,7 +81,7 @@ export interface MathBar {
   y0?: number;
   /** Top y-value. */
   y1: number;
-  /** Fill/stroke color (default '#93c5fd'). */
+  /** Fill/stroke color: a tone name, token or literal (default `series-2`, tinted). */
   color?: string;
   /** Fill opacity (default 0.5). */
   opacity?: number;
@@ -95,7 +93,7 @@ export interface MathGuide {
   kind: 'vline' | 'hline';
   /** World coordinate the guide sits at. */
   at: number;
-  /** Line color (default '#9ca3af'). */
+  /** Line color: a tone name, token or literal (default `guide`). */
   color?: string;
   /** Stroke dash style (default 'dashed'); 'solid' draws an unbroken line. */
   dash?: 'solid' | 'dashed' | 'dotted';
@@ -115,7 +113,7 @@ export interface MathAngle {
   to: number;
   /** Arc radius, in world-x units (default 0.8). */
   radius?: number;
-  /** Arc + label color (default '#0ea5e9'). */
+  /** Arc + label color: a tone name, token or literal (default `series-4`). */
   color?: string;
   /** Angle label. */
   label?: string;
@@ -130,7 +128,7 @@ export interface MathHop {
   from: number;
   /** End x, in world coordinates. */
   to: number;
-  /** Arc + arrowhead color (default '#7c3aed'). */
+  /** Arc + arrowhead color: a tone name, token or literal (default `series-3`). */
   color?: string;
   /** Hop label, centered above the arc. */
   label?: string;
@@ -139,6 +137,30 @@ export interface MathHop {
 function formatTick(v: number): string {
   if (Number.isInteger(v)) return String(v);
   return v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+/** World → canvas mapping of the plot box; one source for shapes and drawables. */
+export function plotTransform(width: number, height: number, xMin: number, xMax: number, yMin: number, yMax: number, aspect: 'fit' | 'equal') {
+  const margin = 24;
+  const fitW = width - margin * 2;
+  const fitH = height - margin * 2;
+  const fitSx = fitW / (xMax - xMin);
+  const fitSy = fitH / (yMax - yMin);
+  const sx = aspect === 'equal' ? Math.min(fitSx, fitSy) : fitSx;
+  const sy = aspect === 'equal' ? Math.min(fitSx, fitSy) : fitSy;
+  const left = margin + (fitW - sx * (xMax - xMin)) / 2;
+  const bottom = height - margin - (fitH - sy * (yMax - yMin)) / 2;
+  return {
+    sx,
+    sy,
+    left,
+    right: left + sx * (xMax - xMin),
+    top: bottom - sy * (yMax - yMin),
+    bottom,
+    plotH: sy * (yMax - yMin),
+    mapX: (x: number) => left + (x - xMin) * sx,
+    mapY: (y: number) => bottom - (y - yMin) * sy,
+  };
 }
 
 export interface MathCanvasProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
@@ -153,17 +175,24 @@ export interface MathCanvasProps extends Omit<React.AriaAttributes, keyof A11yPr
   showAxes?: boolean;
   showGrid?: boolean;
   gridStep?: number;
-  /** Canvas fill color; `var(--token, fallback)` strings resolve against the active theme. Default transparent. */
+  /** Canvas ground: a tone name, `var()` token or literal. Default the theme's `--surface-diagram`. */
   backgroundColor?: string;
-  /** Grid line color; resolves theme tokens (default `var(--color-border, #9ca3af)`). */
+  /** Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply. */
+  series?: string[];
+  /** Grid line color: a tone name, token or literal (default the `grid` tone). */
   gridColor?: string;
-  /** Axis line color; resolves theme tokens (default `var(--color-muted-foreground, #374151)`). */
+  /** Axis line color: a tone name, token or literal (default the `axis` tone). */
   axisColor?: string;
+  /**
+   * How the x and y ranges map to the canvas. `fit` stretches each range to fill the plot (function
+   * plots); `equal` uses one scale for both axes so circles stay round (geometry). Default `fit`.
+   */
+  aspect?: 'fit' | 'equal';
   /** Draw numeric labels on grid lines (default false). */
   showTickLabels?: boolean;
-  /** Font size in px for axis tick labels (default 10). */
+  /** Font size in px for axis tick labels (default the theme's `xs` step). */
   tickLabelFontSize?: number;
-  /** Base font size in px for all other canvas annotations (points, vectors, guides, curves, regions, angles, hops; default 12). */
+  /** Font size in px for all other canvas annotations (default the theme's diagram label size). */
   labelFontSize?: number;
   /** Canvas text font family. Accepts a known game-font key (e.g. "future-narrow") or a CSS font-family string. */
   fontFamily?: string;
@@ -218,11 +247,13 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   showGrid = true,
   gridStep = 1,
   backgroundColor,
-  gridColor = 'var(--color-border, #9ca3af)',
-  axisColor = 'var(--color-muted-foreground, #374151)',
+  series,
+  gridColor = 'grid',
+  axisColor = 'axis',
+  aspect = 'fit',
   showTickLabels = false,
-  tickLabelFontSize = 10,
-  labelFontSize = 12,
+  tickLabelFontSize,
+  labelFontSize,
   fontFamily: fontFamilyProp,
   showCurveLabels = false,
   curves = [],
@@ -246,62 +277,26 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   error,
   ...rest
 }) => {
-  const eventBus = useEventBus();
   const fontFamily = resolveGameFontFamily(fontFamilyProp);
 
-  // Normalise the key maps by content so the window listeners below are only
-  // re-attached when a mapping actually changes: a parent that passes a new
-  // object identity per render (an inline literal on a renderTick) would
-  // otherwise tear down and re-add the global listeners every frame, dropping
-  // key events that land in the gap.
-  const keyMapKey = keyMap ? JSON.stringify(keyMap) : null;
-  const keyUpMapKey = keyUpMap ? JSON.stringify(keyUpMap) : null;
-  const stableKeyMap = useMemo(() => keyMap, [keyMapKey]);
-  const stableKeyUpMap = useMemo(() => keyUpMap, [keyUpMapKey]);
-
-  // Keyboard → semantic events via keyMap/keyUpMap (device-agnostic input layer,
-  // mirroring the game canvas): window-scoped so no focus gate is needed.
-  useEffect(() => {
-    if (!stableKeyMap && !stableKeyUpMap) return;
-    const onDown = (e: KeyboardEvent) => {
-      const ev = resolveKeyMapEvent(stableKeyMap, e);
-      if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
-    };
-    const onUp = (e: KeyboardEvent) => {
-      const ev = resolveKeyMapEvent(stableKeyUpMap, e);
-      if (ev) eventBus.emit(`UI:${ev}`, {});
-    };
-    window.addEventListener('keydown', onDown);
-    window.addEventListener('keyup', onUp);
-    return () => {
-      window.removeEventListener('keydown', onDown);
-      window.removeEventListener('keyup', onUp);
-    };
-  }, [stableKeyMap, stableKeyUpMap, eventBus]);
 
   const derivedShapes: LearningShape[] = useMemo(() => {
     const _perfT = perfStart('mathcanvas:derive');
     const out: LearningShape[] = [];
 
-    const margin = 24;
-    const plotW = width - margin * 2;
-    const plotH = height - margin * 2;
-
-    const mapX = (x: number) => margin + ((x - xMin) / (xMax - xMin)) * plotW;
-    const mapY = (y: number) => height - (margin + ((y - yMin) / (yMax - yMin)) * plotH);
-    const xAxisY = Math.max(margin, Math.min(height - margin, mapY(0)));
-    const yAxisX = Math.max(margin, Math.min(width - margin, mapX(0)));
+    const { sx, sy, left, right, top, bottom, plotH, mapX, mapY } = plotTransform(width, height, xMin, xMax, yMin, yMax, aspect);
+    const plotW = right - left;
+    const xAxisY = Math.max(top, Math.min(bottom, mapY(0)));
+    const yAxisX = Math.max(left, Math.min(right, mapX(0)));
 
     if (showGrid) {
-      // Low opacity keeps the lattice faint on BOTH themes; the color itself is a
-      // theme token by default so dark and light themes each get their own gray.
       for (let x = Math.ceil(xMin / gridStep) * gridStep; x <= xMax; x += gridStep) {
         const px = mapX(x);
-        out.push({ type: 'line', x1: px, y1: margin, x2: px, y2: height - margin, color: gridColor, opacity: 0.35, lineWidth: 1 });
+        out.push({ type: 'line', x1: px, y1: top, x2: px, y2: bottom, color: gridColor, stroke: 'thin' });
       }
       for (let y = Math.ceil(yMin / gridStep) * gridStep; y <= yMax; y += gridStep) {
         const py = mapY(y);
-        out.push({ type: 'line', x1: margin, y1: py, x2: width - margin, y2: py, color: gridColor, opacity: 0.35, lineWidth: 1 });
+        out.push({ type: 'line', x1: left, y1: py, x2: right, y2: py, color: gridColor, stroke: 'thin' });
       }
     }
 
@@ -310,18 +305,18 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       let kx = 0;
       for (let x = Math.ceil(xMin / gridStep) * gridStep; x <= xMax; x += gridStep, kx++) {
         if (kx % labelEveryX === 0 && x !== 0) {
-          out.push({ type: 'text', fontFamily, x: mapX(x), y: xAxisY + 12, text: formatTick(x), color: '#6b7280', fontSize: tickLabelFontSize, align: 'center' });
+          out.push({ type: 'text', textCase: 'verbatim', fontFamily, x: mapX(x), y: xAxisY + 12, text: formatTick(x), tone: 'label', textSize: 'xs', fontSize: tickLabelFontSize, align: 'center' });
         }
       }
       const labelEveryY = Math.max(1, Math.ceil(((yMax - yMin) / gridStep) / Math.floor(plotH / 28)));
       let ky = 0;
       for (let y = Math.ceil(yMin / gridStep) * gridStep; y <= yMax; y += gridStep, ky++) {
         if (ky % labelEveryY === 0 && y !== 0) {
-          out.push({ type: 'text', fontFamily, x: yAxisX - 6, y: mapY(y), text: formatTick(y), color: '#6b7280', fontSize: tickLabelFontSize, align: 'right' });
+          out.push({ type: 'text', textCase: 'verbatim', fontFamily, x: yAxisX - 6, y: mapY(y), text: formatTick(y), tone: 'label', textSize: 'xs', fontSize: tickLabelFontSize, align: 'right' });
         }
       }
       if (xMin <= 0 && xMax >= 0 && yMin <= 0 && yMax >= 0) {
-        out.push({ type: 'text', fontFamily, x: yAxisX - 6, y: xAxisY + 12, text: '0', color: '#6b7280', fontSize: tickLabelFontSize, align: 'right' });
+        out.push({ type: 'text', textCase: 'verbatim', fontFamily, x: yAxisX - 6, y: xAxisY + 12, text: '0', tone: 'label', textSize: 'xs', fontSize: tickLabelFontSize, align: 'right' });
       }
     }
 
@@ -339,19 +334,20 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         region.samples2 && region.samples2.length > 0
           ? [...region.samples2].reverse().map(clampedPoint)
           : [clampedPoint({ x: last.x, y: baseline }), clampedPoint({ x: first.x, y: baseline })];
-      const color = region.color ?? '#2563eb';
+      const color = region.color ?? 'series-1';
       out.push({
         type: 'polygon',
         points: [...upper, ...closing],
         fill: color,
         color,
-        opacity: region.opacity ?? 0.2,
-        lineWidth: 1,
+        fillStyle: 'tint',
+        opacity: region.opacity,
+        stroke: 'thin',
       });
       if (region.label) {
         const mid = Math.floor(region.samples.length / 2);
         out.push({
-          type: 'text', fontFamily,
+          type: 'text', textCase: 'verbatim', fontFamily,
           x: mapX((first.x + last.x) / 2),
           y: (mapY(region.samples[mid].y) + mapY(baseline)) / 2,
           text: region.label,
@@ -364,7 +360,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     for (const bar of bars) {
       if (bar.x + bar.width < xMin || bar.x > xMax) continue;
       const y0 = bar.y0 ?? 0;
-      const color = bar.color ?? '#93c5fd';
+      const color = bar.color ?? 'series-2';
       out.push({
         type: 'rect',
         x: mapX(bar.x),
@@ -373,38 +369,40 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         height: Math.abs(mapY(bar.y1) - mapY(y0)),
         color,
         fill: color,
-        opacity: bar.opacity ?? 0.5,
-        lineWidth: 1,
+        fillStyle: 'tint',
+        opacity: bar.opacity,
+        stroke: 'thin',
       });
     }
 
     if (showAxes) {
-      out.push({ type: 'line', x1: margin, y1: xAxisY, x2: width - margin, y2: xAxisY, color: axisColor, lineWidth: 2 });
-      out.push({ type: 'line', x1: yAxisX, y1: margin, x2: yAxisX, y2: height - margin, color: axisColor, lineWidth: 2 });
+      out.push({ type: 'line', x1: left, y1: xAxisY, x2: right, y2: xAxisY, color: axisColor, stroke: 'normal' });
+      out.push({ type: 'line', x1: yAxisX, y1: top, x2: yAxisX, y2: bottom, color: axisColor, stroke: 'normal' });
     }
 
     for (const guide of guides) {
-      const color = guide.color ?? '#9ca3af';
+      const color = guide.color ?? 'guide';
       const dash = guide.dash ?? 'dashed';
       if (guide.kind === 'vline') {
         if (guide.at < xMin || guide.at > xMax) continue;
         const px = mapX(guide.at);
-        out.push({ type: 'line', x1: px, y1: margin, x2: px, y2: height - margin, color, dash });
+        out.push({ type: 'line', x1: px, y1: top, x2: px, y2: bottom, color, dash, stroke: 'thin' });
         if (guide.label) {
-          out.push({ type: 'text', fontFamily, x: px + 4, y: margin + 10, text: guide.label, color, fontSize: 11 });
+          out.push({ type: 'text', textCase: 'verbatim', fontFamily, x: px + 4, y: top + 10, text: guide.label, color, fontSize: labelFontSize });
         }
       } else {
         if (guide.at < yMin || guide.at > yMax) continue;
         const py = mapY(guide.at);
-        out.push({ type: 'line', x1: margin, y1: py, x2: width - margin, y2: py, color, dash });
+        out.push({ type: 'line', x1: left, y1: py, x2: right, y2: py, color, dash, stroke: 'thin' });
         if (guide.label) {
-          out.push({ type: 'text', fontFamily, x: width - margin - 4, y: py - 8, text: guide.label, color, fontSize: labelFontSize, align: 'right' });
+          out.push({ type: 'text', textCase: 'verbatim', fontFamily, x: right - 4, y: py - 8, text: guide.label, color, fontSize: labelFontSize, align: 'right' });
         }
       }
     }
 
-    for (const curve of curves) {
+    for (const [curveIndex, curve] of curves.entries()) {
       if (!curve.samples || curve.samples.length < 2) continue;
+      const curveColor = curve.color ?? `series-${(curveIndex % 8) + 1}`;
       // One clipped Path2D per curve: segments are clipped to the x-window (y is
       // interpolated at the crossing) instead of dropped, so curves no longer snap
       // off at the viewport edge under a moving window; a single stroked path with
@@ -435,17 +433,17 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       out.push({
         type: 'path',
         path: d,
-        color: curve.color ?? '#2563eb',
-        lineWidth: 2,
+        color: curveColor,
+        stroke: 'bold',
         dash: curve.dash,
       });
       if (showCurveLabels && curve.label && lastInRange) {
         out.push({
-          type: 'text', fontFamily,
+          type: 'text', textCase: 'verbatim', fontFamily,
           x: mapX(lastInRange.x) + 6,
           y: mapY(lastInRange.y) - 6,
           text: curve.label,
-          color: curve.color ?? '#2563eb',
+          color: curveColor,
           fontSize: labelFontSize,
         });
       }
@@ -455,7 +453,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       const x1 = mapX(hop.from);
       const x2 = mapX(hop.to);
       const peak = Math.min(36, plotH * 0.3);
-      const color = hop.color ?? '#7c3aed';
+      const color = hop.color ?? 'series-3';
       out.push({
         type: 'ellipse',
         x: (x1 + x2) / 2,
@@ -479,7 +477,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       });
       if (hop.label) {
         out.push({
-          type: 'text', fontFamily,
+          type: 'text', textCase: 'verbatim', fontFamily,
           x: (x1 + x2) / 2,
           y: xAxisY - peak - 8,
           text: hop.label,
@@ -492,13 +490,13 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
 
     for (const angle of angles) {
       const radius = angle.radius ?? 0.8;
-      const color = angle.color ?? '#0ea5e9';
+      const color = angle.color ?? 'series-4';
       out.push({
         type: 'ellipse',
         x: mapX(angle.x),
         y: mapY(angle.y),
-        width: (2 * radius * plotW) / (xMax - xMin),
-        height: (2 * radius * plotH) / (yMax - yMin),
+        width: 2 * radius * sx,
+        height: 2 * radius * sy,
         startAngle: -angle.to,
         endAngle: -angle.from,
         color,
@@ -507,7 +505,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         const mid = (angle.from + angle.to) / 2;
         const rad = (mid * Math.PI) / 180;
         out.push({
-          type: 'text', fontFamily,
+          type: 'text', textCase: 'verbatim', fontFamily,
           x: mapX(angle.x + 1.35 * radius * Math.cos(rad)),
           y: mapY(angle.y + 1.35 * radius * Math.sin(rad)),
           text: angle.label,
@@ -526,11 +524,13 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         x: mapX(p.x),
         y: mapY(p.y),
         radius: p.radius ?? 4,
-        color: p.color ?? '#dc2626',
-        fill: isOpen ? '#ffffff' : (p.color ?? '#dc2626'),
+        color: p.color ?? 'highlight',
+        fill: p.color ?? 'highlight',
+        fillStyle: isOpen ? 'outline' : 'solid',
+        stroke: 'normal',
       });
       if (p.label) {
-        out.push({ type: 'text', fontFamily, x: mapX(p.x) + 8, y: mapY(p.y) - 8, text: p.label, color: p.color ?? '#111827', fontSize: labelFontSize });
+        out.push({ type: 'text', textCase: 'verbatim', fontFamily, x: mapX(p.x) + 8, y: mapY(p.y) - 8, text: p.label, tone: 'ink', fontSize: labelFontSize });
       }
     }
 
@@ -540,9 +540,9 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       const y1 = mapY(v.y);
       const x2 = mapX(v.x + v.vx);
       const y2 = mapY(v.y + v.vy);
-      out.push({ type: 'arrow', x1, y1, x2, y2, color: v.color ?? '#7c3aed', lineWidth: 2 });
+      out.push({ type: 'arrow', x1, y1, x2, y2, color: v.color ?? 'series-5', stroke: 'bold' });
       if (v.label) {
-        out.push({ type: 'text', fontFamily, x: x2 + 6, y: y2 - 6, text: v.label, color: v.color ?? '#7c3aed', fontSize: labelFontSize });
+        out.push({ type: 'text', textCase: 'verbatim', fontFamily, x: x2 + 6, y: y2 - 6, text: v.label, color: v.color ?? 'series-5', fontSize: labelFontSize });
       }
     }
 
@@ -559,6 +559,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     showAxes,
     showGrid,
     gridStep,
+    aspect,
     gridColor,
     axisColor,
     showTickLabels,
@@ -582,13 +583,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   // square pixels and consistent aspect regardless of uneven axes.
   const projector: Projector | undefined = useMemo(() => {
     if (!drawables?.length) return undefined;
-    const margin = 24;
-    const plotW = width - margin * 2;
-    const plotH = height - margin * 2;
-    const xScale = plotW / (xMax - xMin);
-    const yScale = plotH / (yMax - yMin);
-    const mapX = (x: number) => margin + ((x - xMin) / (xMax - xMin)) * plotW;
-    const mapY = (y: number) => height - (margin + ((y - yMin) / (yMax - yMin)) * plotH);
+    const { sx: xScale, mapX, mapY } = plotTransform(width, height, xMin, xMax, yMin, yMax, aspect);
     const project = (pos: ScenePos) => ({ x: mapX(pos.x), y: mapY(pos.y) });
     const anchorPoint = (pos: ScenePos, anchor: 'top-left' | 'ground' | 'center') => {
       const base = project(pos);
@@ -616,7 +611,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       squareGrid: true,
       worldPixelDirect: false,
     };
-  }, [drawables?.length, width, height, xMin, xMax, yMin, yMax]);
+  }, [drawables?.length, width, height, xMin, xMax, yMin, yMax, aspect]);
 
   return (
     <Card {...domPassthrough(rest)} className={className}>
@@ -626,6 +621,9 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
           width={width}
           height={height}
           backgroundColor={backgroundColor}
+          series={series}
+          keyMap={keyMap}
+          keyUpMap={keyUpMap}
           fontFamily={fontFamily}
           shapes={derivedShapes}
           drawables={drawables}

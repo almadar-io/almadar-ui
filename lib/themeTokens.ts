@@ -34,6 +34,8 @@
 
 import type {
   DensityTokens,
+  DiagramTokens,
+  SceneTokens,
   ElevationTokens,
   GeometryTokens,
   IconographyTokens,
@@ -222,6 +224,41 @@ export const SURFACE_VARS: ReadonlyArray<FlatVarEntry<SurfaceTokens>> = [
   { cssVar: '--surface-card-image', key: 'cardImage' },
   { cssVar: '--surface-page-image', key: 'pageImage' },
   { cssVar: '--surface-page-image-size', key: 'pageImageSize' },
+  { cssVar: '--surface-diagram', key: 'diagram' },
+];
+
+/** Diagram axis — how marks are drawn on every drawing surface. */
+export const DIAGRAM_VARS: ReadonlyArray<FlatVarEntry<DiagramTokens>> = [
+  { cssVar: '--diagram-stroke-thin', key: 'strokeThin' },
+  { cssVar: '--diagram-stroke-normal', key: 'strokeNormal' },
+  { cssVar: '--diagram-stroke-bold', key: 'strokeBold' },
+  { cssVar: '--diagram-line-cap', key: 'lineCap' },
+  { cssVar: '--diagram-line-join', key: 'lineJoin' },
+  { cssVar: '--diagram-dash', key: 'dash' },
+  { cssVar: '--diagram-dot', key: 'dot' },
+  { cssVar: '--diagram-fill-style', key: 'fillStyle' },
+  { cssVar: '--diagram-fill-opacity', key: 'fillOpacity' },
+  { cssVar: '--diagram-roughness', key: 'roughness' },
+  { cssVar: '--diagram-glow', key: 'glow' },
+  { cssVar: '--diagram-shadow', key: 'shadow' },
+  { cssVar: '--diagram-marker', key: 'marker' },
+  { cssVar: '--diagram-label-font', key: 'labelFont' },
+  { cssVar: '--diagram-label-size', key: 'labelSize' },
+  { cssVar: '--diagram-label-weight', key: 'labelWeight' },
+  { cssVar: '--diagram-label-case', key: 'labelCase' },
+  { cssVar: '--diagram-corner', key: 'corner' },
+];
+
+/** Scene axis — 3D material and lighting. */
+export const SCENE_VARS: ReadonlyArray<FlatVarEntry<SceneTokens>> = [
+  { cssVar: '--material-roughness', key: 'materialRoughness' },
+  { cssVar: '--material-metalness', key: 'materialMetalness' },
+  { cssVar: '--material-flat', key: 'materialFlat' },
+  { cssVar: '--material-outline', key: 'materialOutline' },
+  { cssVar: '--light-ambient', key: 'lightAmbient' },
+  { cssVar: '--light-key', key: 'lightKey' },
+  { cssVar: '--light-key-color', key: 'lightKeyColor' },
+  { cssVar: '--scene-fog', key: 'fog' },
 ];
 
 /** Legacy free-form map prefixes (`ThemeTokens.colors`/`radii`/`spacing`/`shadows`). `typography` has no prefix — see below. */
@@ -327,6 +364,12 @@ export function themeTokensToCssVars(
 
   const pickSurface = isDark && darkVariant?.surface ? darkVariant.surface : tokens.surface;
   applyFlat(pickSurface, SURFACE_VARS, vars);
+
+  const pickDiagram = isDark && darkVariant?.diagram ? darkVariant.diagram : tokens.diagram;
+  applyFlat(pickDiagram, DIAGRAM_VARS, vars);
+
+  const pickScene = isDark && darkVariant?.scene ? darkVariant.scene : tokens.scene;
+  applyFlat(pickScene, SCENE_VARS, vars);
 
   return vars;
 }

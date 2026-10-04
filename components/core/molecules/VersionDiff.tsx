@@ -387,7 +387,7 @@ const VersionDiffInner: React.FC<VersionDiffProps> = ({
                     </HStack>
                 )}
 
-                <Box className="overflow-auto bg-muted/20" style={{ maxHeight: 600 }}>
+                <Box className="overflow-auto bg-muted/20" style={{ maxHeight: 600 }} role="region" tabIndex={0} aria-label={t('versionDiff.changes')}>
                     {isEmpty ? (
                         <Box className="py-8" data-testid="version-diff-empty">
                             <Typography variant="body2" color="muted" align="center">

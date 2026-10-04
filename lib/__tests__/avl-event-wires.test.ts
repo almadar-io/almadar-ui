@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { OrbitalSchema, Trait, TraitEventListener, TraitId } from '@almadar/core';
-import { isTraitId } from '@almadar/core';
+import { isInlineTrait, isTraitId } from '@almadar/core';
 import { traitEventWires } from '../avl-event-wires';
 
 const tid = (s: string): TraitId => {
@@ -89,5 +89,45 @@ describe('traitEventWires — who the runtime actually delivers to', () => {
     const emitter = { ...trait('Create', ['SAVE'], []), id: tid('trt_create') };
     const listener = trait('Persistor', [], [listen('SAVE', { kind: 'trait', trait: 'Create', traitId: tid('trt_other') })]);
     expect(pairs(schema({ name: 'A', traits: [emitter, listener] }))).toEqual([]);
+  });
+});
+
+describe('traitEventWires — computed once per schema', () => {
+  // The pairwise definition the indexed scan must reproduce, wire for wire and in order.
+  const reference = (s: OrbitalSchema): string[] => {
+    const instances = s.orbitals.flatMap((o) => (o.traits ?? []).flatMap((t) => (isInlineTrait(t) ? [{ orbital: o.name, trait: t }] : [])));
+    const out: string[] = [];
+    for (const e of instances) for (const emit of e.trait.emits ?? []) for (const l of instances) {
+      if (l.orbital === e.orbital && l.trait.name === e.trait.name) continue;
+      for (const ln of l.trait.listens ?? []) {
+        const scoped = ln.source?.kind === 'trait' ? l.orbital === e.orbital && ln.source.trait === e.trait.name : true;
+        if (ln.event === emit.event && scoped) out.push(`${e.orbital}.${e.trait.name}->${l.orbital}.${l.trait.name}:${emit.event}`);
+      }
+    }
+    return out;
+  };
+  const wide = (n: number): OrbitalSchema => schema(...Array.from({ length: n }, (_, i) => ({
+    name: `O${i}`,
+    traits: [
+      trait('Browse', ['CREATE', `PING${i % 3}`], [listen('SAVED', { kind: 'trait', trait: 'Form' })]),
+      trait('Form', ['SAVED'], [listen('CREATE', { kind: 'trait', trait: 'Browse' }), listen(`PING${(i + 1) % 3}`)]),
+    ],
+  })));
+
+  it('the indexed scan yields exactly the pairwise wires, in schema order', () => {
+    const s = wide(12);
+    expect(pairs(s)).toEqual(reference(s));
+  });
+
+  it('a second call on the same schema reuses the first result', () => {
+    const s = wide(4);
+    expect(traitEventWires(s)).toBe(traitEventWires(s));
+  });
+
+  it('control: a different schema object is computed afresh', () => {
+    const s = wide(4);
+    const next = { ...s, orbitals: s.orbitals.slice(0, 2) };
+    expect(traitEventWires(next)).not.toBe(traitEventWires(s));
+    expect(pairs(next)).toEqual(reference(next));
   });
 });

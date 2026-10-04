@@ -61,16 +61,22 @@ function themeStrokeApplies(): boolean {
   return familyStrokeApplies(themeIconFamily());
 }
 
-/** The --icon-family in effect at `el`: a theme may be scoped to a subtree.
- *  Custom properties inherit, so the nearest ancestor carrying one is the value
- *  in effect (a browser already reports it on `el`; jsdom only on the declarer). */
-function scopedIconFamily(el: Element): string {
-  for (let node: Element | null = el; node; node = node.parentElement) {
-    const raw = getComputedStyle(node).getPropertyValue('--icon-family').trim().replace(/^["']|["']$/g, '');
-    if (raw !== '') return raw;
-  }
-  return '';
+/** The --icon-family a theme scoped to `el`'s subtree declares, or null when only the document theme
+ *  applies. A scoped theme is a `data-theme` element and declares its tokens there, so one read of
+ *  that element answers it: no style is read for an icon outside any scope (most icons). */
+function scopedIconFamily(el: Element): string | null {
+  const scope = el.closest('[data-theme]');
+  if (!scope || scope === document.documentElement) return null;
+  // Read once per scope per theme change: every icon in a themed preview shares it.
+  const known = scopedFamilies.get(scope);
+  if (known && known.version === themeVersion) return known.family;
+  const raw = getComputedStyle(scope).getPropertyValue('--icon-family').trim().replace(/^["']|["']$/g, '');
+  const family = raw === '' ? null : raw;
+  scopedFamilies.set(scope, { version: themeVersion, family });
+  return family;
 }
+
+const scopedFamilies = new WeakMap<Element, { version: number; family: string | null }>();
 
 // ---------------------------------------------------------------------------
 // useIconFamily — hook that re-renders consumers when data-theme changes
@@ -149,7 +155,9 @@ export function useThemeIconStrokeApplies(ref: React.RefObject<Element | null>):
   const version = useSyncExternalStore(subscribeIconFamily, getThemeVersionSnapshot, () => 0);
   const [scopedApplies, setScopedApplies] = useState<boolean | null>(null);
   useLayoutEffect(() => {
-    if (ref.current) setScopedApplies(familyStrokeApplies(scopedIconFamily(ref.current)));
+    if (!ref.current) return;
+    const scoped = scopedIconFamily(ref.current);
+    setScopedApplies(scoped === null ? null : familyStrokeApplies(scoped));
   }, [ref, version]);
   return scopedApplies ?? documentApplies;
 }

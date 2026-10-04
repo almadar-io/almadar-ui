@@ -97,6 +97,8 @@ export interface CircuitKernelHandle {
   kernel: ClientKernel;
   store: CircuitStore;
   traitIndex: TraitIndex;
+  /** Every trait of the app (all pages); `traitIndex` is the current page's. */
+  appTraitNames: ReadonlySet<string>;
   /** The server the kernel posts to; its pushes are settled by the caller. */
   transport: EventTransport | undefined;
 }
@@ -141,10 +143,13 @@ export function useCircuitKernel(
   traitBindings: readonly ResolvedTraitBinding[],
   options: UseCircuitKernelOptions,
 ): CircuitKernelHandle {
+  // A host that runs the whole program (an extension worker) runs every trait; this view only shows them.
+  const hostRunsProgram = options.transport?.hostsBrowserStore === true;
   const fullTraitIndex = useMemo(
-    () => buildTraitIndex(options.orbitals, options.traitConfigsByName),
-    [options.orbitals, options.traitConfigsByName],
+    () => buildTraitIndex(options.orbitals, options.traitConfigsByName, { hostRunsProgram }),
+    [options.orbitals, options.traitConfigsByName, hostRunsProgram],
   );
+  const appTraitNames = useMemo(() => new Set(fullTraitIndex.byName.keys()), [fullTraitIndex]);
   // Keyed on the active trait SET, not the bindings array identity: a same-traits re-render must not rebuild the store.
   const activeTraitKey = traitBindings
     .map((b) => b.trait.name)
@@ -286,8 +291,9 @@ export function useCircuitKernel(
       dispatch: (request, hooks) => rawKernel.dispatch(stamp(request), hooks),
       dispatchMount: (seeds, hooks, base = {}) => rawKernel.dispatchMount(seeds, hooks, stamp(base)),
       dispatchProgress: (request: import('@almadar/core').OrbitalEventRequest) => rawKernel.dispatchProgress(stamp(request)),
+      foldHostDispatch: (request, response) => rawKernel.foldHostDispatch(request, response),
     };
   }, [rawKernel, locale]);
 
-  return { kernel, store, traitIndex, transport: effectiveTransport };
+  return { kernel, store, traitIndex, appTraitNames, transport: effectiveTransport };
 }

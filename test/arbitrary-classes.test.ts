@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { JsonObject, OrbitalSchema } from '@almadar/core';
 import { arbitraryClassesOf, isArbitraryClass } from '../lib/design-classes';
 
@@ -50,6 +50,32 @@ describe('arbitraryClassesOf', () => {
 
   it('a className that is a binding expression contributes nothing', () => {
     expect(arbitraryClassesOf(schemaWith({ type: 'box', className: ['concat', 'w-[10px] ', '@entity.tone'] }))).toEqual([]);
+  });
+});
+
+describe('arbitraryClassesOf — one walk per orbital, however many previews share it', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('every preview schema built around the same orbital walks that orbital once', () => {
+    const app = schemaWith({ type: 'box', className: 'w-[10px]' });
+    const [orbital] = app.orbitals;
+    const spy = vi.spyOn(JSON, 'stringify');
+    const previews = Array.from({ length: 5 }, (_, i) => ({ ...app, name: `App__${i}`, orbitals: [orbital] }));
+    for (const preview of previews) expect(arbitraryClassesOf(preview)).toEqual(['w-[10px]']);
+    expect(spy.mock.calls.filter(([v]) => v === orbital)).toHaveLength(1);
+  });
+
+  it('control: an edited orbital is a new object and is walked again', () => {
+    const app = schemaWith({ type: 'box', className: 'w-[10px]' });
+    expect(arbitraryClassesOf(app)).toEqual(['w-[10px]']);
+    const edited = schemaWith({ type: 'box', className: 'w-[11px]' });
+    expect(arbitraryClassesOf({ ...app, orbitals: edited.orbitals })).toEqual(['w-[11px]']);
+  });
+
+  it('classes outside the orbitals (a custom pattern) still count', () => {
+    const app = schemaWith({ type: 'box', className: 'w-[10px]' });
+    const withCustom: OrbitalSchema = JSON.parse(JSON.stringify({ ...app, customPatterns: { hero: { type: 'box', className: 'h-[90vh]' } } }));
+    expect(arbitraryClassesOf(withCustom)).toEqual(['h-[90vh]', 'w-[10px]']);
   });
 });
 

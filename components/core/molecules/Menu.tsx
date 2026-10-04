@@ -6,7 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useState, useRef, useEffect, useId } from "react";
+import React, { useState, useRef, useEffect, useId, useLayoutEffect } from "react";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { Box } from "../atoms/Box";
 import type { IconInput } from "../atoms/index";
@@ -24,6 +24,8 @@ import { ThemedPortal } from "../../../lib/ThemedPortal";
 import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 
 import { domPassthrough } from '../../../lib/domPassthrough';
+
+const TRIGGER_CONTROL_SELECTOR = 'button, a[href], input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])';
 export interface MenuItem {
   /** `divider` renders a separator line instead of an item */
   type?: "item" | "divider";
@@ -423,6 +425,11 @@ export const Menu: React.FC<MenuProps> = ({
   const [subMenuAutoFocus, setSubMenuAutoFocus] = useState(false);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
   const triggerRef = useRef<HTMLElement>(null);
+  // A wrapped trigger that already holds a control (a render-ui `button`
+  // pattern): that control carries the menu semantics and keeps focus, so the
+  // wrapper never becomes a second button around it.
+  const [innerControl, setInnerControl] = useState<HTMLElement | null>(null);
+  const focusReturnRef = useRef<HTMLElement | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
@@ -477,7 +484,8 @@ export const Menu: React.FC<MenuProps> = ({
     setIsOpen(true);
   };
 
-  useDialogBehavior({ open: isOpen, containerRef: menuRef, onEscape: closeMenu, modal: false, returnFocusRef: triggerRef });
+  focusReturnRef.current = innerControl ?? triggerRef.current;
+  useDialogBehavior({ open: isOpen, containerRef: menuRef, onEscape: closeMenu, modal: false, returnFocusRef: focusReturnRef });
 
   // Focus lands once, when the panel first mounts.
   const panelMounted = isOpen && triggerRect !== null;
@@ -497,6 +505,19 @@ export const Menu: React.FC<MenuProps> = ({
     "aria-expanded": isOpen,
     ...(isOpen ? { "aria-controls": menuId } : undefined),
   };
+
+  const wrapsTrigger = !React.isValidElement(trigger);
+  useLayoutEffect(() => {
+    setInnerControl(wrapsTrigger ? triggerRef.current?.querySelector<HTMLElement>(TRIGGER_CONTROL_SELECTOR) ?? null : null);
+  }, [wrapsTrigger, trigger]);
+
+  useLayoutEffect(() => {
+    if (!innerControl) return;
+    innerControl.setAttribute("aria-haspopup", "menu");
+    innerControl.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) innerControl.setAttribute("aria-controls", menuId);
+    else innerControl.removeAttribute("aria-controls");
+  }, [innerControl, isOpen, menuId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -551,17 +572,15 @@ export const Menu: React.FC<MenuProps> = ({
       as="span"
       ref={(el: HTMLDivElement | null) => { triggerRef.current = el; }}
       onClick={handleToggle}
-      role="button"
-      tabIndex={0}
+      {...(innerControl ? undefined : { role: "button", tabIndex: 0, ...triggerA11y })}
       onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (!innerControl && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
           handleToggle();
         } else {
           onTriggerKeyDown(e);
         }
       }}
-      {...triggerA11y}
       className="inline-flex"
     >
       {typeof trigger === "string" || typeof trigger === "number" ? (

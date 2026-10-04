@@ -89,6 +89,7 @@ export {
 export {
   ServerBridgeProvider,
   useServerBridge,
+  useHasServerBridge,
   type ServerBridgeContextValue,
   type ServerBridgeTransport,
   type ServerBridgeProviderProps,

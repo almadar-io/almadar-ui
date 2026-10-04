@@ -29,6 +29,8 @@ import { forceSimulation, forceManyBody, forceLink, forceCollide, forceX, forceY
 import type { UiError } from '../atoms/types';
 import { ThemedPortal } from "../../../lib/ThemedPortal";
 import { THEME_SERIES, resolveThemeColor } from "../../../lib/theme-color";
+import { applyLineCharacter, fillLabel, labelFont as themeLabelFont, labelText, markColor } from "../../../lib/canvasTheme";
+import { useCanvasTheme } from "../../../hooks/useCanvasTheme";
 
 export type GraphNodeMark =
     | { kind: 'suggested'; suggestionId: string }
@@ -259,6 +261,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const eventBus = useEventBus();
     const { t } = useTranslate();
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const { theme: canvasTheme } = useCanvasTheme(canvasRef);
     const animRef = useRef<number>(0);
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -276,13 +279,14 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     // Ambient pulse for proposed (uncommitted) nodes — a rAF phase, advanced only while any is visible.
     const hasProposed = useMemo(() => propNodes.some(n => n.mark?.kind === 'proposed'), [propNodes]);
     const [pulseTick, setPulseTick] = useState(0);
+    const motionOn = canvasTheme?.motion.enabled !== false;
     useEffect(() => {
-        if (!hasProposed) return;
+        if (!hasProposed || !motionOn) return;
         let raf = 0;
         const loop = () => { setPulseTick(t => (t + 1) % 1_000_000); raf = requestAnimationFrame(loop); };
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);
-    }, [hasProposed]);
+    }, [hasProposed, motionOn]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -387,7 +391,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const w = viewW * layoutScale;
         const h = viewH * layoutScale;
         // Theme font the labels render in — used to size the collision boxes so they match the text on screen.
-        const labelFont = resolveColor("var(--font-family)", canvas) || "system-ui";
+        const labelFont = canvasTheme ? canvasTheme.faces[canvasTheme.label.font] : "system-ui";
         const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
         // Preserve settled positions across data changes so the graph doesn't re-explode
@@ -629,15 +633,20 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const w = logicalW;
         const h = height;
         const nodes = nodesRef.current;
-        const accentColor = resolveColor("var(--color-accent)", canvas);
-        const fontFamily = resolveColor("var(--font-family)", canvas) || "system-ui";
-        const fgColor = resolveColor("var(--color-foreground)", canvas);
-        const mutedColor = resolveColor("var(--color-muted-foreground)", canvas) || fgColor;
-        const bgColor = resolveColor("var(--color-background)", canvas) || fgColor;
-        const accentFg = resolveColor("var(--color-accent-foreground)", canvas) || bgColor;
-        // Canvas needs a translucent ring around unselected nodes; resolveColor only
-        // returns opaque colors, so resolve foreground directly to keep its r/g/b for an rgba().
-        const fgResolved = resolveThemeColor("var(--color-foreground)", canvas);
+        if (!canvasTheme) return;
+        const theme = canvasTheme;
+        const accentColor = theme.tones.highlight;
+        const fgColor = theme.tones.ink;
+        const mutedColor = theme.tones.guide;
+        const bgColor = theme.ground;
+        const accentFg = theme.ground;
+        const strokes = theme.strokes;
+        const font = (role: "xs" | "sm", weight?: string) => {
+            const f = themeLabelFont(theme, { textSize: role });
+            return weight ? f.font.replace(/^\S+/, weight) : f.font;
+        };
+        // A translucent ink ring keeps unselected nodes crisp against crossing edges.
+        const fgResolved = resolveThemeColor("var(--color-diagram-ink)", canvas);
         const nodeRingColor = fgResolved ? `rgba(${fgResolved.r}, ${fgResolved.g}, ${fgResolved.b}, 0.13)` : fgColor;
         const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
 
@@ -674,25 +683,28 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             ctx.beginPath();
             ctx.moveTo(source.x!, source.y!);
             ctx.lineTo(target.x!, target.y!);
-            ctx.strokeStyle = incident ? accentColor : (edge.color || mutedColor);
-            ctx.lineWidth = incident ? 2 : Math.max(0.75, w);
+            const edgeColor = incident ? accentColor : (edge.color ? markColor(theme, edge.color, canvas, "guide") : mutedColor);
+            applyLineCharacter(ctx, theme, edgeColor);
+            ctx.strokeStyle = edgeColor;
+            ctx.lineWidth = incident ? strokes.bold : Math.max(strokes.thin, strokes.thin * w);
             ctx.stroke();
+            ctx.shadowBlur = 0;
 
             // Edge label
             if (edge.label && showLabels) {
                 const mx = (source.x! + target.x!) / 2;
                 const my = (source.y! + target.y!) / 2;
                 ctx.fillStyle = mutedColor;
-                ctx.font = `9px ${fontFamily}`;
+                ctx.font = font("xs");
                 ctx.textAlign = "center";
                 ctx.textBaseline = "alphabetic";
-                ctx.fillText(edge.label, mx, my - 4);
+                fillLabel(ctx, theme, labelText(theme, edge.label), mx, my - 4);
             }
         }
         ctx.globalAlpha = 1;
 
         // Proposed (uncommitted) edges — dashed/faint, never part of the layout springs.
-        ctx.setLineDash([4, 4]);
+        ctx.setLineDash([...theme.dash]);
         for (const edge of proposedEdges) {
             const source = nodes.find(n => n.id === edge.source);
             const target = nodes.find(n => n.id === edge.target);
@@ -701,8 +713,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             ctx.beginPath();
             ctx.moveTo(source.x!, source.y!);
             ctx.lineTo(target.x!, target.y!);
-            ctx.strokeStyle = edge.color || mutedColor;
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = edge.color ? markColor(theme, edge.color, canvas, "guide") : mutedColor;
+            ctx.lineWidth = strokes.thin;
             ctx.stroke();
         }
         ctx.setLineDash([]);
@@ -711,7 +723,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         // Draw nodes
         for (const node of nodes) {
             const size = node.size || 8;
-            const color = resolveColor(node.color || getGroupColor(node.group, groups), canvas);
+            const color = markColor(theme, node.color || getGroupColor(node.group, groups), canvas, "series-1");
             const isHovered = hoveredNode === node.id;
             const isSelected = selectedNodeId !== undefined && node.id === selectedNodeId;
             const mark = node.mark;
@@ -725,15 +737,15 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             ctx.fillStyle = mark?.kind === 'proposed' ? mutedColor : color;
             ctx.fill();
             if (mark?.kind === 'proposed') {
-                ctx.setLineDash([3, 3]);
-                ctx.strokeStyle = resolveColor(mark.tint ?? "var(--color-warning)", canvas);
-                ctx.lineWidth = 1.5;
+                ctx.setLineDash([...theme.dot]);
+                ctx.strokeStyle = markColor(theme, mark.tint, canvas, "warning");
+                ctx.lineWidth = strokes.normal;
             } else if (isSelected) {
                 ctx.strokeStyle = accentColor;
-                ctx.lineWidth = 3;
+                ctx.lineWidth = strokes.bold;
             } else {
                 ctx.strokeStyle = isHovered ? bgColor : nodeRingColor;
-                ctx.lineWidth = isHovered ? 2 : 1;
+                ctx.lineWidth = isHovered ? strokes.normal : strokes.thin;
             }
             ctx.stroke();
             ctx.setLineDash([]);
@@ -744,7 +756,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 ctx.beginPath();
                 ctx.arc(node.x!, node.y!, radius + 3, 0, Math.PI * 2);
                 ctx.strokeStyle = accentColor;
-                ctx.lineWidth = 2;
+                ctx.lineWidth = strokes.normal;
                 ctx.stroke();
                 ctx.beginPath();
                 ctx.arc(node.x! + radius * 0.7, node.y! - radius * 0.7, 2.5, 0, Math.PI * 2);
@@ -757,27 +769,19 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 ctx.globalAlpha = baseAlpha * (0.4 + 0.4 * (1 - Math.abs(phase * 2 - 1)));
                 ctx.beginPath();
                 ctx.arc(node.x!, node.y!, radius + 6 + Math.sin(phase * Math.PI * 2) * 3, 0, Math.PI * 2);
-                ctx.strokeStyle = resolveColor(mark.tint ?? "var(--color-warning)", canvas);
-                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = markColor(theme, mark.tint, canvas, "warning");
+                ctx.lineWidth = strokes.normal;
                 ctx.stroke();
                 ctx.globalAlpha = baseAlpha;
             }
 
-            // Label — high-contrast theme foreground with a thick background halo so it
-            // stays legible over nodes and crossing edges.
             if (showLabels && node.label) {
-                const displayLabel = truncateLabel(node.label);
-                ctx.font = `${isSelected || isHovered ? "700" : "600"} 12px ${fontFamily}`;
+                const displayLabel = labelText(theme, truncateLabel(node.label));
+                ctx.font = font("sm", isSelected || isHovered ? "700" : undefined);
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
-                const ly = node.y! + radius + 14;
-                // Thick background halo knocks out any edges/nodes behind the text.
-                ctx.lineWidth = 4;
-                ctx.lineJoin = "round";
-                ctx.strokeStyle = bgColor;
-                ctx.strokeText(displayLabel, node.x!, ly);
                 ctx.fillStyle = fgColor;
-                ctx.fillText(displayLabel, node.x!, ly);
+                fillLabel(ctx, theme, displayLabel, node.x!, node.y! + radius + 14);
             }
 
             // Merge-count badge (top-right) — click expands the cluster.
@@ -790,10 +794,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 ctx.fillStyle = accentColor;
                 ctx.fill();
                 ctx.strokeStyle = bgColor;
-                ctx.lineWidth = 2;
+                ctx.lineWidth = strokes.normal;
                 ctx.stroke();
                 ctx.fillStyle = accentFg;
-                ctx.font = `600 9px ${fontFamily}`;
+                ctx.font = font("xs", "600");
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 ctx.fillText(String(node.badge), bx, by + 0.5);

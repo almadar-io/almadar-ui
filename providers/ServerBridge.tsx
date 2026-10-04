@@ -79,6 +79,11 @@ export type { AccessTokenProvider };
 
 const ServerBridgeContext = createContext<ServerBridgeContextValue | null>(null);
 
+/** Whether a `ServerBridgeProvider` is already above — a nested preview (a lazy page) reuses its registration. */
+export function useHasServerBridge(): boolean {
+  return useContext(ServerBridgeContext) !== null;
+}
+
 /**
  * Access the server bridge. Returns a no-op stub when outside the provider —
  * `useCircuitKernel` treats an absent/no-op transport as offline (plan G7).

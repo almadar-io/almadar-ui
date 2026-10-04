@@ -198,6 +198,34 @@ describe('SlotContentRenderer', () => {
     // frame renders nothing for an unknown/unmounted trait, silently).
   });
 
+  it('renders an admitted avl pattern (avl-state-machine) as its component, not the placeholder', () => {
+    const content = {
+      id: 'avl-id',
+      pattern: 'avl-state-machine',
+      props: {
+        trait: {
+          name: 'Approval',
+          linkedEntity: 'Expense',
+          states: [{ name: 'draft', isInitial: true, isTerminal: false }, { name: 'approved', isInitial: false, isTerminal: true }],
+          transitions: [{ from: 'draft', to: 'approved', event: 'APPROVE', effects: [], index: 0 }],
+          emittedEvents: [],
+          listenedEvents: [],
+        },
+        activeState: 'draft',
+      },
+      priority: 0,
+    };
+
+    render(
+      <TestWrapper>
+        <SlotContentRenderer content={content} onDismiss={() => {}} />
+      </TestWrapper>,
+    );
+
+    expect(screen.queryByText(/Unknown pattern:/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('avl-state-machine')).toBeInTheDocument();
+  });
+
   it('keeps the unknown-pattern fallback for genuinely unknown patterns', () => {
     const content = {
       id: 'test-id',

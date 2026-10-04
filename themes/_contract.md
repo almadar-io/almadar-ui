@@ -253,6 +253,37 @@ These separate artistic styles (Art Deco vs Win95 vs wabi-sabi) along dimensions
 
 ---
 
+### Drawing axes — `diagram`, `scene`, diagram colors, `--surface-diagram`
+
+How every drawing surface (learning canvases, charts, graph canvases, game boards, AVL, 3D
+scenes) draws its marks. Components never hardcode a drawing color, weight or face; they resolve
+these through `useCanvasTheme` (`hooks/useCanvasTheme.ts`). Defaults in `_base.css` derive every
+var from the theme's own tokens, so a preset that sets nothing still draws in its own palette,
+border weight, faces and corners. A preset sets them to give its drawings a hand of their own
+(sketch wobble, neon glow, blueprint dashes, Bauhaus square caps).
+
+| Var | Source key | Meaning |
+|---|---|---|
+| `--surface-diagram` | `surface.diagram` | Ground a drawing sits on (default `--color-card`) |
+| `--color-series-1…8` | `colors.series-N` | Categorical data palette with no status meaning (default: primary turned around the hue wheel) |
+| `--color-diagram-ink` / `-label` / `-guide` / `-axis` / `-grid` / `-highlight` / `-fill` | `colors.diagram-*` | Mark roles: default stroke, label text, construction lines, axes, grid, the one emphasized mark, default fill |
+| `--diagram-stroke-thin` / `-normal` / `-bold` | `diagram.strokeThin/Normal/Bold` | Stroke weights for guides / marks / emphasis (default from the border rhythm) |
+| `--diagram-line-cap` / `-line-join` | `diagram.lineCap/lineJoin` | `butt\|round\|square` / `miter\|round\|bevel` |
+| `--diagram-dash` / `-dot` | `diagram.dash/dot` | Dash patterns (space-separated lengths) of dashed / dotted marks |
+| `--diagram-fill-style` / `-fill-opacity` | `diagram.fillStyle/fillOpacity` | `solid\|tint\|outline\|hatch`; tint strength |
+| `--diagram-roughness` | `diagram.roughness` | Hand-drawn wobble in px (`0` = exact) |
+| `--diagram-glow` | `diagram.glow` | Glow blur in px around strokes (`0` = none) |
+| `--diagram-shadow` | `diagram.shadow` | Shadow recipe on filled marks |
+| `--diagram-marker` | `diagram.marker` | Arrowhead: `triangle\|open\|line\|dot` |
+| `--diagram-label-font` / `-size` / `-weight` / `-case` | `diagram.label*` | Label face (`body\|display\|mono`), type-scale step, weight, `none\|uppercase` |
+| `--diagram-corner` | `diagram.corner` | Corner radius of rects and bars |
+| `--material-roughness` / `-metalness` / `-flat` / `-outline` | `scene.material*` | 3D material response; `flat` `1` = flat shading; `outline` = toon outline px |
+| `--light-ambient` / `-key` / `-key-color` | `scene.light*` | 3D lighting |
+| `--scene-fog` | `scene.fog` | Depth haze 0–1 |
+
+Motion has no drawing-specific vars: animated surfaces use `--duration-*` / `--easing-*` and stop
+when `--motion-enable: off` or `prefers-reduced-motion` is set.
+
 ## Authoring rules
 
 1. **Backfill agents** (B1, B2, B3): copy the defaults above verbatim into each existing theme's light and dark blocks. Do not change any pre-existing variable. The migration must produce pixel-identical output to today for every pre-Layer-1 theme.
@@ -262,3 +293,9 @@ These separate artistic styles (Art Deco vs Win95 vs wabi-sabi) along dimensions
 5. **Wireframe and trait-wars exceptions**. Wireframe's `--easing-standard` is `linear` not the default cubic-bezier; trait-wars's iconography may remain `lucide` even if its visual personality diverges. Document any per-theme override at the top of the theme file.
 6. **Contrast is gated.** Every theme's canonical foreground/fill pairs must pass WCAG AA 4.5:1 — enforced by `scripts/theme-contrast-audit.mjs` (`pnpm verify:themes`), which runs in CI and before every npm publish and exits non-zero on any violation. A new or edited theme that fails the audit blocks the publish. The script also accepts `--dir <themes-dir>` (`scripts/` is published) so another package can audit its own theme dir with the same rules.
 7. **No hardcoded palette colors in components.** Components must consume these tokens only (no `text-white`, `bg-gray-800`, `border-indigo-300`, `text-[#hex]`). Enforced by the `almadar/no-hardcoded-colors` ESLint rule (`@almadar/eslint-plugin`, enabled in this package's `eslint.config.cjs`). The single sanctioned exception is media-overlay chrome (white text / dark scrims painted over images or video), which requires an inline `eslint-disable-next-line almadar/no-hardcoded-colors` comment stating the reason.
+
+**Drawing roles stay apart.** In every theme mode the roles a canvas draws meaning with — `diagram-ink`,
+`diagram-highlight`, `muted-foreground`, `success`, `warning`, `error`, `series-1`…`series-8` — are at least
+ΔE 10 (CIEDE2000) from each other (`@almadar/core` `__tests__/theme-tone-colors.test.ts`; `INDISTINCT_DELTA_E`).
+A monochrome theme keeps its UI monochrome and gives its drawings a small on-identity palette. In an `outline`
+fill-style theme a mark's meaningful fill becomes its (bold) outline, so the outline look never erases a state.

@@ -37,7 +37,7 @@ describe('useBusIngress', () => {
     const traitIndex = buildTraitIndex(orbitals());
     const bindings = [binding()];
     const { result: bus } = renderHook(() => useEventBus());
-    renderHook(() => useBusIngress(bindings, traitIndex, settle, bus.current));
+    renderHook(() => useBusIngress(bindings, traitIndex, settle, bus.current, new Set(["Picker"])));
 
     bus.current.emit('UI:IngressOrbital.Picker.PICK', { id: 'a' });
     expect(settle).toHaveBeenCalledWith('Picker', 'PICK', { id: 'a' }, undefined);
@@ -48,5 +48,30 @@ describe('useBusIngress', () => {
 
     bus.current.emit('UI:PICK', { id: 'c' }, { trait: 'OtherHostTrait', dispatched: true });
     expect(settle).toHaveBeenCalledWith('Picker', 'PICK', { id: 'c' }, undefined);
+  });
+
+  it('an echo from an off-page trait of the SAME app is never re-delivered by bare name', () => {
+    // std-contract: saving a contract cascades the off-page audit list's own
+    // BrowseItemLoaded; the page's list must not render those rows.
+    const settle = vi.fn<BusDispatch>(async () => {});
+    const traitIndex = buildTraitIndex(orbitals());
+    const appTraitNames = new Set(['Picker', 'AuditList']);
+    const { result: bus } = renderHook(() => useEventBus());
+    renderHook(() => useBusIngress([binding()], traitIndex, settle, bus.current, appTraitNames));
+
+    bus.current.emit('UI:PICK', { id: 'audit' }, { trait: 'AuditList', dispatched: true });
+    expect(settle).not.toHaveBeenCalled();
+
+    // Control: an echo from a host outside this app still arrives by name.
+    bus.current.emit('UI:PICK', { id: 'other' }, { trait: 'OtherHostTrait', dispatched: true });
+    expect(settle).toHaveBeenCalledWith('Picker', 'PICK', { id: 'other' }, undefined);
+  });
+
+  it('edge: a user event (not a server echo) still reaches the trait by bare name', () => {
+    const settle = vi.fn<BusDispatch>(async () => {});
+    const { result: bus } = renderHook(() => useEventBus());
+    renderHook(() => useBusIngress([binding()], buildTraitIndex(orbitals()), settle, bus.current, new Set(['Picker', 'AuditList'])));
+    bus.current.emit('UI:PICK', { id: 'click' });
+    expect(settle).toHaveBeenCalledWith('Picker', 'PICK', { id: 'click' }, undefined);
   });
 });

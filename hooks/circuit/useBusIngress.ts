@@ -60,16 +60,22 @@ export function useBusIngress(
   traitIndex: TraitIndex,
   settle: BusDispatch,
   eventBus: EventBusContextType,
+  /** Every trait of this app, on any page — `traitIndex` holds only the current page's. */
+  appTraitNames: ReadonlySet<string>,
 ): void {
   useEffect(() => {
     const unsubscribes: Array<() => void> = [];
     const subscribedQualified = new Set<string>();
     const subscribedBare = new Set<string>();
 
-    // A republished kernel emit from one of THIS kernel's traits was already
-    // delivered by the kernel's own listen fan-out.
+    // A republished echo from any trait of THIS app — on this page or off it —
+    // was already delivered through its declared routes (the kernel's listen
+    // fan-out, or the server's for an off-page emitter); only a foreign host's
+    // echo may still arrive by name.
     const deliveredHere = (source: BusEventSource | undefined): boolean =>
-      source?.dispatched === true && source.trait !== undefined && traitIndex.byName.has(source.trait);
+      source?.dispatched === true &&
+      source.trait !== undefined &&
+      (traitIndex.byName.has(source.trait) || appTraitNames.has(source.trait));
 
     // One physical emit inside an embedded trait fans to a key per scope on the
     // embed chain (`useEventBus`), all sharing one `source` object. A host trait
@@ -205,5 +211,5 @@ export function useBusIngress(
     return () => {
       for (const unsub of unsubscribes) unsub();
     };
-  }, [traitBindings, traitIndex, settle, eventBus]);
+  }, [traitBindings, traitIndex, settle, eventBus, appTraitNames]);
 }

@@ -10,6 +10,7 @@ import type { A11yProps } from '@almadar/core';
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
+import { Button } from '../atoms/Button';
 import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
@@ -70,20 +71,13 @@ export const DocBreadcrumb: React.FC<DocBreadcrumbProps> = ({
                   {item.label}
                 </Typography>
               ) : (
-                <Box
-                  className="no-underline cursor-pointer"
-                  onClick={() => { if (item.href) window.location.href = item.href; }}
-                  role="link"
-                  tabIndex={0}
+                <Button
+                  variant="link"
+                  href={item.href}
+                  className="h-auto px-0 text-xs font-normal text-muted-foreground hover:text-primary"
                 >
-                  <Typography
-                    variant="caption"
-                    className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                    as="span"
-                  >
-                    {item.label}
-                  </Typography>
-                </Box>
+                  {item.label}
+                </Button>
               )}
             </React.Fragment>
           );
