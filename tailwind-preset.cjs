@@ -459,6 +459,9 @@ module.exports = {
   // Auto-added by audit-tailwind-safelist.ts (2026-10-03)
   '[justify-content:inherit]',
   'bg-primary/[0.08]',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-10-04)
+  'bg-[var(--surface-diagram)]',
 ],
   theme: {
     fontFamily: {
