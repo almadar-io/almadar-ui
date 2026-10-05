@@ -16,7 +16,7 @@ import { pressableProps } from '../../../lib/pressable';
 import { transitionPlayback, type AvlPlayStep, type AvlStepRequest } from '../../../lib/avl-play';
 import { RangeSlider } from '../../core/atoms/RangeSlider';
 import { zoomReducer, initialZoomState, getBreadcrumbs, type ZoomLevel } from '../../../lib/avl-zoom-state';
-import { AvlTransitionDetail } from './AvlTransitionDetail';
+import { AvlTransitionDetail } from '../molecules/AvlTransitionDetail';
 import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';

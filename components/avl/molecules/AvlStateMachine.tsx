@@ -20,6 +20,9 @@ import { gearTeethPath } from '../../../lib/jazari/svg-paths';
 import { computeTraitLayout, roundedEdgePath, type ElkLayout, type TraitLayoutMetrics } from '../../../lib/avl-elk-layout';
 import { AVL_FONT, AVL_INK, AVL_STROKE, avlTint } from '../../../lib/avl-theme';
 import type { TraitLevelData } from '../../../lib/avl-schema-parser';
+import type { AvlAnnotations } from '../../../lib/avl-annotations';
+import { AvlEffectChip } from './AvlEffectChip';
+import { AvlExplain } from './AvlExplain';
 
 const log = createLogger('almadar:ui:avl:state-machine');
 
@@ -52,6 +55,10 @@ export interface AvlStateMachineProps extends A11yProps {
   direction?: 'ltr' | 'rtl';
   /** Show the trait header (name, entity, listens/emits). @default true */
   showHeader?: boolean;
+  /** Author explanations shown in a popover on hover: a note per state name, per transition event and per effect type.
+   * @example {"states":{"pending":{"title":"Unpaid","body":"Every order starts here."}},"transitions":{"PAY":{"body":"Only fires when the amount is positive."}},"effects":{"persist":{"body":"Saves the order."}}}
+   */
+  annotations?: AvlAnnotations;
   className?: string;
 }
 
@@ -60,7 +67,8 @@ const BODY_CHAR = 7.6;
 const NODE_H = 44;
 const PILL_H = 24;
 const GUARD_H = 20;
-const EFFECT_W = 16;
+const EFFECT_CHIP = 14;
+const EFFECT_GAP = 4;
 const MARGIN = 28;
 const MIN_SCALE = 0.85;
 const MAX_SCALE = 1.25;
@@ -72,7 +80,7 @@ function guardText(t: Transition): string | null {
 }
 
 function pillWidth(t: Transition): number {
-  return 20 + (guardText(t) === null ? 0 : 16) + t.event.length * MONO_CHAR + (t.effects.length > 0 ? EFFECT_W + String(t.effects.length).length * MONO_CHAR : 0);
+  return 20 + (guardText(t) === null ? 0 : 16) + t.event.length * MONO_CHAR + t.effects.length * (EFFECT_CHIP + EFFECT_GAP);
 }
 
 function gearDiameter(name: string): number {
@@ -110,6 +118,7 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
   entityFields,
   direction = 'ltr',
   showHeader = true,
+  annotations,
   className,
   ...rest
 }) => {
@@ -278,12 +287,16 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
                           <path d="M6 1 L11 6 L6 11 L1 6z" fill={AVL_INK.surface} stroke={fired ? AVL_INK.focus : AVL_INK.quiet} strokeWidth={1.2} />
                         </svg>
                       ) : null}
-                      <Box as="span" className="whitespace-nowrap">{tr.event}</Box>
-                      {tr.effects.length > 0 ? (
-                        <Box as="span" data-testid="avl-sm-effects" title={tr.effects.map((fx) => fx.type).join(', ')} style={{ color: AVL_INK.quiet, fontWeight: 400 }}>
-                          ·{tr.effects.length}
-                        </Box>
-                      ) : null}
+                      {annotations?.transitions?.[tr.event] ? (
+                        <AvlExplain lines={guard === null ? [tr.event] : [tr.event, guard]} note={annotations.transitions[tr.event]}>
+                          <Box as="span" tabIndex={0} data-explain={`transition:${tr.event}`} className="whitespace-nowrap underline decoration-dotted underline-offset-2 cursor-help">{tr.event}</Box>
+                        </AvlExplain>
+                      ) : (
+                        <Box as="span" className="whitespace-nowrap">{tr.event}</Box>
+                      )}
+                      {tr.effects.map((fx, i) => (
+                        <AvlEffectChip key={`${fx.type}-${i}`} effectType={fx.type} size={EFFECT_CHIP} note={annotations?.effects?.[fx.type]} />
+                      ))}
                     </Box>
                     {guard !== null ? (
                       <Box as="span" className="whitespace-nowrap" style={{ height: GUARD_H, lineHeight: `${GUARD_H}px`, fontFamily: AVL_FONT.mono, fontSize: 12, color: fired ? AVL_INK.focus : AVL_INK.quiet }}>
@@ -371,7 +384,13 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
                         <circle cx={n.width / 2} cy={n.height / 2} r={n.width / 2 - 14} fill="none" stroke={AVL_INK.line} strokeWidth={1} />
                       </svg>
                     ) : null}
-                    <Box as="span" className="relative">{s.name}</Box>
+                    {annotations?.states?.[s.name] ? (
+                      <AvlExplain lines={[s.name]} note={annotations.states[s.name]}>
+                        <Box as="span" tabIndex={0} data-explain={`state:${s.name}`} className="relative underline decoration-dotted underline-offset-2 cursor-help">{s.name}</Box>
+                      </AvlExplain>
+                    ) : (
+                      <Box as="span" className="relative">{s.name}</Box>
+                    )}
                   </Box>
                 );
               })}

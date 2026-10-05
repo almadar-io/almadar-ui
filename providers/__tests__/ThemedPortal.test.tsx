@@ -50,7 +50,7 @@ describe('ThemedPortal', () => {
         </OrbitalThemeProvider>
       </ThemeProvider>,
     );
-    expect(scopeOf('app-modal')?.getAttribute('data-theme')).toBe('gazette-light');
+    expect(scopeOf('app-modal')?.getAttribute('data-theme')).toBe('gazette-dark');
   });
 
   it('two portals open at once each keep their own theme', () => {
@@ -63,7 +63,7 @@ describe('ThemedPortal', () => {
       </ThemeProvider>,
     );
     expect(scopeOf('outer')?.getAttribute('data-theme')).toBe('minimalist-dark');
-    expect(scopeOf('inner')?.getAttribute('data-theme')).toBe('gazette-light');
+    expect(scopeOf('inner')?.getAttribute('data-theme')).toBe('gazette-dark');
   });
 
   it('carries an inline theme definition’s CSS variables into the portal', () => {

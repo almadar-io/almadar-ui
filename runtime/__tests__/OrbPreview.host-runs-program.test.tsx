@@ -115,6 +115,46 @@ describe('a view of a program its host runs entirely', () => {
     expect(rows).toBe(1);
   });
 
+  it('leaves the program\'s ticks to the host: the view sends none, and the host fires them once', async () => {
+    const ticking: OrbitalSchema = {
+      name: 'host-runs-ticks',
+      version: '1.0.0',
+      orbitals: [{
+        name: 'Pulse',
+        entity: { name: 'Beat', persistence: 'runtime', fields: [{ name: 'id', type: 'string' }] },
+        traits: [{
+          name: 'Beater', linkedEntity: 'Beat', category: 'interaction', scope: 'instance',
+          stateMachine: {
+            states: [{ name: 'idle', isInitial: true }],
+            events: [{ key: 'INIT', name: 'INIT' }, { key: 'PULSE', name: 'PULSE' }],
+            transitions: [
+              { from: 'idle', to: 'idle', event: 'INIT', effects: [['render-ui', 'main', { type: 'typography', variant: 'body', content: 'Beating' }]] },
+              { from: 'idle', to: 'idle', event: 'PULSE', effects: [] },
+            ],
+          },
+          ticks: [{ name: 'pulse', interval: 30, effects: [['emit', 'PULSE']] }],
+        }],
+        pages: [{ name: 'Home', path: '/', traits: [{ ref: 'Beater' }] }],
+      }],
+    };
+    const host = await openBrowserHost({ databaseName: 'almadar:host-runs-ticks', schema: ticking, callService: async () => ({}) });
+    const [viewEnd, hostEnd] = pair();
+    const fromView: string[] = [];
+    hostEnd.onMessage((m) => { if (m.almadarChannel === 'send') fromView.push(m.request.event); });
+    const served = serveChannel(hostEnd, host, { schemaName: ticking.name });
+    let hostPulses = 0;
+    host.onInputDispatched((orbital, request, response) => {
+      if (request.event === 'PULSE') hostPulses++;
+      served.pushDispatch(orbital, request, response);
+    });
+    render(<OrbPreview schema={ticking} transport={createChannelTransport(viewEnd, { hostsBrowserStore: true })} initialPagePath="/" />);
+    await waitFor(() => expect(screen.getByText('Beating')).toBeTruthy());
+    await new Promise((r) => setTimeout(r, 250));
+    host.close();
+    expect(fromView.filter((e) => e === 'PULSE')).toEqual([]);
+    expect(hostPulses).toBeGreaterThan(2);
+  });
+
   it('control: a view whose host does not keep the browser store opens its own', async () => {
     const schema: OrbitalSchema = { ...program, name: 'view-keeps-store' };
     const host = await openBrowserHost({ databaseName: 'almadar:view-keeps-store:host', schema, callService: async () => ({ watchId: 'w-1' }) });

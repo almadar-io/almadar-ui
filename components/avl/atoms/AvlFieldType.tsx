@@ -19,7 +19,7 @@ export const FIELD_TYPE_SHAPES: Record<FieldType, FieldTypeShape> = {
   boolean: 'square',
   date: 'diamond', timestamp: 'diamond', datetime: 'diamond',
   enum: 'ring', union: 'ring',
-  object: 'hexagon', image: 'hexagon', file: 'hexagon', trait: 'hexagon', slot: 'hexagon', pattern: 'hexagon', node: 'hexagon', event: 'hexagon',
+  object: 'hexagon', image: 'hexagon', file: 'hexagon', trait: 'hexagon', slot: 'hexagon', pattern: 'hexagon', node: 'hexagon', event: 'hexagon', SExpr: 'hexagon',
   array: 'bars',
   relation: 'link',
 };

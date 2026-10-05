@@ -26,6 +26,14 @@ describe('FilterGroup', () => {
         vi.clearAllMocks();
     });
 
+    it.each(['default', 'compact', 'vertical'] as const)('names each option select by its filter label (%s variant)', (variant) => {
+        const filters: FilterDefinition[] = [{ field: 'category', label: 'Category', options: ['home', 'sports'] }];
+        renderWithProvider(
+            <FilterGroup entity="Product" filters={filters} variant={variant} onFilterChange={mockOnFilterChange} onClearAll={mockOnClearAll} />
+        );
+        expect(screen.getByRole('combobox', { name: 'Category' })).toBeInTheDocument();
+    });
+
     it('renders select filters with options', () => {
         const filters: FilterDefinition[] = [
             { field: 'status', label: 'Status', options: ['active', 'dormant', 'terminated'] },

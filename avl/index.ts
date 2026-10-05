@@ -160,7 +160,10 @@ export {
   type CrossLink,
   type ZoomLevel,
 } from '../components/avl/organisms/index';
-export { AvlTransitionDetail, type AvlTransitionDetailProps } from '../components/avl/organisms/AvlTransitionDetail';
+export { AvlTransitionDetail, type AvlTransitionDetailProps } from '../components/avl/molecules/AvlTransitionDetail';
+export { AvlTransitionExplainer, type AvlTransitionExplainerProps } from '../components/avl/molecules/AvlTransitionExplainer';
+export { AvlEffectChip, type AvlEffectChipProps } from '../components/avl/molecules/AvlEffectChip';
+export type { AvlAnnotations, AvlNote } from '../lib/avl-annotations';
 export { AvlGraphCanvas, AVL_GRAPH_NODE_TYPES, type AvlGraphCanvasProps } from '../components/avl/organisms/AvlGraphCanvas';
 export { traitLevelFromTrait, type TraitTransitionInfo } from '../lib/avl-schema-parser';
 export {

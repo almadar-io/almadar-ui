@@ -89,6 +89,41 @@ export function useThemeScope(): ThemeScope {
   return useContext(ThemeScopeContext);
 }
 
+/**
+ * The mode a registry `data-theme` key was built with: `<name>-light` /
+ * `<name>-dark` of a declared theme that has that mode (the same construction
+ * as `appliedTheme`). Undefined for any key no declared theme builds.
+ */
+export function registryKeyMode(
+  key: string,
+  themes: readonly UIThemeDefinition[],
+): ResolvedMode | undefined {
+  return registryKeyTheme(key, themes)?.mode;
+}
+
+/** The declared theme and mode a registry key was built from, or undefined. */
+export function registryKeyTheme(
+  key: string,
+  themes: readonly UIThemeDefinition[],
+): { theme: UIThemeDefinition; mode: ResolvedMode } | undefined {
+  for (const t of themes) {
+    if (key === `${t.name}-light` && themeHasMode(t, "light")) return { theme: t, mode: "light" };
+    if (key === `${t.name}-dark` && themeHasMode(t, "dark")) return { theme: t, mode: "dark" };
+  }
+  return undefined;
+}
+
+export function themeHasMode(theme: UIThemeDefinition, mode: ResolvedMode): boolean {
+  return mode === "light" ? theme.hasLightMode !== false : theme.hasDarkMode !== false;
+}
+
+/** The color mode in effect at this point of the tree: a pinned orbital theme's, else the document's. */
+export function useScopedMode(): ResolvedMode {
+  const scope = useThemeScope();
+  const { resolvedMode } = useTheme();
+  return scope.mode ?? resolvedMode;
+}
+
 /** Storage keys */
 const THEME_STORAGE_KEY = "theme";
 const MODE_STORAGE_KEY = "theme-mode";

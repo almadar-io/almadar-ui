@@ -12,3 +12,4 @@ export { AvlStateMachine } from './molecules/AvlStateMachine';
 export { AvlGlyph } from './molecules/AvlGlyph';
 export { BehaviorView } from './molecules/BehaviorView';
 export { ModuleCard } from './molecules/ModuleCard';
+export { AvlTransitionExplainer } from './molecules/AvlTransitionExplainer';

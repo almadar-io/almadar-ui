@@ -269,6 +269,37 @@ describe('SlotContentRenderer', () => {
   });
 });
 
+describe('SlotContentRenderer: patterns inside a declared item array', () => {
+  const renderContent = (pattern: string, props: Record<string, unknown>) =>
+    render(
+      <TestWrapper>
+        <SlotContentRenderer content={{ id: pattern, pattern, props: props as never, priority: 0 }} onDismiss={() => {}} />
+      </TestWrapper>,
+    );
+
+  it('renders a pattern given as an accordion item\'s content (node-typed), not the raw object', () => {
+    renderContent('accordion', {
+      items: [{ id: 'shown', title: 'Shown (1)', defaultOpen: true, content: { type: 'typography', variant: 'body', content: 'Nested pattern body' } }],
+    });
+    expect(screen.getByText('Nested pattern body')).toBeInTheDocument();
+    expect(screen.getByText('Shown (1)')).toBeInTheDocument();
+  });
+
+  it('renders a pattern given as a tab\'s content', () => {
+    renderContent('tabs', {
+      items: [{ id: 'a', label: 'First', content: { type: 'typography', variant: 'body', content: 'Tab body' } }],
+    });
+    expect(screen.getByText('Tab body')).toBeInTheDocument();
+  });
+
+  it('control: a field that is not node-typed keeps its data, even when its value names a pattern', () => {
+    renderContent('accordion', {
+      items: [{ id: 'x', title: 'Plain', defaultOpen: true, content: 'Just text' }],
+    });
+    expect(screen.getByText('Just text')).toBeInTheDocument();
+  });
+});
+
 describe('UISlotComponent', () => {
   it('should render empty placeholder for layout slots without content', () => {
     render(

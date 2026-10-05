@@ -37,6 +37,7 @@ import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { EmptyState, type EmptyStateSlotProps } from './EmptyState';
 import { Badge } from '../atoms/Badge';
+import { ProgressBar } from '../atoms/ProgressBar';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
@@ -573,7 +574,7 @@ export function DataGrid({
               );
             })}
             <HStack gap="md" className="flex-wrap gap-y-1">
-              {bodyFields.filter((f) => f.variant !== 'caption' || f.format === 'boolean').map((field) => {
+              {bodyFields.filter((f) => (f.variant !== 'caption' || f.format === 'boolean') && f.variant !== 'progress').map((field) => {
                 const value = getNestedValue(itemData, field.name);
                 if (value === undefined || value === null || value === '') return null;
 
@@ -607,6 +608,21 @@ export function DataGrid({
                 );
               })}
             </HStack>
+            {bodyFields.filter((f) => f.variant === 'progress').map((field) => {
+              const value = getNestedValue(itemData, field.name);
+              if (typeof value !== 'number') return null;
+              return (
+                <VStack key={field.name} gap="xs">
+                  <HStack gap="xs" className="items-center">
+                    {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
+                    <Typography variant="caption" color="secondary">
+                      {field.label ?? fieldLabel(field.name)}
+                    </Typography>
+                  </HStack>
+                  <ProgressBar value={value} max={100} />
+                </VStack>
+              );
+            })}
           </VStack>
           ) : null;
 

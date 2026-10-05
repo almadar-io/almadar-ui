@@ -21,15 +21,15 @@ function renderIn(theme: Parameters<typeof OrbitalThemeProvider>[0]['theme']) {
 }
 
 describe('OrbitalThemeProvider', () => {
-  it('scopes a registry theme key to the subtree as its data-theme', () => {
+  it('scopes the declared theme to the subtree, in the host document mode (the key is the starting mode)', () => {
     const { getByTestId } = renderIn('gazette-light');
     const scope = getByTestId('leaf').closest('[data-theme]');
-    expect(scope?.getAttribute('data-theme')).toBe('gazette-light');
+    expect(scope?.getAttribute('data-theme')).toBe('gazette-dark');
   });
 
-  it('paints the scoped theme background so a light theme is legible inside a dark host', () => {
+  it('paints the scoped theme background over the host theme', () => {
     const { getByTestId } = renderIn('gazette-light');
-    const scope = getByTestId('leaf').closest('[data-theme="gazette-light"]');
+    const scope = getByTestId('leaf').closest('[data-theme="gazette-dark"]');
     expect(scope?.className).toContain('bg-background');
     expect(scope?.className).toContain('text-foreground');
   });

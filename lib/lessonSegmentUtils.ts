@@ -4,8 +4,10 @@
  * BloomQuizBlock can reuse without circular imports.
  */
 
-export type MarkdownSegment = { type: 'markdown'; content: string };
-export type CodeSegment = { type: 'code'; language: string; content: string; runnable?: boolean };
+import type { LessonSegment } from '../components/core/organisms/SegmentRenderer';
+
+export type MarkdownSegment = Extract<LessonSegment, { type: 'markdown' }>;
+export type CodeSegment = Extract<LessonSegment, { type: 'code' }>;
 export type MixedSegment = MarkdownSegment | CodeSegment;
 
 /** Splits markdown content into markdown and fenced-code-block segments. */

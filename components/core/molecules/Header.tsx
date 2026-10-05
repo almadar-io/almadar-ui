@@ -15,6 +15,7 @@ import { Badge } from "../atoms/Badge";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
+import { Image } from "../atoms/Image";
 import type { IconInput } from "../atoms/index";
 import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
@@ -203,12 +204,12 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       {logo ? (
         typeof logo === "string" ? (
-          <Avatar src={logo} alt={brandName} size="sm" />
+          <Image src={logo} alt={brandName ?? ""} fit="contain" rounded="none" loading="eager" className="h-8 w-auto max-w-32" />
         ) : (
           logo
         )
       ) : logoSrc ? (
-        <Avatar src={logoSrc} alt={brandName} size="sm" />
+        <Image src={logoSrc} alt={brandName ?? ""} fit="contain" rounded="none" loading="eager" className="h-8 w-auto max-w-32" />
       ) : null}
 
       {brandName && (

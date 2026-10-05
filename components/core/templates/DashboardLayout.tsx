@@ -165,8 +165,9 @@ export interface DashboardLayoutProps {
    *  - `sidebar`: Left sidebar nav + top header (classic dashboard)
    *  - `topnav`: Horizontal nav in header, no sidebar
    *  - `bottomnav`: Bottom tab bar, no sidebar
-   *  - `minimal`: No nav chrome, content only */
-  layoutMode?: "sidebar" | "topnav" | "bottomnav" | "minimal";
+   *  - `minimal`: No nav chrome, content only
+   *  - `drawer`: Sidebar nav behind a menu button at every width; content gets the full width */
+  layoutMode?: "sidebar" | "topnav" | "bottomnav" | "minimal" | "drawer";
   /** Page content rendered inside the main area */
   children?: React.ReactNode;
 }
@@ -242,11 +243,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     return () => ro.disconnect();
   }, []);
   const isMobile = layoutWidth !== null && layoutWidth < 768;
-  const isRail = layoutWidth !== null && layoutWidth >= 768 && layoutWidth < 1024;
+  const isDrawer = layoutMode === "drawer";
+  const offCanvas = isMobile || isDrawer;
+  const isRail = !isDrawer && layoutWidth !== null && layoutWidth >= 768 && layoutWidth < 1024;
   // Leaving mobile (e.g. preview resized up) shouldn't leave a stale open drawer.
   useEffect(() => {
-    if (!isMobile && sidebarOpen) setSidebarOpen(false);
-  }, [isMobile, sidebarOpen]);
+    if (!offCanvas && sidebarOpen) setSidebarOpen(false);
+  }, [offCanvas, sidebarOpen]);
   const location = useLocation();
   // Resolution order: explicit prop > runtime context > router pathname.
   // The studio preview wraps the playground with `CurrentPagePathProvider`
@@ -261,6 +264,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const navigatedFrom = useRef(activePath);
   useEffect(() => {
     setTopNavMenuOpen(false);
+    setSidebarOpen(false);
     // A route change moves focus to the new page's content (not on first render).
     if (navigatedFrom.current !== activePath) {
       navigatedFrom.current = activePath;
@@ -290,7 +294,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleSignOut = onSignOutProp || authSignOut;
 
-  const showSidebar = layoutMode === "sidebar";
+  const showSidebar = layoutMode === "sidebar" || isDrawer;
   const showHeader = layoutMode !== "minimal";
   const showBottomNav = layoutMode === "bottomnav";
   const isTopNav = layoutMode === "topnav";
@@ -310,7 +314,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       >
         {t('aria.skipToContent')}
       </Button>
-      {showSidebar && isMobile && sidebarOpen && (
+      {showSidebar && offCanvas && sidebarOpen && (
         <Box
           className="fixed inset-0 bg-scrim z-20"
           onClick={() => setSidebarOpen(false)}
@@ -321,7 +325,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {showSidebar && (
         <Box
           as="aside"
-          inert={isMobile && !sidebarOpen ? true : undefined}
+          inert={offCanvas && !sidebarOpen ? true : undefined}
           className={cn(
             "z-30 flex-shrink-0 bg-card surface-material border-e-[length:var(--border-width)] border-border",
             isRail ? "w-16" : "w-64",
@@ -331,7 +335,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           // container-query classes) so the drawer reliably opens/closes in any
           // consumer. Desktop: static, in-flow. Mobile: fixed off-canvas drawer.
           style={
-            isMobile
+            offCanvas
               ? {
                   position: "fixed",
                   top: 0,
@@ -371,7 +375,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </Typography>
               )}
             </Link>
-            {isMobile && (
+            {offCanvas && (
               <Button
                 variant="ghost"
                 className="p-2"
@@ -436,7 +440,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               className="h-16 px-3 @sm/dashboard:px-4 gap-2 @sm/dashboard:gap-4"
             >
               {/* Mobile menu button — only in sidebar mode. */}
-              {showSidebar && isMobile && (
+              {showSidebar && offCanvas && (
                 <Button
                   variant="ghost"
                   className="p-2 rounded-interactive hover:bg-muted text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -464,6 +468,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <Typography variant="label" weight="medium" truncate className="flex-1 min-w-0 text-foreground">
                   {appName}
                 </Typography>
+              )}
+
+              {/* Drawer mode on a wide screen: the brand sits beside the menu button. */}
+              {isDrawer && !isMobile && (
+                <Link to="/" className="flex items-center gap-2 shrink-0">
+                  {logo}
+                  <Typography variant="label" className="heading-voice text-foreground" as="span">
+                    {appName}
+                  </Typography>
+                </Link>
               )}
 
               {/* Topnav horizontal nav — replaces sidebar. */}

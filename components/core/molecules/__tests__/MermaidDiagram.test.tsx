@@ -134,3 +134,35 @@ describe('MermaidDiagram', () => {
     });
   });
 });
+
+describe('MermaidDiagram theme', () => {
+  beforeEach(() => {
+    initialize.mockReset();
+    renderDiagram.mockReset();
+    renderDiagram.mockResolvedValue({ svg: '<svg data-diagram="ok"></svg>' });
+  });
+
+  // jsdom computes custom properties only where a rule or inline style declares them (no inheritance).
+  const themed = (fill: string, ground: string) => (
+    <>
+      <style>{`[data-testid="mermaid-diagram"] { --color-diagram-fill: ${fill}; --surface-diagram: ${ground}; }`}</style>
+      <MermaidDiagram code={GRAPH} />
+    </>
+  );
+
+  it('draws with the base theme and the variables resolved from its scope', async () => {
+    render(themed('rgb(224, 240, 241)', 'rgb(250, 249, 246)'), { wrapper: Wrapper });
+    await waitFor(() => expect(renderDiagram).toHaveBeenCalled());
+    const config = initialize.mock.calls.at(-1)?.[0] as { theme: string; themeVariables: { primaryColor: string; background: string } };
+    expect(config.theme).toBe('base');
+    expect(config.themeVariables.primaryColor).toBe('rgb(224, 240, 241)');
+    expect(config.themeVariables.background).toBe('rgb(250, 249, 246)');
+  });
+
+  it('control: another scope draws with its own colors', async () => {
+    render(themed('rgb(10, 20, 30)', 'rgb(0, 0, 0)'), { wrapper: Wrapper });
+    await waitFor(() => expect(renderDiagram).toHaveBeenCalled());
+    const config = initialize.mock.calls.at(-1)?.[0] as { themeVariables: { primaryColor: string } };
+    expect(config.themeVariables.primaryColor).toBe('rgb(10, 20, 30)');
+  });
+});

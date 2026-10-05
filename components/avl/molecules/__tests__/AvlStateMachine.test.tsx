@@ -71,14 +71,13 @@ describe('AvlStateMachine', () => {
     expect(screen.getByText('(> @entity.qty 0)')).toBeInTheDocument();
   });
 
-  it('summarizes effects as a count with their types in the tooltip', async () => {
+  it('shows each effect as a labelled glyph chip', async () => {
     await renderMachine();
     const save = screen.getAllByTestId('avl-sm-label').find((l) => l.dataset.event === 'SAVE')!;
-    const fx = save.querySelector('[data-testid="avl-sm-effects"]');
-    expect(fx?.textContent).toBe('·1');
-    expect(fx?.getAttribute('title')).toBe('persist');
+    const chips = [...save.querySelectorAll('[data-testid="avl-effect-chip"]')].map((c) => c.getAttribute('aria-label'));
+    expect(chips).toEqual(['persist']);
     const edit = screen.getAllByTestId('avl-sm-label').find((l) => l.dataset.event === 'EDIT')!;
-    expect(edit.querySelector('[data-testid="avl-sm-effects"]')).toBeNull();
+    expect(edit.querySelectorAll('[data-testid="avl-effect-chip"]')).toHaveLength(0);
   });
 
   it('shows listens / emits rails', async () => {

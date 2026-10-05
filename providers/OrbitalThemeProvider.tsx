@@ -34,9 +34,10 @@
 
 import React, { useEffect, type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import { isThemeRegistryKey, type ThemeRef } from '@almadar/core';
-import { useTheme, useThemeScope, ThemeScopeContext } from './ThemeContext';
+import { useTheme, useThemeScope, ThemeScopeContext, registryKeyTheme, themeHasMode } from './ThemeContext';
 import { themeTokensToCssVars, resolveThemeForRuntime } from '../lib/themeTokens';
 import { Box } from '../components/core/atoms/Box';
+import { cn } from '../lib/cn';
 
 export interface OrbitalThemeProviderProps {
   /** The `OrbitalDefinition.theme` value (inline definition or string ref). */
@@ -77,16 +78,20 @@ export function OrbitalThemeProvider({ theme: declared, override, children }: Or
   const resolved = resolveThemeForRuntime(theme);
   // useTheme provides the document-level resolved color mode. Per-orbital
   // overrides ride on top of that mode's variant.
-  const { resolvedMode } = useTheme();
+  const { resolvedMode, availableThemes } = useTheme();
   const darkTypeScale = resolvedMode === 'dark' ? resolved?.variants?.dark?.typeScale : undefined;
   useFontImport(darkTypeScale?.fontImport ?? resolved?.tokens.typeScale?.fontImport);
 
   if (isThemeRegistryKey(theme)) {
+    // A declared key names a theme and its starting mode; the viewer's mode wins when the theme has it.
+    const keyTheme = registryKeyTheme(theme, availableThemes);
+    const mode = keyTheme === undefined ? parent.mode : themeHasMode(keyTheme.theme, resolvedMode) ? resolvedMode : keyTheme.mode;
+    const key = keyTheme === undefined ? theme : `${keyTheme.theme.name}-${mode}`;
     return (
       <ThemeScopeContext.Provider
-        value={hostOverride ? { ...parent, theme, vars: undefined, override: hostOverride } : { ...parent, theme }}
+        value={hostOverride ? { ...parent, theme: key, mode, vars: undefined, override: key } : { ...parent, theme: key, mode }}
       >
-        <Box data-theme={theme} className={SURFACE}>
+        <Box data-theme={key} className={cn(SURFACE, keyTheme && mode)}>
           {children}
         </Box>
       </ThemeScopeContext.Provider>

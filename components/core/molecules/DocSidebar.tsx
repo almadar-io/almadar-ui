@@ -17,6 +17,7 @@ import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { DOC_NAV_ROW_ACTIVE, DOC_NAV_ROW_HOVER, DOC_NAV_ROW_IDLE } from '../../../lib/doc-nav-classes';
 
 export interface DocSidebarItem {
   /** Display label */
@@ -57,6 +58,7 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
           aria-expanded={expanded}
           className={cn(
             'h-auto w-full justify-start gap-2 rounded-interactive px-2 py-1.5 font-normal',
+            DOC_NAV_ROW_HOVER,
             depth > 0 && 'pl-4',
           )}
           onClick={() => setExpanded((prev) => !prev)}
@@ -87,22 +89,14 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
   }
 
   const label = (
-    <Typography
-      variant="body2"
-      className={cn(
-        item.active
-          ? 'text-primary font-semibold'
-          : 'text-muted-foreground',
-      )}
-      as="span"
-    >
+    <Typography variant="body2" color="inherit" weight={item.active ? 'semibold' : 'normal'} as="span">
       {item.label}
     </Typography>
   );
 
   if (!item.href) {
     return (
-      <Box className={cn('rounded-interactive px-3 py-1.5 text-sm', depth > 0 && 'ml-2')}>
+      <Box className={cn('rounded-interactive px-3 py-1.5 text-sm', DOC_NAV_ROW_IDLE, depth > 0 && 'ml-2')}>
         {label}
       </Box>
     );
@@ -116,7 +110,7 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
       className={cn(
         'h-auto w-full justify-start rounded-interactive px-3 py-1.5 text-sm font-normal',
         depth > 0 && 'ml-2',
-        item.active ? 'bg-primary/[0.08] text-foreground font-semibold' : 'text-muted-foreground',
+        item.active ? DOC_NAV_ROW_ACTIVE : cn(DOC_NAV_ROW_IDLE, DOC_NAV_ROW_HOVER),
       )}
     >
       {label}

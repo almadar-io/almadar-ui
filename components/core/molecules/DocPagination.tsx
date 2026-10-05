@@ -15,6 +15,7 @@ import { HStack } from '../atoms/Stack';
 import { VStack } from '../atoms/Stack';
 import { Icon } from '../atoms/Icon';
 import { Typography } from '../atoms/Typography';
+import { DOC_NAV_CARD_HOVER } from '../../../lib/doc-nav-classes';
 
 export interface DocPaginationLink {
   label: string;
@@ -36,12 +37,12 @@ const linkCardStyles = [
   'rounded-container',
   'p-4',
   'transition-all',
-  'hover:border-primary',
   'hover:shadow-elevation-dialog',
   'no-underline',
   'flex-1',
   'min-w-0',
   'cursor-pointer',
+  DOC_NAV_CARD_HOVER,
 ].join(' ');
 
 export function DocPagination({ prev, next, className, ...rest }: DocPaginationProps) {
@@ -63,7 +64,7 @@ export function DocPagination({ prev, next, className, ...rest }: DocPaginationP
           className={cn(linkCardStyles, 'group', 'h-auto justify-start whitespace-normal font-normal')}
         >
           <HStack align="center" gap="sm">
-            <Icon name="arrow-left" size="md" className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+            <Icon name="arrow-left" size="md" className="text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
             <VStack gap="none" align="start">
               {prev.category ? (
                 <Typography variant="caption" color="muted">
@@ -72,7 +73,7 @@ export function DocPagination({ prev, next, className, ...rest }: DocPaginationP
               ) : null}
               <Typography
                 variant="body"
-                className="group-hover:text-primary transition-colors"
+                className="group-hover:text-accent transition-colors"
               >
                 {prev.label}
               </Typography>
@@ -99,12 +100,12 @@ export function DocPagination({ prev, next, className, ...rest }: DocPaginationP
               ) : null}
               <Typography
                 variant="body"
-                className="group-hover:text-primary transition-colors"
+                className="group-hover:text-accent transition-colors"
               >
                 {next.label}
               </Typography>
             </VStack>
-            <Icon name="arrow-right" size="md" className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+            <Icon name="arrow-right" size="md" className="text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
           </HStack>
         </Button>
       ) : (

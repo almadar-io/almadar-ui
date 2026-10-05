@@ -16,6 +16,9 @@ import { AvlEntity } from '../atoms/AvlEntity';
 import { AvlFieldType } from '../atoms/AvlFieldType';
 import { AvlPage } from '../atoms/AvlPage';
 import { MiniStateMachine } from './MiniStateMachine';
+import { AvlExplain } from './AvlExplain';
+import { Box } from '../../core/atoms/Box';
+import type { AvlAnnotations } from '../../../lib/avl-annotations';
 import { CONNECTION_COLORS } from '../../../lib/avl-theme';
 import { type FieldType, type EntityPersistence, type A11yProps } from '@almadar/core';
 import { type AvlNodeData } from '../../../lib/avl-flow-converter';
@@ -31,6 +34,10 @@ export interface ModuleCardProps extends Omit<React.AriaAttributes, keyof A11yPr
    * @example {"orbitalName":"OrderOrbital","entityName":"Order","persistence":"persistent","fields":[{"name":"customer","type":"string","required":true,"hasDefault":false},{"name":"qty","type":"number","required":true,"hasDefault":true},{"name":"status","type":"string","required":false,"hasDefault":true}],"traits":[{"name":"OrderFlow","stateCount":5,"eventCount":7,"transitionCount":7,"emits":["ORDER_SAVED"],"listens":["PAYMENT_OK"]}],"pages":[{"name":"Orders","route":"/orders"}],"traitDetails":{"OrderFlow":{"name":"OrderFlow","linkedEntity":"Order","states":[{"name":"browsing","isInitial":true,"isTerminal":false},{"name":"editing","isInitial":false,"isTerminal":false},{"name":"saving","isInitial":false,"isTerminal":false},{"name":"confirmed","isInitial":false,"isTerminal":true},{"name":"failed","isInitial":false,"isTerminal":false}],"transitions":[{"from":"browsing","to":"editing","event":"EDIT","effects":[{"type":"render-ui","args":[]}],"index":0},{"from":"editing","to":"saving","event":"SAVE","effects":[{"type":"persist","args":[]},{"type":"notify","args":[]}],"index":1},{"from":"saving","to":"confirmed","event":"SAVED","effects":[{"type":"emit","args":[]},{"type":"render-ui","args":[]}],"index":2},{"from":"saving","to":"failed","event":"SAVE_FAILED","effects":[{"type":"notify","args":[]}],"index":3},{"from":"failed","to":"editing","event":"RETRY","effects":[],"index":4},{"from":"editing","to":"browsing","event":"CANCEL","effects":[{"type":"render-ui","args":[]}],"index":5},{"from":"confirmed","to":"browsing","event":"DONE","effects":[{"type":"navigate","args":[]}],"index":6}],"emittedEvents":["ORDER_SAVED"],"listenedEvents":["PAYMENT_OK"]}},"externalLinks":[{"targetOrbital":"PaymentOrbital","eventName":"PAYMENT_OK","direction":"in","traitName":"OrderFlow"}]}
    */
   data: AvlNodeData;
+  /** Author explanations per trait name (states, transition events, effect types), shown in a popover on hover.
+   * @example {"OrderFlow":{"states":{"saving":{"body":"Waiting for the server to confirm."}},"effects":{"persist":{"body":"Saves the order."}}}}
+   */
+  annotations?: Record<string, AvlAnnotations>;
 }
 
 function toFieldKind(type: string): FieldType {
@@ -55,7 +62,7 @@ const PERSISTENCE_ICON: Record<string, string> = {
   instance: '\u22A1',   // ⊡ box
 };
 
-const ModuleCardInner: React.FC<ModuleCardProps> = ({ data, ...rest }) => {
+const ModuleCardInner: React.FC<ModuleCardProps> = ({ data, annotations, ...rest }) => {
   const {
     orbitalName,
     entityName,
@@ -101,9 +108,13 @@ const ModuleCardInner: React.FC<ModuleCardProps> = ({ data, ...rest }) => {
           <div className={`grid gap-x-3 gap-y-0.5`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
             {fields.map(f => (
               <div key={f.name} className="flex items-center gap-1">
-                <svg width={14} height={14} viewBox="0 0 16 16">
-                  <AvlFieldType x={8} y={8} kind={toFieldKind(f.type)} size={6} />
-                </svg>
+                <AvlExplain lines={[f.name, f.type]}>
+                  <Box as="span" role="img" tabIndex={0} aria-label={`${f.name}: ${f.type}`} className="inline-flex cursor-help rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <svg width={14} height={14} viewBox="0 0 16 16" aria-hidden="true">
+                      <AvlFieldType x={8} y={8} kind={toFieldKind(f.type)} size={6} />
+                    </svg>
+                  </Box>
+                </AvlExplain>
                 <span className="text-xs text-[var(--color-muted-foreground)] truncate">{f.name}</span>
               </div>
             ))}
@@ -122,7 +133,7 @@ const ModuleCardInner: React.FC<ModuleCardProps> = ({ data, ...rest }) => {
             <div className="text-xs font-semibold text-[var(--color-foreground)] mb-1">{trait.name}</div>
 
             {/* Mini state machine */}
-            {detail && <MiniStateMachine data={detail} className="mb-1" />}
+            {detail && <MiniStateMachine data={detail} annotations={annotations?.[trait.name]} className="mb-1" />}
 
             {/* Emit/Listen indicators */}
             {(traitEmits.length > 0 || traitListens.length > 0) && (

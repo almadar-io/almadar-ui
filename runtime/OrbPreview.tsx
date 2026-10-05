@@ -732,6 +732,26 @@ export function resolvePreviewTheme(
  * <OrbPreview schema={schema} serverUrl="/api/orbitals" />
  * ```
  */
+
+/**
+ * `UI:NAVIGATE` consumer (`navigatesTo` on page-header, top-bar and item
+ * actions). Mounted inside OrbitalProvider: that provider owns the bus the
+ * rendered components emit on, so a listener on the preview's outer bus
+ * never hears them.
+ */
+function NavigateListener({ onNavigate }: { onNavigate: (path: string) => void }): null {
+  const bus = useEventBus();
+  useEffect(
+    () =>
+      bus.on('UI:NAVIGATE', (event) => {
+        const url = event.payload?.url;
+        if (typeof url === 'string' && url.length > 0) onNavigate(url);
+      }),
+    [bus, onNavigate],
+  );
+  return null;
+}
+
 export function OrbPreview({
   schema,
   mockData,
@@ -763,7 +783,6 @@ export function OrbPreview({
   // its only subscriber, is gone; the toast slot is the one feedback
   // surface now, and this state is durable, not a one-shot toast).
   const [localFallback, setLocalFallback] = useState(false);
-  const eventBus = useEventBus();
   const inHostRouter = useInRouterContext();
   const [hostHrefBase, setHostHrefBase] = useState('/');
   const handleLocalFallback = useCallback(() => {
@@ -1027,21 +1046,6 @@ export function OrbPreview({
     navStackRef.current?.back();
   }, []);
 
-  // `UI:NAVIGATE` consumer: itemActions' `navigatesTo` (CardGrid/DataGrid
-  // interpolate `{{row.field}}` then emit `UI:NAVIGATE {url}`) routes through
-  // the same page switcher as every other navigation. Previously the emit had
-  // no listener in the standalone preview and fired into the void
-  // (C-ITEMACTION-HREF-CONTRACT-DIVERGENCE).
-  useEffect(() => {
-    const unsubscribe = eventBus.on('UI:NAVIGATE', (event) => {
-      const url = event.payload?.url;
-      if (typeof url === 'string' && url.length > 0) {
-        handleNavigate(url);
-      }
-    });
-    return unsubscribe;
-  }, [eventBus, handleNavigate]);
-
   if (!parseResult.ok) {
     return (
       <Box className={className} style={{ height }}>
@@ -1161,6 +1165,7 @@ export function OrbPreview({
         >
         <NavStackRefBridge apiRef={navStackRef} />
         <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated} user={user}>
+          <NavigateListener onNavigate={handleNavigate} />
           <UISlotProvider>
             {fit ? (
               <FitToBox mode={fit === 'content' ? 'content' : 'box'}>

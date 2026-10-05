@@ -164,6 +164,7 @@ export function useTraitStateMachine(
   useClientTicks(traitBindings, store, traitIndex, {
     eventBus,
     slotFlush,
+    hostRunsProgram: transport?.hostsBrowserStore === true,
     ...(options.traitConfigsByName !== undefined ? { traitConfigsByName: options.traitConfigsByName } : {}),
     ...(options.navigate !== undefined ? { navigate: options.navigate } : {}),
     ...(options.navigateBack !== undefined ? { navigateBack: options.navigateBack } : {}),

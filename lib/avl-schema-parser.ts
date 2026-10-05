@@ -31,7 +31,7 @@ import { renderUiEntriesOf } from '@almadar/core/patterns';
 import { traitEventWires } from './avl-event-wires';
 
 // Internal serialized effect record — all fields are JsonValue-compatible.
-interface SerializedEffect extends JsonObject {
+export interface SerializedEffect extends JsonObject {
   type: string;
   args: SExpr[];
 }

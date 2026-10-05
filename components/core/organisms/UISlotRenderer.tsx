@@ -545,14 +545,7 @@ function renderContainedPortal(
     case "toast":
       return (
         <Box id={slotId} className="absolute top-4 right-4 z-50">
-          <Toast
-            variant={
-              (slotPropsOf(content).variant as "success" | "error" | "warning" | "info") ?? "info"
-            }
-            title={slotPropsOf(content).title as string | undefined}
-            message={(slotPropsOf(content).message as string) ?? ""}
-            onDismiss={onDismiss}
-          />
+          <SlotToasts content={content} onDismiss={onDismiss} />
         </Box>
       );
 
@@ -1289,18 +1282,7 @@ function SlotPortal({
     case "toast":
       wrapper = (
         <Box id={slotId} className={cn("fixed z-50", getToastPosition(position))}>
-          <Toast
-            variant={
-              (slotPropsOf(content).variant as
-                | "success"
-                | "error"
-                | "warning"
-                | "info") ?? "info"
-            }
-            title={slotPropsOf(content).title as string | undefined}
-            message={(slotPropsOf(content).message as string) ?? ""}
-            onDismiss={onDismiss}
-          />
+          <SlotToasts content={content} onDismiss={onDismiss} />
         </Box>
       );
       break;
@@ -1334,6 +1316,70 @@ function SlotPortal({
   }
 
   return (<ThemedPortal container={portalRoot}>{wrapper}</ThemedPortal>);
+}
+
+type ToastVariantName = "success" | "error" | "warning" | "info";
+
+interface SlotToastEntry {
+  key: string;
+  variant?: ToastVariantName;
+  title?: string;
+  message: string;
+  sourceTrait?: string;
+}
+
+const TOAST_VARIANTS: readonly ToastVariantName[] = ["success", "error", "warning", "info"];
+
+function stringField(value: object, key: string): string | undefined {
+  const field: string | object | number | boolean | null | undefined = Reflect.get(value, key);
+  return typeof field === "string" ? field : undefined;
+}
+
+function toastEntry(key: string, value: object, sourceTrait: string | undefined): SlotToastEntry {
+  const variant = stringField(value, "variant");
+  return {
+    key,
+    variant: TOAST_VARIANTS.find((v) => v === variant),
+    title: stringField(value, "title"),
+    message: stringField(value, "message") ?? "",
+    sourceTrait,
+  };
+}
+
+// Several traits writing the toast slot at once aggregate into a `stack`; each child is its own toast.
+function slotToastEntries(content: SlotContent): SlotToastEntry[] {
+  const props = slotPropsOf(content);
+  const children = props.children;
+  if (content.pattern === "stack" && Array.isArray(children)) {
+    const entries: SlotToastEntry[] = [];
+    children.forEach((child, index) => {
+      if (typeof child !== "object" || child === null) return;
+      entries.push(toastEntry(`${content.id}-${index}`, child, stringField(child, "_sourceTrait")));
+    });
+    return entries;
+  }
+  return [toastEntry(content.id, props, content.sourceTrait)];
+}
+
+function SlotToasts({ content, onDismiss }: { content: SlotContent; onDismiss: () => void }): React.ReactElement {
+  const { clearBySource } = useUISlots();
+  const entries = slotToastEntries(content);
+  return (
+    <Box className="flex flex-col gap-2">
+      {entries.map((entry) => {
+        const trait = entry.sourceTrait;
+        return (
+          <Toast
+            key={entry.key}
+            variant={entry.variant ?? "info"}
+            title={entry.title}
+            message={entry.message}
+            onDismiss={entries.length > 1 && trait !== undefined ? () => clearBySource("toast", trait) : onDismiss}
+          />
+        );
+      })}
+    </Box>
+  );
 }
 
 function getToastPosition(position?: string): string {
@@ -1763,7 +1809,16 @@ function renderPatternProps(
       // evaluator data: they skip the per-item pattern-config probe too
       // (pattern configs are authored in descriptors, not stored in entity
       // rows — same contract as the isDataArray schema guard below).
-      if (!isEvaluatorResolvedData(value) && value.some((el) => isPatternConfig(el as SlotPropValue))) {
+      // Item fields the schema types `node` (accordion/tabs `items[].content`)
+      // hold patterns to render, inside otherwise-plain data items.
+      const nodeFields = Object.entries(propsSchema?.[key]?.items?.properties ?? {})
+        .filter(([, def]) => def?.types.includes("node") === true)
+        .map(([name]) => name);
+      const hasNodeField = (el: SlotPropValue): boolean =>
+        typeof el === "object" && el !== null && !Array.isArray(el) && isPlainConfigObject(el)
+        && nodeFields.some((f) => isPatternConfig((el as Record<string, SlotPropValue>)[f]));
+      const holdsNodes = nodeFields.length > 0 && !isEvaluatorResolvedData(value) && value.some((el) => hasNodeField(el as SlotPropValue));
+      if (holdsNodes || (!isEvaluatorResolvedData(value) && value.some((el) => isPatternConfig(el as SlotPropValue)))) {
         // falls through to the map below — pattern configs need conversion
       } else if (!subtreeHasTraitRef(value)) {
         rendered[key] = value;
@@ -1788,6 +1843,23 @@ function renderPatternProps(
             priority: 0,
           };
           return <SlotContentRenderer key={i} content={childContent} onDismiss={onDismiss} />;
+        }
+        if (hasNodeField(el)) {
+          const item: Record<string, SlotPropValue> = {};
+          for (const [k, v] of Object.entries(el as Record<string, SlotPropValue>)) {
+            if (nodeFields.includes(k) && isPatternConfig(v)) {
+              const nestedProps: SlotProps = {};
+              for (const [pk, pv] of Object.entries(v)) {
+                if (pk !== "type") nestedProps[pk] = pv;
+              }
+              item[k] = (
+                <SlotContentRenderer content={{ id: `prop-${key}-${i}-${k}`, pattern: v.type, props: nestedProps, priority: 0 }} onDismiss={onDismiss} />
+              );
+            } else {
+              item[k] = substituteTraitRefsDeep(v, `prop:${key}[${i}].${k}`);
+            }
+          }
+          return item as SlotPropValue;
         }
         return substituteTraitRefsDeep(el, `prop:${key}[${i}]`);
       }) as SlotPropValue;

@@ -180,7 +180,7 @@ export function BrowserPlayground({
   const i18n = useMemo<I18nContextValue | undefined>(() => {
     if (viewerLocale === undefined || messages === undefined) return undefined;
     const catalog = messages[viewerLocale] ?? {};
-    return { locale: viewerLocale, direction: localeDirection(viewerLocale), t: createTranslate(catalog), messages: catalog };
+    return { locale: viewerLocale, direction: localeDirection(viewerLocale), t: createTranslate(catalog, viewerLocale), messages: catalog };
   }, [viewerLocale, messages]);
 
   const preview = (

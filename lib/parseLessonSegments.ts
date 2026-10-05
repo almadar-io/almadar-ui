@@ -9,27 +9,16 @@
  * until the next recognised tag, a section heading (`\n\n#`), or end-of-input.
  */
 
+import type { InteractiveOrbitalType, LessonSegment } from '../components/core/organisms/SegmentRenderer';
 import type { BloomLevel } from '../components/core/molecules/BloomQuizBlock';
-import { parseMarkdownWithCodeBlocks, type MixedSegment } from './lessonSegmentUtils';
+import { parseMarkdownWithCodeBlocks } from './lessonSegmentUtils';
 
 // ── Segment types ─────────────────────────────────────────────────────────────
 
-export type InteractiveOrbitalType =
-  | 'algorithms'
-  | 'math'
-  | 'physics'
-  | 'biology'
-  | 'chemistry'
-  | 'probability';
-
-export type LessonSegment =
-  | MixedSegment
-  | { type: 'quiz'; question: string; answer: string }
-  | { type: 'activate'; question: string }
-  | { type: 'connect'; content: string }
-  | { type: 'reflect'; prompt: string }
-  | { type: 'bloom'; level: BloomLevel; question: string; answer: string }
-  | { type: 'visualization'; visualizationType: InteractiveOrbitalType; description: string };
+// The segment types are declared in `SegmentRenderer.tsx` (their consumer): the
+// pattern-sync scanner only indexes types under `components/**`, so a union
+// living in `lib/` collapses to its one inline arm in the generated knob.
+export type { InteractiveOrbitalType, LessonSegment };
 
 // `LessonUserProgress` is declared in `SegmentRenderer.tsx` (its one consumer)
 // instead of here: the pattern-sync scanner that builds `.lolo` factory knobs

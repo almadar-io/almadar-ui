@@ -14,7 +14,7 @@
  * DocumentViewer and `<svg>` in JazariStateMachine/StateMachineView.
  */
 
-import type { A11yProps } from '@almadar/core';
+import type { A11yProps, EventEmit } from '@almadar/core';
 import React from 'react';
 import ReactMarkdown, { defaultUrlTransform, type UrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -23,6 +23,9 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { Box } from '../../atoms/Box';
 import { CodeBlock, toCodeLanguage } from './CodeBlock';
+import { TextHighlight } from '../../atoms/TextHighlight';
+import { SelectionAnnotator } from './SelectionAnnotator';
+import { rehypeAnnotate, type ContentAnnotation } from '../../../../lib/content-annotations';
 import { MermaidDiagram } from './MermaidDiagram';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
@@ -45,15 +48,31 @@ export interface MarkdownContentProps extends A11yProps {
   content: string;
   /** Text direction (defaults to ltr; `ltr` is first so the generated config seeds it) */
   direction?: 'ltr' | 'rtl';
+  /** Event emitted when the reader picks Ask on selected text (as `UI:<askEvent>`) */
+  askEvent?: EventEmit<{ selectedText: string }>;
+  /** Event emitted when the reader picks Note on selected text (as `UI:<noteEvent>`) */
+  noteEvent?: EventEmit<{ selectedText: string }>;
+  /** Ask action label (default: translated) */
+  askLabel?: string;
+  /** Note action label (default: translated) */
+  noteLabel?: string;
+  /**
+   * Passages to highlight. Each `text` is matched exactly, first occurrence in
+   * document order inside a single rendered text node (outside code); a passage
+   * that spans formatting boundaries is not highlighted.
+   */
+  annotations?: ContentAnnotation[];
+  /** Event emitted when a highlighted passage is clicked (as `UI:<annotationEvent>`) */
+  annotationEvent?: EventEmit<{ annotationId?: string }>;
   /** Additional CSS classes */
   className?: string;
 }
 
 export const MarkdownContent = React.memo<MarkdownContentProps>(
-  ({ content, direction = 'ltr', className, ...rest }) => {
+  ({ content, direction = 'ltr', askEvent, noteEvent, askLabel, noteLabel, annotations, annotationEvent, className, ...rest }) => {
     const { t: _t } = useTranslate();
     const safeContent = typeof content === 'string' ? content : String(content ?? '');
-    return (
+    const body = (
       <Box
         {...domPassthrough(rest)}
         className={cn('prose max-w-none', className)}
@@ -82,6 +101,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
           urlTransform={urlTransform}
           remarkPlugins={[remarkMath, remarkGfm]}
           rehypePlugins={[
+            ...(annotations && annotations.length > 0 ? [rehypeAnnotate(annotations)] : []),
             [rehypeKatex, { strict: false, throwOnError: false }],
           ]}
           components={{
@@ -146,6 +166,19 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 >
                   {children}
                 </code>
+              );
+            },
+            mark({ node }) {
+              const id = node?.properties?.dataAnnotationId;
+              const kind = node?.properties?.dataAnnotationKind;
+              return (
+                <TextHighlight
+                  highlightType={kind === 'question' ? 'question' : 'note'}
+                  annotationId={typeof id === 'string' ? id : undefined}
+                  action={annotationEvent}
+                >
+                  {node?.children.map((c) => (c.type === 'text' ? c.value : ''))}
+                </TextHighlight>
               );
             },
             // Style links
@@ -216,11 +249,23 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
         </ReactMarkdown>
       </Box>
     );
+    if (!askEvent && !noteEvent) return body;
+    return (
+      <SelectionAnnotator askEvent={askEvent} noteEvent={noteEvent} askLabel={askLabel} noteLabel={noteLabel}>
+        {body}
+      </SelectionAnnotator>
+    );
   },
   (prev, next) =>
     prev.content === next.content &&
     prev.className === next.className &&
     prev.direction === next.direction &&
+    prev.askEvent === next.askEvent &&
+    prev.noteEvent === next.noteEvent &&
+    prev.askLabel === next.askLabel &&
+    prev.noteLabel === next.noteLabel &&
+    prev.annotations === next.annotations &&
+    prev.annotationEvent === next.annotationEvent &&
     samePassthrough(prev, next),
 );
 

@@ -414,6 +414,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
               />
             ) : (
               <Select
+                aria-label={filter.label}
                 value={selectedValues[filter.field] || "all"}
                 onValueChange={(v) =>
                   handleFilterSelect(filter.field, v as string)
@@ -540,6 +541,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
               />
             ) : (
               <Select
+                aria-label={filter.label}
                 value={selectedValues[filter.field] || "all"}
                 onValueChange={(v) =>
                   handleFilterSelect(filter.field, v as string)
@@ -706,6 +708,7 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
               />
             ) : (
               <Select
+                aria-label={filter.label}
                 value={selectedValues[filter.field] || "all"}
                 onValueChange={(v) =>
                   handleFilterSelect(filter.field, v as string)

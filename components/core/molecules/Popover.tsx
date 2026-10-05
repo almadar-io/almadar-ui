@@ -18,6 +18,8 @@ import { useDialogBehavior } from "../../../hooks/useDialogBehavior";
 
 import { domPassthrough } from '../../../lib/domPassthrough';
 export type PopoverPosition = "top" | "bottom" | "left" | "right";
+
+const INTERACTIVE_SELECTOR = 'button, a[href], input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])';
 export type PopoverTrigger = "click" | "hover";
 
 export interface PopoverProps extends A11yProps {
@@ -160,7 +162,8 @@ export const Popover: React.FC<PopoverProps> = ({
   };
 
   const panelId = useId();
-  useDialogBehavior({ open: isOpen, containerRef: popoverRef, onEscape: handleClose, modal: false, returnFocusRef: triggerRef });
+  const focusReturnRef = useRef<HTMLElement | null>(null);
+  useDialogBehavior({ open: isOpen, containerRef: popoverRef, onEscape: handleClose, modal: false, returnFocusRef: focusReturnRef });
 
   const handleToggle = () => {
     if (isOpen) {
@@ -257,9 +260,42 @@ export const Popover: React.FC<PopoverProps> = ({
           onPointerDown: tapTriggerProps.onPointerDown,
         };
 
-  // Wrap non-element children in a span
-  const childElement = React.isValidElement(children) ? (
+  // Non-element children are wrapped in a span. A click trigger's dialog semantics
+  // belong on the control the user operates: the wrapped content's own control when
+  // it has one (a rendered `button` pattern), else the span itself as a button.
+  const wrapsContent = !React.isValidElement(children);
+  const [innerControl, setInnerControl] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (!wrapsContent || trigger !== "click") return;
+    setInnerControl(triggerRef.current?.querySelector<HTMLElement>(INTERACTIVE_SELECTOR) ?? null);
+  }, [wrapsContent, trigger, children]);
+  useLayoutEffect(() => {
+    focusReturnRef.current = innerControl ?? triggerRef.current;
+  });
+  useLayoutEffect(() => {
+    if (innerControl === null) return;
+    innerControl.setAttribute("aria-expanded", String(isOpen));
+    innerControl.setAttribute("aria-haspopup", "dialog");
+    if (mounted) innerControl.setAttribute("aria-controls", panelId);
+    else innerControl.removeAttribute("aria-controls");
+  }, [innerControl, isOpen, mounted, panelId]);
+  const triggerIsWrapper = innerControl === null;
+
+  const childElement = !wrapsContent ? (
     children
+  ) : trigger === "click" && triggerIsWrapper ? (
+    <span
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e: React.KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleToggle();
+        }
+      }}
+    >
+      {children}
+    </span>
   ) : (
     <span>{children}</span>
   );
@@ -273,9 +309,14 @@ export const Popover: React.FC<PopoverProps> = ({
     {
       ref: triggerRef,
       ...handlerProps,
-      "aria-expanded": isOpen,
-      "aria-haspopup": "dialog",
-      ...(mounted ? { "aria-controls": panelId } : undefined),
+      // Dialog semantics belong to a click-opened panel; a hover popover is a tooltip.
+      ...(trigger === "click" && triggerIsWrapper
+        ? {
+            "aria-expanded": isOpen,
+            "aria-haspopup": "dialog",
+            ...(mounted ? { "aria-controls": panelId } : undefined),
+          }
+        : undefined),
       ...(trigger === "hover"
         ? {
             onPointerDown: (e: React.PointerEvent) => {

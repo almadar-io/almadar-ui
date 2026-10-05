@@ -436,7 +436,7 @@ const EDITOR_LINE_PX = 19.5;
 import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
-import { useTheme } from '../../../../providers/ThemeContext';
+import { useScopedMode } from '../../../../providers/ThemeContext';
 import { createLogger } from '@almadar/logger';
 import type { A11yProps, EventEmit, EventKey, EventListen } from "@almadar/core";
 import { domPassthrough } from "../../../../lib/domPassthrough";
@@ -1092,7 +1092,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const plainCodeColor = plainCodeColorOf(activeStyle);
     const eventBus = useEventBus();
     const { t } = useTranslate();
-    const { resolvedMode } = useTheme();
+    const resolvedMode = useScopedMode();
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const codeRef = useRef<HTMLDivElement | null>(null);
     const savedScrollLeftRef = useRef<number>(0);

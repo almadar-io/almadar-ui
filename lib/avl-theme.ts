@@ -109,7 +109,7 @@ export const EFFECT_CATEGORY_COLORS: Record<EffectCategory, { color: string; bg:
 const EFFECT_OPERATOR_CATEGORY: Record<EffectOperator, EffectCategory> = {
   'render-ui': 'ui', 'navigate': 'ui', 'navigate-back': 'ui',
   'set': 'data', 'persist': 'data', 'fetch': 'data', 'fetch-stream': 'data', 'ref': 'data', 'deref': 'data', 'swap': 'data', 'watch': 'data',
-  'emit': 'communication', 'notify': 'communication', 'send-server': 'communication', 'call-service': 'communication',
+  'emit': 'communication', 'notify': 'communication', 'send-server': 'communication', 'call-service': 'communication', 'cancel-call': 'communication',
   'integration/http': 'communication', 'integration/github-get-repo': 'communication', 'integration/github-create-issue': 'communication',
   'spawn': 'lifecycle', 'despawn': 'lifecycle',
   'do': 'control', 'if': 'control', 'when': 'control', 'let': 'control', 'log': 'control', 'atomic': 'control',
@@ -134,7 +134,7 @@ const EFFECT_OPERATOR_ZONE: Record<EffectOperator, EffectZone> = {
   'render-ui': 'screen', 'navigate': 'route', 'navigate-back': 'route',
   'set': 'entity', 'swap': 'entity', 'ref': 'store', 'deref': 'store', 'watch': 'store',
   'persist': 'store', 'fetch': 'store', 'fetch-stream': 'store',
-  'emit': 'bus', 'send-server': 'bus', 'notify': 'toast', 'call-service': 'remote',
+  'emit': 'bus', 'send-server': 'bus', 'notify': 'toast', 'call-service': 'remote', 'cancel-call': 'remote',
   'integration/http': 'remote', 'integration/github-get-repo': 'remote', 'integration/github-create-issue': 'remote',
   'spawn': 'instances', 'despawn': 'instances',
   'do': 'flow', 'if': 'flow', 'when': 'flow', 'let': 'flow', 'log': 'flow', 'atomic': 'flow',

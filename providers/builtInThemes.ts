@@ -32,6 +32,7 @@ export const BUILT_IN_THEMES: UIThemeDefinition[] = [
   { name: "gothic", displayName: "Gothic Manuscript", hasLightMode: true, hasDarkMode: true },
   { name: "ink-wash", displayName: "Ink Wash", hasLightMode: true, hasDarkMode: true },
   { name: "kawaii", displayName: "Kawaii", hasLightMode: true, hasDarkMode: true },
+  { name: "kflow", displayName: "KFlow", hasLightMode: true, hasDarkMode: true },
   { name: "kiosk", displayName: "Kiosk", hasLightMode: true, hasDarkMode: true },
   { name: "linear-clean", displayName: "Linear Clean", hasLightMode: true, hasDarkMode: true },
   { name: "luxury", displayName: "Haute Luxe", hasLightMode: true, hasDarkMode: true },

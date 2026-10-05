@@ -718,7 +718,7 @@ export function DataList({
       <Typography
         variant={isCompact ? 'small' : titleField?.variant === 'h3' ? 'h3' : 'h4'}
         weight="semibold"
-        className="truncate"
+        className={isCompact ? 'truncate' : 'line-clamp-2 break-words'}
       >
         {titleDisplay}
       </Typography>

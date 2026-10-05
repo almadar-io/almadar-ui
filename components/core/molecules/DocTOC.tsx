@@ -15,6 +15,7 @@ import { Button } from '../atoms/Button';
 import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { DOC_NAV_RULE_HOVER } from '../../../lib/doc-nav-classes';
 
 export interface DocTOCItem {
   /** Heading element id to link to */
@@ -63,21 +64,13 @@ export const DocTOC: React.FC<DocTOCProps> = ({
                 'h-auto w-full justify-start rounded-none py-1.5 pr-0 font-normal border-l-heavy',
                 'pl-3',
                 indent,
+                DOC_NAV_RULE_HOVER,
                 isActive
-                  ? 'border-l-primary'
-                  : 'border-l-transparent hover:border-l-[var(--color-muted)]',
+                  ? 'border-l-accent text-accent hover:text-accent'
+                  : 'border-l-transparent text-muted-foreground hover:border-l-border',
               )}
             >
-              <Typography
-                variant="caption"
-                className={cn(
-                  'transition-colors',
-                  isActive
-                    ? 'text-primary font-medium'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-                as="span"
-              >
+              <Typography variant="caption" color="inherit" weight={isActive ? 'medium' : 'normal'} className="transition-colors" as="span">
                 {item.label}
               </Typography>
             </Button>

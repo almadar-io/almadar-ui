@@ -33,6 +33,8 @@ export interface UploadDropZoneProps extends A11yProps {
   icon?: IconInput;
   /** Disabled state */
   disabled?: boolean;
+  /** How the file is read into `content`: a base64 data URL (default) or its UTF-8 text */
+  readAs?: "dataUrl" | "text";
   /** Declarative event name for file selection */
   action?: EventEmit<{ files: { name: string; size: number; type: string; content: string }[] }>;
   /** Payload to include with the action event
@@ -59,6 +61,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
   description,
   icon,
   disabled = false,
+  readAs = "dataUrl",
   action,
   actionPayload,
   onFiles,
@@ -125,7 +128,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
       if (valid.length > 0) {
         onFiles?.(valid);
         if (action) {
-          // The payload must carry the BYTES (base64 data URL), not just
+          // The payload must carry the BYTES (base64 data URL, or text when readAs="text"), not just
           // metadata — a `(call-service storage upload { file: ?file })`
           // downstream has nothing to store otherwise. Size is already
           // capped by validateFiles/maxSize before any read happens.
@@ -143,7 +146,8 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
                         content: String(reader.result ?? ''),
                       });
                     reader.onerror = () => rejectPayload(reader.error);
-                    reader.readAsDataURL(f);
+                    if (readAs === "text") reader.readAsText(f);
+                    else reader.readAsDataURL(f);
                   },
                 ),
             ),
@@ -160,7 +164,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
         }
       }
     },
-    [validateFiles, onFiles, action, actionPayload, eventBus, t],
+    [validateFiles, onFiles, action, actionPayload, readAs, eventBus, t],
   );
 
   const handleDragOver = (e: React.DragEvent) => {

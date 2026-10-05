@@ -138,3 +138,19 @@ describe('DataList clickable rows (stretched control)', () => {
     }
   });
 });
+
+describe('DataList title length (Almadar_UX 2.7: long titles clamp to 2 lines)', () => {
+  const long = [{ id: 'v1', title: 'You will not believe what happened when we tried every keyboard on the market', author: 'Clickbait Central' }];
+  const titleOf = () => screen.getByText(long[0].title);
+
+  it('a row title wraps up to two lines instead of cutting off on one', () => {
+    renderList(<DataList entity={long} fields={[{ name: 'title', variant: 'h4' }, { name: 'author', variant: 'small' }]} />);
+    expect(titleOf().className).toContain('line-clamp-2');
+    expect(titleOf().className).not.toContain('truncate');
+  });
+
+  it('control: a compact row keeps its one-line scanning label', () => {
+    renderList(<DataList entity={long} variant="compact" fields={[{ name: 'title', variant: 'h4' }, { name: 'author', variant: 'small' }]} />);
+    expect(titleOf().className).toContain('truncate');
+  });
+});

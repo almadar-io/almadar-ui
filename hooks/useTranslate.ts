@@ -17,10 +17,16 @@
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { DEFAULT_CURRENCY, type FormatContext } from '../lib/format';
 import coreLocaleRaw from '../locales/en.json';
+import arLocaleRaw from '../locales/ar.json';
+import slLocaleRaw from '../locales/sl.json';
 
 // Strip $meta (object, not a string) so the lookup is Record<string, string>
 const { $meta: _meta, ...coreMessages } = coreLocaleRaw;
 const coreLocale: Record<string, string> = coreMessages;
+const { $meta: _arMeta, ...arMessages } = arLocaleRaw;
+const { $meta: _slMeta, ...slMessages } = slLocaleRaw;
+/** The UI's own catalog per locale, the fallback for built-in component labels. */
+const uiLocales: Readonly<Record<string, Record<string, string>>> = { en: coreLocale, ar: arMessages, sl: slMessages };
 
 export type TranslateFunction = (
   key: string,
@@ -120,12 +126,17 @@ export function useFormatContext(): FormatContext {
  * t('table.showing', { count: 5, total: 20 }) // → 'Showing 5 of 20'
  * t('missing.key') // → 'missing.key' (fallback)
  * ```
+ *
+ * Pass `locale` so built-in component labels the app catalog doesn't carry
+ * come from the UI's own catalog for that locale before English.
  */
 export function createTranslate(
   messages: Record<string, string>,
+  locale?: string,
 ): TranslateFunction {
+  const uiCatalog = locale !== undefined ? uiLocales[locale] : undefined;
   return (key, params) => {
-    let msg = messages[key] ?? coreLocale[key] ?? key;
+    let msg = messages[key] ?? uiCatalog?.[key] ?? coreLocale[key] ?? key;
     if (params) {
       for (const [k, v] of Object.entries(params)) {
         msg = msg.split(`{{${k}}}`).join(String(v));

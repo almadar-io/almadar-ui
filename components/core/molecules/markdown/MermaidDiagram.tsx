@@ -29,7 +29,9 @@ import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 import { CodeBlock } from './CodeBlock';
 import { mermaidRepairCandidates } from './mermaidSource';
-import { useTheme } from '../../../../providers/ThemeContext';
+import { useScopedMode } from '../../../../providers/ThemeContext';
+import { useCanvasTheme } from '../../../../hooks/useCanvasTheme';
+import { mermaidThemeVariables } from '../../../../lib/mermaidTheme';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
 
@@ -52,20 +54,23 @@ function loadMermaid(): Promise<MermaidApi> {
 
 export const MermaidDiagram = React.memo<MermaidDiagramProps>(
   ({ code, className }) => {
-    const { resolvedMode } = useTheme();
+    const resolvedMode = useScopedMode();
     const { t } = useTranslate();
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [unrenderable, setUnrenderable] = useState(false);
     const reactId = useId();
+    const { theme: canvasTheme, version: themeVersion } = useCanvasTheme(containerRef);
 
     useEffect(() => {
+      if (canvasTheme === null) return;
       let active = true;
       void (async () => {
         const mermaid = await loadMermaid();
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: 'strict',
-          theme: resolvedMode === 'dark' ? 'dark' : 'default',
+          theme: 'base',
+          themeVariables: mermaidThemeVariables(canvasTheme, resolvedMode),
           // Mermaid's default is to append its "Syntax error in text" bomb
           // graphic to <body> on a failed parse, outside any error boundary —
           // the catch below owns failure presentation (source + log), so the
@@ -99,7 +104,7 @@ export const MermaidDiagram = React.memo<MermaidDiagramProps>(
       return () => {
         active = false;
       };
-    }, [code, resolvedMode, reactId]);
+    }, [code, resolvedMode, reactId, canvasTheme, themeVersion]);
 
     // The container stays mounted through the failure state so a corrected
     // `code` prop can re-render into it (the effect writes via its ref).

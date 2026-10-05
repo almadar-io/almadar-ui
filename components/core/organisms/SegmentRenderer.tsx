@@ -8,11 +8,12 @@
  * caller provides `onRenderVisualization` (future extensibility hook).
  *
  * Event Contract:
- * - Delegates to child molecules: UI:SAVE_ACTIVATION, UI:SAVE_REFLECTION, UI:ANSWER_BLOOM
+ * - Delegates to child molecules: UI:{activationSaveEvent|SAVE_ACTIVATION}, UI:{reflectionSaveEvent|SAVE_REFLECTION}, UI:{bloomAnswerEvent|ANSWER_BLOOM}
+ * - Emits (selection / highlights): UI:{askEvent} { selectedText }, UI:{noteEvent} { selectedText }, UI:{annotationEvent} { annotationId }
  * - entityAware: false
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MarkdownContent } from '../molecules/markdown/MarkdownContent';
 import { CodeBlock } from '../molecules/markdown/CodeBlock';
 import { MermaidDiagram } from '../molecules/markdown/MermaidDiagram';
@@ -20,14 +21,34 @@ import { QuizBlock } from '../molecules/QuizBlock';
 import { ActivationBlock } from '../molecules/ActivationBlock';
 import { ConnectionBlock } from '../molecules/ConnectionBlock';
 import { ReflectionBlock } from '../molecules/ReflectionBlock';
-import { BloomQuizBlock } from '../molecules/BloomQuizBlock';
+import { BloomQuizBlock, type BloomLevel } from '../molecules/BloomQuizBlock';
+import { SelectionAnnotator } from '../molecules/markdown/SelectionAnnotator';
+import type { ContentAnnotation } from '../../../lib/content-annotations';
 import { CodeRunnerPanel, type CodeSimulationOutput } from './CodeRunnerPanel';
 import { cn } from '../../../lib/cn';
-import type { A11yProps } from '@almadar/core';
+import type { A11yProps, EventEmit } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
-import type { LessonSegment, InteractiveOrbitalType } from '../../../lib/parseLessonSegments';
+import { parseLessonSegments } from '../../../lib/parseLessonSegments';
 
-export type { LessonSegment, CodeSimulationOutput };
+export type { CodeSimulationOutput };
+
+export type InteractiveOrbitalType =
+  | 'algorithms'
+  | 'math'
+  | 'physics'
+  | 'biology'
+  | 'chemistry'
+  | 'probability';
+
+export type LessonSegment =
+  | { type: 'markdown'; content: string }
+  | { type: 'code'; language: string; content: string; runnable?: boolean }
+  | { type: 'quiz'; question: string; answer: string }
+  | { type: 'activate'; question: string }
+  | { type: 'connect'; content: string }
+  | { type: 'reflect'; prompt: string }
+  | { type: 'bloom'; level: BloomLevel; question: string; answer: string }
+  | { type: 'visualization'; visualizationType: InteractiveOrbitalType; description: string };
 
 /**
  * User progress state passed into SegmentRenderer. Declared here (rather than
@@ -42,8 +63,32 @@ export interface LessonUserProgress {
 }
 
 export interface SegmentRendererProps extends Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
-  /** Parsed lesson segments (see `parseLessonSegments`) */
-  segments: LessonSegment[];
+  /** Parsed lesson segments (see `parseLessonSegments`). Ignored when `lesson` is given. */
+  segments?: LessonSegment[];
+  /** Raw lesson markdown with learning tags; parsed with `parseLessonSegments` and rendered */
+  lesson?: string;
+  /** Event emitted when the activation prompt is saved or skipped (as `UI:<activationSaveEvent>`) */
+  activationSaveEvent?: EventEmit<{ response: string }>;
+  /** Event emitted when a reflection note is saved (as `UI:<reflectionSaveEvent>`) */
+  reflectionSaveEvent?: EventEmit<{ index: number; note: string }>;
+  /** Event emitted on the first reveal of a Bloom question (as `UI:<bloomAnswerEvent>`) */
+  bloomAnswerEvent?: EventEmit<{ index: number; level: BloomLevel }>;
+  /** Event emitted when the reader picks Ask on selected text (as `UI:<askEvent>`) */
+  askEvent?: EventEmit<{ selectedText: string }>;
+  /** Event emitted when the reader picks Note on selected text (as `UI:<noteEvent>`) */
+  noteEvent?: EventEmit<{ selectedText: string }>;
+  /** Ask action label (default: translated) */
+  askLabel?: string;
+  /** Note action label (default: translated) */
+  noteLabel?: string;
+  /**
+   * Passages to highlight. Each `text` is matched exactly against the markdown
+   * segments, first segment whose source contains it, first occurrence inside one
+   * rendered text node (outside code); one that spans formatting is not highlighted.
+   */
+  annotations?: ContentAnnotation[];
+  /** Event emitted when a highlighted passage is clicked (as `UI:<annotationEvent>`) */
+  annotationEvent?: EventEmit<{ annotationId?: string }>;
   /** Additional CSS classes for the root container */
   className?: string;
   /** CSS classes for the outer wrapping div */
@@ -64,7 +109,17 @@ export interface SegmentRendererProps extends Omit<React.AriaAttributes, keyof A
 }
 
 export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
-  segments,
+  segments: segmentsProp,
+  lesson,
+  activationSaveEvent,
+  reflectionSaveEvent,
+  bloomAnswerEvent,
+  askEvent,
+  noteEvent,
+  askLabel,
+  noteLabel,
+  annotations,
+  annotationEvent,
   className,
   containerClassName,
   userProgress,
@@ -72,12 +127,27 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
   onRenderVisualization,
   ...rest
 }) => {
+  const segments = useMemo(
+    () => (lesson !== undefined ? parseLessonSegments(lesson) : (segmentsProp ?? [])),
+    [lesson, segmentsProp],
+  );
+
+  const annotationOwner = useMemo(() => {
+    const owner = new Map<number, ContentAnnotation[]>();
+    for (const annotation of annotations ?? []) {
+      const at = segments.findIndex((s) => s.type === 'markdown' && s.content.includes(annotation.text));
+      if (at >= 0) owner.set(at, [...(owner.get(at) ?? []), annotation]);
+    }
+    return owner;
+  }, [annotations, segments]);
+
   if (segments.length === 0) return null;
 
   let reflectIndex = 0;
   let bloomIndex = 0;
 
   return (
+    <SelectionAnnotator askEvent={askEvent} noteEvent={noteEvent} askLabel={askLabel} noteLabel={noteLabel}>
     <div
       {...domPassthrough(rest)}
       className={cn(
@@ -88,7 +158,14 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
     >
       {segments.map((segment, index) => {
         if (segment.type === 'markdown') {
-          return <MarkdownContent key={`md-${index}`} content={segment.content} />;
+          return (
+            <MarkdownContent
+              key={`md-${index}`}
+              content={segment.content}
+              annotations={annotationOwner.get(index)}
+              annotationEvent={annotationEvent}
+            />
+          );
         }
 
         if (segment.type === 'code') {
@@ -127,6 +204,7 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
               key={`activate-${index}`}
               question={segment.question}
               savedResponse={userProgress?.activationResponse}
+              saveEvent={activationSaveEvent}
             />
           );
         }
@@ -143,6 +221,7 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
               prompt={segment.prompt}
               index={ri}
               savedNote={userProgress?.reflectionNotes?.[ri]}
+              saveEvent={reflectionSaveEvent}
             />
           );
         }
@@ -157,6 +236,7 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
               answer={segment.answer}
               index={bi}
               isAnswered={userProgress?.bloomAnswered?.[bi]}
+              answerEvent={bloomAnswerEvent}
             />
           );
         }
@@ -170,6 +250,7 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
         return null;
       })}
     </div>
+    </SelectionAnnotator>
   );
 };
 

@@ -52,7 +52,7 @@ describe('OrbitalThemeProvider override', () => {
   it('control: no override keeps every declared theme', () => {
     const { getByTestId } = renderTree(undefined);
     expect(getByTestId('layout').getAttribute('data-theme')).toBe('art-deco-light');
-    expect(getByTestId('nested-leaf').closest('[data-theme]')?.getAttribute('data-theme')).toBe('gazette-light');
+    expect(getByTestId('nested-leaf').closest('[data-theme]')?.getAttribute('data-theme')).toBe('gazette-dark');
   });
 
   it('an empty-string override is no override', () => {

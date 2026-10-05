@@ -18,16 +18,34 @@ import { Badge } from '../../core/atoms/Badge';
 import { Button } from '../../core/atoms/Button';
 import { Accordion, type AccordionItem } from '../../core/molecules/Accordion';
 import { JsonTreeEditor } from '../../core/molecules/JsonTreeEditor';
-import { AvlCircuit } from '../molecules/AvlCircuit';
+import { AvlCircuit } from './AvlCircuit';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { effectZoneOf } from '../../../lib/avl-theme';
 import type { TraitTransitionInfo } from '../../../lib/avl-schema-parser';
 import type { AvlStepRequest, AvlTransitionPlayback } from '../../../lib/avl-play';
+import type { AvlAnnotations, AvlNote } from '../../../lib/avl-annotations';
+import { AvlEffectChip } from './AvlEffectChip';
+import { AvlExplain } from './AvlExplain';
 
+/**
+ * One transition explained: from-state, event and to-state, the guard that
+ * must hold, and each effect it runs in order, drawn as circuit boards.
+ *
+ * @capabilities transition explainer, event guard effects walkthrough, state machine step detail
+ */
 export interface AvlTransitionDetailProps {
+  /** Orbital the transition belongs to. */
   orbital: string;
+  /** Trait the transition belongs to. */
   trait: string;
+  /** The transition to explain.
+   * @example {"from":"pending","to":"paid","event":"PAY","guard":[">","@payload.amount",0],"effects":[{"type":"set","args":["@entity.total","@payload.amount"]},{"type":"persist","args":["update","Order","@entity"]}],"index":0}
+   */
   transition: TraitTransitionInfo;
+  /** Author explanations shown in a popover on hover: the transition's event note and per-effect-type notes.
+   * @example {"transitions":{"PAY":{"title":"Paying","body":"The customer pays the order total."}},"effects":{"persist":{"body":"Saves the order."}}}
+   */
+  annotations?: AvlAnnotations;
   /** The latest played run of this transition (see `transitionPlayback`). */
   playback?: AvlTransitionPlayback;
   /** Emits UI:{stepEvent} with an {@link AvlStepRequest} when Step is pressed. */
@@ -38,11 +56,19 @@ export interface AvlTransitionDetailProps {
 const isConfigObject = (v: TraitConfigValue): v is TraitConfigObject =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 
-export const AvlTransitionDetail: React.FC<AvlTransitionDetailProps> = ({ orbital, trait, transition, playback, stepEvent, className }) => {
+const EffectHeader: React.FC<{ type: string; failed: boolean; failedLabel: string; note?: AvlNote }> = ({ type, failed, failedLabel, note }) => (
+  <HStack gap="sm" align="center">
+    <AvlEffectChip effectType={type} size={18} note={note} />
+    <Badge variant="primary" size="sm">{type}</Badge>
+    {failed ? <Badge variant="danger" size="sm">{failedLabel}</Badge> : null}
+  </HStack>
+);
+
+export const AvlTransitionDetail: React.FC<AvlTransitionDetailProps> = ({ orbital, trait, transition, annotations, playback, stepEvent, className }) => {
   const { t } = useTranslate();
   const [payload, setPayload] = useState<TraitConfigObject>({});
 
-  const guard = transition.guard;
+  const guard = transition.guard ?? null;
   const guardRun = playback?.guard;
   const request: AvlStepRequest = { orbital, trait, from: transition.from, event: transition.event, payload };
 
@@ -54,15 +80,12 @@ export const AvlTransitionDetail: React.FC<AvlTransitionDetailProps> = ({ orbita
         return {
           id: `effect-${i}`,
           header: (
-            <HStack gap="sm" align="center">
-              <Badge variant="primary" size="sm">{effect.type}</Badge>
-              {ran?.status === 'failed' ? <Badge variant="danger" size="sm">{t('avl.play.effectFailed')}</Badge> : null}
-            </HStack>
+            <EffectHeader type={effect.type} failed={ran?.status === 'failed'} failedLabel={t('avl.play.effectFailed')} note={annotations?.effects?.[effect.type]} />
           ),
           content: <AvlCircuit expr={expr} trace={ran?.evalTrace} showCode />,
         };
       }),
-    [transition.effects, playback, t],
+    [transition.effects, playback, t, annotations],
   );
   const openEffects = transition.effects
     .map((effect, i) => (effectZoneOf(effect.type) === 'screen' ? null : `effect-${i}`))
@@ -75,7 +98,17 @@ export const AvlTransitionDetail: React.FC<AvlTransitionDetailProps> = ({ orbita
           <HStack gap="md" justify="between" align="center" wrap>
             <HStack gap="sm" align="center">
               <Badge variant="neutral" size="lg">{transition.from}</Badge>
-              <Typography variant="body1" weight="semibold">{transition.event}</Typography>
+              {annotations?.transitions?.[transition.event] ? (
+                <AvlExplain lines={[transition.event]} note={annotations.transitions[transition.event]}>
+                  <Box as="span" tabIndex={0} data-testid="avl-td-event" className="underline decoration-dotted underline-offset-4 cursor-help">
+                    <Typography variant="body1" weight="semibold" as="span">{transition.event}</Typography>
+                  </Box>
+                </AvlExplain>
+              ) : (
+                <Box as="span" data-testid="avl-td-event">
+                  <Typography variant="body1" weight="semibold" as="span">{transition.event}</Typography>
+                </Box>
+              )}
               <Typography variant="h5" color="muted">→</Typography>
               <Badge variant="neutral" size="lg">{transition.to}</Badge>
             </HStack>
@@ -110,6 +143,7 @@ export const AvlTransitionDetail: React.FC<AvlTransitionDetailProps> = ({ orbita
             <VStack gap="xs">
               <HStack gap="sm" align="center">
                 <Typography variant="overline" color="muted">{t('avl.guard')}</Typography>
+                <Typography variant="caption" color="muted" data-testid="avl-td-guard-caption">{t('avl.guardCaption')}</Typography>
                 {guardRun ? (
                   <Badge variant={guardRun.passed ? 'success' : 'danger'} size="sm">
                     {guardRun.passed ? t('avl.play.guardPassed') : t('avl.play.guardFailed')}
@@ -122,7 +156,10 @@ export const AvlTransitionDetail: React.FC<AvlTransitionDetailProps> = ({ orbita
 
           {effectItems.length > 0 ? (
             <VStack gap="xs">
-              <Typography variant="overline" color="muted">{t('avl.effects')} ({effectItems.length})</Typography>
+              <HStack gap="sm" align="center" wrap>
+                <Typography variant="overline" color="muted">{t('avl.effects')} ({effectItems.length})</Typography>
+                <Typography variant="caption" color="muted" data-testid="avl-td-effects-caption">{t('avl.effectsCaption')}</Typography>
+              </HStack>
               <Accordion items={effectItems} multiple defaultOpenItems={openEffects} />
             </VStack>
           ) : null}

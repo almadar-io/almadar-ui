@@ -189,6 +189,8 @@ export interface UseClientTicksOptions {
   navigate?: (path: string, params?: Record<string, string>, crumb?: string) => void;
   navigateBack?: () => void;
   user?: UserContext;
+  /** The host runs the whole program (an extension's worker), ticks included: this view runs none. */
+  hostRunsProgram?: boolean;
 }
 
 export function useClientTicks(
@@ -198,6 +200,7 @@ export function useClientTicks(
   options: UseClientTicksOptions,
 ): void {
   useEffect(() => {
+    if (options.hostRunsProgram === true) return;
     const scheduler = createTickScheduler();
     const traitStatesRef = { current: store.manager.getAllStates() };
     const refreshStates = (): void => { traitStatesRef.current = store.manager.getAllStates(); };
@@ -356,5 +359,5 @@ export function useClientTicks(
     }
 
     return () => scheduler.stopAll();
-  }, [traitBindings, store, traitIndex, options.eventBus, options.slotFlush, options.traitConfigsByName, options.navigate, options.navigateBack, options.user]);
+  }, [traitBindings, store, traitIndex, options.eventBus, options.slotFlush, options.traitConfigsByName, options.navigate, options.navigateBack, options.user, options.hostRunsProgram]);
 }

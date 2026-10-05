@@ -462,6 +462,9 @@ module.exports = {
 
   // Auto-added by audit-tailwind-safelist.ts (2026-10-04)
   'bg-[var(--surface-diagram)]',
+
+  // Auto-added by audit-tailwind-safelist.ts (2026-10-05)
+  'hover:bg-accent/15',
 ],
   theme: {
     fontFamily: {
