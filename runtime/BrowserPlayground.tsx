@@ -20,7 +20,7 @@
  * @packageDocumentation
  */
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { createInProcessTransport, loadLazyPage, type EventTransport, type SchemaLoader } from '@almadar/runtime';
 import type { MessageCatalogs, OrbitalSchema, UserContext } from '@almadar/core';
@@ -102,23 +102,34 @@ export function BrowserPlayground({
   // `runtime.register` is idempotent (`this.orbitals.set(name, ...)`
   // overwrites). React StrictMode in dev calls render twice — both kicks
   // hit the same map keys, no harm.
-  const registrationReady = useMemo(() => {
-    const orbitalNames = schema.orbitals.map((o) => o.name);
-    playgroundLog.debug('register:start', { schema: schema.name, orbitalNames });
+  // `uses lazy` behaviors load once per program and ride along on every registration of it.
+  const lazySchemas = useMemo<Promise<OrbitalSchema[]>>(() => {
     const lazyPages = schema.lazyPages ?? [];
-    const lazy = lazyPages.length > 0 && lazyLoader !== undefined
-      ? Promise.all(lazyPages.map(async (page) => {
-          const loaded = await loadLazyPage(lazyLoader, page, schemaPath);
-          if (!loaded.success) throw new Error(loaded.error);
-          return loaded.data;
-        }))
-      : Promise.resolve([]);
-    return lazy.then((lazySchemas) =>
-      runtime.register(schema, { ...(messages !== undefined ? { messages } : {}), lazy: lazySchemas }),
-    ).then(() => {
-      playgroundLog.debug('register:done', { schema: schema.name, orbitalNames });
-    });
-  }, [runtime, schema, messages, lazyLoader, schemaPath]);
+    if (lazyPages.length === 0 || lazyLoader === undefined) return Promise.resolve([]);
+    return Promise.all(lazyPages.map(async (page) => {
+      const loaded = await loadLazyPage(lazyLoader, page, schemaPath);
+      if (!loaded.success) throw new Error(loaded.error);
+      return loaded.data;
+    }));
+  }, [schema.lazyPages, lazyLoader, schemaPath]);
+
+  const registerProgram = useCallback((program: OrbitalSchema): Promise<void> => {
+    const orbitalNames = program.orbitals.map((o) => o.name);
+    playgroundLog.debug('register:start', { schema: program.name, orbitalNames });
+    return lazySchemas
+      .then((lazy) => runtime.register(program, { ...(messages !== undefined ? { messages } : {}), lazy }))
+      .then(() => {
+        playgroundLog.debug('register:done', { schema: program.name, orbitalNames });
+      });
+  }, [runtime, lazySchemas, messages]);
+
+  // Dispatches wait for the newest registration: the eager one below, or the bridge's own.
+  const latestRegistration = useRef<Promise<void>>(Promise.resolve());
+  const registrationReady = useMemo(() => {
+    const ready = registerProgram(schema);
+    latestRegistration.current = ready;
+    return ready;
+  }, [registerProgram, schema]);
 
   // Deferred unmount cleanup. React StrictMode in dev runs every effect's
   // setup → cleanup → setup at mount to surface effect bugs. A naive
@@ -162,18 +173,22 @@ export function BrowserPlayground({
         // has resolved. tick/sourceTrait (T6) pass through on `request`; the
         // coalesced cross-tab relay is a no-op here — in-process is
         // single-tab by construction, no SSE sink is wired.
-        await registrationReady;
+        await latestRegistration.current;
         return runtime.processOrbitalEvent(orbitalName, request);
       },
       {
-        // The program (lazy behaviors included) is registered above; the bridge only waits for it.
-        onRegister: () => registrationReady,
+        // Registers what the bridge hands over (lazy behaviors included): a bridge that unregistered first gets it back.
+        onRegister: (program) => {
+          const ready = registerProgram(program);
+          latestRegistration.current = ready;
+          return ready;
+        },
         onUnregister: () => {
           runtime.unregisterAll();
         },
       },
     ),
-    [runtime, registrationReady],
+    [runtime, registerProgram, registrationReady],
   );
 
   const viewerLocale = locale ?? schema.locales?.[0];

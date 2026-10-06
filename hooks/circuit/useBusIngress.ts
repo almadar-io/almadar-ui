@@ -208,6 +208,25 @@ export function useBusIngress(
       unsubscribes.push(unsub);
     }
 
+    // An emit that ran outside the kernel (a tick, a lifecycle re-run) goes out on its bare key with its
+    // emitter stamped on `source`, and no kernel fan-out delivered it: route it to the declared listens here.
+    const routedBareEvents = new Set<string>();
+    for (const binding of traitBindings) {
+      for (const listen of binding.trait.listens ?? []) {
+        if (listen.source !== undefined && listen.source.kind !== 'any') routedBareEvents.add(listen.event);
+      }
+    }
+    for (const eventKey of routedBareEvents) {
+      const unsub = eventBus.on(`UI:${eventKey}`, (event) => {
+        if (deliveredHere(event.source) || event.source?.trait === undefined) return;
+        for (const target of collectListenerTargets(traitIndex, event.source, eventKey, event.payload)) {
+          log.debug('listen-bare:fire', { event: eventKey, source: event.source.trait, listener: target.listenerTrait, triggers: target.triggers });
+          dispatch(target.listenerTrait, target.triggers, target.payload, event.source);
+        }
+      });
+      unsubscribes.push(unsub);
+    }
+
     return () => {
       for (const unsub of unsubscribes) unsub();
     };

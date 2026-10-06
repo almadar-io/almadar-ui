@@ -34,7 +34,7 @@ import type {
   TraitConfig,
   UserContext,
 } from '@almadar/core';
-import { collectListenerTargets, LIFECYCLE_EVENTS, TraitMountError, type ClientKernelOutcome, type EventTransport, type PersistenceAdapter, type TraitState } from '@almadar/runtime';
+import { collectListenerTargets, LIFECYCLE_EVENTS, TraitMountError, type ClientKernelOutcome, type EventTransport, type TraitState } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from './useEventBus';
 import { useUser } from '../providers/UserContext';
@@ -45,7 +45,7 @@ import { ALL_SLOTS } from './useUISlots';
 import { registerTrait, unregisterTrait, type TraitDebugInfo } from '../lib/traitRegistry';
 import { bindTraitStateGetter, registerTraitSnapshot } from '../lib/verificationRegistry';
 import { createCircuitVerificationObserver, recordDispatchVerdict } from '../lib/circuitVerificationObserver';
-import { TRAIT_MOUNT_ERROR_TESTID, configReferencesCallsitePayload, traitReferencesCallsitePayload, traitsEmbeddedByEvent, type TraitStateSnapshot } from '@almadar/core';
+import { TRAIT_MOUNT_ERROR_TESTID, configReferencesCallsitePayload, traitReferencesCallsitePayload, traitsEmbeddedByEvent, type TraitStateSnapshot, type PersistenceAdapter } from '@almadar/core';
 import type { useUISlots } from '../providers/UISlotContext';
 import { getTabClientId, useCircuitKernel } from './circuit/useCircuitKernel';
 import { useBusIngress } from './circuit/useBusIngress';
@@ -345,11 +345,18 @@ export function useTraitStateMachine(
   useEffect(() => {
     if (!transport?.subscribe) return;
     return transport.subscribe((emitted, target) => {
-      for (const t of collectListenerTargets(traitIndex, emitted.source, emitted.event, emitted.payload)) {
-        void (target === 'origin'
-          ? progressAndSettle(t.listenerTrait, t.triggers, t.payload)
-          : dispatchAndSettle(t.listenerTrait, t.triggers, t.payload));
+      const listeners = collectListenerTargets(traitIndex, emitted.source, emitted.event, emitted.payload);
+      if (target !== 'origin') {
+        for (const t of listeners) void dispatchAndSettle(t.listenerTrait, t.triggers, t.payload);
+        return;
       }
+      // A call-service `onMessage` event is the calling trait's own (like `success`): it runs
+      // there, and on any trait that listens to it.
+      const caller = emitted.source?.trait;
+      if (caller !== undefined && traitIndex.byName.has(caller) && !listeners.some((t) => t.listenerTrait === caller && t.triggers === emitted.event)) {
+        void progressAndSettle(caller, emitted.event, emitted.payload);
+      }
+      for (const t of listeners) void progressAndSettle(t.listenerTrait, t.triggers, t.payload);
     }, { clientId: getTabClientId() });
   }, [transport, traitIndex, progressAndSettle, dispatchAndSettle]);
 
@@ -363,7 +370,7 @@ export function useTraitStateMachine(
       const composedBefore = new Map(store.callsitePayloads);
       void kernel.foldHostDispatch(request, response).then((outcome) =>
         settleOutcome(traitName, request.event, request.payload, outcome, composedBefore));
-    });
+    }, { clientId: getTabClientId() });
   }, [transport, traitIndex, kernel, store, settleOutcome]);
 
 
@@ -444,6 +451,12 @@ export function useTraitStateMachine(
   // targeted `kernel.dispatch` never touches an unrelated trait.
   // Once per mount: a new page, new route params or a new circuit store is a remount; identity churn is not.
   const mountedRef = useRef<{ key: string; store: typeof store; initialized: Set<string> } | null>(null);
+  // A mount still settling when the host unmounts must not render into the torn-down tree.
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => { aliveRef.current = false; };
+  }, []);
   const mountKey = `${options.mountKey ?? ''}\u0000${JSON.stringify(Object.entries(options.initPayload ?? {}).sort(([a], [b]) => a.localeCompare(b)))}`;
   useEffect(() => {
     const prev = mountedRef.current;
@@ -486,6 +499,7 @@ export function useTraitStateMachine(
         const failed = err instanceof TraitMountError ? err.trait : traits.join(', ');
         const cause = err instanceof TraitMountError ? err.original : err;
         stateLog.warn('mount:failed', { traits, failed, error: message, stack: cause instanceof Error ? cause.stack : undefined });
+        if (!aliveRef.current) return;
         uiSlots.render({
           target: 'main',
           pattern: 'error-state',

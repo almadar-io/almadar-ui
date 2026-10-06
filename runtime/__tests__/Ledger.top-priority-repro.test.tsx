@@ -19,10 +19,10 @@ import {
   createInProcessTransport,
   createIndexStageRunner,
   evaluateOrbitalEvent,
-  MockPersistenceAdapter,
   preprocessSchema,
   StateMachineManager,
 } from '@almadar/runtime';
+import { MockPersistenceAdapter } from '@almadar/db/mock';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { OrbPreview } from '../OrbPreview';
 import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';

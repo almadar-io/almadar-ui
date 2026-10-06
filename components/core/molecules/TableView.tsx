@@ -27,6 +27,7 @@ import { createLogger } from '@almadar/logger';
 
 const tableViewLog = createLogger('almadar:ui:table-view');
 import { getNestedValue } from '../../../lib/getNestedValue';
+import { groupRows } from '../../../lib/groupRows';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useRowActions, useRowActionFire } from '../../../hooks/useRowActions';
 import type { RowActionCondition, RowActionPayload } from '../../../lib/row-action-when';
@@ -215,20 +216,6 @@ const formatCell = (
   if (relationDisplay !== undefined) return relationDisplay;
   return formatValue(value, format, fmt);
 };
-
-function groupData(
-  items: EntityRow[],
-  field: string,
-): { label: string; items: EntityRow[] }[] {
-  const groups = new Map<string, EntityRow[]>();
-  for (const item of items) {
-    const key = String(getNestedValue(item, field) ?? '');
-    const group = groups.get(key);
-    if (group) group.push(item);
-    else groups.set(key, [item]);
-  }
-  return Array.from(groups.entries()).map(([label, groupItems]) => ({ label, items: groupItems }));
-}
 
 /** Ceiling on a measured column floor, so one prose column can't starve the rest. */
 const MAX_MEASURED_COL_CH = 32;
@@ -671,7 +658,7 @@ export function TableView({
   };
 
   const items = Array.from(data);
-  const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
+  const groups = groupBy ? groupRows(items, groupBy) : [{ label: '', items }];
 
   let runningIndex = 0;
   const body = (

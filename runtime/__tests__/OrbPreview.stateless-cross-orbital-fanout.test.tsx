@@ -18,9 +18,9 @@ import {
   createInProcessTransport,
   createIndexStageRunner,
   evaluateOrbitalEvent,
-  InMemoryPersistence,
   StateMachineManager,
 } from '@almadar/runtime';
+import { InMemoryPersistence } from '@almadar/db/mock';
 import { OrbPreview } from '../OrbPreview';
 
 class ResizeObserverStub {

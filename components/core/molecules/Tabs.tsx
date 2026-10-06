@@ -181,6 +181,7 @@ export const Tabs: React.FC<TabsProps> = ({
   };
 
   const activeTabContent = safeItems.find(item => item.id === activeTab)?.content;
+  const rendersPanel = activeTabContent !== undefined && activeTabContent !== null;
 
   // Graceful handling for empty tabs
   if (safeItems.length === 0) {
@@ -245,7 +246,7 @@ export const Tabs: React.FC<TabsProps> = ({
             id={tabId(item.id)}
             role="tab"
             aria-selected={isActive}
-            aria-controls={isActive ? panelId(item.id) : undefined}
+            aria-controls={isActive && rendersPanel ? panelId(item.id) : undefined}
             aria-disabled={isDisabled}
             tabIndex={isActive ? 0 : -1}
             onClick={() => !isDisabled && handleTabChange(item.id, item.event)}
@@ -322,7 +323,7 @@ export const Tabs: React.FC<TabsProps> = ({
         </Box>
       ) : tablist}
 
-      {activeTabContent !== undefined && activeTabContent !== null && (
+      {rendersPanel && (
         <Box
           role="tabpanel"
           id={panelId(activeTab)}

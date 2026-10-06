@@ -178,7 +178,7 @@ const MAIN_ENTRIES = [
   'lib/drawable/three/index.ts',
   'locales/index.ts',
 ];
-const MAIN_EXTERNAL = ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/core', '@almadar/evaluator', '@almadar/core/patterns'];
+const MAIN_EXTERNAL = ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/db', '@almadar/core', '@almadar/evaluator', '@almadar/core/patterns'];
 const DEDUPE_PLUGINS = [dedupeContextPlugin, dedupeThemePlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin];
 
 export default defineConfig([

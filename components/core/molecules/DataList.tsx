@@ -30,6 +30,7 @@ import { createLogger } from '@almadar/logger';
 
 const dataListLog = createLogger('almadar:ui:data-list');
 import { getNestedValue } from '../../../lib/getNestedValue';
+import { groupRows } from '../../../lib/groupRows';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useRowActions, useRowActionPayload, useRowActionFire } from '../../../hooks/useRowActions';
 import type { RowActionCondition, RowActionPayload } from '../../../lib/row-action-when';
@@ -48,7 +49,7 @@ import { Divider } from '../atoms/Divider';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
-import type { DisplayField, UiError } from '../atoms/types';
+import type { DisplayField, DisplayFieldFormat, UiError } from '../atoms/types';
 import { badgeVariantFor, titleFieldOf, valueLabelFor } from '../../../lib/displayField';
 
 // ── Field Definition ─────────────────────────────────────────────────
@@ -115,6 +116,8 @@ export interface DataListProps extends DataDndProps, EmptyStateSlotProps, A11yPr
   variant?: 'default' | 'card' | 'compact' | 'message';
   /** Group items by a field value (renders section headers between groups) */
   groupBy?: string;
+  /** How a `groupBy` value is bucketed and labelled (`date` = one section per day) */
+  groupFormat?: DisplayFieldFormat;
   /** Field name identifying the sender (used with variant: "message") */
   senderField?: string;
   /**
@@ -225,20 +228,6 @@ function formatValue(
   return libFormatValue(value, format, fmt);
 }
 
-function groupData(
-  items: EntityRow[],
-  field: string,
-): { label: string; items: EntityRow[] }[] {
-  const groups = new Map<string, EntityRow[]>();
-  for (const item of items) {
-    const key = String(getNestedValue(item, field) ?? '');
-    const group = groups.get(key);
-    if (group) group.push(item);
-    else groups.set(key, [item]);
-  }
-  return Array.from(groups.entries()).map(([label, groupItems]) => ({ label, items: groupItems }));
-}
-
 // ── Component ────────────────────────────────────────────────────────
 
 // Layer 2 look styles for DataList — applied to the list root and
@@ -263,6 +252,7 @@ export function DataList({
   gap = 'none',
   variant = 'default',
   groupBy,
+  groupFormat,
   senderField,
   senderLabelField,
   currentUser,
@@ -405,9 +395,9 @@ export function DataList({
    * bubble paints `bg-primary`, where a default-foreground ghost button is
    * dark-on-purple and effectively invisible.
    */
-  const renderItemActions = (itemData: EntityRow, onPrimary = false) => {
+  const renderItemActions = (itemData: EntityRow, onPrimary = false, only?: readonly DataListItemAction[]) => {
     if (!itemActions || itemActions.length === 0) return null;
-    const shown = rowActions(itemActions, itemData);
+    const shown = only ?? rowActions(itemActions, itemData);
     if (shown.length === 0) return null;
     const inline = maxInlineActions != null ? shown.slice(0, maxInlineActions) : shown;
     const overflow = maxInlineActions != null ? shown.slice(maxInlineActions) : [];
@@ -512,7 +502,7 @@ export function DataList({
   // ── Message variant ──────────────────────────────────────────────
   if (isMessage) {
     const items = [...data];
-    const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
+    const groups = groupBy ? groupRows(items, groupBy, groupFormat, fmt) : [{ label: '', items }];
     const contentField = (fieldDefs.find((f) => f.variant === 'body') ?? titleField)?.name ?? '';
     // The bubble label. Falls back to the raw sender cell so existing callers
     // are unchanged; with `senderLabelField` an id-keyed thread shows the name.
@@ -632,7 +622,7 @@ export function DataList({
 
   // ── Grouped rendering (non-message variants) ─────────────────────
   const items = [...data];
-  const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
+  const groups = groupBy ? groupRows(items, groupBy, groupFormat, fmt) : [{ label: '', items }];
 
   const idFieldName = dndItemIdField ?? 'id';
   const renderItem = (itemData: EntityRow, index: number, isLast: boolean) => {
@@ -651,7 +641,12 @@ export function DataList({
     // except on its own interactive elements, and actions sit above both.
     if (hasRenderProp) {
       const id = (itemData.id as string) || String(index);
-      const actions = renderItemActions(itemData);
+      const allActions = itemActions ? rowActions(itemActions, itemData) : [];
+      // The row's call to action stays visible on every pointer; the rest are hover/kebab.
+      const primaryActions = allActions.filter((a) => a.variant === 'primary');
+      const otherActions = allActions.filter((a) => a.variant !== 'primary');
+      const primary = primaryActions.length > 0 ? renderItemActions(itemData, false, primaryActions) : null;
+      const actions = otherActions.length > 0 ? renderItemActions(itemData, false, otherActions) : null;
       return wrapDnd(
         <Box key={id} data-entity-row data-entity-id={id} data-row-pending={pending} aria-busy={pending}
           onClick={onOpen} className={cn('relative group/rowactions', onOpen && 'cursor-pointer')}>
@@ -665,6 +660,11 @@ export function DataList({
           <Box className={cn(onOpen && 'relative')}>
             {itemRenderer!(itemData as EntityRow, index)}
           </Box>
+          {primary && (
+            <HStack justify="end" className={cn('relative px-4 pb-3', STRETCHED_ABOVE)}>
+              {primary}
+            </HStack>
+          )}
           {actions && (
             <Box onClick={(e) => e.stopPropagation()} className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
               {/* Fine pointers: hover-revealed inline cluster. */}
@@ -682,7 +682,7 @@ export function DataList({
                       <Icon name="more-horizontal" size="xs" />
                     </Button>
                   }
-                  items={rowActions(itemActions ?? [], itemData).map((action) => ({
+                  items={otherActions.map((action) => ({
                     label: action.label,
                     icon: action.icon,
                     variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),

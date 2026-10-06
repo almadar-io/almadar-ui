@@ -17,10 +17,10 @@ import {
   createInProcessTransport,
   createIndexStageRunner,
   evaluateOrbitalEvent,
-  InMemoryPersistence,
   StateMachineManager,
   type EventTransport,
 } from '@almadar/runtime';
+import { InMemoryPersistence } from '@almadar/db/mock';
 import { OrbPreview } from '../OrbPreview';
 
 function schema(): OrbitalSchema {

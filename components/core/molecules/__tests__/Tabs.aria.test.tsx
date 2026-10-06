@@ -27,6 +27,16 @@ describe('Tabs ARIA (APG tabs)', () => {
     expect(screen.getByRole('tab', { name: 'Overview' }).getAttribute('aria-controls')).toBe(panel.id);
   });
 
+  it('a tab whose panel is not rendered here (event-driven content) controls nothing', () => {
+    render(
+      <EventBusProvider debug={false}>
+        <Tabs items={[{ id: 'overview', label: 'Overview', event: 'SHOW_OVERVIEW' }, { id: 'billing', label: 'Billing', event: 'SHOW_BILLING' }]} />
+      </EventBusProvider>,
+    );
+    expect(screen.queryByRole('tabpanel')).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Overview' }).hasAttribute('aria-controls')).toBe(false);
+  });
+
   it('two Tabs on one page never share ids', () => {
     render(
       <EventBusProvider debug={false}>

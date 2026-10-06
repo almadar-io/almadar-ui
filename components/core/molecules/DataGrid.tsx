@@ -652,9 +652,16 @@ export function DataGrid({
             {/* Card Image */}
             {imageField && (() => {
               const imgUrl = resolveImageUrl(getNestedValue(itemData, imageField));
-              if (!imgUrl) return null;
+              const mediaClass = asRows ? 'w-12 h-12 flex-shrink-0 overflow-hidden rounded-container' : 'w-full aspect-video overflow-hidden rounded-t-container';
+              if (!imgUrl) {
+                return (
+                  <Box data-media-placeholder aria-hidden="true" className={cn(mediaClass, 'flex items-center justify-center bg-muted text-muted-foreground')}>
+                    <Icon name="image" size={asRows ? 'sm' : 'lg'} />
+                  </Box>
+                );
+              }
               return (
-                <Box className={asRows ? 'w-12 h-12 flex-shrink-0 overflow-hidden rounded-container' : 'w-full aspect-video overflow-hidden rounded-t-container'}>
+                <Box className={mediaClass}>
                   <img
                     src={imgUrl}
                     alt={titleDisplay ?? ''}
@@ -687,7 +694,7 @@ export function DataGrid({
                       >
                         <Typography
                           variant={titleField?.variant === 'h3' && !asRows ? 'h3' : 'h4'}
-                          className="font-semibold truncate min-w-0"
+                          className={cn('font-semibold min-w-0', asRows ? 'truncate' : 'line-clamp-2 break-words')}
                         >
                           {titleDisplay}
                         </Typography>

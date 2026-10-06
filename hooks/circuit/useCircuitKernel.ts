@@ -49,11 +49,11 @@ import {
   type EvaluationContextExtensions,
   type EventTransport,
   type IndexedTrait,
-  type PersistenceAdapter,
   type TraitIndex,
   type TransitionObserver,
   UNMOUNT_EVENT,
 } from '@almadar/runtime';
+import type { PersistenceAdapter } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { recordingTransport } from '../../lib/verificationRegistry';
 import { useTranslate, useRenderI18n } from '../useTranslate';

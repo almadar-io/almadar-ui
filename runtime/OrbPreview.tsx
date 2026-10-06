@@ -14,7 +14,7 @@
  * @packageDocumentation
  */
 
-import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { useHref, useInRouterContext } from 'react-router-dom';
 import { useArbitraryClassStyles } from '../providers/ArbitraryClassCompiler';
 import { Box } from '../components/core/atoms/Box';
@@ -37,12 +37,14 @@ import { buildOrbitalsByTrait } from '../lib/orbitalsByTrait';
 import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
 import { EntityBindingContext } from '../providers/EntityBindingContext';
 import { AwaitingSkeletonContext } from '../providers/AwaitingSkeletonContext';
-import { ServerBridgeProvider, useHasServerBridge, useServerBridge, type ServerBridgeTransport, type AccessTokenProvider } from '../providers/ServerBridge';
+import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport, type AccessTokenProvider } from '../providers/ServerBridge';
 import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
 import { NavStackProvider, useNavStack, type NavStackApi, type NavPageDecl } from '../providers/NavStackContext';
 import { prepareSchemaForPreview } from '../lib/prepareSchemaForPreview';
-import { InMemoryPersistence, loadLazyPage, type PersistenceAdapter, type SchemaLoader } from '@almadar/runtime';
+import { loadLazyPage, type SchemaLoader } from '@almadar/runtime';
+import type { PersistenceAdapter } from '@almadar/core';
+import { InMemoryPersistence } from '@almadar/db/mock';
 import { LoadingState } from '../components/core/molecules/LoadingState';
 import { ErrorState } from '../components/core/molecules/ErrorState';
 import { useBrowserStore } from '../hooks/circuit/useBrowserStore';
@@ -206,6 +208,9 @@ function TraitInitializer({ traits, routeParams, mountKey, orbitals, onNavigate,
  */
 const CONTENT_STAGE_WIDTH = 480;
 const NO_ORBITALS: readonly OrbitalDefinition[] = [];
+
+/** True only around the lazy page a preview renders: that page is part of the program its parent already registered. */
+const LazyPageOfRegisteredProgram = createContext(false);
 
 function FitToBox({ children, mode = 'box' }: { children: React.ReactNode; mode?: 'box' | 'content' }) {
   const outerRef = useRef<HTMLDivElement>(null);
@@ -801,7 +806,7 @@ export function OrbPreview({
     | { ok: true; schema: OrbitalSchema; mockData: EntityData }
     | { ok: false; error: string };
 
-  const hasOuterBridge = useHasServerBridge();
+  const isLazyPageOfRegisteredProgram = useContext(LazyPageOfRegisteredProgram);
   const parseResult = useMemo<ParsedResult>(() => {
     let parsed: OrbitalSchema;
     if (typeof schema === 'string') {
@@ -1103,7 +1108,7 @@ export function OrbPreview({
 
   // One registration per program, above the lazy switch: the server runs the lazy behaviors as part of it.
   const withBridge = (node: React.ReactElement): React.ReactElement =>
-    (serverUrl || transport) && !hasOuterBridge ? (
+    (serverUrl || transport) && !isLazyPageOfRegisteredProgram ? (
       <ServerBridgeProvider schema={parseResult.schema} serverUrl={serverUrl} transport={transport} getAccessToken={getAccessToken}>
         {node}
       </ServerBridgeProvider>
@@ -1115,6 +1120,7 @@ export function OrbPreview({
         {lazyLoad.status === 'loading' && <LoadingState />}
         {lazyLoad.status === 'error' && <ErrorState data-testid="lazy-page-error" message={lazyLoad.error} />}
         {lazyLoad.status === 'ready' && (
+          <LazyPageOfRegisteredProgram.Provider value={true}>
           <OrbPreview
             key={lazyRoute.page.orbRef}
             schema={lazyLoad.schema}
@@ -1133,6 +1139,7 @@ export function OrbPreview({
             lazyLoader={lazyLoader}
             onUnmatchedNavigate={handleNavigate}
           />
+          </LazyPageOfRegisteredProgram.Provider>
         )}
       </Box>
     );
