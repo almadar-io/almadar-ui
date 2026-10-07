@@ -239,6 +239,7 @@ export const Avatar: React.FC<AvatarProps> = ({
             statusClasses[status],
             statusSizeClasses[size],
           )}
+          role="img"
           aria-label={t("avatar.status", { status: t(`avatar.status.${status}`) })}
         />
       )}

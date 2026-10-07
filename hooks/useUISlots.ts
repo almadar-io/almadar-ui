@@ -597,6 +597,14 @@ export function useUISlotManager(): UISlotManager {
       setSources((prev) => {
         const slotSources = prev[slot];
         if (!slotSources || !(sourceKey in slotSources)) {
+          // An embedded trait paints only its sidecar (`updateTraitContent`): a null there clears it too.
+          const embedded = traitIndexRef.current.get(sourceTrait);
+          if (embedded !== undefined && embedded.slot === slot) {
+            unindexTrait(sourceTrait);
+            notifyTraitSubscribers(sourceTrait, null);
+            log.info('slot:cleared-embedded', { slot, sourceTrait, lastPatternType: embedded.pattern });
+            return prev;
+          }
           log.debug('slot:clear-noop', { slot, sourceTrait, reason: !slotSources ? 'no-slot' : 'no-source' });
           return prev;
         }

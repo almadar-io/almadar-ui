@@ -249,6 +249,7 @@ export const AnimatedGraphic = React.forwardRef<HTMLDivElement, AnimatedGraphicP
           {resolvedSvg ? (
             <div
               className="w-full h-full [&>svg]:w-full [&>svg]:h-full"
+              aria-hidden="true"
               dangerouslySetInnerHTML={{ __html: resolvedSvg }}
             />
           ) : children}

@@ -34,6 +34,7 @@ import { matchPathAmong } from '../providers/navigation';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
 import { useTraitStateMachine } from '../hooks/useTraitStateMachine';
 import { buildOrbitalsByTrait } from '../lib/orbitalsByTrait';
+import { buildTraitLinkedEntities } from '@almadar/runtime/ui';
 import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
 import { EntityBindingContext } from '../providers/EntityBindingContext';
 import { AwaitingSkeletonContext } from '../providers/AwaitingSkeletonContext';
@@ -393,23 +394,11 @@ function SchemaRunner({ schema, serverUrl, transport, getAccessToken, mockData, 
     [schema, ir],
   );
 
-  // Per-trait linkedEntity map for EntitySchemaProvider. Walks every
-  // page's bindings once. Wrapped in `useMemo` so the resulting `Map`
-  // reference is stable across renders — downstream provider memo
-  // depends on it.
-  const traitLinkedEntitiesMap = useMemo<ReadonlyMap<string, string>>(() => {
-    const map = new Map<string, string>();
-    if (ir) {
-      for (const page of ir.pages.values()) {
-        for (const binding of page.traits) {
-          if (binding.linkedEntity) {
-            map.set(binding.trait.name, binding.linkedEntity);
-          }
-        }
-      }
-    }
-    return map;
-  }, [ir]);
+  // Per-trait linkedEntity map for EntitySchemaProvider — page bindings plus embedded traits (G-UI-086).
+  const traitLinkedEntitiesMap = useMemo<ReadonlyMap<string, string>>(
+    () => (ir ? buildTraitLinkedEntities(ir) : new Map<string, string>()),
+    [ir],
+  );
 
   // `orbitalsByTrait` shaped as a `ReadonlyMap` for EntitySchemaProvider.
   // Same source of truth as the Record above (`orbitalsByTrait`), just

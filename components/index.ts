@@ -3,6 +3,9 @@ export * from './core/molecules/index';
 export * from './core/organisms/index';
 export * from './core/templates/index';
 
+// The drawable render-ui patterns (R3F-free) — part of the pattern import surface.
+export * from './game/patterns';
+
 // Utility re-exports (so clients can use `import { cn } from '@almadar/ui'`)
 export { cn } from '../lib/cn';
 

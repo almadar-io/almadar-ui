@@ -375,7 +375,7 @@ function FieldListEditor({
           <Select
             value={field.type ?? 'string'}
             onChange={(e) =>
-              updateAt(index, { type: e.target.value as EntityField['type'] })
+              updateAt(index, fieldOfType(e.target.value as EntityField['type']))
             }
             options={FIELD_TYPE_OPTIONS}
           />
@@ -562,6 +562,26 @@ function EntityFieldMultiselect({
 }
 
 // -- Top-level question input dispatch ---------------------------------------
+
+
+/** A field change carrying only its new type, narrowed per kind (one object over the whole tag
+ *  union exceeds TypeScript's discriminated-assignability limit). */
+function fieldOfType(type: EntityField['type']): Partial<EntityField> {
+  switch (type) {
+    case 'enum':
+      return { type };
+    case 'relation':
+      return { type };
+    case 'union':
+      return { type };
+    case 'array':
+      return { type };
+    case 'object':
+      return { type };
+    default:
+      return { type };
+  }
+}
 
 export interface KnobFieldProps {
   question: DomainQuestion;
