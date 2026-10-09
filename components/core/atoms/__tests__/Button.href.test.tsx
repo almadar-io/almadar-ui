@@ -119,3 +119,35 @@ describe('Button href outside an app nav stack (plain React / SSR sites)', () =>
     expect(navigate).toHaveBeenCalledWith('/pricing');
   });
 });
+
+describe('Button link with an onClick', () => {
+  it('runs its onClick on activation and still follows the href', () => {
+    const onClick = vi.fn();
+    const navigate = mount(<Button label="Docs" href="/docs" onClick={onClick} />);
+    fireEvent.click(screen.getByRole('link', { name: /docs/i }));
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith('/docs');
+  });
+
+  it('an onClick that prevents the default keeps the viewer where they are', () => {
+    const navigate = mount(<Button label="Docs" href="/docs" onClick={(e) => e.preventDefault()} />);
+    fireEvent.click(screen.getByRole('link', { name: /docs/i }));
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('edge: a modified click runs onClick and leaves opening to the browser', () => {
+    const onClick = vi.fn();
+    const navigate = mount(<Button label="Docs" href="/docs" onClick={onClick} />);
+    fireEvent.click(screen.getByRole('link', { name: /docs/i }), { ctrlKey: true });
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('control: a disabled link runs neither its onClick nor the navigation', () => {
+    const onClick = vi.fn();
+    const navigate = mount(<Button label="Docs" href="/docs" onClick={onClick} disabled />);
+    fireEvent.click(screen.getByRole('link', { name: /docs/i }));
+    expect(onClick).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+});

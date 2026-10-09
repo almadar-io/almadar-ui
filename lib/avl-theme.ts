@@ -119,12 +119,14 @@ const EFFECT_OPERATOR_CATEGORY: Record<EffectOperator, EffectCategory> = {
   'nn/setWeights': 'compute', 'train/loop': 'compute', 'train/step': 'compute', 'train/clipGradients': 'compute',
   'train/clipWeights': 'compute', 'train/sgd': 'compute', 'train/adam': 'compute', 'prob/seed': 'compute', 'prob/condition': 'compute',
   'workspace/write-orbital': 'system', 'workspace/write-file': 'system', 'workspace/write-schema': 'system',
-  'workspace/write-plan': 'system', 'workspace/archive-orbital': 'system', 'lolo/emit-body': 'system',
+  'workspace/write-plan': 'system', 'workspace/archive-orbital': 'system',
+  'behavior/catalog': 'system', 'behavior/describe': 'system', 'behavior/source': 'system',
+  'program/read': 'system', 'program/print': 'system', 'program/eval': 'system', 'program/compose': 'system',
 };
 
 const EFFECT_FAMILY_CATEGORY: Record<EffectOperatorFamily, EffectCategory> = {
-  agent: 'system', os: 'system', browser: 'system', llm: 'system', behavior: 'system', validate: 'control',
-  session: 'system', compose: 'system', trace: 'control', memory: 'data', application: 'system',
+  agent: 'system', os: 'system', browser: 'system', llm: 'system',
+  session: 'system', trace: 'control', memory: 'data', application: 'system',
 };
 
 /** Where in the world an effect lands — drawn as the actuator's target. */
@@ -144,12 +146,14 @@ const EFFECT_OPERATOR_ZONE: Record<EffectOperator, EffectZone> = {
   'nn/setWeights': 'model', 'train/loop': 'model', 'train/step': 'model', 'train/clipGradients': 'model',
   'train/clipWeights': 'model', 'train/sgd': 'model', 'train/adam': 'model', 'prob/seed': 'model', 'prob/condition': 'model',
   'workspace/write-orbital': 'system', 'workspace/write-file': 'system', 'workspace/write-schema': 'system',
-  'workspace/write-plan': 'system', 'workspace/archive-orbital': 'system', 'lolo/emit-body': 'system',
+  'workspace/write-plan': 'system', 'workspace/archive-orbital': 'system',
+  'behavior/catalog': 'system', 'behavior/describe': 'system', 'behavior/source': 'system',
+  'program/read': 'system', 'program/print': 'system', 'program/eval': 'system', 'program/compose': 'system',
 };
 
 const EFFECT_FAMILY_ZONE: Record<EffectOperatorFamily, EffectZone> = {
-  agent: 'system', os: 'system', browser: 'system', llm: 'remote', behavior: 'system', validate: 'flow',
-  session: 'system', compose: 'system', trace: 'flow', memory: 'store', application: 'system',
+  agent: 'system', os: 'system', browser: 'system', llm: 'remote',
+  session: 'system', trace: 'flow', memory: 'store', application: 'system',
 };
 
 function isEffectOperator(head: string): head is EffectOperator {
@@ -178,7 +182,14 @@ export function asEffectOperator(head: string): EffectOperator | null {
 
 // ─── Operators (keyed on @almadar/std's OperatorCategory) ─────
 
+// Categories @almadar/std's canonical-operators.json already ships but its built types do not yet declare (G-UI-091).
+const PENDING_STD_CATEGORY_COLORS = {
+  'std-behavior-value': avlBlend('var(--color-accent)', 40, 'var(--color-success)'),
+  'std-program': avlBlend('var(--color-accent)', 60, 'var(--color-info)'),
+};
+
 export const OPERATOR_CATEGORY_COLORS: Record<OperatorCategory, string> = {
+  ...PENDING_STD_CATEGORY_COLORS,
   'arithmetic': 'var(--color-primary)', 'comparison': 'var(--color-warning)', 'logic': 'var(--color-accent)',
   'control': 'var(--color-error)', 'effect': avlBlend('var(--color-warning)', 60, 'var(--color-error)'), 'collection': 'var(--color-info)',
   'std-math': 'var(--color-primary)', 'std-str': 'var(--color-success)', 'std-array': 'var(--color-info)',

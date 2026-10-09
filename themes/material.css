@@ -200,6 +200,11 @@
     --border-style: solid;
     --border-style-interactive: solid;
     --surface-card-image: linear-gradient(rgba(103, 80, 164, 0.06), rgba(103, 80, 164, 0.06));
+    --surface-edge-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100' preserveAspectRatio='none'><path d='M0 100 Q720 0 1440 100 Z'/></svg>");
+    --surface-edge-height: clamp(16px, 4vw, 56px);
+    --surface-texture-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><path d='M0 .5H40M.5 0V40' stroke='black' stroke-width='1' fill='none'/></svg>");
+    --surface-texture-size: 40px 40px;
+    --surface-accent-image: linear-gradient(180deg, color-mix(in oklab, var(--color-primary) 8%, var(--color-background)), var(--color-background));
     --diagram-stroke-thin: 1;
     --diagram-stroke-normal: 2;
     --diagram-stroke-bold: 3;
@@ -424,6 +429,11 @@
     --border-style: solid;
     --border-style-interactive: solid;
     --surface-card-image: linear-gradient(rgba(208, 188, 255, 0.08), rgba(208, 188, 255, 0.08));
+    --surface-edge-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100' preserveAspectRatio='none'><path d='M0 100 Q720 0 1440 100 Z'/></svg>");
+    --surface-edge-height: clamp(16px, 4vw, 56px);
+    --surface-texture-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><path d='M0 .5H40M.5 0V40' stroke='black' stroke-width='1' fill='none'/></svg>");
+    --surface-texture-size: 40px 40px;
+    --surface-accent-image: linear-gradient(180deg, color-mix(in oklab, var(--color-primary) 8%, var(--color-background)), var(--color-background));
     --diagram-stroke-thin: 1;
     --diagram-stroke-normal: 2;
     --diagram-stroke-bold: 3;

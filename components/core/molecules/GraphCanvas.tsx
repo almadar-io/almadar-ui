@@ -201,6 +201,17 @@ function mulberry32(a: number): () => number {
     };
 }
 
+/** A drawn edge's stroke: weight sets width between the thin and normal strokes and never opacity, so no weight can erase an edge; an unweighted edge stays thin. */
+export function edgeStroke(
+    weight: number | undefined,
+    linkOpacity: number,
+    strokes: Readonly<{ thin: number; normal: number }>,
+): { alpha: number; width: number } {
+    if (weight === undefined) return { alpha: linkOpacity, width: strokes.thin };
+    const w = Math.min(1, Math.max(0, weight));
+    return { alpha: linkOpacity, width: strokes.thin + (strokes.normal - strokes.thin) * w };
+}
+
 /** Order-independent key for a node pair — used to tell drawn edges from similarity-only pairs. */
 function edgeKeyOf(a: string, b: string): string {
     return a < b ? `${a}\0${b}` : `${b}\0${a}`;
@@ -676,17 +687,15 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             const incident = !!hoveredNode && (edge.source === hoveredNode || edge.target === hoveredNode);
             // Links stay faint by default so a dense graph reads as a backdrop; the edges
             // incident to a hovered node light up while the rest drop further back.
-            // Weight (unweighted edges default to w=1, i.e. unchanged) scales opacity and
-            // width linearly so stronger semantic edges read more prominently than weaker ones.
-            const w = edge.weight ?? 1;
-            ctx.globalAlpha = hoveredNode ? (incident ? 1 : 0.05) : linkOpacity * w;
+            const stroke = edgeStroke(edge.weight, linkOpacity, strokes);
+            ctx.globalAlpha = hoveredNode ? (incident ? 1 : 0.05) : stroke.alpha;
             ctx.beginPath();
             ctx.moveTo(source.x!, source.y!);
             ctx.lineTo(target.x!, target.y!);
             const edgeColor = incident ? accentColor : (edge.color ? markColor(theme, edge.color, canvas, "guide") : mutedColor);
             applyLineCharacter(ctx, theme, edgeColor);
             ctx.strokeStyle = edgeColor;
-            ctx.lineWidth = incident ? strokes.bold : Math.max(strokes.thin, strokes.thin * w);
+            ctx.lineWidth = incident ? strokes.bold : stroke.width;
             ctx.stroke();
             ctx.shadowBlur = 0;
 

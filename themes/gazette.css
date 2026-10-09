@@ -193,6 +193,11 @@
     --corner-shape-pill: round;
     --border-style: solid;
     --border-style-interactive: solid;
+    --surface-edge-mask: none;
+    --surface-edge-height: 0px;
+    --surface-texture-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><path d='M0 31.5H32' stroke='black' stroke-width='1'/></svg>");
+    --surface-texture-size: 32px 32px;
+    --surface-accent-image: none;
     --diagram-stroke-thin: 0.75px;
     --diagram-stroke-normal: 1px;
     --diagram-stroke-bold: 2px;
@@ -410,6 +415,11 @@
     --corner-shape-pill: round;
     --border-style: solid;
     --border-style-interactive: solid;
+    --surface-edge-mask: none;
+    --surface-edge-height: 0px;
+    --surface-texture-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><path d='M0 31.5H32' stroke='black' stroke-width='1'/></svg>");
+    --surface-texture-size: 32px 32px;
+    --surface-accent-image: none;
     --diagram-stroke-thin: 0.75px;
     --diagram-stroke-normal: 1px;
     --diagram-stroke-bold: 2px;

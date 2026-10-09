@@ -99,6 +99,7 @@ const SidebarNavItem: React.FC<{
   return (
     <Button
       variant="ghost"
+      href={item.href}
       onClick={item.onClick}
       className={cn(
         'w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-fast group relative',

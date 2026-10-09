@@ -32,6 +32,7 @@ const dataListLog = createLogger('almadar:ui:data-list');
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { groupRows } from '../../../lib/groupRows';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { enterClassName } from '../../../lib/enter';
 import { useRowActions, useRowActionPayload, useRowActionFire } from '../../../hooks/useRowActions';
 import type { RowActionCondition, RowActionPayload } from '../../../lib/row-action-when';
 import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
@@ -72,6 +73,8 @@ export interface DataListItemAction {
   when?: RowActionCondition;
   /** Extra data the action sends, authored as `(fn row { key: <expr> })`; it emits `{ id, row }` plus these keys. */
   payload?: RowActionPayload;
+  /** Page the action opens instead of emitting; `{{row.<field>}}` is replaced with the row's value. */
+  navigatesTo?: string;
 }
 
 export interface DataListSwipeAction {
@@ -104,6 +107,8 @@ export interface DataListProps extends DataDndProps, EmptyStateSlotProps, A11yPr
   columns?: readonly DataListField[];
   /** Per-item action buttons */
   itemActions?: readonly DataListItemAction[];
+  /** Entrance animation each row plays when it mounts, so an item arriving in this list (moved from another) animates in */
+  itemEnter?: 'none' | 'fade' | 'rise' | 'scale' | 'slide';
   /** Max inline action buttons before the rest collapse into a "⋯" overflow menu. Omit = all inline. */
   maxInlineActions?: number;
   /** When set, the whole row is clickable and emits UI:{itemClickEvent} with
@@ -247,6 +252,7 @@ export function DataList({
   fields,
   columns,
   itemActions,
+  itemEnter,
   maxInlineActions,
   itemClickEvent,
   gap = 'none',
@@ -384,9 +390,21 @@ export function DataList({
       && !progressFields.includes(f) && !proseFields.includes(f)
   );
 
+  // navigatesTo-first with early return, as DataGrid does: a navigating action never also emits.
+  const fireAction = (action: DataListItemAction, itemData: EntityRow) => {
+    if (action.navigatesTo) {
+      const url = action.navigatesTo.replace(/\{\{row\.(\w+(?:\.\w+)*)\}\}/g, (_, field: string) =>
+        String(itemData[field] ?? ''),
+      );
+      eventBus.emit('UI:NAVIGATE', { url, row: itemData });
+      return;
+    }
+    fireRowAction(action, itemData, String(itemData.id ?? ""));
+  };
+
   const handleActionClick = (action: DataListItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    fireRowAction(action, itemData, String(itemData.id ?? ""));
+    fireAction(action, itemData);
   };
 
   // Inline up to `maxInlineActions` row actions; collapse the rest into a "⋯" overflow menu.
@@ -437,8 +455,7 @@ export function DataList({
               label: action.label,
               icon: action.icon,
               variant: action.variant === 'danger' ? 'danger' : 'default',
-              onClick: () =>
-                fireRowAction(action, itemData, String(itemData.id ?? "")),
+              onClick: () => fireAction(action, itemData),
             }))}
           />
         )}
@@ -541,6 +558,7 @@ export function DataList({
  aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
                   onClick={itemClickEvent ? handleRowClick(itemData) : undefined}
                   className={cn(
+                    enterClassName(itemEnter),
                     'relative flex px-4 group/rowactions',
                     itemClickEvent && 'cursor-pointer',
                     isSent ? 'justify-end' : 'justify-start',
@@ -649,7 +667,7 @@ export function DataList({
       const actions = otherActions.length > 0 ? renderItemActions(itemData, false, otherActions) : null;
       return wrapDnd(
         <Box key={id} data-entity-row data-entity-id={id} data-row-pending={pending} aria-busy={pending}
-          onClick={onOpen} className={cn('relative group/rowactions', onOpen && 'cursor-pointer')}>
+          onClick={onOpen} className={cn('relative group/rowactions', onOpen && 'cursor-pointer', enterClassName(itemEnter))}>
           {onOpen && (
             <Box
               {...rowOpenControlProps(true)}
@@ -686,8 +704,7 @@ export function DataList({
                     label: action.label,
                     icon: action.icon,
                     variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),
-                    onClick: () =>
-                      fireRowAction(action, itemData, String(itemData.id ?? "")),
+                    onClick: () => fireAction(action, itemData),
                   }))}
                 />
               </Box>
@@ -726,7 +743,7 @@ export function DataList({
 
     return wrapDnd(
       <Box key={id} data-entity-row data-entity-id={id} data-row-pending={pending} aria-busy={pending}
-        onClick={onOpen} className={cn('relative', onOpen && 'cursor-pointer')}>
+        onClick={onOpen} className={cn('relative', onOpen && 'cursor-pointer', enterClassName(itemEnter))}>
         <Box
           className={cn(
             // items-start, not items-center: a multi-line row (title + meta +

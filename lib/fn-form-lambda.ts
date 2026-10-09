@@ -25,6 +25,20 @@ const lambdaLog = createLogger("almadar:ui:fn-form-lambda");
 type PropSchemaNode = PatternPropDef | PatternPropTypeSchema;
 type PropSchemaMap = Record<string, PropSchemaNode | undefined>;
 
+// The minimal lambda context has no entity, locale or messages, so these expressions resolve at render time instead.
+function readsI18n(value: SlotPropValue): boolean {
+  if (typeof value === "string") return value === "@locale" || value.startsWith("@locale.");
+  if (Array.isArray(value)) {
+    const arr = value as ReadonlyArray<SlotPropValue>;
+    return arr[0] === "i18n/t" || arr.some((v) => readsI18n(v));
+  }
+  return false;
+}
+
+function needsRenderContext(value: SlotPropValue): boolean {
+  return readsI18n(value) || ((typeof value === "string" || Array.isArray(value)) && containsEntityBinding(value as SExpr));
+}
+
 function patternPropsSchema(patternType: SlotPropValue): PropSchemaMap | undefined {
   return typeof patternType === "string" ? getPatternDefinition(patternType)?.propsSchema : undefined;
 }
@@ -133,7 +147,7 @@ export function resolveLambdaBindings(
       // (top-down, so the OUTERMOST such node becomes one marker — a
       // bottom-up marker here left marker objects inside parent `if`
       // conditions, always truthy, highlighting every row).
-      if (containsEntityBinding(substituted as SExpr)) {
+      if (needsRenderContext(substituted)) {
         return substituted;
       }
       const evaluated = evaluate(substituted, createMinimalContext()) as RuntimeValue;
@@ -169,7 +183,7 @@ const LazySlotContentRenderer = React.lazy(() =>
  */
 function deferLambdaEntityExprs(value: SlotPropValue): SlotPropValue {
   if (typeof value === "string") {
-    if (containsEntityBinding(value)) {
+    if (needsRenderContext(value)) {
       const marker: RenderBindingMarker = { [RENDER_BINDING_MARKER]: true, expression: value };
       return marker as SlotPropValue;
     }
@@ -178,7 +192,7 @@ function deferLambdaEntityExprs(value: SlotPropValue): SlotPropValue {
   if (Array.isArray(value)) {
     if (isFnFormLambda(value)) return value;
     const arr = value as ReadonlyArray<SlotPropValue>;
-    if (isOperatorCall(arr) && isSExpr(arr) && containsEntityBinding(arr as SExpr)) {
+    if (isOperatorCall(arr) && isSExpr(arr) && needsRenderContext(arr)) {
       const marker: RenderBindingMarker = { [RENDER_BINDING_MARKER]: true, expression: arr as SExpr };
       return marker as SlotPropValue;
     }

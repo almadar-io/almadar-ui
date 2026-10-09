@@ -66,7 +66,7 @@ import { UI_SLOTS } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../hooks/useEventBus';
 import { useTranslate } from '../hooks/useTranslate';
-import { useUISlots, type UISlotManager } from '../providers/UISlotContext';
+import { useUISlots, type UISlotManager, type SlotProps } from '../providers/UISlotContext';
 import type { EventTransport } from '@almadar/runtime';
 import type { KeyCaptureEntry, KeyCaptureTable } from '../hooks/useKeyboardRouter';
 
@@ -272,7 +272,16 @@ function buildMockEffectHandlers(opts: {
         return;
       }
       renderedSlotsRef.current.add(slot);
-      slotsRef.current.render({ target: slot, pattern: pattern.type, props, priority, sourceTrait: pluginId });
+      // The flat authoring form `{ type, …props }` carries its props on the
+      // pattern itself; a trailing props arg wins over them (useSlotFlush's rule).
+      const { type, ...inline } = pattern;
+      slotsRef.current.render({
+        target: slot,
+        pattern: type,
+        props: { ...(inline as SlotProps), ...(props ?? {}) },
+        priority,
+        sourceTrait: pluginId,
+      });
     },
   };
 

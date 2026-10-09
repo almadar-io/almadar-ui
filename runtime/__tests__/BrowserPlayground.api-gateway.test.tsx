@@ -52,7 +52,7 @@ describe('std-api-gateway — Create Route button opens the form', () => {
     const schema = await resolveGateway();
     render(
       <MemoryRouter>
-        <BrowserPlayground schema={schema} viewer={{ id: 'gw-admin', role: 'admin' }} fit />
+        <BrowserPlayground schema={schema} initialPagePath="/routes" viewer={{ id: 'gw-admin', role: 'admin' }} fit />
       </MemoryRouter>,
     );
 
@@ -70,7 +70,7 @@ describe('std-api-gateway — Create Route button opens the form', () => {
     const schema = await resolveGateway();
     render(
       <MemoryRouter>
-        <BrowserPlayground schema={schema} viewer={{ id: 'gw-viewer', role: 'viewer' }} fit />
+        <BrowserPlayground schema={schema} initialPagePath="/routes" viewer={{ id: 'gw-viewer', role: 'viewer' }} fit />
       </MemoryRouter>,
     );
     await screen.findAllByText('Routes', {}, { timeout: 15_000 });

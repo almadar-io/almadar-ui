@@ -1,8 +1,13 @@
 'use client';
 
-import type { A11yProps } from '@almadar/core';
+import type { A11yProps, EventKey } from '@almadar/core';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { cn } from '../../../lib/cn';
+import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion';
+import { useEventBus } from '../../../hooks/useEventBus';
+import { createLogger } from '@almadar/logger';
+
+const revealLog = createLogger('almadar:ui:animated-reveal');
 
 export type RevealTrigger = 'scroll' | 'hover' | 'manual';
 export type RevealAnimation =
@@ -28,6 +33,8 @@ export interface AnimatedRevealProps extends Omit<React.HTMLAttributes<HTMLDivEl
   delay?: number;
   /** How much of the element must be visible before triggering, 0-1 (default: 0.15) */
   threshold?: number;
+  /** scroll trigger: event emitted once (as UI:{revealEvent}) the first time the element scrolls into view; never under reduced motion */
+  revealEvent?: EventKey;
   /** Animate only the first time the element enters the viewport (default: true) */
   once?: boolean;
   /** Manual control: when trigger='manual', set this to true to animate */
@@ -69,6 +76,7 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
       delay = 0,
       threshold = 0.15,
       once = true,
+      revealEvent,
       animate: manualAnimate,
       easing = 'cubic-bezier(0.16, 1, 0.3, 1)',
       children,
@@ -79,6 +87,9 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
     forwardedRef,
   ) => {
     const [isAnimated, setIsAnimated] = useState(false);
+    const reducedMotion = usePrefersReducedMotion();
+    const eventBus = useEventBus();
+    const revealEmitted = useRef(false);
     const internalRef = useRef<HTMLDivElement>(null);
     const hasAnimated = useRef(false);
 
@@ -101,6 +112,12 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
+            // Independent of `once`: the event may arrive on a later render than the first reveal.
+            if (revealEvent && !reducedMotion && !revealEmitted.current) {
+              revealEmitted.current = true;
+              revealLog.debug('reveal event', { event: revealEvent });
+              eventBus.emit(`UI:${revealEvent}`, {});
+            }
             if (once && hasAnimated.current) return;
             hasAnimated.current = true;
             setIsAnimated(true);
@@ -113,7 +130,7 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
 
       observer.observe(el);
       return () => observer.disconnect();
-    }, [trigger, threshold, once]);
+    }, [trigger, threshold, once, revealEvent, reducedMotion, eventBus]);
 
     // Hover trigger
     const handleMouseEnter = trigger === 'hover' ? () => setIsAnimated(true) : undefined;
@@ -126,7 +143,7 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
       }
     }, [trigger, manualAnimate]);
 
-    const active = isAnimated;
+    const active = isAnimated || reducedMotion;
     const currentStyle = active ? animatedStyles[animation] : initialStyles[animation];
 
     return (
@@ -136,7 +153,7 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
         style={{
           ...currentStyle,
           transitionProperty: 'opacity, transform',
-          transitionDuration: `${duration}ms`,
+          transitionDuration: reducedMotion ? '0ms' : `${duration}ms`,
           transitionDelay: `${delay}ms`,
           transitionTimingFunction: easing,
           ...style,

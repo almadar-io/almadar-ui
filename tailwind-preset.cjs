@@ -33,6 +33,9 @@ const { allDesignClasses } = require('./dist/design-classes/index.cjs');
 module.exports = {
   darkMode: 'class',
   safelist: [
+  'proof-marquee', 'proof-marquee-track', 'animate-almadar-marquee',
+  'hover:[animation-play-state:paused]', 'motion-reduce:animate-none', 'motion-reduce:w-auto',
+  'motion-reduce:flex-wrap', 'motion-reduce:justify-center', 'motion-reduce:hidden', 'motion-reduce:[mask-image:none]',
   ...allDesignClasses(),
   // Standard utilities used via dynamic className from .orb schemas
   'contents',
@@ -601,6 +604,10 @@ module.exports = {
         spring: 'var(--easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1))',
       },
       keyframes: {
+        'almadar-marquee': {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
         'modal-in': {
           '0%': {
             opacity: 'var(--motion-modal-enter-from-opacity, 0)',
@@ -733,6 +740,7 @@ module.exports = {
         },
       },
       animation: {
+        'almadar-marquee': 'almadar-marquee 40s linear infinite',
         // Motion-token-driven durations/easings (fall back to legacy
         // --transition-* so themes that haven't migrated keep working).
         'modal-in': 'modal-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
@@ -883,6 +891,58 @@ module.exports = {
           'border-color': 'var(--surface-content-border-color, var(--color-border))',
           'border-radius': 'var(--surface-content-radius, var(--radius-container, var(--radius-md)))',
           'box-shadow': 'var(--surface-content-shadow, var(--elevation-card, var(--shadow-sm)))',
+        },
+        // Logo / wordmark marquee (std-proof `proofLook: marquee`): two copies of the strip scroll as one loop.
+        '.proof-marquee': {
+          overflow: 'hidden',
+          'mask-image': 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)',
+          '-webkit-mask-image': 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)',
+        },
+        '.proof-marquee-track': { display: 'flex', width: 'max-content' },
+        // Full-width band layers (Box edgeTop/edgeBottom/texture/backdrop, std-hero scrim).
+        '.band': { position: 'relative', overflow: 'hidden', isolation: 'isolate' },
+        '.band > :not([data-band-layer])': { position: 'relative', 'z-index': '1' },
+        '.band-backdrop': { position: 'absolute', inset: '0', 'pointer-events': 'none', 'z-index': '0' },
+        '.band-backdrop img': { width: '100%', height: '100%', 'object-fit': 'cover' },
+        '.band-scrim': {
+          position: 'absolute', inset: '0', 'pointer-events': 'none', 'z-index': '0',
+          'background-image': 'var(--surface-scrim, linear-gradient(to top, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.15)))',
+        },
+        '.band-texture': {
+          position: 'absolute', inset: '0', 'pointer-events': 'none', 'z-index': '0',
+          'background-color': 'color-mix(in oklab, var(--color-primary) 14%, transparent)',
+          'mask-image': "var(--surface-texture-mask, url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='3' cy='3' r='1.5'/></svg>\"))",
+          '-webkit-mask-image': "var(--surface-texture-mask, url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='3' cy='3' r='1.5'/></svg>\"))",
+          'mask-size': 'var(--surface-texture-size, 24px 24px)',
+          '-webkit-mask-size': 'var(--surface-texture-size, 24px 24px)',
+          'mask-repeat': 'repeat',
+          '-webkit-mask-repeat': 'repeat',
+        },
+        '.band-edge': {
+          position: 'absolute', left: '0', right: '0', 'pointer-events': 'none', 'z-index': '0',
+          'mask-size': '100% 100%', '-webkit-mask-size': '100% 100%',
+          'mask-repeat': 'no-repeat', '-webkit-mask-repeat': 'no-repeat',
+        },
+        '.band-edge-top': { top: '0' },
+        '.band-edge-bottom': { bottom: '0' },
+        '.band-gradient': {
+          'background-color': 'var(--color-muted)',
+          'background-image': 'var(--surface-accent-image, linear-gradient(180deg, color-mix(in oklab, var(--color-primary) 12%, var(--color-background)), var(--color-background)))',
+          color: 'var(--color-foreground)',
+        },
+        '.band-inverse': {
+          '--band-fg': 'var(--color-foreground)',
+          '--band-bg': 'var(--color-background)',
+          'background-color': 'var(--color-foreground)',
+          color: 'var(--color-background)',
+        },
+        '.band-inverse > :not([data-band-layer])': {
+          '--color-foreground': 'var(--band-bg)',
+          '--color-background': 'var(--band-fg)',
+          '--color-card': 'color-mix(in oklab, var(--band-fg) 90%, var(--band-bg))',
+          '--color-muted': 'color-mix(in oklab, var(--band-fg) 85%, var(--band-bg))',
+          '--color-muted-foreground': 'color-mix(in oklab, var(--band-bg) 72%, var(--band-fg))',
+          '--color-border': 'color-mix(in oklab, var(--band-bg) 22%, var(--band-fg))',
         },
         // Surface material on the page background (app shell / themed root).
         '.surface-page': {

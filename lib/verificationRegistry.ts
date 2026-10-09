@@ -586,6 +586,7 @@ export function bindEventBus(eventBus: {
         eventLog.push({
           type: event.type,
           payload: event.payload,
+          ...(event.source === undefined ? {} : { source: event.source }),
           timestamp: Date.now(),
         });
         if (eventLog.length > MAX_EVENT_LOG) {
@@ -604,6 +605,19 @@ export function bindEventBus(eventBus: {
       eventBus.onAny(verificationRegistryEventLogger);
     }
   }
+}
+
+export function bindConfigApplier(
+  applyConfig: NonNullable<OrbitalVerificationAPI['applyConfig']>,
+): () => void {
+  if (typeof window === "undefined") return () => {};
+  exposeOnWindow();
+  const bridge = window.__orbitalVerification;
+  if (!bridge) return () => {};
+  bridge.applyConfig = applyConfig;
+  return () => {
+    if (bridge.applyConfig === applyConfig) delete bridge.applyConfig;
+  };
 }
 
 /**

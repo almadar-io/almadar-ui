@@ -35,4 +35,18 @@ describe('Image', () => {
     expect(img?.getAttribute('alt')).toBe('');
     expect(img?.getAttribute('role')).toBe('presentation');
   });
+  it('marks the priority image eager and high priority', () => {
+    const { container } = render(<Image src="/a.png" alt="" priority />);
+    const img = container.querySelector('img') as HTMLImageElement;
+    expect(img.getAttribute('loading')).toBe('eager');
+    expect(img.getAttribute('fetchpriority')).toBe('high');
+  });
+
+  it('passes srcSet and sizes and positions the crop', () => {
+    const { container } = render(<Image src="/a.png" alt="" srcSet="/a-640.png 640w, /a-1600.png 1600w" sizes="100vw" position="top" />);
+    const img = container.querySelector('img') as HTMLImageElement;
+    expect(img.getAttribute('srcset')).toContain('640w');
+    expect(img.getAttribute('sizes')).toBe('100vw');
+    expect(img.className).toContain('object-top');
+  });
 });

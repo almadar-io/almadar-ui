@@ -24,7 +24,7 @@ export type ButtonVariant =
 export type ButtonSize = "sm" | "md" | "lg";
 
 /** @accessibleName label */
-export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof A11yProps>, A11yProps {
+export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof A11yProps | 'onClick'>, A11yProps {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   variant?: ButtonVariant;
@@ -55,6 +55,11 @@ export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonE
   disabled?: boolean;
   /** Makes the button a link: `#anchor` scrolls, an absolute URL loads, a path navigates in-app */
   href?: string;
+  /**
+   * Runs on activation, on the button or, with `href`, on the link; calling
+   * `preventDefault()` there keeps a link from following its `href`.
+   */
+  onClick?: (event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => void;
   /** Test identifier for automated tests */
   'data-testid'?: string;
 }
@@ -286,6 +291,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           return;
         }
         emitAction();
+        onClick?.(e);
+        if (e.defaultPrevented) return;
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
         if (!href.startsWith("#") && isInertNavStack(navStack)) return;
         e.preventDefault();

@@ -225,3 +225,6 @@ export {
   type GitHubStatus,
   type GitHubRepo,
 } from './useGitHub';
+
+export { usePageHead } from './usePageHead';
+export type { PageHeadInput } from './usePageHead';

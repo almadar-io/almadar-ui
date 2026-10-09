@@ -65,6 +65,14 @@ export {
     type PluginHostDenyVerb,
 } from './OrbitalPluginHost';
 
+// TraitValueFrame — a trait value (language trio) mounted and rendered inline;
+// hosts supply the mount through TraitValueMountProvider
+export {
+    TraitValueFrame,
+    TraitValueMountProvider,
+    type TraitValueMountHost,
+} from './TraitValueFrame';
+
 // Slot-host manifest — declarative region -> UISlot bindings a host (a
 // plugin host's persona shell, or an embedding app) uses to describe its
 // regions; mirrors UISlotComponent's fallback/mode contract as data.

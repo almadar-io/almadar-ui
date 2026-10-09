@@ -12,6 +12,16 @@ import { render, screen } from '@testing-library/react';
 import { Typography } from '../Typography';
 
 describe('Typography', () => {
+  it.each([{ previous: 'h4', size: 'xl' }, { previous: 'h5', size: 'lg' }] as const)('preserves $previous visual classes at semantic h2/h3 levels', ({ previous, size }) => {
+    const { rerender } = render(<Typography variant={previous} weight="semibold">title</Typography>);
+    const previousClasses = screen.getByText('title').className;
+    for (const heading of ['h2', 'h3'] as const) {
+      rerender(<Typography variant={heading} size={size} weight="semibold">title</Typography>);
+      expect(screen.getByText('title').tagName).toBe(heading.toUpperCase());
+      expect(screen.getByText('title').className.split(' ').sort()).toEqual(previousClasses.split(' ').sort());
+    }
+  });
+
   it('does not add min-w-0 by default', () => {
     render(<Typography>plain text</Typography>);
     expect(screen.getByText('plain text').className).not.toContain('min-w-0');

@@ -123,6 +123,11 @@
     --border-style: solid;
     --border-style-interactive: solid;
     --surface-card-image: linear-gradient(135deg, rgba(109, 63, 214, 0.08) 0%, rgba(236, 72, 153, 0.05) 50%, rgba(194, 65, 12, 0.06) 100%);
+    --surface-edge-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100' preserveAspectRatio='none'><path d='M0 60 C240 100 480 100 720 60 C960 20 1200 20 1440 60 V100 H0 Z'/></svg>");
+    --surface-edge-height: clamp(24px, 6vw, 96px);
+    --surface-texture-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='3' cy='3' r='1.5'/></svg>");
+    --surface-texture-size: 24px 24px;
+    --surface-accent-image: radial-gradient(60% 80% at 15% 20%, color-mix(in oklab, var(--color-primary) 22%, transparent), transparent 70%), radial-gradient(50% 70% at 85% 30%, color-mix(in oklab, var(--color-accent) 20%, transparent), transparent 70%);
     --diagram-stroke-thin: 1px;
     --diagram-stroke-normal: 2px;
     --diagram-stroke-bold: 3px;
@@ -270,6 +275,11 @@
     --border-style: solid;
     --border-style-interactive: solid;
     --surface-card-image: linear-gradient(135deg, rgba(167, 139, 250, 0.14) 0%, rgba(236, 72, 153, 0.08) 50%, rgba(190, 242, 100, 0.10) 100%);
+    --surface-edge-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100' preserveAspectRatio='none'><path d='M0 60 C240 100 480 100 720 60 C960 20 1200 20 1440 60 V100 H0 Z'/></svg>");
+    --surface-edge-height: clamp(24px, 6vw, 96px);
+    --surface-texture-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='3' cy='3' r='1.5'/></svg>");
+    --surface-texture-size: 24px 24px;
+    --surface-accent-image: radial-gradient(60% 80% at 15% 20%, color-mix(in oklab, var(--color-primary) 22%, transparent), transparent 70%), radial-gradient(50% 70% at 85% 30%, color-mix(in oklab, var(--color-accent) 20%, transparent), transparent 70%);
     --diagram-stroke-thin: 1px;
     --diagram-stroke-normal: 2px;
     --diagram-stroke-bold: 3px;

@@ -225,6 +225,12 @@ export const SURFACE_VARS: ReadonlyArray<FlatVarEntry<SurfaceTokens>> = [
   { cssVar: '--surface-page-image', key: 'pageImage' },
   { cssVar: '--surface-page-image-size', key: 'pageImageSize' },
   { cssVar: '--surface-diagram', key: 'diagram' },
+  { cssVar: '--surface-edge-mask', key: 'edgeMask' },
+  { cssVar: '--surface-edge-height', key: 'edgeHeight' },
+  { cssVar: '--surface-texture-mask', key: 'textureMask' },
+  { cssVar: '--surface-texture-size', key: 'textureSize' },
+  { cssVar: '--surface-accent-image', key: 'accentImage' },
+  { cssVar: '--surface-scrim', key: 'scrim' },
 ];
 
 /** Diagram axis — how marks are drawn on every drawing surface. */

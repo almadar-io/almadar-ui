@@ -105,3 +105,26 @@ describe('TableView narrow (stacked) layout — G-CROSS-019', () => {
     expect(screen.getByText('/orders')).toBeTruthy();
   });
 });
+
+describe('TableView ARIA table structure', () => {
+  const rowgroupsHoldRows = (container: HTMLElement) =>
+    [...container.querySelectorAll('[role="rowgroup"]')].every((group) =>
+      group.children.length > 0 && [...group.children].every((child) => child.getAttribute('role') === 'row' && child.querySelector('[role="cell"],[role="columnheader"]') !== null));
+
+  it('an empty, loading or failed table keeps its status inside a row and cell', () => {
+    for (const ui of [
+      <TableView entity={[]} columns={columns} />,
+      <TableView entity={[]} columns={columns} isLoading />,
+      <TableView entity={[]} columns={columns} error={new Error('boom')} />,
+    ]) {
+      const { container, unmount } = renderWithProvider(ui);
+      expect(rowgroupsHoldRows(container)).toBe(true);
+      unmount();
+    }
+  });
+
+  it('control: a populated table already holds rows of cells', () => {
+    const { container } = renderWithProvider(<TableView entity={rows} columns={columns} />);
+    expect(rowgroupsHoldRows(container)).toBe(true);
+  });
+});

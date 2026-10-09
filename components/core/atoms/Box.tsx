@@ -8,6 +8,8 @@
 import React, { useCallback } from "react";
 import type { A11yProps, EventKey, EventPayload, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { bandEdgeLayerStyle, bandPadding } from "../../../lib/bandShapes";
+import type { BandEdge, BandEdgeColor } from "../../../lib/bandShapes";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { useThemeScope } from "../../../providers/ThemeContext";
@@ -30,7 +32,9 @@ export type BoxBg =
   | "muted"
   | "accent"
   | "surface"
-  | "overlay";
+  | "overlay"
+  | "gradient"
+  | "inverse";
 export type BoxRounded = "none" | "sm" | "md" | "lg" | "xl" | "2xl" | "full";
 export type BoxShadow = "none" | "sm" | "md" | "lg" | "xl";
 
@@ -95,6 +99,18 @@ export interface BoxProps extends Omit<React.HTMLAttributes<HTMLDivElement>, key
   tapReveal?: boolean;
   /** Maximum width (CSS value, e.g., "550px", "80rem") */
   maxWidth?: string;
+  /** Shape cut into the top edge of a full-width band; "curve" uses the theme's shape */
+  edgeTop?: BandEdge;
+  /** Shape cut into the bottom edge of a full-width band; "curve" uses the theme's shape */
+  edgeBottom?: BandEdge;
+  /** Surface of the neighbouring band, which fills the cut */
+  edgeColor?: BandEdgeColor;
+  /** Mirror the edge shapes horizontally */
+  edgeFlip?: boolean;
+  /** Lay the theme's texture over the band */
+  texture?: boolean;
+  /** Scene behind the band's content (photo, illustration, pattern); never takes clicks */
+  backdrop?: React.ReactNode;
   /** Children elements */
   children?: React.ReactNode;
 }
@@ -172,6 +188,18 @@ const bgStyles: Record<BoxBg, string> = {
   accent: "bg-accent text-accent-foreground",
   surface: "bg-card",
   overlay: "bg-card/80 backdrop-blur-sm",
+  gradient: "band-gradient",
+  inverse: "band-inverse",
+};
+
+const paddingRem: Record<BoxPadding, string> = {
+  none: "0rem",
+  xs: "0.25rem",
+  sm: "0.5rem",
+  md: "1rem",
+  lg: "1.5rem",
+  xl: "2rem",
+  "2xl": "3rem",
 };
 
 const roundedStyles: Record<BoxRounded, string> = {
@@ -244,6 +272,12 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
       hoverEvent,
       tapReveal = true,
       maxWidth,
+      edgeTop = "none",
+      edgeBottom = "none",
+      edgeColor = "background",
+      edgeFlip = false,
+      texture = false,
+      backdrop,
       onClick,
       onMouseEnter,
       onMouseLeave,
@@ -297,6 +331,26 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
       onPointerDown?.(e);
     }, [hoverEvent, tapReveal, triggerProps, onPointerDown]);
 
+    const isBand = backdrop != null || texture || edgeTop !== "none" || edgeBottom !== "none";
+    // Only a declared padding prop is grown by the edge; padding set through className already clears it.
+    const padKey = paddingY ?? padding;
+    const bandStyle: React.CSSProperties = {};
+    const padTop = padKey ? bandPadding(paddingRem[padKey], edgeTop) : undefined;
+    const padBottom = padKey ? bandPadding(paddingRem[padKey], edgeBottom) : undefined;
+    if (padTop) bandStyle.paddingTop = padTop;
+    if (padBottom) bandStyle.paddingBottom = padBottom;
+    const bandLayers = isBand ? (
+      <>
+        {backdrop != null && <Box as="span" data-band-layer="" aria-hidden className="band-backdrop">{backdrop}</Box>}
+        {texture && <Box as="span" data-band-layer="" aria-hidden className="band-texture" />}
+        {edgeTop !== "none" && (
+          <Box as="span" data-band-layer="" aria-hidden className="band-edge band-edge-top" style={bandEdgeLayerStyle(edgeTop, "top", edgeFlip, edgeColor)} />
+        )}
+        {edgeBottom !== "none" && (
+          <Box as="span" data-band-layer="" aria-hidden className="band-edge band-edge-bottom" style={bandEdgeLayerStyle(edgeBottom, "bottom", edgeFlip, edgeColor)} />
+        )}
+      </>
+    ) : null;
     const isClickable = action || onClick;
     // A declared `action` makes the box a control: keyboard-operable, a button
     // unless the caller gives it its own role / tab stop.
@@ -329,6 +383,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
           overflow && overflowStyles[overflow],
           position && positionStyles[position],
           isClickable && "cursor-pointer",
+          isBand && "band",
           className,
         ),
         onClick: isClickable ? handleClick : undefined,
@@ -336,11 +391,11 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
         onMouseEnter: (hoverEvent || onMouseEnter) ? handleMouseEnter : undefined,
         onMouseLeave: (hoverEvent || onMouseLeave) ? handleMouseLeave : undefined,
         onPointerDown: ((hoverEvent && tapReveal) || onPointerDown) ? handlePointerDown : undefined,
-        style: maxWidth ? { maxWidth, ...rest.style } : rest.style,
+        style: (maxWidth || isBand) ? { ...(maxWidth ? { maxWidth } : {}), ...bandStyle, ...rest.style } : rest.style,
         ...rest,
         'data-theme': dataTheme,
       },
-      children,
+      isBand ? <>{bandLayers}{children}</> : children,
     );
   },
 );

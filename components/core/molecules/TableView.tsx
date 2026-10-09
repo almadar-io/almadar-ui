@@ -684,7 +684,11 @@ export function TableView({
       className={cn('@container/table w-full text-sm', contentSurface.className && cn(contentSurface.className, 'overflow-hidden'), className)}
     >
       {showHeader && header}
-      {dnd.wrapContainer(statusNode ? <Box role="rowgroup">{statusNode}</Box> : body)}
+      {dnd.wrapContainer(statusNode ? (
+        <Box role="rowgroup">
+          <Box role="row"><Box role="cell" className="w-full">{statusNode}</Box></Box>
+        </Box>
+      ) : body)}
       {!statusNode && hasMore && (
         <Box className="flex justify-center py-3">
           <Button variant="ghost" size="sm" onClick={() => setVisibleCount((p) => p + (pageSize || 5))}>

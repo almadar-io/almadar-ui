@@ -6,6 +6,7 @@ import { cn } from '../../../lib/cn';
 export type ImageFit = 'cover' | 'contain' | 'fill' | 'none';
 export type ImageAspect = 'auto' | '1/1' | '4/3' | '3/2' | '16/9' | '21/9';
 export type ImageRounded = 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
+export type ImagePosition = 'center' | 'top' | 'bottom' | 'left' | 'right';
 
 /** @accessibleName alt */
 export interface ImageProps extends A11yProps {
@@ -23,6 +24,14 @@ export interface ImageProps extends A11yProps {
   bordered?: boolean;
   /** "lazy" defers off-screen images; "eager" for above-the-fold media */
   loading?: 'lazy' | 'eager';
+  /** Which part of the image stays visible when it is cropped */
+  position?: ImagePosition;
+  /** Candidate sources at different widths (the HTML `srcset`) */
+  srcSet?: string;
+  /** Rendered widths at each breakpoint (the HTML `sizes`) */
+  sizes?: string;
+  /** The page's main image: load it first */
+  priority?: boolean;
   /** Additional class names */
   className?: string;
 }
@@ -53,6 +62,14 @@ const roundedClass: Record<ImageRounded, string> = {
   full: 'rounded-full',
 };
 
+const positionClass: Record<ImagePosition, string> = {
+  center: 'object-center',
+  top: 'object-top',
+  bottom: 'object-bottom',
+  left: 'object-left',
+  right: 'object-right',
+};
+
 export const Image: React.FC<ImageProps> = ({
   src,
   alt,
@@ -61,6 +78,10 @@ export const Image: React.FC<ImageProps> = ({
   rounded = 'md',
   bordered = false,
   loading = 'lazy',
+  position = 'center',
+  srcSet,
+  sizes,
+  priority = false,
   className,
   ...rest
 }) => {
@@ -68,14 +89,18 @@ export const Image: React.FC<ImageProps> = ({
   return (
     <img
       src={src}
+      srcSet={srcSet}
+      sizes={sizes}
+      fetchPriority={priority ? 'high' : undefined}
       alt={alt}
       {...domPassthrough(rest)}
       role={alt === '' ? 'presentation' : rest.role}
-      loading={loading}
+      loading={priority ? 'eager' : loading}
       decoding="async"
       className={cn(
         'block w-full h-auto max-w-full',
         fitClass[fit],
+        positionClass[position],
         aspectClass[aspect],
         roundedClass[rounded],
         bordered && 'border border-border',

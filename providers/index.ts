@@ -149,6 +149,9 @@ export type {
   GameAudioContextValue,
 } from './GameAudioProvider';
 
+export { PageAccessHost } from './PageAccessHost';
+export type { PageAccessHostProps } from './PageAccessHost';
+
 export {
   NavStackProvider,
   NavStackRouterBridge,

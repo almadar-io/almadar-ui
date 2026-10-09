@@ -241,6 +241,12 @@ These separate artistic styles (Art Deco vs Win95 vs wabi-sabi) along dimensions
 | `surface.contentBorderColor` | `--surface-content-border-color` | `.surface-content` | `--color-border` |
 | `surface.contentRadius` | `--surface-content-radius` | `.surface-content` | `--radius-container` |
 | `surface.contentShadow` | `--surface-content-shadow` | `.surface-content` | `--elevation-card` |
+| `surface.edgeMask` | `--surface-edge-mask` | `.band-edge` (Box `edgeTop`/`edgeBottom: curve`) | `none` (straight edge) |
+| `surface.edgeHeight` | `--surface-edge-height` | `.band-edge` (curve only) | `clamp(24px, 6vw, 96px)` |
+| `surface.textureMask` | `--surface-texture-mask` | `.band-texture` (Box `texture`) | built-in dot tile |
+| `surface.textureSize` | `--surface-texture-size` | `.band-texture` | `24px 24px` |
+| `surface.accentImage` | `--surface-accent-image` | `.band-gradient` (Box `bg: gradient`) | faint primary-tinted linear gradient |
+| `surface.scrim` | `--surface-scrim` | `.band-scrim` (std-hero `surface: image`) | dark bottom-up gradient |
 
 | `motion.shapes.modalEnter` / `modalExit` | `--motion-modal-enter-from-transform` / `--motion-modal-exit-to-transform` | `Modal` (every modal slot: runtime, contained preview, compiled) | `scale(.96) translateY(8px)` / `scale(.92) translateY(16px)` |
 | `motion.shapes.popoverEnter` / `popoverExit` | `--motion-popover-enter-from-transform` / `--motion-popover-exit-to-transform` | `Popover`, menus | `scale(.95)` |

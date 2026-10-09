@@ -40,3 +40,31 @@ describe('convertFnFormLambdasInProps × render-binding markers', () => {
     expect(typeof out.renderItem).toBe('function');
   });
 });
+
+describe('convertFnFormLambdasInProps × i18n inside a lambda', () => {
+  type ChildContent = { props: Record<string, unknown> };
+  const childProps = (props: SlotProps): Record<string, unknown> => {
+    const out = convertFnFormLambdasInProps(props);
+    if (typeof out === 'string' || typeof out.renderItem !== 'function') throw new Error('expected a compiled renderItem');
+    // The compiled lambda returns a Suspense boundary around the slot renderer for the child pattern.
+    const el = (out.renderItem as (item: Record<string, unknown>, index: number) => { props: { children: { props: { content: ChildContent } } } })({ id: 'r1', key: 'todo' }, 0);
+    return el.props.children.props.content.props;
+  };
+
+  it('defers an i18n/t call to render time instead of evaluating it without a locale', () => {
+    const props = childProps({ renderItem: ['fn', 'col', { type: 'typography', content: ['i18n/t', 'site:board.todo'] }] });
+    const content = props.content as RenderBindingMarker;
+    expect(content[RENDER_BINDING_MARKER]).toBe(true);
+    expect(content.expression).toEqual(['i18n/t', 'site:board.todo']);
+  });
+
+  it('defers an expression that reads @locale', () => {
+    const props = childProps({ renderItem: ['fn', 'col', { type: 'typography', content: ['str/concat', '@locale', '-', '@col.key'] }] });
+    expect((props.content as RenderBindingMarker)[RENDER_BINDING_MARKER]).toBe(true);
+  });
+
+  it('control: a plain operator call is still evaluated in place', () => {
+    const props = childProps({ renderItem: ['fn', 'col', { type: 'typography', content: ['str/concat', 'col-', '@col.key'] }] });
+    expect(props.content).toBe('col-todo');
+  });
+});

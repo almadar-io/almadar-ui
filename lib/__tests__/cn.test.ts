@@ -65,9 +65,12 @@ describe('cn merges the preset custom scales', () => {
     // utilities of ours to check.
     for (const plugin of preset.plugins) {
       if (typeof plugin === 'function') continue;
-      plugin.handler({ addUtilities: (u) => names.push(...Object.keys(u).map((k) => k.slice(1))) });
+      // Only single-class keys are utilities a caller writes in className; descendant selectors such as
+      // `.band > :not([data-band-layer])` style a utility's children and never reach cn.
+      plugin.handler({ addUtilities: (u) => names.push(...Object.keys(u).filter((k) => /^\.[\w-]+$/.test(k)).map((k) => k.slice(1))) });
     }
     expect(names).toContain('interactive-border');
+    expect(names).toEqual(expect.arrayContaining(['band', 'band-edge', 'band-gradient', 'band-inverse', 'proof-marquee', 'proof-marquee-track']));
     const stock = 'border border-accent border-dashed text-lg text-primary bg-card bg-none rounded-md shadow-sm font-bold';
     for (const name of names) {
       expect(cn(name, stock).split(' '), name).toContain(name);

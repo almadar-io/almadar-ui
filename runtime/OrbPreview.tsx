@@ -27,8 +27,8 @@ import { UISlotProvider, useUISlots } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
 import { useTranslate } from '../hooks/useTranslate';
-import type { OrbitalSchema, EntityData, ResolvedTraitBinding, OrbitalDefinition, ThemeRef, LazyPage } from '@almadar/core';
-import { buildResolvedTraitConfigs, collectCallsiteCaptureChildren } from '@almadar/core';
+import type { OrbitalSchema, EntityData, ResolvedTraitBinding, OrbitalDefinition, ThemeRef, LazyPage, ViewerAuthority } from '@almadar/core';
+import { buildResolvedTraitConfigs, collectCallsiteCaptureChildren, isHostSignInRoute, localeAlternates } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { matchPathAmong } from '../providers/navigation';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
@@ -41,6 +41,8 @@ import { AwaitingSkeletonContext } from '../providers/AwaitingSkeletonContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport, type AccessTokenProvider } from '../providers/ServerBridge';
 import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
+import { PageAccessHost } from '../providers/PageAccessHost';
+import { usePageHead } from '../hooks/usePageHead';
 import { NavStackProvider, useNavStack, type NavStackApi, type NavPageDecl } from '../providers/NavStackContext';
 import { prepareSchemaForPreview } from '../lib/prepareSchemaForPreview';
 import { loadLazyPage, type SchemaLoader } from '@almadar/runtime';
@@ -640,6 +642,13 @@ export interface OrbPreviewProps {
    */
   user?: UserData | null;
   /**
+   * What the host's auth provider has resolved the viewer to be. An
+   * `access: authenticated` page mounts only on `authenticated`; any other
+   * resolved value sends the viewer to the app's `signIn` route. Omitted → the
+   * host offers no sign-in (`unavailable`).
+   */
+  authority?: ViewerAuthority;
+  /**
    * Sandbox mode, for previews embedded in a host app (e.g. the studio
    * canvas): the event bus stays context-local, navigation stays in memory
    * (the host URL/history are never touched), in-app links are always
@@ -679,6 +688,13 @@ export interface OrbPreviewProps {
    * loaded behavior hands links back to the schema that imported it.
    */
   onUnmatchedNavigate?: (path: string) => void;
+  /**
+   * The host's own sign-in (`HOST_SIGN_IN_ROUTE`, `/login`): navigating there —
+   * including an `access: authenticated` page sending its viewer to
+   * `signIn: "/login"` — calls this with the return path instead of routing to a
+   * page. Omitted → the host offers no sign-in and nothing happens.
+   */
+  onSignIn?: (returnTo?: string) => void;
 }
 
 type LazyLoad =
@@ -760,11 +776,13 @@ export function OrbPreview({
   fit = false,
   onPageChange,
   user = null,
+  authority = 'unavailable',
   localFallbackTimeoutMs,
   themeOverride,
   lazyLoader,
   schemaPath,
   onUnmatchedNavigate,
+  onSignIn,
 }: OrbPreviewProps): React.ReactElement {
   if (serverUrl && transport) {
     throw new Error('OrbPreview accepts serverUrl OR transport, not both');
@@ -997,6 +1015,10 @@ export function OrbPreview({
     // `{...routeParams, ...initPayload}` — orbital-shell-typescript
     // backend/pages.rs + codegen/effect/client.rs). Explicit state wins over
     // the pattern match, same precedence as the compiled merge.
+    if (isHostSignInRoute(path)) {
+      onSignIn?.(navState?.returnTo);
+      return;
+    }
     const route = matchRoute(path);
     if (!route) {
       onUnmatchedNavigate?.(path);
@@ -1022,7 +1044,42 @@ export function OrbPreview({
       setCurrentPage(match.page.name);
       announcePage(path);
     }
-  }, [pages, matchRoute, announcePage, onUnmatchedNavigate]);
+  }, [pages, matchRoute, announcePage, onUnmatchedNavigate, onSignIn]);
+
+  const activePage = useMemo(() => {
+    const activePageName = currentPage ?? pages[0]?.page.name;
+    return pages.find((p) => p.page.name === activePageName)?.page;
+  }, [pages, currentPage]);
+  const handleAccessDenied = useCallback(
+    (signIn: string, returnTo: string) => handleNavigate(signIn, { returnTo }),
+    [handleNavigate],
+  );
+  const site = parsedSchema?.site;
+  const locales = parsedSchema?.locales;
+  const alternates = useMemo(
+    () => (activePage === undefined ? undefined : localeAlternates(pages.map((p) => p.page), activePage, locales ?? [])),
+    [pages, activePage, locales],
+  );
+  const declaresHead =
+    activePage !== undefined &&
+    (activePage.title !== undefined ||
+      activePage.description !== undefined ||
+      activePage.access !== undefined ||
+      activePage.indexing !== undefined);
+  usePageHead(
+    !isolated && !lazyRoute && declaresHead
+      ? {
+          title: activePage.title,
+          description: activePage.description,
+          access: activePage.access,
+          indexing: activePage.indexing,
+          origin: site?.origin,
+          siteName: site?.name,
+          path: concreteCurrentPath,
+          ...(alternates !== undefined ? { alternates, defaultLocale: locales?.[0] } : {}),
+        }
+      : null,
+  );
 
   // Effect-facing navigate: stages the nav-stack crumb (when the navigate
   // effect carried one) before the page switch; the provider's sync consumes
@@ -1121,6 +1178,7 @@ export function OrbPreview({
             getAccessToken={getAccessToken}
             initialPagePath={lazyRoute.path}
             user={user}
+            authority={authority}
             isolated={isolated}
             fit={fit}
             onPageChange={announcePage}
@@ -1163,8 +1221,33 @@ export function OrbPreview({
         <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated} user={user}>
           <NavigateListener onNavigate={handleNavigate} />
           <UISlotProvider>
-            {fit ? (
-              <FitToBox mode={fit === 'content' ? 'content' : 'box'}>
+            <PageAccessHost
+              access={activePage?.access}
+              authority={authority}
+              viewerId={user?.id}
+              signIn={parseResult.schema.site?.signIn}
+              path={concreteCurrentPath}
+              onDenied={handleAccessDenied}
+            >
+              {fit ? (
+                <FitToBox mode={fit === 'content' ? 'content' : 'box'}>
+                  <SchemaRunner
+                    schema={parseResult.schema}
+                    serverUrl={serverUrl}
+                    transport={transport}
+                    getAccessToken={getAccessToken}
+                    mockData={effectiveMockData}
+                    pageName={currentPage}
+                    routeParams={routeParams}
+                    onNavigate={handleNavigateEffect}
+                    onNavigateBack={handleNavigateBack}
+                    onLocalFallback={handleLocalFallback}
+                    localFallbackTimeoutMs={localFallbackTimeoutMs}
+                    persistence={persistence}
+                    themeOverride={themeOverride}
+                  />
+                </FitToBox>
+              ) : (
                 <SchemaRunner
                   schema={parseResult.schema}
                   serverUrl={serverUrl}
@@ -1180,24 +1263,8 @@ export function OrbPreview({
                   persistence={persistence}
                   themeOverride={themeOverride}
                 />
-              </FitToBox>
-            ) : (
-              <SchemaRunner
-                schema={parseResult.schema}
-                serverUrl={serverUrl}
-                transport={transport}
-                getAccessToken={getAccessToken}
-                mockData={effectiveMockData}
-                pageName={currentPage}
-                routeParams={routeParams}
-                onNavigate={handleNavigateEffect}
-                onNavigateBack={handleNavigateBack}
-                onLocalFallback={handleLocalFallback}
-                localFallbackTimeoutMs={localFallbackTimeoutMs}
-                persistence={persistence}
-                themeOverride={themeOverride}
-              />
-            )}
+              )}
+            </PageAccessHost>
           </UISlotProvider>
         </OrbitalProvider>
         </NavStackProvider>

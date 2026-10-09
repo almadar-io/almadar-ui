@@ -136,6 +136,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         variant={item.isActive ? 'primary' : 'ghost'}
         size="sm"
         icon={item.icon}
+        href={item.href}
         onClick={item.onClick}
         disabled={item.disabled}
         aria-current={item.isActive ? 'page' : undefined}
