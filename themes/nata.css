@@ -1,28 +1,28 @@
 /**
  * GENERATED — do not edit by hand.
- * Source: packages/almadar-core/themes/kflow.json
+ * Source: packages/almadar-core/themes/nata.json
  * Regenerate: node tools/almadar-pattern-sync/dist/index.js themes (or `almadar-sync themes`)
  */
 
-[data-theme="kflow-light"] {
-    --color-primary: #4f46e5;
-    --color-primary-hover: #4338ca;
+[data-theme="nata-light"] {
+    --color-primary: #b45309;
+    --color-primary-hover: #92400e;
     --color-primary-foreground: #ffffff;
-    --color-secondary: #eef0fb;
-    --color-secondary-hover: #e0e4f7;
-    --color-secondary-foreground: #1e1b4b;
-    --color-accent: #0e7490;
+    --color-secondary: #fdf3e6;
+    --color-secondary-hover: #fbe6c8;
+    --color-secondary-foreground: #451a03;
+    --color-accent: #0f766e;
     --color-accent-foreground: #ffffff;
-    --color-muted: #eef1f8;
-    --color-muted-foreground: #535d75;
-    --color-background: #f7f8fc;
-    --color-foreground: #0b1026;
+    --color-muted: #f7f1e8;
+    --color-muted-foreground: #6b5a45;
+    --color-background: #fcfaf6;
+    --color-foreground: #1c1408;
     --color-card: #ffffff;
-    --color-card-foreground: #0b1026;
-    --color-surface: #f0f2fa;
-    --color-border: #e1e5f1;
-    --color-input: #c9d0e3;
-    --color-ring: #4f46e5;
+    --color-card-foreground: #1c1408;
+    --color-surface: #f8f2ea;
+    --color-border: #ece2d3;
+    --color-input: #dccdb6;
+    --color-ring: #b45309;
     --color-error: #dc2626;
     --color-error-foreground: #ffffff;
     --color-success: #047857;
@@ -31,7 +31,7 @@
     --color-warning-foreground: #ffffff;
     --color-info: #0369a1;
     --color-info-foreground: #ffffff;
-    --color-scrim: rgba(11, 16, 38, 0.55);
+    --color-scrim: rgba(28, 20, 8, 0.55);
     --color-series-1: #0891b2;
     --color-series-2: #c026d3;
     --color-series-3: #65a30d;
@@ -40,13 +40,13 @@
     --color-series-6: #2563eb;
     --color-series-7: #854d0e;
     --color-series-8: #0d9488;
-    --color-diagram-ink: #0b1026;
-    --color-diagram-label: #475069;
+    --color-diagram-ink: #1c1408;
+    --color-diagram-label: #6b5a45;
     --color-diagram-guide: #94a0bd;
-    --color-diagram-axis: #2f3754;
-    --color-diagram-grid: #e1e5f1;
-    --color-diagram-highlight: #4f46e5;
-    --color-diagram-fill: #e0e7ff;
+    --color-diagram-axis: #3b2e1c;
+    --color-diagram-grid: #ece2d3;
+    --color-diagram-highlight: #6d28d9;
+    --color-diagram-fill: #fde8c8;
     --radius-none: 0px;
     --radius-sm: 8px;
     --radius-md: 12px;
@@ -79,8 +79,8 @@
     --shadow-none: none;
     --shadow-hover: 0 14px 32px -10px rgba(79, 70, 229, 0.32), 0 4px 10px rgba(16, 185, 129, 0.10);
     --shadow-active: 0 2px 6px -2px rgba(79, 70, 229, 0.24);
-    --font-family-display: "Fraunces", "IBM Plex Sans Arabic", Georgia, serif;
-    --font-family-body: "Plus Jakarta Sans", "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-display: "Newsreader", "IBM Plex Sans Arabic", Georgia, serif;
+    --font-family-body: "Source Sans 3", "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-family-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     --heading-weight: 600;
     --heading-transform: none;
@@ -112,17 +112,17 @@
     --elevation-toast: var(--shadow-main);
     --elevation-interactive: var(--shadow-sm);
     --elevation-pressed: var(--shadow-inner);
-    --radius-container: 16px;
-    --radius-interactive: 12px;
+    --radius-container: 8px;
+    --radius-interactive: 6px;
     --radius-pill: 9999px;
     --border-hairline: 1px;
     --border-standard: 1px;
     --border-heavy: 2px;
-    --corner-shape: superellipse(1.5);
-    --corner-shape-pill: superellipse(1.5);
+    --corner-shape: round;
+    --corner-shape-pill: round;
     --border-style: solid;
     --border-style-interactive: solid;
-    --surface-card-image: linear-gradient(135deg, rgba(99, 102, 241, 0.07) 0%, rgba(34, 211, 238, 0.05) 55%, rgba(16, 185, 129, 0.06) 100%);
+    --surface-card-image: linear-gradient(135deg, rgba(180, 83, 9, 0.07) 0%, rgba(15, 118, 110, 0.05) 100%);
     --surface-edge-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100' preserveAspectRatio='none'><path d='M0 60 C240 100 480 100 720 60 C960 20 1200 20 1440 60 V100 H0 Z'/></svg>");
     --surface-edge-height: clamp(24px, 6vw, 96px);
     --surface-texture-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='3' cy='3' r='1.5'/></svg>");
@@ -156,25 +156,25 @@
     --scene-fog: 0.05;
 }
 
-[data-theme="kflow-dark"] {
-    --color-primary: #818cf8;
-    --color-primary-hover: #a5b4fc;
-    --color-primary-foreground: #0b1026;
-    --color-secondary: #161d40;
-    --color-secondary-hover: #1f2852;
-    --color-secondary-foreground: #e6e9f5;
-    --color-accent: #22d3ee;
-    --color-accent-foreground: #04131a;
-    --color-muted: #141b3a;
-    --color-muted-foreground: #9aa4c0;
-    --color-background: #070b1a;
-    --color-foreground: #e6e9f5;
-    --color-card: #0e1430;
-    --color-card-foreground: #e6e9f5;
-    --color-surface: #121a3a;
-    --color-border: #222b52;
-    --color-input: #2e3866;
-    --color-ring: #818cf8;
+[data-theme="nata-dark"] {
+    --color-primary: #fbbf24;
+    --color-primary-hover: #fcd34d;
+    --color-primary-foreground: #1c1408;
+    --color-secondary: #2a1f0e;
+    --color-secondary-hover: #3a2b14;
+    --color-secondary-foreground: #fdf3e6;
+    --color-accent: #2dd4bf;
+    --color-accent-foreground: #04201c;
+    --color-muted: #221a0d;
+    --color-muted-foreground: #c4b49b;
+    --color-background: #110c05;
+    --color-foreground: #f8f1e5;
+    --color-card: #1a140a;
+    --color-card-foreground: #f8f1e5;
+    --color-surface: #201810;
+    --color-border: #3a2e1c;
+    --color-input: #4d3d25;
+    --color-ring: #fbbf24;
     --color-error: #f87171;
     --color-error-foreground: #000000;
     --color-success: #34d399;
@@ -192,13 +192,13 @@
     --color-series-6: #60a5fa;
     --color-series-7: #fef08a;
     --color-series-8: #2dd4bf;
-    --color-diagram-ink: #e6e9f5;
-    --color-diagram-label: #9aa4c0;
+    --color-diagram-ink: #f8f1e5;
+    --color-diagram-label: #c4b49b;
     --color-diagram-guide: #5d6890;
-    --color-diagram-axis: #c7cde3;
-    --color-diagram-grid: #222b52;
-    --color-diagram-highlight: #818cf8;
-    --color-diagram-fill: #232c63;
+    --color-diagram-axis: #e6d9c4;
+    --color-diagram-grid: #3a2e1c;
+    --color-diagram-highlight: #c4b5fd;
+    --color-diagram-fill: #4a3714;
     --radius-none: 0px;
     --radius-sm: 8px;
     --radius-md: 12px;
@@ -231,8 +231,8 @@
     --shadow-none: none;
     --shadow-hover: 0 14px 36px -10px rgba(99, 102, 241, 0.35);
     --shadow-active: 0 2px 6px -2px rgba(0, 0, 0, 0.5);
-    --font-family-display: "Fraunces", "IBM Plex Sans Arabic", Georgia, serif;
-    --font-family-body: "Plus Jakarta Sans", "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-display: "Newsreader", "IBM Plex Sans Arabic", Georgia, serif;
+    --font-family-body: "Source Sans 3", "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-family-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     --heading-weight: 600;
     --heading-transform: none;
@@ -264,14 +264,14 @@
     --elevation-toast: var(--shadow-main);
     --elevation-interactive: var(--shadow-sm);
     --elevation-pressed: var(--shadow-inner);
-    --radius-container: 16px;
-    --radius-interactive: 12px;
+    --radius-container: 8px;
+    --radius-interactive: 6px;
     --radius-pill: 9999px;
     --border-hairline: 1px;
     --border-standard: 1px;
     --border-heavy: 2px;
-    --corner-shape: superellipse(1.5);
-    --corner-shape-pill: superellipse(1.5);
+    --corner-shape: round;
+    --corner-shape-pill: round;
     --border-style: solid;
     --border-style-interactive: solid;
     --surface-card-image: linear-gradient(135deg, rgba(129, 140, 248, 0.10) 0%, rgba(34, 211, 238, 0.06) 55%, rgba(52, 211, 153, 0.07) 100%);

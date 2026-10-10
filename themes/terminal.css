@@ -31,11 +31,11 @@
     --color-placeholder: #8c8fa1;
     --color-error: #d20f39;
     --color-error-foreground: #ffffff;
-    --color-success: #40a02b;
+    --color-success: #2d7a1f;
     --color-success-foreground: #ffffff;
     --color-warning: #df8e1d;
     --color-warning-foreground: #1e1e2e;
-    --color-info: #04a5e5;
+    --color-info: #0369a1;
     --color-info-foreground: #ffffff;
     --color-scrim: rgba(17, 17, 27, 0.5);
     --color-series-1: #dc8a78;
@@ -47,7 +47,7 @@
     --color-series-7: #7287fd;
     --color-series-8: #06d6a0;
     --color-diagram-ink: #1e66f5;
-    --color-diagram-label: #4c4f69;
+    --color-diagram-label: #bac2de;
     --color-diagram-guide: #9ca0b0;
     --color-diagram-axis: #6c6f85;
     --color-diagram-grid: #dce0e8;
