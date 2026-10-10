@@ -223,7 +223,7 @@ describe('DrawerSlot', () => {
       );
 
       const drawer = screen.getByRole('dialog');
-      expect(drawer.className).toContain('w-[480px]');
+      expect(drawer.className).toContain('sm:max-w-lg');
     });
   });
 });

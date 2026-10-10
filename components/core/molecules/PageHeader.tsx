@@ -1,4 +1,5 @@
 'use client';
+import { actionTestId } from '@almadar/core';
 import React from "react";
 import type { EventKey, EventEmit, A11yProps, SkeletonSpec } from "@almadar/core";
 import { cn } from "../../../lib/cn";
@@ -175,7 +176,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               <Button
                 key={`action-${idx}`}
                 data-event={action.event}
-                data-testid={action.event ? `action-${action.event}` : undefined}
+                data-testid={action.event ? actionTestId(action.event) : undefined}
                 variant={action.variant || (idx === 0 ? "primary" : "secondary")}
                 leftIcon={action.icon || undefined}
                 onClick={createActionHandler(action)}

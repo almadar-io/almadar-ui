@@ -21,7 +21,7 @@ import { resolveRenderBindingMarkers, isEvaluatorResolvedData } from "../../../l
 import { TraitScopeProvider, useTraitScope } from "../../../providers/TraitScopeProvider";
 import { RenderSlotProvider } from "../../../providers/RenderSlotContext";
 import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, ResolvedEntity } from "@almadar/core";
-import { isRenderBindingMarker, isTraitValue, PATTERN_PROP_TYPE_ERROR_TESTID, type TraitValue } from "@almadar/core";
+import { isBehaviorRefValue, isRenderBindingMarker, isTraitValue, PATTERN_PROP_TYPE_ERROR_TESTID, type BehaviorRef, type TraitValue } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/core/patterns";
 import { SELF_OVERLAY_PATTERN_TYPES } from "@almadar/core/patterns";
 import {
@@ -72,6 +72,7 @@ import { TraitFrame } from "../atoms/TraitFrame";
 // A trait VALUE child mounts through the plugin host's runtime, which imports
 // this renderer back — lazy, for the same module-cycle reason as TraitFrame's.
 const LazyTraitValueFrame = React.lazy(() => import("../../../runtime/TraitValueFrame"));
+const LazyBehaviorValueFrame = React.lazy(() => import("../../../runtime/BehaviorValueFrame"));
 
 /**
  * `^@trait.<PascalName>$` — single-segment binding only. Multi-segment
@@ -646,13 +647,15 @@ function UISlotComponent(props: UISlotComponentProps): React.ReactElement | null
   const pendingScope = usePendingScopeValue();
   // Every subtree knows which slot hosts it (RenderSlotContext default is
   // 'main'; slot-sensitive components like DetailPanel gate on it).
-  return (
+  const inner = (
     <RenderSlotProvider slot={props.slot}>
       <PendingScopeContext.Provider value={pendingScope}>
         <UISlotComponentInner {...props} />
       </PendingScopeContext.Provider>
     </RenderSlotProvider>
   );
+  // The system slot holds invisible components: mounted, never seen (as on the runtime path).
+  return props.slot === "system" ? <Box className="sr-only">{inner}</Box> : inner;
 }
 
 function UISlotComponentInner({
@@ -1454,9 +1457,9 @@ function renderPatternChildren(
   // std-embedded-dashboard with invisible Date Range / Export buttons.
   // Normalize to an array before walking — per
   // `[feedback_compiled_vs_runtime_paths]`, both paths must agree.
-  const childrenArray: Array<{ type: string; props?: SlotProps; _id?: string } | string | TraitValue> = Array.isArray(children)
+  const childrenArray: Array<{ type: string; props?: SlotProps; _id?: string } | string | TraitValue | BehaviorRef> = Array.isArray(children)
     ? children
-    : typeof children === 'string' || (typeof children === 'object' && ('type' in children || isTraitValue(children)))
+    : typeof children === 'string' || (typeof children === 'object' && ('type' in children || isTraitValue(children) || isBehaviorRefValue(children)))
       ? [children]
       : [];
 
@@ -1488,6 +1491,14 @@ function renderPatternChildren(
       return (
         <React.Suspense key={`${parentId}-${index}-value:${child.behavior}.${child.trait}`} fallback={null}>
           <LazyTraitValueFrame value={child} />
+        </React.Suspense>
+      );
+    }
+    // A whole behavior VALUE runs here as an isolated program.
+    if (isBehaviorRefValue(child)) {
+      return (
+        <React.Suspense key={`${parentId}-${index}-behavior:${child.behavior}`} fallback={null}>
+          <LazyBehaviorValueFrame value={child} />
         </React.Suspense>
       );
     }
@@ -1677,6 +1688,13 @@ export function renderPatternValue(value: SlotPropValue): React.ReactNode {
     return (
       <React.Suspense fallback={null}>
         <LazyTraitValueFrame value={value} />
+      </React.Suspense>
+    );
+  }
+  if (isBehaviorRefValue(value)) {
+    return (
+      <React.Suspense fallback={null}>
+        <LazyBehaviorValueFrame value={value} />
       </React.Suspense>
     );
   }

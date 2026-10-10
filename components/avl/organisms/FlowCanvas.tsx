@@ -151,12 +151,16 @@ export interface FlowCanvasProps {
   systemDependencies?: SystemDependencies;
   /** Trait level: which lens (and trait filter) shows — pass with `onTraitViewChange` to keep it across remounts. */
   traitView?: TraitView;
+  /** @notification */
   onTraitViewChange?: (view: TraitView) => void;
   /** Dependencies lens: emits UI:{openBehaviorEvent} with { name } to open a selected behavior's source. */
   openBehaviorEvent?: EventEmit<{ name: string }>;
   /** With `initialLevel="trait-expanded"`: played steps lighting each trait card's state machine. */
   scene?: { steps: readonly AvlPlayStep[]; cursor: number };
-  /** Fired when the focused orbital, the scope, or the focused card's state changes. */
+  /**
+   * Fired when the focused orbital, the scope, or the focused card's state changes.
+   * @notification
+   */
   onFocusChange?: (focus: CanvasFocusChange) => void;
   /** The orbital cards open on (local view) — or, with `initialLevel="trait-expanded"`, the orbital whose traits are shown. */
   initialOrbital?: string;
@@ -192,13 +196,17 @@ export interface FlowCanvasProps {
    * name on enter and `null` on leave. Reserved for the upcoming trace
    * tooltip: consumers will use it to anchor a popover that shows the
    * subagent's live trace + reasoning for the hovered orbital.
+   * @notification
    */
   onOrbitalHover?: (orbitalName: string | null) => void;
   /** Layout hint: 'pipeline' renders nodes left-to-right, 'grid' (default) uses sqrt-based grid. */
   layoutHint?: 'pipeline' | 'grid';
   /** Called when the user clicks a node in overview level (for composition hints). */
   onNodeSelect?: (orbitalName: string) => void;
-  /** @deprecated Use onNodeClick instead. Kept for AvlCosmicZoom compat. */
+  /**
+   * @deprecated Use onNodeClick instead. Kept for AvlCosmicZoom compat.
+   * @notification
+   */
   onZoomChange?: (level: string, context: Record<string, string | undefined>) => void;
   /** @deprecated Not used in V3. */
   focusTarget?: { type: string; name: string };
@@ -234,6 +242,7 @@ export interface FlowCanvasProps {
   /**
    * Fired on node drag-stop and card resize with the full {id → placement}
    * map of the current node set, so the consumer can persist the arrangement.
+   * @notification
    */
   onPositionsChange?: (positions: Record<string, CanvasNodePlacement>) => void;
   /**
@@ -241,6 +250,7 @@ export interface FlowCanvasProps {
    * escape, clear-on-level-change, and pattern-selection sync all route
    * through this. Lets a consumer mirror selection into a persistent
    * properties panel rendered outside the canvas (see `externalInspector`).
+   * @notification
    */
   onSelectedNodeChange?: (node: PreviewNodeData | null) => void;
   /**
@@ -251,6 +261,7 @@ export interface FlowCanvasProps {
    * `externalInspector`) has no other way to learn which pattern the user
    * picked — pass this straight through to `OrbInspector`'s `selectedPattern`
    * prop to keep Design-tab prop editing working outside the canvas.
+   * @notification
    */
   onSelectedPatternChange?: (pattern: SelectedPattern | null) => void;
   /**

@@ -134,6 +134,12 @@ export interface DashboardLayoutProps {
    *  or any other top-bar action by appending entries. Empty array (default)
    *  renders nothing. */
   topBarActions?: TopBarAction[];
+  /** Account-menu entries listed above Sign out (Settings, a profile page), each
+   *  `{icon, label, event?, navigatesTo?, variant?}` like `topBarActions`. */
+  userMenuItems?: TopBarAction[];
+  /** Content fills the area edge to edge — no padding, no max width, full height
+   *  (workspaces, canvases, maps). */
+  fullBleed?: boolean;
   /** Notification list. Pass an empty array to show the bell with no
    *  badge; omit / pass null to hide the bell entirely. */
   notifications?: NotificationItem[] | null;
@@ -182,6 +188,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   searchEvent,
   onSearchSubmit,
   topBarActions = [],
+  userMenuItems = [],
+  fullBleed = false,
   notifications,
   notificationClickEvent,
   onNotificationClick,
@@ -637,7 +645,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         <AlmadarIcon name="chevron-down" className="hidden @sm/dashboard:block h-4 w-4 text-muted-foreground" />
                       </Button>
                     }
-                    items={[{ id: 'sign-out', label: t('auth.signOut'), icon: 'log-out', variant: 'danger', onClick: () => handleSignOut?.() }]}
+                    items={[
+                      ...userMenuItems.map((action, idx) => ({
+                        id: `${action.event ?? action.navigatesTo ?? 'entry'}-${idx}`,
+                        label: action.label ?? '',
+                        icon: action.icon,
+                        variant: action.variant === 'danger' ? 'danger' as const : undefined,
+                        onClick: () => handleTopBarActionClick(action),
+                      })),
+                      { id: 'sign-out', label: t('auth.signOut'), icon: 'log-out', variant: 'danger', onClick: () => handleSignOut?.() },
+                    ]}
                   />
                 )}
               </HStack>
@@ -666,13 +683,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           id="main-content"
           tabIndex={-1}
           className={cn(
-            "flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6 focus:outline-none",
+            fullBleed ? "flex-1 min-h-0 flex flex-col focus:outline-none" : "flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6 focus:outline-none",
             // Reserve space for the fixed bottom nav so content isn't
             // hidden under the tab bar.
             showBottomNav && "pb-[calc(5rem+env(safe-area-inset-bottom))]",
           )}
         >
-          <PageTransition locationKey={activePath} className="mx-auto w-full max-w-[1440px]">{children}</PageTransition>
+          <PageTransition locationKey={activePath} className={fullBleed ? "w-full flex-1 min-h-0" : "mx-auto w-full max-w-[1440px]"}>{children}</PageTransition>
         </Box>
 
         {/* Bottom nav — only in bottomnav mode. Fixed to viewport bottom

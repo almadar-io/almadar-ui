@@ -71,3 +71,23 @@ describe('drawing surfaces carry no hardcoded colors', () => {
     expect(HEX.test(stripComments("// default '#ff0000'\nctx.fillStyle = theme.ground;"))).toBe(false);
   });
 });
+
+describe('patterns drawn natively by the Rust renderer stay theme-tone only (owner 2026-10-10)', () => {
+  const COLOR_LITERAL = /['"`]#[0-9a-fA-F]{3,8}\b|['"](?:white|black)['"]|rgba?\(/;
+  const svgDir = path.join(ROOT, 'components/core/atoms/svg');
+  const files = [
+    ...fs.readdirSync(svgDir).filter((f) => f.endsWith('.tsx')).map((f) => path.join(svgDir, f)),
+    path.join(ROOT, 'components/core/molecules/OrbitalVisualization.tsx'),
+  ];
+
+  it('no svg-* atom or the orbital visualization paints a colour literal', () => {
+    const offenders = files.filter((f) => COLOR_LITERAL.test(stripComments(fs.readFileSync(f, 'utf8'))));
+    expect(offenders.map((f) => path.relative(ROOT, f))).toEqual([]);
+  });
+
+  it('control: the scan sees the svg atoms and would catch a literal', () => {
+    expect(files.length).toBeGreaterThan(10);
+    expect(COLOR_LITERAL.test('fill="white"')).toBe(true);
+    expect(COLOR_LITERAL.test('fill="var(--surface-diagram)"')).toBe(false);
+  });
+});

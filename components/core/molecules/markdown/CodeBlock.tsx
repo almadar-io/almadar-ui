@@ -670,11 +670,13 @@ export interface CodeBlockProps extends A11yProps {
   /**
    * Declarative bus emit fired when this editor gains focus.
    * @tier presentation
+   * @notification
    */
   onEditorFocus?: EventEmit<{ editorId: string }>;
   /**
    * Declarative bus emit fired when this editor loses focus.
    * @tier presentation
+   * @notification
    */
   onEditorBlur?: EventEmit<{ editorId: string }>;
   /**

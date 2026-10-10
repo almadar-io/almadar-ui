@@ -23,6 +23,7 @@
 import React from 'react';
 import { interpolateValue, createContextFromBindings } from '@almadar/runtime';
 import { isRenderBindingMarker, type EntityRow, type TraitConfig } from '@almadar/core';
+import { getComponentForPattern } from '@almadar/core/patterns';
 import type { SlotProps, SlotPropValue } from '../providers/UISlotContext';
 import type { RenderI18n } from '../hooks/useTranslate';
 
@@ -115,12 +116,23 @@ function cachedContainer(
 // markers they carry.
 const resolvedMarkerFree = new WeakSet<object>();
 
-// Direct outputs of marker evaluation are evaluator-produced DATA, not
-// authored descriptors — `@trait.X` composition refs are authored literals
-// in the raw tree and never appear here. The trait-ref substitution scan
-// (`subtreeHasTraitRef` in UISlotRenderer) skips branded data containers
-// instead of re-walking e.g. a 400-point canvas array every commit.
+// Direct outputs of marker evaluation are evaluator-produced DATA — unless
+// they are render nodes (an `if`/`array/map` choosing authored patterns),
+// which can carry a config-forwarded `@trait.X` child. The trait-ref
+// substitution scan (`subtreeHasTraitRef` in UISlotRenderer) skips branded
+// data containers instead of re-walking e.g. a 400-point canvas array every commit.
 const evaluatorResolvedData = new WeakSet<object>();
+
+/** A registered pattern node, as `isPatternConfig` in UISlotRenderer reads one. */
+function isPatternNode(value: SlotPropValue): boolean {
+  if (value === null || typeof value !== 'object' || Array.isArray(value) || React.isValidElement(value) || value instanceof Date) return false;
+  const type = (value as Record<string, SlotPropValue>).type;
+  return typeof type === 'string' && getComponentForPattern(type) !== null;
+}
+
+function holdsRenderNode(value: SlotPropValue): boolean {
+  return isPatternNode(value) || (Array.isArray(value) && value.some((item) => isPatternNode(item as SlotPropValue)));
+}
 
 /** True for containers produced by marker evaluation (runtime data). */
 export function isEvaluatorResolvedData(value: object): boolean {
@@ -170,7 +182,7 @@ function walkValue(
     // trait-ref scan skip it (see the WeakSet notes above).
     if (resolved !== null && typeof resolved === 'object' && !React.isValidElement(resolved) && !(resolved instanceof Date)) {
       resolvedMarkerFree.add(resolved as object);
-      evaluatorResolvedData.add(resolved as object);
+      if (!holdsRenderNode(resolved)) evaluatorResolvedData.add(resolved as object);
     }
     return { resolved, changed: true };
   }

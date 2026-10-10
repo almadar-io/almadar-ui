@@ -72,6 +72,8 @@ export {
     TraitValueMountProvider,
     type TraitValueMountHost,
 } from './TraitValueFrame';
+// BehaviorValueFrame — a whole behavior value (`behavior/ref`) run in place, isolated.
+export { BehaviorValueFrame } from './BehaviorValueFrame';
 
 // Slot-host manifest — declarative region -> UISlot bindings a host (a
 // plugin host's persona shell, or an embedding app) uses to describe its

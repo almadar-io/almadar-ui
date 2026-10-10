@@ -125,7 +125,7 @@ export interface PatternEventSource {
 
 /** A slot + pattern config pair extracted from a render-ui effect. */
 export interface RenderUIEntry {
-  slot: UISlot | string;
+  slot: string;
   pattern: AnyPatternConfig;
 }
 
@@ -133,10 +133,12 @@ export interface RenderUIEntry {
 // React Flow node data
 // ---------------------------------------------------------------------------
 
-/** Data for a preview node (used at both overview and expanded levels). */
-export interface PreviewNodeData {
-  [key: string]: string | number | boolean | string[] | Expression | null | RenderUIEntry[] | PatternEventSource[] | Array<{ event: string; fromState: string; toState: string }> | OrbitalSchema | EntityData | undefined;
-
+/**
+ * Data for a preview node (used at both overview and expanded levels). A closed
+ * type alias, not an index-signature interface: it stays assignable to React
+ * Flow's `Record<string, unknown>` node-data bound while every field is declared.
+ */
+export type PreviewNodeData = {
   /** Orbital this node belongs to. */
   orbitalName: string;
 
@@ -281,7 +283,7 @@ export interface PreviewNodeData {
 
   /** Mock entity data for the orbital preview. */
   _mockData?: EntityData;
-}
+};
 
 // ---------------------------------------------------------------------------
 // React Flow edge data

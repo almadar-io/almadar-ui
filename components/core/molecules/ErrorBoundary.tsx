@@ -24,7 +24,10 @@ export interface ErrorBoundaryProps {
   fallback?: ReactNode | ((error: Error, reset: () => void) => ReactNode);
   /** Additional CSS classes for the wrapper */
   className?: string;
-  /** Called when an error is caught (for logging/telemetry) */
+  /**
+   * Called when an error is caught (for logging/telemetry)
+   * @notification
+   */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 

@@ -161,9 +161,15 @@ export interface Canvas2DProps extends A11yProps {
      * (docs/Almadar_Std_Game_V2_PLAN.md).
      */
     unitClickEvent?: EventEmit<{ unitId: string }>;
-    /** Emits UI:{tileHoverEvent} with the unprojected scene { x, y } on hover. */
+    /**
+     * Emits UI:{tileHoverEvent} with the unprojected scene { x, y } on hover.
+     * @notification
+     */
     tileHoverEvent?: EventEmit<{ x: number; y: number }>;
-    /** Emits UI:{tileLeaveEvent} with {} on pointer leave. */
+    /**
+     * Emits UI:{tileLeaveEvent} with {} on pointer leave.
+     * @notification
+     */
     tileLeaveEvent?: EventEmit<Record<string, never>>;
     /** Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}`; keystrokes inside inputs/textareas never route. */
     keyMap?: Record<string, EventKey>;

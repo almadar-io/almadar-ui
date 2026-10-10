@@ -79,13 +79,13 @@ interface OrbitalConfig {
 
 // ============ Constants ============
 
-// Muted emission spectrum colors (softer ROYGBIV)
+// One theme series tone per orbital family, in order
 const ORBITAL_CONFIGS: Record<string, OrbitalConfig> = {
   "1s": {
     type: "1s",
     name: "1s Orbital",
-    color: "#C45B5B",
-    glowColor: "rgba(196, 91, 91, 0.3)",
+    color: "var(--color-series-1)",
+    glowColor: "color-mix(in srgb, var(--color-series-1) 30%, transparent)",
     lobes: 1,
     hasNode: false,
     scale: 0.6,
@@ -93,8 +93,8 @@ const ORBITAL_CONFIGS: Record<string, OrbitalConfig> = {
   "2s": {
     type: "2s",
     name: "2s Orbital",
-    color: "#D4875B",
-    glowColor: "rgba(212, 135, 91, 0.3)",
+    color: "var(--color-series-2)",
+    glowColor: "color-mix(in srgb, var(--color-series-2) 30%, transparent)",
     lobes: 1,
     hasNode: false,
     scale: 0.8,
@@ -102,8 +102,8 @@ const ORBITAL_CONFIGS: Record<string, OrbitalConfig> = {
   "2p": {
     type: "2p",
     name: "2p Orbital",
-    color: "#C9B458",
-    glowColor: "rgba(201, 180, 88, 0.3)",
+    color: "var(--color-series-3)",
+    glowColor: "color-mix(in srgb, var(--color-series-3) 30%, transparent)",
     lobes: 2,
     hasNode: false,
     scale: 1.0,
@@ -111,8 +111,8 @@ const ORBITAL_CONFIGS: Record<string, OrbitalConfig> = {
   "3s": {
     type: "3s",
     name: "3s Orbital",
-    color: "#5BA87A",
-    glowColor: "rgba(91, 168, 122, 0.3)",
+    color: "var(--color-series-4)",
+    glowColor: "color-mix(in srgb, var(--color-series-4) 30%, transparent)",
     lobes: 1,
     hasNode: true,
     scale: 1.0,
@@ -120,8 +120,8 @@ const ORBITAL_CONFIGS: Record<string, OrbitalConfig> = {
   "3p": {
     type: "3p",
     name: "3p Orbital",
-    color: "#5B8DC4",
-    glowColor: "rgba(91, 141, 196, 0.3)",
+    color: "var(--color-series-5)",
+    glowColor: "color-mix(in srgb, var(--color-series-5) 30%, transparent)",
     lobes: 2,
     hasNode: true,
     scale: 1.1,
@@ -129,8 +129,8 @@ const ORBITAL_CONFIGS: Record<string, OrbitalConfig> = {
   "3d": {
     type: "3d",
     name: "3d Orbital",
-    color: "#6B5B8A",
-    glowColor: "rgba(107, 91, 138, 0.3)",
+    color: "var(--color-series-6)",
+    glowColor: "color-mix(in srgb, var(--color-series-6) 30%, transparent)",
     lobes: 4,
     hasNode: true,
     scale: 1.2,
@@ -138,8 +138,8 @@ const ORBITAL_CONFIGS: Record<string, OrbitalConfig> = {
   "4f": {
     type: "4f",
     name: "4f Orbital",
-    color: "#8A5B9C",
-    glowColor: "rgba(138, 91, 156, 0.3)",
+    color: "var(--color-series-7)",
+    glowColor: "color-mix(in srgb, var(--color-series-7) 30%, transparent)",
     lobes: 6,
     hasNode: true,
     scale: 1.3,
@@ -214,10 +214,10 @@ const OrbitalSphere: React.FC<OrbitalSphereProps> = ({
       style={{
         width: sphereSize,
         height: sphereSize,
-        background: `radial-gradient(circle at 30% 30%, ${config.color}dd, ${config.color}88 50%, ${config.color}44 100%)`,
+        background: `radial-gradient(circle at 30% 30%, color-mix(in srgb, ${config.color} 87%, transparent), color-mix(in srgb, ${config.color} 53%, transparent) 50%, color-mix(in srgb, ${config.color} 27%, transparent) 100%)`,
         boxShadow: `
-          inset -10px -10px 20px rgba(0,0,0,0.3),
-          inset 5px 5px 15px rgba(255,255,255,0.2),
+          inset -10px -10px 20px color-mix(in srgb, var(--color-foreground) 30%, transparent),
+          inset 5px 5px 15px color-mix(in srgb, var(--surface-diagram) 20%, transparent),
           0 0 ${size * 0.15}px ${config.glowColor},
           0 0 ${size * 0.3}px ${config.glowColor}
         `,
@@ -270,7 +270,7 @@ const DumbbellOrbital: React.FC<DumbbellOrbitalProps> = ({
         style={{
           width: lobeSize,
           height: lobeSize * 1.4,
-          background: `radial-gradient(ellipse at 50% 30%, ${config.color}dd, ${config.color}66 70%, transparent 100%)`,
+          background: `radial-gradient(ellipse at 50% 30%, color-mix(in srgb, ${config.color} 87%, transparent), color-mix(in srgb, ${config.color} 40%, transparent) 70%, transparent 100%)`,
           boxShadow: `0 0 ${size * 0.1}px ${config.glowColor}`,
           left: "50%",
           top: `calc(50% - ${offset}px)`,
@@ -284,7 +284,7 @@ const DumbbellOrbital: React.FC<DumbbellOrbitalProps> = ({
         style={{
           width: lobeSize,
           height: lobeSize * 1.4,
-          background: `radial-gradient(ellipse at 50% 70%, ${config.color}dd, ${config.color}66 70%, transparent 100%)`,
+          background: `radial-gradient(ellipse at 50% 70%, color-mix(in srgb, ${config.color} 87%, transparent), color-mix(in srgb, ${config.color} 40%, transparent) 70%, transparent 100%)`,
           boxShadow: `0 0 ${size * 0.1}px ${config.glowColor}`,
           left: "50%",
           bottom: `calc(50% - ${offset}px)`,
@@ -302,7 +302,7 @@ const DumbbellOrbital: React.FC<DumbbellOrbitalProps> = ({
             left: "50%",
             top: "50%",
             transform: "translate(-50%, -50%)",
-            boxShadow: `0 0 ${size * 0.05}px rgba(255,255,255,0.8)`,
+            boxShadow: `0 0 ${size * 0.05}px color-mix(in srgb, var(--surface-diagram) 80%, transparent)`,
           }}
         />
       )}
@@ -354,7 +354,7 @@ const CloverleafOrbital: React.FC<CloverleafOrbitalProps> = ({
             style={{
               width: lobeSize,
               height: lobeSize * 1.3,
-              background: `radial-gradient(ellipse at 50% 40%, ${config.color}dd, ${config.color}55 80%, transparent 100%)`,
+              background: `radial-gradient(ellipse at 50% 40%, color-mix(in srgb, ${config.color} 87%, transparent), color-mix(in srgb, ${config.color} 33%, transparent) 80%, transparent 100%)`,
               boxShadow: `0 0 ${size * 0.08}px ${config.glowColor}`,
               left: `calc(50% + ${x}px)`,
               top: `calc(50% + ${y}px)`,
@@ -372,7 +372,7 @@ const CloverleafOrbital: React.FC<CloverleafOrbitalProps> = ({
           left: "50%",
           top: "50%",
           transform: "translate(-50%, -50%)",
-          boxShadow: `0 0 ${size * 0.06}px rgba(255,255,255,0.9)`,
+          boxShadow: `0 0 ${size * 0.06}px color-mix(in srgb, var(--surface-diagram) 90%, transparent)`,
         }}
       />
     </Box>

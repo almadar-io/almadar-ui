@@ -101,6 +101,21 @@ describe('DetailPanel looks', () => {
     expect(within(totals).getByText('Subtotal')).toBeTruthy();
   });
 
+  it('ledger totals declared as key/header (the std record field spec) show their labels and values', () => {
+    renderPanel({
+      look: 'ledger',
+      entity: { id: '1', name: 'INV-7', subtotal: 100, tax: 20, total: 120 },
+      fields: [title],
+      lineItems: [{ id: 'l1', description: 'Widget', qty: 2 }],
+      lineItemColumns: [{ key: 'description', header: 'Item' }],
+      totals: [{ key: 'subtotal', header: 'Subtotal', format: 'currency' }, { key: 'total', header: 'Total', format: 'currency' }],
+    });
+    const totals = screen.getByTestId('detail-totals');
+    expect(within(totals).getByText('$120.00')).toBeTruthy();
+    expect(within(totals).getByText('Subtotal')).toBeTruthy();
+    expect(within(totals).queryByText('—')).toBeNull();
+  });
+
   it('conversation puts the thread beside the record facts', () => {
     renderPanel({
       look: 'conversation',

@@ -49,9 +49,9 @@ module.exports = {
   'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4',
   'sm:grid-cols-2', 'md:grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-3', 'lg:grid-cols-4',
   'text-center', 'text-left', 'text-right',
-  // Split composes its column widths as `${breakpoint}${ratio}` at runtime
-  ...['sm:', 'md:', 'lg:', 'xl:'].flatMap((bp) => [
-    'w-1/2', 'w-1/3', 'w-2/3', 'w-1/4', 'w-3/4', 'w-1/5', 'w-4/5', 'w-2/5', 'w-3/5', 'flex-row-reverse',
+  // Split composes its stacking classes as `${containerBreakpoint}${cls}` at runtime
+  ...['@sm:', '@md:', '@lg:', '@xl:'].flatMap((bp) => [
+    'w-1/2', 'w-1/3', 'w-2/3', 'w-1/4', 'w-3/4', 'w-1/5', 'w-4/5', 'w-2/5', 'w-3/5', 'flex-row', 'flex-row-reverse',
   ].map((cls) => `${bp}${cls}`)),
   // Non-theme CSS variable classes (no semantic equivalent in theme config)
   'active:scale-[var(--active-scale)]',
@@ -432,10 +432,10 @@ module.exports = {
   'max-h-[80%]',
   'max-w-[1440px]',
   'max-w-[16rem]',
-  'min-w-[min(400px,100%)]',
-  'min-w-[min(520px,100%)]',
-  'min-w-[min(600px,100%)]',
-  'min-w-[min(700px,100%)]',
+  'min-w-[min(theme(minWidth.modal-sm),100%)]',
+  'min-w-[min(theme(minWidth.modal-md),100%)]',
+  'min-w-[min(theme(minWidth.modal-lg),100%)]',
+  'min-w-[min(theme(minWidth.modal-xl),100%)]',
   'pb-[calc(5rem+env(safe-area-inset-bottom))]',
   'pb-[env(safe-area-inset-bottom)]',
   'pt-[10%]',
@@ -606,7 +606,7 @@ module.exports = {
       keyframes: {
         'almadar-marquee': {
           from: { transform: 'translateX(0)' },
-          to: { transform: 'translateX(-50%)' },
+          to: { transform: 'translateX(var(--marquee-shift, -50%))' },
         },
         'modal-in': {
           '0%': {
@@ -825,6 +825,12 @@ module.exports = {
         'row-normal': 'var(--row-height-normal, 40px)',
         'row-spacious': 'var(--row-height-spacious, 48px)',
       },
+      minWidth: {
+        'modal-sm': '25rem',
+        'modal-md': '32.5rem',
+        'modal-lg': '37.5rem',
+        'modal-xl': '43.75rem',
+      },
       width: {
         'icon-default': 'var(--icon-default-size, 16px)',
       },
@@ -856,7 +862,9 @@ module.exports = {
     // Chrome-skin utilities: sprite-driven panel/button chrome, opt-in per theme.
     // No-op (`none`) unless the active theme defines the backing --game-* vars —
     // zero visual change for every theme that doesn't set them.
-    require('tailwindcss/plugin')(({ addUtilities }) => {
+    require('tailwindcss/plugin')(({ addBase, addUtilities }) => {
+      // AnimatedReveal marks a band away from the viewport; nothing inside it needs to animate.
+      addBase({ '[data-on-screen="false"] *': { 'animation-play-state': 'paused !important' } });
       addUtilities({
         '.chrome-panel': {
           'border-image-source': 'var(--game-panel-border-image, none)',
@@ -899,6 +907,8 @@ module.exports = {
           '-webkit-mask-image': 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)',
         },
         '.proof-marquee-track': { display: 'flex', width: 'max-content' },
+        // An RTL strip starts at the right edge, so the loop slides right.
+        '[dir="rtl"] .proof-marquee-track': { '--marquee-shift': '50%' },
         // Full-width band layers (Box edgeTop/edgeBottom/texture/backdrop, std-hero scrim).
         '.band': { position: 'relative', overflow: 'hidden', isolation: 'isolate' },
         '.band > :not([data-band-layer])': { position: 'relative', 'z-index': '1' },

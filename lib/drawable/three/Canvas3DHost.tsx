@@ -59,6 +59,7 @@ import { create3DProjector } from '../projector3d';
 import type { DrawableNode } from '../paintDispatch';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../isometricTypes';
 import { useCanvasTheme } from '../../../hooks/useCanvasTheme';
+import { useOnScreen } from '../../../hooks/useOnScreen';
 import { markColor, withSeries } from '../../canvasTheme';
 import { applySceneMaterials, resolveDrawableColors } from '../themeDrawables';
 import { cn } from '../../cn';
@@ -390,6 +391,8 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
         ref
     ) => {
         const containerRef = useRef<HTMLDivElement>(null);
+        // Off screen or in a hidden tab the scene stops rendering frames.
+        const onScreen = useOnScreen(containerRef);
         const controlsRef = useRef<OrbitControlsImpl | null>(null);
         const [internalError, setInternalError] = useState<string | null>(null);
         const eventBus = useEventBus();
@@ -790,6 +793,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                     data-overlay={overlay}
                 >
                     <Canvas
+                        frameloop={onScreen ? 'always' : 'never'}
                         shadows={shadows}
                         flat={lighting?.toneMapping === 'none'}
                         // Keeps the GL buffer readable after present, so the imperative

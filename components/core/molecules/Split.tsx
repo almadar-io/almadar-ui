@@ -69,12 +69,15 @@ const ratioStyles: Record<SplitRatio, [string, string]> = {
   '3:2': ['w-3/5', 'w-2/5'],
 };
 
-// Responsive variants for stacking
+// Stacking follows the split's own width (container queries). The preset's container
+// sizes equal the viewport breakpoints (sm 640 / md 768 / lg 1024 / xl 1280), so the
+// thresholds are unchanged; a split inside a scaled desktop-size demo or a narrow
+// column now lays out by the room it has.
 const breakpointPrefixes = {
-  sm: 'sm:',
-  md: 'md:',
-  lg: 'lg:',
-  xl: 'xl:',
+  sm: '@sm:',
+  md: '@md:',
+  lg: '@lg:',
+  xl: '@xl:',
 };
 
 /**
@@ -105,17 +108,17 @@ export const Split: React.FC<SplitProps> = ({
     ? `w-full ${bp}${rightRatio}` 
     : rightRatio;
 
-  return (
+  const row = (
     <Box
-      {...domPassthrough(rest)}
       className={cn(
         'flex',
         stackOnMobile ? `flex-col ${bp}flex-row` : 'flex-row',
-        reverse && `${bp}flex-row-reverse`,
+        reverse && (stackOnMobile ? `${bp}flex-row-reverse` : 'flex-row-reverse'),
         gapStyles[gap],
         alignStyles[align],
-        className
+        stackOnMobile ? undefined : className,
       )}
+      {...(stackOnMobile ? {} : domPassthrough(rest))}
     >
       <Box className={cn(leftWidth, leftClassName)}>
         {left}
@@ -125,6 +128,12 @@ export const Split: React.FC<SplitProps> = ({
       </Box>
     </Box>
   );
+  // Container queries match an ancestor, so a stacking split wraps its row in its own container.
+  return stackOnMobile ? (
+    <Box {...domPassthrough(rest)} className={cn('@container w-full', className)}>
+      {row}
+    </Box>
+  ) : row;
 };
 
 Split.displayName = 'Split';

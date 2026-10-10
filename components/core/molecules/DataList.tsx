@@ -13,6 +13,7 @@
  *
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
+import { actionTestId, ACTION_OVERFLOW_TESTID } from '@almadar/core';
 import React from 'react';
 import type { A11yProps, SkeletonSpec, EntityRow, EventKey, EventEmit, FieldValue } from "@almadar/core";
 import { Skeleton } from "./Skeleton";
@@ -33,6 +34,7 @@ import { getNestedValue } from '../../../lib/getNestedValue';
 import { groupRows } from '../../../lib/groupRows';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { enterClassName } from '../../../lib/enter';
+import { useItemMoves } from '../../../lib/item-move';
 import { useRowActions, useRowActionPayload, useRowActionFire } from '../../../hooks/useRowActions';
 import type { RowActionCondition, RowActionPayload } from '../../../lib/row-action-when';
 import { useTranslate, useFormatContext } from '../../../hooks/useTranslate';
@@ -303,6 +305,7 @@ export function DataList({
   ...rest
 }: DataListProps) {
   const eventBus = useEventBus();
+  const moves = useItemMoves(itemEnter !== undefined && itemEnter !== 'none');
   const rowActions = useRowActions();
   const actionPayload = useRowActionPayload();
   const { fire: fireRowAction, isRowPending } = useRowActionFire<DataListItemAction>();
@@ -430,7 +433,7 @@ export function DataList({
             variant={action.variant ?? 'ghost'}
             size="sm"
             onClick={handleActionClick(action, itemData)}
-            data-testid={`action-${action.event}`}
+            data-testid={actionTestId(action.event)}
             data-row-id={String(itemData.id)}
             className={cn(
               action.variant === 'danger' && 'text-foreground hover:bg-error/10',
@@ -447,7 +450,7 @@ export function DataList({
           <Menu
             position="bottom-end"
             trigger={
-              <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+              <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid={ACTION_OVERFLOW_TESTID}>
                 <Icon name="more-horizontal" size="xs" />
               </Button>
             }
@@ -530,7 +533,7 @@ export function DataList({
     };
 
     return (
-      <VStack gap="sm" className={cn('py-2', className)}>
+      <VStack gap="sm" className={cn('py-2', className)} data-item-move-root={moves.root}>
         {groups.map((group, gi) => (
           <React.Fragment key={gi}>
             {group.label && (
@@ -554,6 +557,8 @@ export function DataList({
                   key={id}
                   data-entity-row
                   data-entity-id={id}
+                  data-item-key={id}
+                  data-item-move={moves.row}
  data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
  aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
                   onClick={itemClickEvent ? handleRowClick(itemData) : undefined}
@@ -666,7 +671,7 @@ export function DataList({
       const primary = primaryActions.length > 0 ? renderItemActions(itemData, false, primaryActions) : null;
       const actions = otherActions.length > 0 ? renderItemActions(itemData, false, otherActions) : null;
       return wrapDnd(
-        <Box key={id} data-entity-row data-entity-id={id} data-row-pending={pending} aria-busy={pending}
+        <Box key={id} data-entity-row data-entity-id={id} data-item-key={id} data-item-move={moves.row} data-row-pending={pending} aria-busy={pending}
           onClick={onOpen} className={cn('relative group/rowactions', onOpen && 'cursor-pointer', enterClassName(itemEnter))}>
           {onOpen && (
             <Box
@@ -696,7 +701,7 @@ export function DataList({
                 <Menu
                   position="bottom-end"
                   trigger={
-                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid={ACTION_OVERFLOW_TESTID}>
                       <Icon name="more-horizontal" size="xs" />
                     </Button>
                   }
@@ -742,7 +747,7 @@ export function DataList({
     );
 
     return wrapDnd(
-      <Box key={id} data-entity-row data-entity-id={id} data-row-pending={pending} aria-busy={pending}
+      <Box key={id} data-entity-row data-entity-id={id} data-item-key={id} data-item-move={moves.row} data-row-pending={pending} aria-busy={pending}
         onClick={onOpen} className={cn('relative', onOpen && 'cursor-pointer', enterClassName(itemEnter))}>
         <Box
           className={cn(
@@ -865,6 +870,7 @@ export function DataList({
   return contentSurface.provide(dnd.wrapContainer(
     <Box
       {...domPassthrough(rest)}
+      data-item-move-root={moves.root}
       className={cn(
         contentSurface.className && cn(contentSurface.className, 'overflow-hidden'),
         // `gap-*` is inert on a block container, and Box only emits a display

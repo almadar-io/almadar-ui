@@ -56,7 +56,10 @@ export interface CarouselProps<T = CarouselItem> extends A11yProps {
   showArrows?: boolean;
   /** Enable infinite loop */
   loop?: boolean;
-  /** Declarative event name for slide change */
+  /**
+   * Declarative event name for slide change
+   * @notification
+   */
   slideChangeEvent?: EventEmit<{ index: number }>;
   /** Payload to include with the slide change event
    *  @payloadFor slideChangeEvent

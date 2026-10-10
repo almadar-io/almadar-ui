@@ -26,6 +26,7 @@ export interface TimeSlotCellProps extends A11yProps {
   onPointerDown?: React.PointerEventHandler<HTMLDivElement>;
   onPointerUp?: React.PointerEventHandler<HTMLDivElement>;
   onPointerCancel?: React.PointerEventHandler<HTMLDivElement>;
+  /** @notification */
   onPointerLeave?: React.PointerEventHandler<HTMLDivElement>;
   "data-testid"?: string;
 }

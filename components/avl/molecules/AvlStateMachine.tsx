@@ -299,7 +299,7 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
                       ))}
                     </Box>
                     {guard !== null ? (
-                      <Box as="span" className="whitespace-nowrap" style={{ height: GUARD_H, lineHeight: `${GUARD_H}px`, fontFamily: AVL_FONT.mono, fontSize: 12, color: fired ? AVL_INK.focus : AVL_INK.quiet }}>
+                      <Box as="span" dir="ltr" className="whitespace-nowrap" style={{ height: GUARD_H, lineHeight: `${GUARD_H}px`, fontFamily: AVL_FONT.mono, fontSize: 12, color: fired ? AVL_INK.focus : AVL_INK.quiet }}>
                         {guard}
                       </Box>
                     ) : null}

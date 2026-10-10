@@ -217,7 +217,10 @@ export interface LearningCanvasProps extends A11yProps {
   animate?: boolean;
   /** Clicked shape payload: { id?, type?, index }. */
   onShapeClick?: (payload: { id?: string; type?: string; index: number }) => void;
-  /** Hovered shape payload: { id?, type?, index }. */
+  /**
+   * Hovered shape payload: { id?, type?, index }.
+   * @notification
+   */
   onShapeHover?: (payload: { id?: string; type?: string; index: number }) => void;
   /** Text alternative for the canvas, rendered as visually hidden text and linked by aria-describedby. */
   description?: string;

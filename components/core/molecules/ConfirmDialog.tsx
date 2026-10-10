@@ -28,7 +28,10 @@ export interface ConfirmDialogProps extends A11yProps {
   isOpen?: boolean;
   /** Callback when dialog is closed (injected by slot wrapper) */
   onClose?: () => void;
-  /** Fires after the exit animation completes (the dialog is about to unmount). */
+  /**
+   * Fires after the exit animation completes (the dialog is about to unmount).
+   * @notification
+   */
   onExited?: () => void;
   /** Callback when action is confirmed (injected by slot wrapper) */
   onConfirm?: () => void;

@@ -6,6 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
+import { actionTestId } from '@almadar/core';
 import React, { useEffect, useId, useRef, useState } from "react";
 import type { EventEmit, A11yProps } from "@almadar/core";
 import { Box } from "../atoms/Box";
@@ -38,7 +39,10 @@ export interface ModalProps extends A11yProps {
   isOpen?: boolean;
   /** Callback when modal should close (injected by slot wrapper) */
   onClose?: () => void;
-  /** Fires after the exit animation completes (the modal is about to unmount). */
+  /**
+   * Fires after the exit animation completes (the modal is about to unmount).
+   * @notification
+   */
   onExited?: () => void;
   title?: string;
   /** Modal content (can be empty if using slot content) */
@@ -73,13 +77,13 @@ const sizeClasses: Record<ModalSize, string> = {
 // `minWidthClasses` floors the dialog above mobile, capped at 100% so a
 // contained modal never overflows a preview narrower than the floor. On phones (`max-sm:`)
 // the floor drops to 0 so the full-screen variant shrinks to viewport
-// width without the hardcoded 400/520/600/700 fighting it. Kept as
+// width without the modal-* floors fighting it. Kept as
 // Tailwind classes (not inline style) so media-query overrides can win.
 const minWidthClasses: Record<ModalSize, string> = {
-  sm: "min-w-[min(400px,100%)] max-sm:min-w-0",
-  md: "min-w-[min(520px,100%)] max-sm:min-w-0",
-  lg: "min-w-[min(600px,100%)] max-sm:min-w-0",
-  xl: "min-w-[min(700px,100%)] max-sm:min-w-0",
+  sm: "min-w-[min(theme(minWidth.modal-sm),100%)] max-sm:min-w-0",
+  md: "min-w-[min(theme(minWidth.modal-md),100%)] max-sm:min-w-0",
+  lg: "min-w-[min(theme(minWidth.modal-lg),100%)] max-sm:min-w-0",
+  xl: "min-w-[min(theme(minWidth.modal-xl),100%)] max-sm:min-w-0",
   full: "min-w-0",
 };
 
@@ -261,7 +265,7 @@ export const Modal: React.FC<ModalProps> = ({
                   icon="x"
                   onClick={handleClose}
                   data-event="CLOSE"
-                  data-testid="action-CLOSE"
+                  data-testid={actionTestId("CLOSE")}
                   aria-label={t('aria.closeModal')}
                 />
               )}

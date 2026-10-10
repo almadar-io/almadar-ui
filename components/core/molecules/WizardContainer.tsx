@@ -152,7 +152,10 @@ export interface WizardContainerProps extends A11yProps {
   steps: WizardStep[];
   /** Current step index (controlled) - accepts number or string for generated code compatibility */
   currentStep?: number | string;
-  /** Callback when step changes */
+  /**
+   * Callback when step changes
+   * @notification
+   */
   onStepChange?: (stepIndex: number) => void;
   /** Callback when wizard is completed */
   onComplete?: () => void;

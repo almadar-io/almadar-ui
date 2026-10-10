@@ -15,8 +15,9 @@
  */
 
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { TraitValue, TraitValueMountResult } from '@almadar/core';
+import type { BehaviorRef, BehaviorValueMountResult, TraitValue, TraitValueMountResult } from '@almadar/core';
 import type { EventTransport } from '@almadar/runtime';
+import type { ServerBridgeTransport } from '../providers/ServerBridge';
 import { UISlotProvider } from '../providers/UISlotContext';
 import { useEventBus } from '../hooks/useEventBus';
 import { OrbitalPluginHost, type PluginHostPlugin } from './OrbitalPluginHost';
@@ -30,9 +31,13 @@ export interface TraitValueMountHost {
   /** 'mock' (default): in-memory, as a preview. 'server': through `transport`. */
   mode?: 'mock' | 'server';
   transport?: EventTransport;
+  /** Mounts a whole behavior value (`BehaviorValueFrame`); a host without it cannot run behavior values. */
+  mountBehavior?: (value: BehaviorRef) => Promise<BehaviorValueMountResult>;
+  /** Where a mounted behavior value's events run; in-memory when omitted. */
+  behaviorTransport?: ServerBridgeTransport;
 }
 
-const TraitValueMountContext = createContext<TraitValueMountHost | null>(null);
+export const TraitValueMountContext = createContext<TraitValueMountHost | null>(null);
 
 export function TraitValueMountProvider({ host, children }: { host: TraitValueMountHost; children: ReactNode }): React.ReactElement {
   return <TraitValueMountContext.Provider value={host}>{children}</TraitValueMountContext.Provider>;

@@ -10,6 +10,7 @@
  * @packageDocumentation
  */
 
+import { actionTestId } from '@almadar/core';
 import React from 'react';
 import type { EventKey, EventPayload } from '@almadar/core';
 import type { UiError } from '../atoms/types';
@@ -172,7 +173,7 @@ export function LinkPattern({
       rel={external ? 'noopener noreferrer' : undefined}
       onClick={resolvedAction ? handleClick : undefined}
       className={className}
-      data-testid={resolvedAction ? `action-${resolvedAction}` : undefined}
+      data-testid={resolvedAction ? actionTestId(resolvedAction) : undefined}
     >
       {label}
     </a>

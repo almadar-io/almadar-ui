@@ -2,12 +2,14 @@
 /**
  * CodeRunnerPanel Organism Component
  *
- * Editable code block with Run/Reset buttons and simulated terminal output.
- * Real execution is a future concern; callers supply a simulation function via
- * `onRun`. Emits `UI:RUN_CODE { language, exitCode }` on every run attempt.
+ * Editable code block with Run/Reset buttons and a terminal output pane.
+ * Running is the program's job: Run emits the declared `runEvent` request and the
+ * program binds the result back through `output` / `running` / `error`.
  *
  * Event Contract:
- * - Emits: UI:RUN_CODE { language, exitCode, error? }
+ * - Emits: UI:<runEvent> { code, language, runId? } on Run
+ * - Emits: UI:<resetEvent> { runId? } on Reset (when declared)
+ * - Emits: UI:COPY_CODE { language, success } on Copy
  * - entityAware: false
  */
 
@@ -22,7 +24,7 @@ import { CodeBlock } from '../molecules/markdown/CodeBlock';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
-import type { A11yProps } from '@almadar/core';
+import type { A11yProps, EventEmit } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
 
 export interface CodeSimulationOutput {
@@ -42,16 +44,20 @@ export interface CodeRunnerPanelProps extends Omit<React.AriaAttributes, keyof A
   code: string;
   /** Programming language for syntax highlighting */
   language: string;
-  /** Whether the panel allows running (false = read-only code block) */
+  /** Whether the panel is editable and runnable (default false = read-only code block) */
   runnable?: boolean;
-  /**
-   * Simulate executing the code. Omit to render a read-only block.
-   * Real execution is a separate future track — this callback supplies
-   * deterministic simulated output for UI feedback.
-   */
-  onRun?: (code: string) => Promise<CodeSimulationOutput>;
-  /** Event name to emit on run (emitted as `UI:<runEvent>`). Defaults to 'RUN_CODE'. */
-  runEvent?: string;
+  /** Event emitted on Run as `UI:<runEvent>` with `{ code, language, runId }`. Defaults to 'RUN_CODE'. */
+  runEvent?: EventEmit<{ code: string; language: string; runId: string }>;
+  /** Event emitted on Reset as `UI:<resetEvent>` with `{ runId }`; Reset only restores the code when absent. */
+  resetEvent?: EventEmit<{ runId: string }>;
+  /** Identifies this panel in its run/reset payloads (e.g. a lesson segment); empty when one panel stands alone. */
+  runId?: string;
+  /** The program's result for the last run, bound back into the panel. */
+  output?: CodeSimulationOutput | null;
+  /** True while the program is running the code. */
+  running?: boolean;
+  /** A run failure message from the program; replaces the output body. */
+  error?: string | null;
   /** Additional CSS classes */
   className?: string;
 }
@@ -59,45 +65,30 @@ export interface CodeRunnerPanelProps extends Omit<React.AriaAttributes, keyof A
 export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
   code: initialCode,
   language,
-  runnable = true,
-  onRun,
+  runnable = false,
   runEvent = 'RUN_CODE',
+  resetEvent,
+  runId = '',
+  output = null,
+  running = false,
+  error = null,
   className,
   ...rest
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const [code, setCode] = useState(initialCode);
-  const [output, setOutput] = useState<CodeSimulationOutput | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
   const [copied, setCopied] = useState(false);
+  const isRunning = running;
 
-  const handleRun = useCallback(async () => {
-    if (!onRun) return;
-
-    setIsRunning(true);
-    setError(null);
-    setOutput(null);
-
-    try {
-      const result = await onRun(code);
-      setOutput(result);
-      eventBus.emit(`UI:${runEvent}`, { language, exitCode: result.exitCode });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : t('common.error');
-      setError(message);
-      eventBus.emit(`UI:${runEvent}`, { language, exitCode: 1, error: message });
-    } finally {
-      setIsRunning(false);
-    }
-  }, [code, language, onRun, runEvent, eventBus, t]);
+  const handleRun = useCallback(() => {
+    eventBus.emit(`UI:${runEvent}`, { code, language, runId });
+  }, [code, language, runEvent, runId, eventBus]);
 
   const handleReset = useCallback(() => {
     setCode(initialCode);
-    setOutput(null);
-    setError(null);
-  }, [initialCode]);
+    if (resetEvent) eventBus.emit(`UI:${resetEvent}`, { runId });
+  }, [initialCode, resetEvent, runId, eventBus]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -110,7 +101,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
     }
   }, [code, language, eventBus]);
 
-  if (!runnable || !onRun) {
+  if (!runnable) {
     return (
       <Box {...domPassthrough(rest)} className={className}>
         <CodeBlock language={language as Parameters<typeof CodeBlock>[0]['language']} code={code} />

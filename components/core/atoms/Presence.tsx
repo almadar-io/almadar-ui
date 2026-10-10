@@ -54,7 +54,10 @@ export interface UsePresenceOptions {
   animation: PresenceAnimation;
   /** Per-instance opt-out. Global opt-out is `--motion-enable` / reduced-motion. @default true */
   animate?: boolean;
-  /** Fired after the exit animation completes (before unmount). */
+  /**
+   * Fired after the exit animation completes (before unmount).
+   * @notification
+   */
   onExited?: () => void;
 }
 

@@ -195,3 +195,6 @@ export {
   type ElementPropAccess,
   type ElementSettings,
 } from '../lib/element-edit-access';
+
+// Typed decoders for the AVL organisms' rich props (compiled-app boundary)
+export { decodePreviewNodeData, decodeSelectedPattern, decodeNodePlacements } from '../lib/avl-prop-decoders';

@@ -75,7 +75,10 @@ export interface SidebarProps extends A11yProps {
   collapsed?: boolean;
   /** Default collapsed state */
   defaultCollapsed?: boolean;
-  /** Event emitted when collapse state changes, payload: { collapsed: boolean } */
+  /**
+   * Event emitted when collapse state changes, payload: { collapsed: boolean }
+   * @notification
+   */
   collapseChangeEvent?: EventEmit<{ collapsed: boolean }>;
   /** Hide the collapse/expand button */
   hideCollapseButton?: boolean;

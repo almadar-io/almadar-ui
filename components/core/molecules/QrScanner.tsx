@@ -23,6 +23,7 @@ export type QrScanResult = EventPayload & {
 export interface QrScannerProps extends A11yProps {
   onScan?: (result: QrScanResult) => void;
   scanEvent?: EventEmit<QrScanResult>;
+  /** @notification */
   onError?: (error: Error) => void;
   facingMode?: 'environment' | 'user';
   paused?: boolean;
@@ -135,18 +136,6 @@ export const QrScanner: React.FC<QrScannerProps> = ({
     setIsPaused((p) => !p);
   }, []);
 
-  const handleMockScan = useCallback(() => {
-    const result: QrScanResult = {
-      text: "https://example.com/mock-qr",
-      format: "QR_CODE",
-      timestamp: Date.now(),
-    };
-    onScan?.(result);
-    if (scanEvent) {
-      eventBus.emit(`UI:${scanEvent}`, { ...result });
-    }
-  }, [onScan, scanEvent, eventBus]);
-
   const videoExtraProps: React.VideoHTMLAttributes<HTMLVideoElement> = {
     playsInline: true,
     muted: true,
@@ -258,19 +247,6 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             aria-label={currentFacing === 'environment' ? t('qrScanner.switchToFrontCamera') : t('qrScanner.switchToRearCamera')}
           >
             <Icon name="refresh-cw" className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            onClick={handleMockScan}
-            className={cn(
-              // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
-              "rounded-full bg-black bg-opacity-60 px-3 py-2 text-xs text-white",
-              // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
-              "hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white",
-            )}
-            aria-label={t('aria.mockScanDev')}
-          >
-            {t('qrScanner.mockScan')}
           </Button>
         </Box>
       )}

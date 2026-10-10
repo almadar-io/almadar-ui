@@ -16,6 +16,15 @@ function setReducedMotion(reduce: boolean) {
   }));
 }
 
+type ObservedEntry = { isIntersecting: boolean; intersectionRatio: number; intersectionRect: { height: number }; rootBounds: { height: number } };
+/** A whole element in or out of an 800px viewport. */
+const observed = (isIntersecting: boolean): ObservedEntry => ({
+  isIntersecting,
+  intersectionRatio: isIntersecting ? 1 : 0,
+  intersectionRect: { height: isIntersecting ? 100 : 0 },
+  rootBounds: { height: 800 },
+});
+
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
   vi.useRealTimers();
@@ -87,9 +96,9 @@ describe('AnimatedReveal revealEvent', () => {
   }
   function stubObserver(intersecting: boolean) {
     vi.stubGlobal('IntersectionObserver', class {
-      private cb: (entries: Array<{ isIntersecting: boolean }>) => void;
-      constructor(cb: (entries: Array<{ isIntersecting: boolean }>) => void) { this.cb = cb; }
-      observe() { this.cb([{ isIntersecting: intersecting }]); }
+      private cb: (entries: ObservedEntry[]) => void;
+      constructor(cb: (entries: ObservedEntry[]) => void) { this.cb = cb; }
+      observe() { this.cb([observed(intersecting)]); }
       disconnect() { /* nothing to release */ }
     });
   }
@@ -126,5 +135,59 @@ describe('AnimatedReveal revealEvent', () => {
     const fired: Fired = [];
     render(<EventBusProvider debug={false}><Spy fired={fired} /><AnimatedReveal revealEvent="SECTION_SEEN">Demo</AnimatedReveal></EventBusProvider>);
     expect(fired).toEqual([]);
+  });
+});
+
+describe('AnimatedReveal enterEvent / leaveEvent', () => {
+  type Fired = string[];
+  function Spy({ fired }: { fired: Fired }) {
+    const bus = useEventBus();
+    React.useEffect(() => {
+      const offIn = bus.on('UI:IN_VIEW', () => { fired.push('in'); });
+      const offOut = bus.on('UI:OUT_OF_VIEW', () => { fired.push('out'); });
+      return () => { offIn(); offOut(); };
+    }, [bus, fired]);
+    return null;
+  }
+  let drive: (intersecting: boolean) => void = () => undefined;
+  function stubDrivenObserver() {
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(cb: (entries: ObservedEntry[]) => void, options?: IntersectionObserverInit) {
+        // The reveal observer; the off-screen marker is the one watching with a margin.
+        if (options?.rootMargin === undefined) drive = (i) => cb([observed(i)]);
+      }
+      observe() { /* driven by the test */ }
+      disconnect() { /* nothing to release */ }
+    });
+  }
+  const tree = (fired: Fired) => (
+    <EventBusProvider debug={false}><Spy fired={fired} /><AnimatedReveal enterEvent="IN_VIEW" leaveEvent="OUT_OF_VIEW">Demo</AnimatedReveal></EventBusProvider>
+  );
+
+  it('emits enterEvent on every entry and leaveEvent on every exit after one', () => {
+    setReducedMotion(false);
+    stubDrivenObserver();
+    const fired: Fired = [];
+    render(tree(fired));
+    act(() => { drive(true); drive(false); drive(true); drive(false); });
+    expect(fired).toEqual(['in', 'out', 'in', 'out']);
+  });
+
+  it('control: leaving before ever entering emits nothing', () => {
+    setReducedMotion(false);
+    stubDrivenObserver();
+    const fired: Fired = [];
+    render(tree(fired));
+    act(() => { drive(false); });
+    expect(fired).toEqual([]);
+  });
+
+  it('still reports visibility under prefers-reduced-motion (it starts nothing by itself)', () => {
+    setReducedMotion(true);
+    stubDrivenObserver();
+    const fired: Fired = [];
+    render(tree(fired));
+    act(() => { drive(true); drive(false); });
+    expect(fired).toEqual(['in', 'out']);
   });
 });

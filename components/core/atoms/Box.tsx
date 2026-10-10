@@ -5,7 +5,7 @@
  * A versatile layout primitive that provides spacing, background, border, and shadow controls.
  * Think of it as a styled div with consistent design tokens.
  */
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import type { A11yProps, EventKey, EventPayload, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { bandEdgeLayerStyle, bandPadding } from "../../../lib/bandShapes";
@@ -14,6 +14,7 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { useThemeScope } from "../../../providers/ThemeContext";
 import { pressableProps } from "../../../lib/pressable";
+import { useAnimateChanges } from "../../../lib/animate-changes";
 
 export type BoxPadding = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 export type BoxMargin =
@@ -93,7 +94,10 @@ export interface BoxProps extends Omit<React.HTMLAttributes<HTMLDivElement>, key
    *  @payloadFor action
    */
   actionPayload?: EventPayload;
-  /** Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave */
+  /**
+   * Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave
+   * @notification
+   */
   hoverEvent?: EventEmit<{ hovered: boolean }>;
   /** When true (default), a touch/pen tap also fires `hoverEvent` (toggling hovered) so hover-only reveals work on touch. */
   tapReveal?: boolean;
@@ -109,6 +113,8 @@ export interface BoxProps extends Omit<React.HTMLAttributes<HTMLDivElement>, key
   edgeFlip?: boolean;
   /** Lay the theme's texture over the band */
   texture?: boolean;
+  /** Content that appears or changes inside the box eases in instead of switching in one frame (new rows, swapped views, changed text), played in presentation motion (the theme's dramatic duration, standard easing) so it can be watched. Off under reduced motion. */
+  animateChanges?: boolean;
   /** Scene behind the band's content (photo, illustration, pattern); never takes clicks */
   backdrop?: React.ReactNode;
   /** Children elements */
@@ -277,6 +283,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
       edgeColor = "background",
       edgeFlip = false,
       texture = false,
+      animateChanges = false,
       backdrop,
       onClick,
       onMouseEnter,
@@ -287,6 +294,13 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
     ref,
   ) => {
     const eventBus = useEventBus();
+    const ownRef = useRef<HTMLDivElement | null>(null);
+    useAnimateChanges(ownRef, animateChanges);
+    const setRef = useCallback((node: HTMLDivElement | null) => {
+      ownRef.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref !== null) ref.current = node;
+    }, [ref]);
     // A host theme override replaces a declared data-theme (never adds one).
     const { override: themeOverride } = useThemeScope();
     const declaredTheme = rest['data-theme'];
@@ -365,7 +379,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
     return React.createElement(
       Component,
       {
-        ref,
+        ref: setRef,
         className: cn(
           padding && paddingStyles[padding],
           paddingX && paddingXStyles[paddingX],
@@ -394,6 +408,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
         style: (maxWidth || isBand) ? { ...(maxWidth ? { maxWidth } : {}), ...bandStyle, ...rest.style } : rest.style,
         ...rest,
         'data-theme': dataTheme,
+        'data-motion': animateChanges ? 'presentation' : undefined,
       },
       isBand ? <>{bandLayers}{children}</> : children,
     );

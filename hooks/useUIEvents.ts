@@ -17,6 +17,7 @@
 
 import { useEffect, useMemo } from "react";
 import { beginPending, endPending } from '../lib/pendingDispatch';
+import { claimDelivery } from '../lib/bus-claim';
 import { useEventBus, type BusEvent } from "./useEventBus";
 import type { EventPayload } from "@almadar/core";
 
@@ -72,6 +73,7 @@ export function useUIEvents<E extends string>(
         if (event.source && (event.source as { dispatched?: boolean }).dispatched) {
           return;
         }
+        if (!claimDelivery(event.source, traitName, smEvent)) return;
         // Compiled path: the firing control's busy state spans this dispatch
         // (lib/pendingDispatch) — the generated queue resolves when it settles.
         const pendingKey = event.source?.pendingKey;

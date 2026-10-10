@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "6.59.0",
+  "version": "6.60.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -137,12 +137,12 @@
     "verify:dist-esm": "node scripts/verify-dist-esm.mjs"
   },
   "dependencies": {
-    "@almadar/core": "^10.121.0",
-    "@almadar/db": "^0.1.1",
-    "@almadar/evaluator": "^2.56.0",
+    "@almadar/core": "^10.122.0",
+    "@almadar/db": "^0.1.2",
+    "@almadar/evaluator": "^2.57.0",
     "@almadar/logger": "^1.17.0",
-    "@almadar/runtime": "^6.106.0",
-    "@almadar/std": "^16.246.0",
+    "@almadar/runtime": "^6.107.0",
+    "@almadar/std": "^16.247.0",
     "@almadar/syntax": "^1.19.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -203,7 +203,7 @@
     }
   },
   "devDependencies": {
-    "@almadar-io/behaviors": "^0.16.194",
+    "@almadar-io/behaviors": "^0.16.197",
     "@almadar/eslint-plugin": "^2.21.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",

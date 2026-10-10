@@ -15,7 +15,7 @@
  */
 import type { TransitionObserver } from '@almadar/runtime';
 import type { EffectTrace, OrbitalEventResponse, SExpr } from '@almadar/core';
-import { recordServerResponse, recordTransition } from './verificationRegistry';
+import { recordServerResponse, recordTransition, serverEffectTraces } from './verificationRegistry';
 
 /** The shape `StateMachineManager` passes to `TransitionObserver.onTransition`
  *  (`@almadar/runtime`'s `types.ts`), spelled out explicitly here so this
@@ -95,13 +95,18 @@ export function recordDispatchVerdict(orbitalName: string, event: string, verdic
   const { response } = verdict;
   const dataEntities: Record<string, number> = {};
   for (const [entity, rows] of Object.entries(response.data ?? {})) dataEntities[entity] = rows.length;
+  const effectFailures = (response.rejections ?? [])
+    .filter((r) => r.code === 'effect-failed')
+    .map((r) => `${r.trait ?? orbitalName}.${r.event ?? event}: ${r.error ?? 'effect failed'}`);
+  const error = [...(response.error !== undefined ? [response.error] : []), ...effectFailures].join('; ');
   recordServerResponse(orbitalName, event, {
-    success: response.success,
+    success: response.success && effectFailures.length === 0,
     transitioned: response.transitioned,
     clientEffects: response.clientEffects?.length ?? 0,
     dataEntities,
     emittedEvents: response.emittedEvents.map((e) => e.event),
     emitted: response.emittedEvents.map((e) => (e.payload !== undefined ? { event: e.event, payload: e.payload } : { event: e.event })),
-    ...(response.error !== undefined ? { error: response.error } : {}),
+    ...(error !== '' ? { error } : {}),
+    effectResults: serverEffectTraces(response.effectResults),
   });
 }

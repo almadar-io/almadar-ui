@@ -163,8 +163,9 @@ function ListSkeleton({ rows = 5, className }: { rows?: number; className?: stri
 }
 
 function GridSkeleton({ rows = 6, className }: { rows?: number; className?: string }) {
+  // minChildWidth = Tailwind w-64 (was 260px)
   return (
-    <SimpleGrid minChildWidth="260px" gap="md" className={className}>
+    <SimpleGrid minChildWidth="256px" gap="md" className={className}>
       {Array.from({ length: rows }).map((_, i) => (
         <CardSkeleton key={i} />
       ))}
@@ -173,8 +174,9 @@ function GridSkeleton({ rows = 6, className }: { rows?: number; className?: stri
 }
 
 function StatsSkeleton({ columns = 4, className }: { columns?: number; className?: string }) {
+  // minChildWidth = Tailwind w-44 (was 180px)
   return (
-    <SimpleGrid minChildWidth="180px" gap="md" className={className}>
+    <SimpleGrid minChildWidth="176px" gap="md" className={className}>
       {Array.from({ length: columns }).map((_, i) => (
         <VStack key={i} gap="sm" className="p-4 border border-border rounded-container">
           <SkeletonLine className="w-1/2 h-3" />
@@ -203,7 +205,8 @@ function DetailSkeleton({ rows = 6, className }: { rows?: number; className?: st
         <SkeletonBlock className="h-20 flex-1" />
         <SkeletonBlock className="h-20 flex-1" />
       </HStack>
-      <SimpleGrid minChildWidth="200px" maxCols={3} gap="md">
+      {/* minChildWidth = Tailwind w-48 (was 200px) */}
+      <SimpleGrid minChildWidth="192px" maxCols={3} gap="md">
         {Array.from({ length: rows }).map((_, i) => (
           <VStack key={i} gap="xs">
             <SkeletonLine className="w-1/3 h-3" />

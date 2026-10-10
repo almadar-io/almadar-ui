@@ -16,6 +16,7 @@
  * alignment is deliberately deferred).
  */
 
+import { useItemMoves } from "../../../lib/item-move";
 import React, { useMemo, useCallback } from "react";
 import { cn } from "../../../lib/cn";
 import { pressableProps } from "../../../lib/pressable";
@@ -262,14 +263,17 @@ const BarChart: React.FC<{
         return m;
     }, [series, stack, columnTotals]);
 
+    // A category that joins or leaves slides the others along with a glide.
+    const moves = useItemMoves(true);
+
     if (horizontal) {
         return (
-            <VStack gap="xs" align="stretch" className="w-full" style={{ minHeight: height }}>
+            <VStack gap="xs" align="stretch" className="w-full" style={{ minHeight: height }} data-item-move-root={moves.root}>
                 {categories.map((label, catIdx) => {
                     const displayLabel = timeAxis ? formatTimeLabel(label, period, i18n) : label;
                     const total = columnTotals?.[catIdx] ?? 1;
                     return (
-                        <HStack key={label} gap="sm" align="center" className="w-full">
+                        <HStack key={label} gap="sm" align="center" className="w-full" data-item-key={label} data-item-move={moves.row}>
                             <Typography
                                 variant="caption"
                                 color="secondary"
@@ -335,6 +339,7 @@ const BarChart: React.FC<{
             align="end"
             className="w-full"
             style={{ height }}
+            data-item-move-root={moves.root}
         >
             {categories.map((label, catIdx) => {
                 const displayLabel = timeAxis ? formatTimeLabel(label, period, i18n) : label;
@@ -347,6 +352,8 @@ const BarChart: React.FC<{
                             flex
                             className="min-w-0"
                             style={{ height: "100%" }}
+                            data-item-key={label}
+                            data-item-move={moves.row}
                         >
                             <HStack gap={histogram ? "none" : "xs"} align="end" justify={histogram ? undefined : "center"} className="w-full flex-1 min-h-0">
                                 {series.map((s, sIdx) => {
@@ -402,6 +409,8 @@ const BarChart: React.FC<{
                         flex
                         className="min-w-0"
                         style={{ height: "100%" }}
+                        data-item-key={label}
+                        data-item-move={moves.row}
                     >
                         <VStack gap="none" className="w-full flex-1 min-h-0" justify="end">
                             {series.map((s, sIdx) => {

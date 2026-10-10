@@ -92,3 +92,14 @@
     font-style: var(--heading-style, normal);
     text-shadow: var(--heading-shadow, none);
 }
+
+/* Presentation motion: a subtree whose changes are there to be watched (a live demo,
+ * `Box animateChanges`) plays them over the theme's dramatic duration with its standard
+ * ease-in-out instead of the snappy emphasized timing. Lives here because every app
+ * (runtime and compiled) loads the foundation; doubled attribute so it wins over a
+ * `[data-theme]` block on the same element. */
+[data-motion="presentation"][data-motion] {
+    --duration-normal: var(--duration-dramatic, 600ms);
+    --duration-slow: var(--duration-dramatic, 600ms);
+    --easing-emphasized: var(--easing-standard, cubic-bezier(0.4, 0, 0.2, 1));
+}

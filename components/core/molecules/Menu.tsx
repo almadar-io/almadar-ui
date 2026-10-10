@@ -6,6 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
+import { actionTestId } from '@almadar/core';
 import React, { useState, useRef, useEffect, useId, useLayoutEffect } from "react";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { Box } from "../atoms/Box";
@@ -257,7 +258,7 @@ function SubMenu({
             }}
             aria-disabled={item.disabled || undefined}
             title={item.title}
-            data-testid={item.event ? `action-${item.event}` : undefined}
+            data-testid={item.event ? actionTestId(item.event) : undefined}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-2 text-start",
               "text-sm transition-colors",
@@ -351,7 +352,7 @@ function MenuItemRow({
           if (hasSubMenu) openSubMenu(itemId, e.currentTarget);
         }}
         onPointerDown={hasSubMenu ? triggerProps.onPointerDown : undefined}
-        data-testid={item.event ? `action-${item.event}` : undefined}
+        data-testid={item.event ? actionTestId(item.event) : undefined}
         className={cn(
           "w-full flex items-center justify-between gap-3 px-4 py-2 text-start",
           "text-sm transition-colors",

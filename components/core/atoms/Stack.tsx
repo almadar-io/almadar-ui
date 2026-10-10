@@ -47,7 +47,10 @@ export interface StackProps extends Omit<React.AriaAttributes, keyof A11yProps>,
   as?: React.ElementType;
   /** Click handler */
   onClick?: (e: React.MouseEvent) => void;
-  /** Keyboard handler */
+  /**
+   * Keyboard handler
+   * @notification
+   */
   onKeyDown?: (e: React.KeyboardEvent) => void;
   /** Element id */
   id?: string;

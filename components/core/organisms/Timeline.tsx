@@ -12,6 +12,7 @@
  * - className for external styling
  */
 
+import { useItemMoves } from "../../../lib/item-move";
 import React from "react";
 import type { A11yProps, SkeletonSpec, EventKey } from "@almadar/core";
 import { Skeleton } from "../molecules/Skeleton";
@@ -187,6 +188,8 @@ export const Timeline: React.FC<TimelineProps> = ({
             };
         });
     }, [propItems, entityData, titleField, descriptionField, dateField, statusField]);
+    // An event added on top pushes the others down with a glide.
+    const moves = useItemMoves(true);
 
     if (isLoading) {
         return (
@@ -229,7 +232,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     </Typography>
                 )}
 
-                <VStack gap="none" className={cn("relative", lookStyles[look])}>
+                <VStack gap="none" className={cn("relative", lookStyles[look])} data-item-move-root={moves.root}>
                     {items.map((item, idx) => {
                         const status = (item.status as TimelineItemStatus) || "pending";
                         const style = STATUS_STYLES[status] || STATUS_STYLES.pending;
@@ -237,7 +240,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                         const isLast = idx === items.length - 1;
 
                         return (
-                            <HStack key={item.id} gap="md" align="start" className="relative">
+                            <HStack key={item.id} gap="md" align="start" className="relative" data-entity-id={item.id} data-item-key={item.id} data-item-move={moves.row}>
                                 {/* Timeline track */}
                                 <VStack align="center" className="flex-shrink-0 relative" style={{ width: "24px" }}>
                                     <Icon

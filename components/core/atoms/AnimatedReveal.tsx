@@ -33,8 +33,21 @@ export interface AnimatedRevealProps extends Omit<React.HTMLAttributes<HTMLDivEl
   delay?: number;
   /** How much of the element must be visible before triggering, 0-1 (default: 0.15) */
   threshold?: number;
-  /** scroll trigger: event emitted once (as UI:{revealEvent}) the first time the element scrolls into view; never under reduced motion */
+  /**
+   * scroll trigger: event emitted once (as UI:{revealEvent}) the first time the element scrolls into view; never under reduced motion
+   * @notification
+   */
   revealEvent?: EventKey;
+  /**
+   * scroll trigger: event emitted (as UI:{enterEvent}) every time the element enters the view
+   * @notification
+   */
+  enterEvent?: EventKey;
+  /**
+   * scroll trigger: event emitted (as UI:{leaveEvent}) every time the element leaves the view after having entered it
+   * @notification
+   */
+  leaveEvent?: EventKey;
   /** Animate only the first time the element enters the viewport (default: true) */
   once?: boolean;
   /** Manual control: when trigger='manual', set this to true to animate */
@@ -43,6 +56,12 @@ export interface AnimatedRevealProps extends Omit<React.HTMLAttributes<HTMLDivEl
   easing?: string;
   /** Children: ReactNode or render function receiving animated state */
   children: React.ReactNode | ((animated: boolean) => React.ReactNode);
+}
+
+/** Steps up to `threshold`, so a band taller than the viewport reports as it scrolls in. */
+function revealThresholds(threshold: number): number[] {
+  const steps = Array.from({ length: 20 }, (_, i) => (i * threshold) / 20);
+  return [...steps, threshold];
 }
 
 const initialStyles: Record<RevealAnimation, React.CSSProperties> = {
@@ -77,6 +96,8 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
       threshold = 0.15,
       once = true,
       revealEvent,
+      enterEvent,
+      leaveEvent,
       animate: manualAnimate,
       easing = 'cubic-bezier(0.16, 1, 0.3, 1)',
       children,
@@ -92,6 +113,7 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
     const revealEmitted = useRef(false);
     const internalRef = useRef<HTMLDivElement>(null);
     const hasAnimated = useRef(false);
+    const inView = useRef(false);
 
     // Merge forwarded ref with internal ref
     const setRef = useCallback(
@@ -111,7 +133,18 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
 
       const observer = new IntersectionObserver(
         ([entry]) => {
-          if (entry.isIntersecting) {
+          if (entry.isIntersecting !== inView.current) {
+            const event = entry.isIntersecting ? enterEvent : leaveEvent;
+            inView.current = entry.isIntersecting;
+            if (event) eventBus.emit(`UI:${event}`, {});
+          }
+          // `threshold` of the element visible, or — for a band taller than the viewport,
+          // which can never show that much of itself — `threshold` of the viewport filled.
+          const seenEnough = entry.isIntersecting && (
+            entry.intersectionRatio >= threshold
+            || (entry.rootBounds !== null && entry.intersectionRect.height >= threshold * entry.rootBounds.height)
+          );
+          if (seenEnough) {
             // Independent of `once`: the event may arrive on a later render than the first reveal.
             if (revealEvent && !reducedMotion && !revealEmitted.current) {
               revealEmitted.current = true;
@@ -121,16 +154,28 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
             if (once && hasAnimated.current) return;
             hasAnimated.current = true;
             setIsAnimated(true);
-          } else if (!once) {
+          } else if (!entry.isIntersecting && !once) {
             setIsAnimated(false);
           }
         },
-        { threshold },
+        { threshold: revealThresholds(threshold) },
       );
 
       observer.observe(el);
       return () => observer.disconnect();
-    }, [trigger, threshold, once, revealEvent, reducedMotion, eventBus]);
+    }, [trigger, threshold, once, revealEvent, enterEvent, leaveEvent, reducedMotion, eventBus]);
+
+    // Off-screen bands pause their CSS animations (tailwind preset); written to the DOM so scrolling re-renders nothing.
+    useEffect(() => {
+      const el = internalRef.current;
+      if (!el || typeof IntersectionObserver === 'undefined') return;
+      const observer = new IntersectionObserver(
+        ([entry]) => { el.dataset.onScreen = entry.isIntersecting ? 'true' : 'false'; },
+        { rootMargin: '200px' },
+      );
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, []);
 
     // Hover trigger
     const handleMouseEnter = trigger === 'hover' ? () => setIsAnimated(true) : undefined;
@@ -149,9 +194,11 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
     return (
       <div
         ref={setRef}
-        className={cn('will-change-[opacity,transform]', className)}
+        className={cn(className)}
         style={{
           ...currentStyle,
+          // A revealed band is page-sized: keeping the layer hint after the reveal holds a huge GPU layer.
+          willChange: active ? 'auto' : 'opacity, transform',
           transitionProperty: 'opacity, transform',
           transitionDuration: reducedMotion ? '0ms' : `${duration}ms`,
           transitionDelay: `${delay}ms`,

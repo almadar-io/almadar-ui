@@ -57,7 +57,7 @@ describe('cn merges the preset custom scales', () => {
 
   it('every plugin utility the preset adds survives a merge with stock utilities of every group', () => {
     const require = createRequire(import.meta.url);
-    type PresetPlugin = { handler: (api: { addUtilities: (u: Record<string, object>) => void }) => void };
+    type PresetPlugin = { handler: (api: { addBase: (b: Record<string, object>) => void; addUtilities: (u: Record<string, object>) => void }) => void };
     const preset = require('../../tailwind-preset.cjs') as { plugins: readonly (PresetPlugin | (() => object))[] };
     const names: string[] = [];
     // The preset's own utility plugins are `{ handler }` objects; a third-party
@@ -67,7 +67,8 @@ describe('cn merges the preset custom scales', () => {
       if (typeof plugin === 'function') continue;
       // Only single-class keys are utilities a caller writes in className; descendant selectors such as
       // `.band > :not([data-band-layer])` style a utility's children and never reach cn.
-      plugin.handler({ addUtilities: (u) => names.push(...Object.keys(u).filter((k) => /^\.[\w-]+$/.test(k)).map((k) => k.slice(1))) });
+      // Base-layer rules are element/attribute selectors, not utility classes.
+      plugin.handler({ addBase: () => undefined, addUtilities: (u) => names.push(...Object.keys(u).filter((k) => /^\.[\w-]+$/.test(k)).map((k) => k.slice(1))) });
     }
     expect(names).toContain('interactive-border');
     expect(names).toEqual(expect.arrayContaining(['band', 'band-edge', 'band-gradient', 'band-inverse', 'proof-marquee', 'proof-marquee-track']));

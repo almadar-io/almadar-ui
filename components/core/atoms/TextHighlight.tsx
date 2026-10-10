@@ -35,11 +35,13 @@ export interface TextHighlightProps extends A11yProps {
 
   /**
    * Callback when highlight is hovered
+   * @notification
    */
   onMouseEnter?: () => void;
 
   /**
    * Callback when hover ends
+   * @notification
    */
   onMouseLeave?: () => void;
 
@@ -61,7 +63,10 @@ export interface TextHighlightProps extends A11yProps {
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventEmit<{ annotationId?: string }>;
 
-  /** Declarative hover event — emits UI:{hoverEvent} with { hovered, annotationId } */
+  /**
+   * Declarative hover event — emits UI:{hoverEvent} with { hovered, annotationId }
+   * @notification
+   */
   hoverEvent?: EventEmit<{ hovered: boolean; annotationId?: string }>;
 }
 

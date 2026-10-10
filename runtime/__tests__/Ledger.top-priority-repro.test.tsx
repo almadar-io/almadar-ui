@@ -41,8 +41,9 @@ class ResizeObserverStub {
 }
 (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= ResizeObserverStub;
 class IntersectionObserverStub {
-  constructor(private readonly callback: (entries: Array<{ isIntersecting: boolean; target: Element }>) => void) {}
-  observe(target: Element): void { this.callback([{ isIntersecting: true, target }]); }
+  constructor(private readonly callback: (entries: Array<{ isIntersecting: boolean; intersectionRatio: number; intersectionRect: { height: number }; rootBounds: { height: number }; target: Element }>) => void) {}
+  // A fully visible element in an 800px viewport, as a real entry reports it.
+  observe(target: Element): void { this.callback([{ isIntersecting: true, intersectionRatio: 1, intersectionRect: { height: 100 }, rootBounds: { height: 800 }, target }]); }
   unobserve(): void {}
   disconnect(): void {}
   takeRecords(): [] { return []; }

@@ -1,4 +1,5 @@
 'use client';
+import { actionTestId } from '@almadar/core';
 import React from "react";
 import type { A11yProps, Asset, EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
@@ -253,7 +254,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       disabled && focused && "opacity-50 cursor-not-allowed",
       className,
     );
-    const testId = dataTestId ?? (action ? `action-${action}` : undefined);
+    const testId = dataTestId ?? (action ? actionTestId(action) : undefined);
 
     // Busy keeps the button's size: the label holds its space (invisible) and the
     // spinner overlays the centre — a state never changes outer dimensions.

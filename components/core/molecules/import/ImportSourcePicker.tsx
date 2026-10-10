@@ -16,6 +16,18 @@ import { Typography } from '../../atoms/Typography';
 import { cn } from '../../../../lib/cn';
 
 import { domPassthrough } from '../../../../lib/domPassthrough';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:import-source-picker');
+
+function readText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(reader.error ?? new Error(`could not read ${file.name}`));
+    reader.readAsText(file);
+  });
+}
 export interface ImportSourceOption {
   /** Source identifier passed to onSelect */
   id: string;
@@ -35,13 +47,21 @@ export interface ImportSourceOption {
   disabled?: boolean;
 }
 
+/** A picked file as a program can receive it: plain JSON, its contents read as UTF-8 text. */
+export interface ImportedFile {
+  name: string;
+  size: number;
+  type: string;
+  text: string;
+}
+
 export interface ImportSourcePickerProps extends A11yProps {
   /** Source options to render */
   sources: ImportSourceOption[];
   /** Called with the source id when an 'action' option is picked */
   onSelect?: (sourceId: string) => void;
-  /** Called with the chosen files when a 'file' option resolves */
-  onFilesSelected?: (files: File[]) => void;
+  /** Called with the chosen files, read as text, when a 'file' option resolves */
+  onFilesSelected?: (files: ImportedFile[]) => void;
   /** Optional heading above the options */
   title?: string;
   /** Generic slot for additional sources rendered below the options */
@@ -77,7 +97,15 @@ export const ImportSourcePicker: React.FC<ImportSourcePickerProps> = ({
   const handleFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files ? Array.from(event.target.files) : [];
     event.target.value = '';
-    if (files.length > 0) onFilesSelected?.(files);
+    if (files.length === 0 || !onFilesSelected) return;
+    void Promise.all(
+      files.map(async (file): Promise<ImportedFile> => ({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        text: await readText(file),
+      })),
+    ).then(onFilesSelected, (error: Error) => log.error('file-read-failed', { message: error.message }));
   };
 
   return (

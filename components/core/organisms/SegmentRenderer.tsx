@@ -96,10 +96,16 @@ export interface SegmentRendererProps extends Omit<React.AriaAttributes, keyof A
   /** User progress for restoring activation/reflection state */
   userProgress?: LessonUserProgress;
   /**
-   * Simulate executing runnable code blocks. Omit to render runnable blocks
-   * as read-only. Real execution is a future track.
+   * Event a runnable code block emits on Run (`{ code, language, runId }`, runId = the segment
+   * index). Omit to render runnable blocks read-only.
    */
-  onRunCodeSimulation?: (code: string, language: string) => Promise<CodeSimulationOutput>;
+  runCodeEvent?: EventEmit<{ code: string; language: string; runId: string }>;
+  /** Event a runnable code block emits on Reset (`{ runId }`). */
+  resetCodeEvent?: EventEmit<{ runId: string }>;
+  /** The program's run results, keyed by segment runId. */
+  codeOutputs?: Record<string, CodeSimulationOutput>;
+  /** The runId the program is currently running. */
+  runningCode?: string;
   /**
    * Optional render slot for `visualization` segment types. When not provided,
    * visualization segments are silently skipped. Callers can wire this to any
@@ -123,7 +129,10 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
   className,
   containerClassName,
   userProgress,
-  onRunCodeSimulation,
+  runCodeEvent,
+  resetCodeEvent,
+  codeOutputs,
+  runningCode,
   onRenderVisualization,
   ...rest
 }) => {
@@ -172,14 +181,19 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
           if (segment.language === 'mermaid') {
             return <MermaidDiagram key={`code-${index}`} code={segment.content} />;
           }
-          if (segment.runnable && onRunCodeSimulation) {
+          if (segment.runnable && runCodeEvent) {
+            const runId = String(index);
             return (
               <CodeRunnerPanel
                 key={`code-${index}`}
                 language={segment.language}
                 code={segment.content}
                 runnable
-                onRun={(code) => onRunCodeSimulation(code, segment.language)}
+                runEvent={runCodeEvent}
+                resetEvent={resetCodeEvent}
+                runId={runId}
+                output={codeOutputs?.[runId] ?? null}
+                running={runningCode === runId}
               />
             );
           }

@@ -54,7 +54,7 @@ export const SvgShield: React.FC<SvgShieldProps> = ({
         <path
           d={CHECK_PATH}
           fill="none"
-          stroke={variant === 'check' ? 'white' : color}
+          stroke="var(--surface-diagram)"
           strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"

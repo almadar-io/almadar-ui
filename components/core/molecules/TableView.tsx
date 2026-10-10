@@ -12,6 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button,
  * Icon, Checkbox, Divider.
  */
+import { ACTION_OVERFLOW_TESTID } from '@almadar/core';
 import React from 'react';
 import type { A11yProps, SkeletonSpec, EntityRow, EntityWith, FieldValue, EventKey, EventEmit } from '@almadar/core';
 import { Skeleton } from "./Skeleton";
@@ -633,7 +634,7 @@ export function TableView({
               <Menu
                 position="bottom-end"
                 trigger={
-                  <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow" data-row-id={String(row.id)}>
+                  <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid={ACTION_OVERFLOW_TESTID} data-row-id={String(row.id)}>
                     <Icon name="more-horizontal" size="xs" />
                   </Button>
                 }

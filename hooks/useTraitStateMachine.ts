@@ -45,7 +45,7 @@ import { ALL_SLOTS } from './useUISlots';
 import { registerTrait, unregisterTrait, type TraitDebugInfo } from '../lib/traitRegistry';
 import { bindTraitStateGetter, registerTraitSnapshot } from '../lib/verificationRegistry';
 import { createCircuitVerificationObserver, recordDispatchVerdict } from '../lib/circuitVerificationObserver';
-import { TRAIT_MOUNT_ERROR_TESTID, configReferencesCallsitePayload, traitReferencesCallsitePayload, traitsEmbeddedByEvent, type TraitStateSnapshot, type PersistenceAdapter } from '@almadar/core';
+import { TRAIT_MOUNT_ERROR_TESTID, configReferencesCallsitePayload, traitReferencesCallsitePayload, traitsEmbeddedByEvent, type TraitStateSnapshot, type PersistenceAdapter, type TransitionRejection } from '@almadar/core';
 import type { useUISlots } from '../providers/UISlotContext';
 import { getTabClientId, useCircuitKernel } from './circuit/useCircuitKernel';
 import { useBusIngress } from './circuit/useBusIngress';
@@ -278,6 +278,12 @@ export function useTraitStateMachine(
       options.navigateBack,
       activeTraitNamesRef.current,
     );
+    // A tick lane posts without blocking the drain; what its fold adds (a
+    // refetch's render) paints when the post lands.
+    void outcome.tickSettled?.then((later) => {
+      if (later === undefined) return;
+      slotFlush.applyClientEffects(later.clientEffects ?? [], later.clientEffectsByTrait, options.navigate, options.navigateBack, activeTraitNamesRef.current);
+    });
     // The kernel already delivered these to its own listeners; republish for
     // bus subscribers outside it (providers, components, other hook instances).
     for (const emitted of outcome.response.emittedEvents) {
@@ -376,7 +382,9 @@ export function useTraitStateMachine(
 
   // Mount in one round trip: every entering trait's lifecycle arm runs and
   // paints at once, then one mount leg is posted and folded.
-  const mountAndSettle = useCallback(async (seeds: MountSeed[], payload: EventPayload): Promise<void> => {
+  // Resolves with the first seed whose lifecycle arm failed (a contained `effect-failed`), so the
+  // mount site can name it on the card the same way as a thrown mount error.
+  const mountAndSettle = useCallback(async (seeds: MountSeed[], payload: EventPayload): Promise<TransitionRejection | undefined> => {
     const composedBefore = new Map(store.callsitePayloads);
     let beforeLocalPaint: SlotCheckpoint | undefined;
     let outcome: Awaited<ReturnType<typeof kernel.dispatchMount>>;
@@ -403,11 +411,17 @@ export function useTraitStateMachine(
     const serverRepaints = outcome.serverEffects.clientEffectsByTrait ?? [];
     for (const seed of outcome.seeds) {
       recordDispatchVerdict(traitIndex.byName.get(seed.trait)?.orbitalName ?? seed.trait, seed.event, {
-        response: { ...seed.local, success: outcome.success, ...(outcome.error !== undefined ? { error: outcome.error } : {}) },
+        response: {
+          ...seed.local,
+          success: outcome.success,
+          ...(outcome.error !== undefined ? { error: outcome.error } : {}),
+          rejections: [...(seed.local.rejections ?? []), ...outcome.rejections.filter((r) => r.trait === seed.trait)],
+        },
       });
       stateLog.debug('mount:settled', { traitName: seed.trait, eventKey: seed.event, mode: seed.mode, transitioned: seed.local.transitioned });
       await afterSettle(seed.trait, seed.event, payload, seed.local.transitioned, [...(seed.local.clientEffectsByTrait ?? []), ...serverRepaints], composedBefore);
     }
+    return [...outcome.seeds.flatMap((seed) => seed.local.rejections ?? []), ...outcome.rejections].find((r) => r.code === 'effect-failed');
   }, [kernel, slotFlush, traitIndex, store, eventBus, options.navigate, options.navigateBack, afterSettle]);
 
   useBusIngress(traitBindings, traitIndex, dispatchAndSettle, eventBus, appTraitNames);
@@ -493,7 +507,18 @@ export function useTraitStateMachine(
     store.mount.mounting(entering.map((e) => e.trait));
     if (entering.length > 0) {
       uiSlots.clearBySource('main', MOUNT_ERROR_SOURCE);
-      void mountAndSettle(entering, { ...(options.initPayload ?? {}) }).catch((err) => {
+      void mountAndSettle(entering, { ...(options.initPayload ?? {}) }).then((failure) => {
+        if (failure === undefined || !aliveRef.current) return;
+        const failed = failure.trait ?? entering.map((e) => e.trait).join(', ');
+        const message = failure.error ?? failure.code;
+        stateLog.warn('mount:effect-failed', { failed, event: failure.event, error: message });
+        uiSlots.render({
+          target: 'main',
+          pattern: 'error-state',
+          props: { title: t('error.traitMountFailed', { trait: failed }), message, 'data-testid': TRAIT_MOUNT_ERROR_TESTID },
+          sourceTrait: MOUNT_ERROR_SOURCE,
+        });
+      }, (err) => {
         const traits = entering.map((e) => e.trait);
         const message = err instanceof Error ? err.message : String(err);
         const failed = err instanceof TraitMountError ? err.trait : traits.join(', ');

@@ -118,24 +118,29 @@ export interface DockLayoutProps extends Omit<React.AriaAttributes, keyof A11yPr
 
   /** Whether `sidebar` is collapsed (controlled; the layout keeps its own state when omitted). */
   sidebarCollapsed?: boolean;
+  /** @notification */
   onSidebarCollapsedChange?: (collapsed: boolean) => void;
   /** Sidebar size as a SplitPane ratio (0-100, percentage of the sidebar/main split). @default 20 */
   sidebarWidth?: number;
+  /** @notification */
   onSidebarWidthChange?: (width: number) => void;
   /** Minimum sidebar size in pixels, forwarded to SplitPane's `minSize`. @default 160 */
   sidebarMinSize?: number;
 
   /** Whether `bottomPanel` is collapsed (controlled; the layout keeps its own state when omitted). */
   bottomPanelCollapsed?: boolean;
+  /** @notification */
   onBottomPanelCollapsedChange?: (collapsed: boolean) => void;
   /** Bottom panel size as a SplitPane ratio (0-100, percentage given to the panel). @default 30 */
   bottomPanelHeight?: number;
+  /** @notification */
   onBottomPanelHeightChange?: (height: number) => void;
   /** Minimum bottom panel size in pixels, forwarded to SplitPane's `minSize`. @default 120 */
   bottomPanelMinSize?: number;
 
   /** Whether `secondarySidebar` is collapsed (controlled; the layout keeps its own state when omitted). */
   secondarySidebarCollapsed?: boolean;
+  /** @notification */
   onSecondarySidebarCollapsedChange?: (collapsed: boolean) => void;
 
   /** The mobile variant; decided by the viewport (narrower than 1024px) when omitted. */

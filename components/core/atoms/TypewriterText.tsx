@@ -21,7 +21,10 @@ export interface TypewriterTextProps extends A11yProps {
   startDelay?: number;
   /** Additional class names */
   className?: string;
-  /** Called when the entire text has been revealed */
+  /**
+   * Called when the entire text has been revealed
+   * @notification
+   */
   onComplete?: () => void;
 }
 

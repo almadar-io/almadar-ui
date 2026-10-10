@@ -16,6 +16,7 @@
  * RichTextEditor's change stream; clicking the read body starts an editing
  * session with the cursor in the text.
  */
+import { actionTestId, ACTION_OVERFLOW_TESTID } from '@almadar/core';
 import React, { useState } from 'react';
 import type { EventKey, EventEmit, A11yProps } from '@almadar/core';
 import { cn } from '../../../lib/cn';
@@ -249,7 +250,7 @@ export function DocumentPanel({
                     variant="primary"
                     size="sm"
                     onClick={() => fireAction(action)}
-                    data-testid={`action-${action.event}`}
+                    data-testid={action.event ? actionTestId(action.event) : undefined}
                   >
                     {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
                     {action.label}
@@ -259,7 +260,7 @@ export function DocumentPanel({
                   <Menu
                     position="bottom-end"
                     trigger={
-                      <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                      <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid={ACTION_OVERFLOW_TESTID}>
                         <Icon name="more-horizontal" size="xs" />
                       </Button>
                     }

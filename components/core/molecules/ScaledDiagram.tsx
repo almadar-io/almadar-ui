@@ -25,6 +25,13 @@ export interface ScaledDiagramProps extends A11yProps {
   className?: string;
 }
 
+/** The nearest descendants that lay out a box: slot wrappers render `display: contents` and have no width. */
+function boxedChildren(el: Element): HTMLElement[] {
+  return [...el.children].flatMap((child) =>
+    child instanceof HTMLElement && getComputedStyle(child).display !== 'contents' ? [child] : boxedChildren(child),
+  );
+}
+
 /** Minimum diagram width (px) to consider it a real diagram worth scaling. */
 const MIN_DIAGRAM_WIDTH = 200;
 
@@ -33,7 +40,7 @@ export const ScaledDiagram: React.FC<ScaledDiagramProps> = ({
   className,
   ...rest
 }) => {
-  const { t: _t } = useTranslate();
+  const { t: _t, direction } = useTranslate();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<{
@@ -54,9 +61,9 @@ export const ScaledDiagram: React.FC<ScaledDiagramProps> = ({
     let diagramW = 0;
     let diagramH = 0;
 
-    const children = content.children;
+    const children = boxedChildren(content);
     for (let i = 0; i < children.length; i++) {
-      const child = children[i] as HTMLElement;
+      const child = children[i];
       const w = child.style?.width;
       const h = child.style?.height;
       if (w && /^\d+/.test(w) && h && /^\d+/.test(h)) {
@@ -74,12 +81,13 @@ export const ScaledDiagram: React.FC<ScaledDiagramProps> = ({
 
     // If no sizable child found, don't apply scaling
     if (diagramW < MIN_DIAGRAM_WIDTH || diagramH <= 0) {
-      setLayout(null);
+      setLayout((prev) => (prev === null ? prev : null));
       return;
     }
 
     const s = Math.min(1, containerW / diagramW);
-    setLayout({ scale: s, height: diagramH * s });
+    const height = diagramH * s;
+    setLayout((prev) => (prev !== null && prev.scale === s && prev.height === height ? prev : { scale: s, height }));
   }, []);
 
   // Measure after children mount/change
@@ -92,15 +100,14 @@ export const ScaledDiagram: React.FC<ScaledDiagramProps> = ({
       requestAnimationFrame(() => measure());
     });
 
-    // Re-measure when DOM mutates (diagram mounts lazily)
-    const mo = new MutationObserver(() => {
-      requestAnimationFrame(() => measure());
-    });
-    mo.observe(content, { childList: true, subtree: true, attributes: true });
+    // Re-measure when the content changes size (a lazily mounted diagram grows it). Not per DOM
+    // mutation: a playing demo rewrites attributes every tick, and measuring forces a layout.
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(content);
 
     return () => {
       cancelAnimationFrame(raf1);
-      mo.disconnect();
+      ro.disconnect();
     };
   }, [measure, children]);
 
@@ -130,7 +137,8 @@ export const ScaledDiagram: React.FC<ScaledDiagramProps> = ({
         ref={contentRef}
         style={{
           width: 'max-content',
-          transformOrigin: 'top left',
+          // RTL content overflows to the left, so it shrinks toward its right edge.
+          transformOrigin: direction === 'rtl' ? 'top right' : 'top left',
           transform: hasLayout && layout.scale < 1
             ? `scale(${layout.scale})`
             : undefined,

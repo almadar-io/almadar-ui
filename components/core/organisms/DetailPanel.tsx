@@ -8,6 +8,7 @@
  * Extends DisplayStateProps (see ./types.ts) and declares `entity?: EntityRow`.
  */
 
+import { actionTestId, ACTION_OVERFLOW_TESTID } from '@almadar/core';
 import React, { useCallback, useContext, useEffect, Suspense, lazy } from "react";
 import type { A11yProps, SkeletonSpec, EventPayload, EntityRow, EntityWith, FieldValue, EventKey } from "@almadar/core";
 import { Skeleton } from "../molecules/Skeleton";
@@ -510,7 +511,7 @@ export interface DetailPanelProps extends DisplayStateProps, A11yProps {
   /** Line items composed in instead of `lineItems` — e.g. the child rows' own trait (ledger). */
   lineItemsContent?: React.ReactNode;
   /** Record fields shown as the document's totals, in order (ledger). */
-  totals?: readonly DisplayField[];
+  totals?: readonly FieldDef[];
   /** The thread shown as the main surface (conversation). */
   thread?: readonly EntityWith<ReplyNodeRow>[];
   /** The thread composed in instead of `thread` — e.g. the replies' own trait with its composer (conversation). */
@@ -869,11 +870,12 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     <Avatar src={typeof avatarSrc === "string" && avatarSrc ? avatarSrc : undefined} name={title} size="xl" />
   ) : null);
 
-  const totalsNode = totals && totals.length > 0 && normalizedData ? (
+  const totalFields = resolveFields(totals);
+  const totalsNode = totalFields.length > 0 && normalizedData ? (
     <VStack gap="xs" align="end" className="ms-auto min-w-[16rem] border-t border-border pt-3" data-testid="detail-totals">
-      {totals.map((field, idx) => {
+      {totalFields.map((field, idx) => {
         const value = getNestedValue(normalizedData, field.name) as FieldValue | undefined;
-        const last = idx === totals.length - 1;
+        const last = idx === totalFields.length - 1;
         return (
           <HStack key={field.name} justify="between" gap="lg" className="w-full">
             <Typography variant={last ? "body" : "small"} color={last ? undefined : "secondary"} weight={last ? "semibold" : undefined}>
@@ -888,8 +890,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     </VStack>
   ) : null;
 
+  // minChildWidth = Tailwind w-48 (was 200px)
   const renderFields = (names: readonly string[]): React.ReactNode => (
-    <SimpleGrid minChildWidth="200px" maxCols={3} gap="md">
+    <SimpleGrid minChildWidth="192px" maxCols={3} gap="md">
       {names.map((name) => {
         const value = (normalizedData ? getNestedValue(normalizedData, name) : undefined) as FieldValue | undefined;
         return (
@@ -917,7 +920,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 actionPayload={data ? actionPayload(backAction, data) : undefined}
                 onClick={backAction.navigatesTo ? () => handleActionClick(backAction, data) : undefined}
                 icon={backAction.icon ?? ArrowLeft}
-                data-testid={backAction.event ? `action-${backAction.event}` : "action-back"}
+                data-testid={backAction.event ? actionTestId(backAction.event) : actionTestId("back")}
               >
                 {backAction.label}
               </Button>
@@ -946,7 +949,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   actionPayload={data ? actionPayload(action, data) : undefined}
                   onClick={action.navigatesTo ? () => handleActionClick(action, data) : undefined}
                   icon={action.icon}
-                  data-testid={action.event ? `action-${action.event}` : undefined}
+                  data-testid={action.event ? actionTestId(action.event) : undefined}
                   data-row-id={normalizedData?.id !== undefined ? String(normalizedData.id) : undefined}
                 >
                   {action.label}
@@ -956,7 +959,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 <Menu
                   position="bottom-end"
                   trigger={
-                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow" isLoading={overflowBusy.pending}>
+                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid={ACTION_OVERFLOW_TESTID} isLoading={overflowBusy.pending}>
                       <Icon name="more-horizontal" size="xs" />
                     </Button>
                   }
@@ -980,7 +983,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   onClick={closeAction.event ? undefined : () => handleActionClick(closeAction, data)}
                   icon={X}
                   aria-label={t("aria.closePanel")}
-                  data-testid={closeAction.event ? `action-${closeAction.event}` : "action-close"}
+                  data-testid={closeAction.event ? actionTestId(closeAction.event) : actionTestId("close")}
                 />
               )}
             </HStack>
@@ -1021,7 +1024,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                     {section.title}
                   </Typography>
                 )}
-                <SimpleGrid minChildWidth="200px" maxCols={3} gap="md">
+                {/* minChildWidth = Tailwind w-48 (was 200px) */}
+                <SimpleGrid minChildWidth="192px" maxCols={3} gap="md">
                   {section.fields.map((field, idx) => (
                     <HStack key={idx} gap="sm" align="start" className="min-w-0">
                       {field.icon && (

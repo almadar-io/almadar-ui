@@ -1,4 +1,5 @@
 'use client';
+import { actionTestId } from '@almadar/core';
 import React from "react";
 import { cn } from "../../../lib/cn";
 import { Typography } from "../atoms/index";
@@ -325,7 +326,7 @@ export const StatCard: React.FC<StatCardProps> = ({
           variant="ghost"
           onClick={handleActionClick}
           className="mt-4 text-sm font-bold text-foreground hover:underline"
-          data-testid={action.event ? `action-${action.event}` : undefined}
+          data-testid={action.event ? actionTestId(action.event) : undefined}
         >
           {action.label} →
         </Button>

@@ -13,6 +13,7 @@
  * - Nested sections with collapsible support
  */
 
+import { actionTestId, FORM_PATTERN } from '@almadar/core';
 import React from "react";
 import type { A11yProps, ControlValue, EntityRow, EventEmit, EventKey, EventPayload, FieldValue, FormSubmitPayload, SkeletonSpec } from "@almadar/core";
 import { cn } from "../../../lib/cn";
@@ -1412,7 +1413,7 @@ export const Form: React.FC<FormProps> = ({
   return contentSurface.provide(
     <form
       ref={formRef}
-      data-pattern="form-section"
+      data-pattern={FORM_PATTERN}
       className={cn(layoutStyles[layout], gapStyles[gap], layout === "vertical" && "w-full max-w-xl", contentSurface.className && cn(contentSurface.className, "p-card-md"), className)}
       onSubmit={handleSubmit}
       onBlur={(e: React.FocusEvent<HTMLFormElement>) => {
@@ -1478,7 +1479,7 @@ export const Form: React.FC<FormProps> = ({
               onClick={handleCancel}
               disabled={isLoading}
               data-event={cancelEvent}
-              data-testid={`action-${cancelEvent}`}
+              data-testid={actionTestId(cancelEvent)}
             >
               {resolvedCancelLabel}
             </Button>
@@ -1489,7 +1490,7 @@ export const Form: React.FC<FormProps> = ({
               variant="primary"
               isLoading={isLoading}
               data-event={submitEvent}
-              data-testid={`action-${submitEvent}`}
+              data-testid={actionTestId(submitEvent)}
             >
               {resolvedSubmitLabel}
             </Button>

@@ -43,7 +43,10 @@ export interface GraphViewProps extends Omit<React.AriaAttributes, keyof A11yPro
   edges: GraphViewEdge[];
   /** Callback when a node is clicked */
   onNodeClick?: (node: GraphViewNode) => void;
-  /** Callback when a node is hovered (null on leave) */
+  /**
+   * Callback when a node is hovered (null on leave)
+   * @notification
+   */
   onNodeHover?: (node: GraphViewNode | null) => void;
   /** Width in pixels */
   width?: number;

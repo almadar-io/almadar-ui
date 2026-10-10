@@ -34,6 +34,7 @@ export interface SplitPaneProps extends Omit<React.AriaAttributes, keyof A11yPro
   /** Called with the new ratio while dragging. Providing this makes `ratio`
    *  controlled — the rendered split always tracks the prop instead of
    *  internal state, mirroring a controlled input. Omit for uncontrolled
+   * @notification
    *  (self-tracked) behavior. */
   onRatioChange?: (ratio: number) => void;
 }

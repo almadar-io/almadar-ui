@@ -11,11 +11,14 @@
  *
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
+import { actionTestId, ACTION_OVERFLOW_TESTID } from '@almadar/core';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { A11yProps, SkeletonSpec, EntityRow, EventKey, EventEmit, FieldValue } from '@almadar/core';
 import { Skeleton } from "./Skeleton";
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
+import { enterClassName } from '../../../lib/enter';
+import { ItemMoveScopeProvider, useItemMoves, useNewItemMoveScope } from '../../../lib/item-move';
 import { useContentSurface } from '../../../providers/SurfaceContext';
 import type { SurfaceMode } from '@almadar/core';
 import { entityRows } from '../../../lib/entityRows';
@@ -145,6 +148,8 @@ export interface DataGridProps extends DataDndProps, EmptyStateSlotProps, A11yPr
    * @deprecated Use children render prop in React code. This prop exists for pattern registry sync.
    */
   renderItem?: (item: EntityRow, index: number) => React.ReactNode;
+  /** Entrance animation each card plays when it mounts; a card that changes place glides there. Lists rendered inside the grid share its movement, so a card moved between them glides across */
+  itemEnter?: 'none' | 'fade' | 'rise' | 'scale' | 'slide';
   /** Max items to show before "Show More" button. Defaults to 0 (disabled). */
   pageSize?: number;
   /**
@@ -233,9 +238,13 @@ export function DataGrid({
   look = 'dense',
   surface = 'auto',
   relationsData,
+  itemEnter,
   ...rest
 }: DataGridProps) {
   const eventBus = useEventBus();
+  const moves = useItemMoves(itemEnter !== undefined && itemEnter !== 'none');
+  // Lists nested in the cards share this scope; without its own `itemEnter` the grid's items join it, so a board column eases its height when its cards move.
+  const nestedMoves = useNewItemMoveScope();
   const rowActions = useRowActions();
   const actionPayload = useRowActionPayload();
   const { fire: fireRowAction, isRowPending } = useRowActionFire<DataGridItemAction>();
@@ -376,23 +385,17 @@ export function DataGrid({
     ? undefined
     : `repeat(auto-fit, minmax(min(${minCardWidth}px, 100%), 1fr))`;
 
-  // Viewport queries (`sm:` / `lg:` / `xl:`) drive the grid in real-world
-  // app usage where the host viewport equals the rendered viewport. The
-  // `@max-*` container-query overrides only fire when DataGrid renders
-  // inside an `@container` ancestor (e.g. OrbPreviewNode's `@container/preview`)
-  // whose own width is narrower than the host viewport — that's the
-  // OrbPreview "Mobile/Tablet/Laptop/Wide" simulation case where the host
-  // viewport stays wide but the simulated card is mobile-sized. The `!`
-  // keeps them winning over the matching viewport rule when both fire.
-  // Ordered largest-to-smallest so the smallest matching tier wins.
+  // Columns follow the grid's own width (container queries on the grid root), not the
+  // viewport: a board in a 950px area shows four columns on any screen, and a grid in a
+  // scaled desktop-size demo or a simulated device keeps the layout its width allows.
   const colsClass = cols
     ? {
         1: 'grid-cols-1',
-        2: 'sm:grid-cols-2 @max-sm:!grid-cols-1',
-        3: 'sm:grid-cols-2 lg:grid-cols-3 @max-lg:!grid-cols-2 @max-sm:!grid-cols-1',
-        4: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 @max-xl:!grid-cols-3 @max-lg:!grid-cols-2 @max-sm:!grid-cols-1',
-        5: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 @max-xl:!grid-cols-3 @max-lg:!grid-cols-2 @max-sm:!grid-cols-1',
-        6: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 @max-xl:!grid-cols-3 @max-lg:!grid-cols-2 @max-sm:!grid-cols-1',
+        2: '@[30rem]:grid-cols-2',
+        3: '@[30rem]:grid-cols-2 @[42rem]:grid-cols-3',
+        4: '@[30rem]:grid-cols-2 @[42rem]:grid-cols-3 @[56rem]:grid-cols-4',
+        5: '@[30rem]:grid-cols-2 @[42rem]:grid-cols-3 @[64rem]:grid-cols-5',
+        6: '@[30rem]:grid-cols-2 @[42rem]:grid-cols-3 @[72rem]:grid-cols-6',
       }[cols]
     : undefined;
 
@@ -436,7 +439,8 @@ export function DataGrid({
 
   const idFieldName = dndItemIdField ?? 'id';
   return contentSurface.provide(dnd.wrapContainer(
-    <VStack gap="sm" {...domPassthrough(rest)}>
+    <ItemMoveScopeProvider value={nestedMoves}>
+    <VStack gap="sm" className="@container w-full min-w-0" {...domPassthrough(rest)} data-item-move-root={moves.root}>
       {/* Selection toolbar */}
       {selectable && someSelected && (
         <HStack gap="sm" className="items-center px-2 py-2 bg-muted rounded-container">
@@ -453,6 +457,7 @@ export function DataGrid({
 
       <Box
         data-grid-layout={asRows ? 'rows' : 'cards'}
+        data-item-move-root={nestedMoves.id}
         className={cn(
           asRows
             ? cn('flex flex-col divide-y divide-border', contentSurface.className && cn(contentSurface.className, 'overflow-hidden'))
@@ -496,11 +501,13 @@ export function DataGrid({
                 key={id}
                 data-entity-row
                 data-entity-id={id}
+                data-item-key={id}
+                data-item-move={moves.row ?? nestedMoves.id}
  data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
  aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
                 aria-current={isSelected ? 'true' : undefined}
                 onClick={handleCardClick}
-                className={cn('relative group/rowactions', handleCardClick && 'cursor-pointer', isSelected && 'ring-2 ring-primary rounded-container')}
+                className={cn('relative group/rowactions', handleCardClick && 'cursor-pointer', isSelected && 'ring-2 ring-primary rounded-container', enterClassName(itemEnter))}
               >
                 {handleCardClick && (
                   <Box
@@ -525,7 +532,7 @@ export function DataGrid({
                           variant="primary"
                           size="sm"
                           onClick={handleActionClick(action, itemData)}
-                          data-testid={`action-${action.event}`}
+                          data-testid={action.event ? actionTestId(action.event) : undefined}
                           data-row-id={String(itemData.id)}
                         >
                           {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
@@ -536,7 +543,7 @@ export function DataGrid({
                         <Menu
                           position="bottom-end"
                           trigger={
-                            <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                            <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid={ACTION_OVERFLOW_TESTID}>
                               <Icon name="more-horizontal" size="xs" />
                             </Button>
                           }
@@ -631,12 +638,15 @@ export function DataGrid({
               key={id}
               data-entity-row
               data-entity-id={id}
+              data-item-key={id}
+              data-item-move={moves.row ?? nestedMoves.id}
  data-row-pending={isRowPending(String(itemData.id ?? "")) || undefined}
  aria-busy={isRowPending(String(itemData.id ?? "")) || undefined}
                 aria-current={isSelected ? 'true' : undefined}
               onClick={handleCardClick}
               className={cn(
                 'relative',
+                enterClassName(itemEnter),
                 asRows
                   ? 'flex flex-row items-center gap-3 px-card-md transition-colors duration-fast hover:bg-muted/50'
                   : cn(
@@ -734,7 +744,7 @@ export function DataGrid({
                         variant="primary"
                         size="sm"
                         onClick={handleActionClick(action, itemData)}
-                        data-testid={`action-${action.event}`}
+                        data-testid={action.event ? actionTestId(action.event) : undefined}
                         data-row-id={String(itemData.id)}
                         aria-label={action.label}
                         title={action.label}
@@ -749,7 +759,7 @@ export function DataGrid({
                       <Menu
                         position="bottom-end"
                         trigger={
-                          <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                          <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid={ACTION_OVERFLOW_TESTID}>
                             <Icon name="more-horizontal" size="xs" />
                           </Button>
                         }
@@ -801,6 +811,7 @@ export function DataGrid({
         />
       )}
     </VStack>
+    </ItemMoveScopeProvider>
   ));
 };
 

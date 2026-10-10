@@ -81,8 +81,8 @@ describe('Modal', () => {
       </TestWrapper>
     );
     const dialog = screen.getByRole('dialog');
-    expect(dialog.className).toContain('min-w-[min(400px,100%)]');
-    expect(dialog.className).not.toMatch(/min-w-\[\d+px\]/);
+    expect(dialog.className).toContain('min-w-[min(theme(minWidth.modal-sm),100%)]');
+    expect(dialog.className).not.toMatch(/min-w-\[(min\()?\d+px/);
   });
 
   it('on phones it is a bottom sheet capped below full height, so its drag handle means something', () => {
@@ -97,5 +97,36 @@ describe('Modal', () => {
     expect(dialog.className).toContain('max-sm:max-h-[90vh]');
     expect(dialog.className).not.toContain('max-sm:h-full');
     expect(dialog.parentElement?.className).toContain('max-sm:items-end');
+  });
+
+  it.each([
+    ['sm', 'modal-sm'],
+    ['md', 'modal-md'],
+    ['lg', 'modal-lg'],
+    ['xl', 'modal-xl'],
+  ] as const)('size %s floors at the %s token and drops the floor below sm', (size, token) => {
+    render(
+      <TestWrapper>
+        <Modal isOpen contained size={size} title="Sized">
+          <p>Body</p>
+        </Modal>
+      </TestWrapper>
+    );
+    const { className } = screen.getByRole('dialog');
+    expect(className).toContain(`min-w-[min(theme(minWidth.${token}),100%)]`);
+    expect(className).toContain('max-sm:min-w-0');
+  });
+
+  it('size full has no width floor (control)', () => {
+    render(
+      <TestWrapper>
+        <Modal isOpen contained size="full" title="Full">
+          <p>Body</p>
+        </Modal>
+      </TestWrapper>
+    );
+    const { className } = screen.getByRole('dialog');
+    expect(className).not.toContain('minWidth.modal');
+    expect(className).toContain('min-w-0');
   });
 });

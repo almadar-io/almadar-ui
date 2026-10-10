@@ -30,6 +30,7 @@
  *
  * @packageDocumentation
  */
+import { claimDelivery } from '../../lib/bus-claim';
 import { useEffect } from 'react';
 import type { BusEventSource, EventPayload, ResolvedTraitBinding, SExpr } from '@almadar/core';
 import { applyListenPayloadMapping } from '@almadar/core';
@@ -77,31 +78,13 @@ export function useBusIngress(
       source.trait !== undefined &&
       (traitIndex.byName.has(source.trait) || appTraitNames.has(source.trait));
 
-    // One physical emit inside an embedded trait fans to a key per scope on the
-    // embed chain (`useEventBus`), all sharing one `source` object. A host trait
-    // hears it on its own key AND through a same-name listen route from the
-    // embedded child; the first delivery to a (trait, event) claims it, the rest are the same event again.
-    const claims = new WeakMap<BusEventSource, Set<string>>();
-    const claim = (source: BusEventSource | undefined, traitName: string, eventKey: string): boolean => {
-      if (source === undefined) return true;
-      const key = `${traitName}\u0000${eventKey}`;
-      const seen = claims.get(source);
-      if (seen === undefined) {
-        claims.set(source, new Set([key]));
-        return true;
-      }
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    };
-
     const dispatch = (
       traitName: string,
       eventKey: string,
       payload: EventPayload | undefined,
       source: BusEventSource | undefined,
     ): void => {
-      if (!claim(source, traitName, eventKey)) return;
+      if (!claimDelivery(source, traitName, eventKey)) return;
       const tick = source?.tick;
       // The firing control's busy state spans this dispatch (lib/pendingDispatch).
       const pendingKey = source?.pendingKey;

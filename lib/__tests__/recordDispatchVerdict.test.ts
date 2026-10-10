@@ -38,6 +38,25 @@ describe('recordDispatchVerdict', () => {
     expect(verdict?.error).toContain('Payload validation failed');
   });
 
+  it('records a dispatch whose effect failed as a failed verdict naming the trait and error', () => {
+    recordDispatchVerdict('Board', 'INIT', {
+      response: response({
+        rejections: [{ code: 'effect-failed', trait: 'BoardPreview', event: 'INIT', from: 'idle', error: 'behavior/ref: "Indigo Pioneer" is not a behavior specifier' }],
+      }),
+    });
+    const verdict = verdictFor('INIT');
+    expect(verdict?.success).toBe(false);
+    expect(verdict?.error).toContain('BoardPreview.INIT');
+    expect(verdict?.error).toContain('is not a behavior specifier');
+  });
+
+  it('control: a rejection that is not an effect failure leaves the verdict a success', () => {
+    recordDispatchVerdict('Board', 'SAVE', {
+      response: response({ transitioned: false, rejections: [{ code: 'no-matching-transition', trait: 'BoardPreview', event: 'SAVE' }] }),
+    });
+    expect(verdictFor('SAVE')?.success).toBe(true);
+  });
+
   it('control: records a clean dispatch as success with its transitioned flag', () => {
     recordDispatchVerdict('Board', 'MOVE', { response: response({ transitioned: false }) });
     const verdict = verdictFor('MOVE');
@@ -56,5 +75,23 @@ describe('recordDispatchVerdict', () => {
     const verdict = verdictFor('END_TURN');
     expect(verdict?.emittedEvents).toEqual(['AI_TURN']);
     expect(verdict?.clientEffects).toBe(1);
+  });
+
+  it('carries the response effectResults so a denied persist is visible to the walk (G-VERIFY-077)', () => {
+    recordDispatchVerdict('Board', 'DO_SAVE', {
+      response: response({
+        success: false,
+        effectResults: [{ effect: 'persist', entityType: 'Note', action: 'create', success: false, denied: true, error: 'policy denied' }],
+      }),
+    });
+    const entry = [...getTransitions()].reverse().find((t) => t.traitName === 'server:Board' && t.event === 'DO_SAVE');
+    expect(entry?.effects).toHaveLength(1);
+    expect(entry?.effects[0]).toMatchObject({ type: 'persist', entityName: 'Note', action: 'create', outcome: 'denied' });
+  });
+
+  it('control: a dispatch without effectResults records no effects', () => {
+    recordDispatchVerdict('Board', 'MOVE', { response: response({}) });
+    const entry = [...getTransitions()].reverse().find((t) => t.traitName === 'server:Board' && t.event === 'MOVE');
+    expect(entry?.effects).toEqual([]);
   });
 });

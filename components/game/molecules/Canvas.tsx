@@ -101,7 +101,9 @@ export interface CanvasProps extends Omit<React.AriaAttributes, keyof A11yProps>
     //     at runtime — so no trait is forced to declare both modes' fields at once. ---
     tileClickEvent?: EventEmit<{ x: number; y: number } & { tileId: string; z: number }>;
     unitClickEvent?: EventEmit<{ unitId: string } & { x: number; z: number }>;
+    /** @notification */
     tileHoverEvent?: EventEmit<{ x: number; y: number } & { tileId: string; z: number }>;
+    /** @notification */
     tileLeaveEvent?: EventEmit<Record<string, never>>;
     /** Feature-click event (3D only). */
     featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
@@ -137,8 +139,9 @@ const canvasLog = createLogger('almadar:ui:game-canvas');
 /** 2D `camera` string from the neutral Camera mode: only `follow` tracks; the fixed
  *  framings (isometric/top-down) become the 2D `fixed` camera; `chase`/`perspective`
  *  (3D-native) fall back to `pan-zoom` in 2D. */
-function to2DCamera(mode: Camera['mode']): Canvas2DCameraMode {
+export function to2DCamera(mode: Camera['mode'], controls?: boolean): Canvas2DCameraMode {
     if (mode === 'follow') return 'follow';
+    if (controls === false) return 'fixed';
     if (mode === 'isometric' || mode === 'top-down') return 'fixed';
     return 'pan-zoom';
 }
@@ -222,6 +225,7 @@ export function Canvas({
             drawables: [...(drawables ?? []), ...childDrawables],
             isLoading,
             cameraMode: to3DCameraMode(camera?.mode),
+            ...(camera?.controls === false ? { controlsEnabled: false } : {}),
             ...(zoom !== undefined ? { zoom } : {}),
             ...(camera?.fov !== undefined ? { fov: camera.fov } : {}),
             ...(camera?.azimuth !== undefined ? { azimuth: camera.azimuth } : {}),
@@ -270,7 +274,7 @@ export function Canvas({
             drawables={drawables}
             isLoading={isLoading}
             projection={projection}
-            camera={to2DCamera(camera?.mode)}
+            camera={to2DCamera(camera?.mode, camera?.controls)}
             {...(zoom !== undefined ? { scale: zoom } : {})}
             {...(fit !== undefined ? { fit } : {})}
             {...(tileWidth !== undefined ? { tileWidth } : {})}

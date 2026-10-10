@@ -16,6 +16,7 @@
  * @packageDocumentation
  */
 
+import { actionTestId } from '@almadar/core';
 import React, { useEffect, useId, useRef } from "react";
 import type { EventKey, A11yProps } from "@almadar/core";
 import { Box } from "../atoms/Box";
@@ -40,7 +41,10 @@ export type DrawerSize = "sm" | "md" | "lg" | "xl" | "full";
 export interface DrawerProps extends A11yProps {
   /** Whether the drawer is open (defaults to true when rendered by slot wrapper) */
   isOpen?: boolean;
-  /** Fires after the exit animation completes (the drawer is about to unmount). */
+  /**
+   * Fires after the exit animation completes (the drawer is about to unmount).
+   * @notification
+   */
   onExited?: () => void;
   /** Render inside the nearest positioned ancestor (a preview frame) instead of over the window. */
   contained?: boolean;
@@ -79,8 +83,8 @@ export interface DrawerProps extends A11yProps {
 const sizeWidths: Record<DrawerSize, string> = {
   sm: "w-full sm:w-80", // 320px
   md: "w-full sm:w-96", // 384px
-  lg: "w-full sm:w-[480px]",
-  xl: "w-full sm:w-[640px]",
+  lg: "w-full sm:max-w-lg", // 512px (was 480px, +32)
+  xl: "w-full sm:max-w-2xl", // 672px (was 640px, +32)
   full: "w-screen",
 };
 
@@ -210,7 +214,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 icon="x"
                 onClick={handleClose}
                 data-event="CLOSE"
-                data-testid="action-CLOSE"
+                data-testid={actionTestId("CLOSE")}
                 aria-label={t('aria.closeDrawer')}
                 className={cn(!title && "ml-auto")}
               />

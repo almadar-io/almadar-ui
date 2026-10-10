@@ -39,7 +39,10 @@ export interface LightboxProps extends A11yProps {
   closeAction?: string;
   /** Direct onClose callback */
   onClose?: () => void;
-  /** Direct onIndexChange callback */
+  /**
+   * Direct onIndexChange callback
+   * @notification
+   */
   onIndexChange?: (index: number) => void;
   /** Additional CSS classes */
   className?: string;

@@ -204,13 +204,15 @@ export function useCircuitKernel(
     ...(options.contextExtensions !== undefined ? { contextExtensions: options.contextExtensions } : {}),
     ...(options.debug !== undefined ? { debug: options.debug } : {}),
     ...(options.logContext !== undefined ? { logContext: options.logContext } : {}),
+    // A local leg evaluates `i18n/t` like a server: with the viewer's catalog, as the kernel does.
+    ...(i18n !== undefined ? { messages: { [i18n.locale]: i18n.messages } } : {}),
   };
   const offlineTransport = useMemo(
     () => (options.transport !== undefined || options.persistence === undefined
       ? undefined
       : createLocalStoreTransport({ ...localTransportOptions, persistence: options.persistence })),
     [options.transport, options.persistence, traitIndex, store, options.callService, options.user,
-      options.guardMode, options.strictBindings, options.contextExtensions, options.debug, options.logContext],
+      options.guardMode, options.strictBindings, options.contextExtensions, options.debug, options.logContext, i18n],
   );
   const routedTransport = useMemo(() => {
     if (options.browserStore === undefined) return undefined;
@@ -219,7 +221,7 @@ export function useCircuitKernel(
     const remote = options.transport ?? offlineTransport;
     return createResidenceTransport({ local, ...(remote !== undefined ? { remote } : {}), traitIndex: fullTraitIndex });
   }, [options.browserStore, options.transport, offlineTransport, fullTraitIndex, store, options.callService, options.user,
-    options.guardMode, options.strictBindings, options.contextExtensions, options.debug, options.logContext]);
+    options.guardMode, options.strictBindings, options.contextExtensions, options.debug, options.logContext, i18n]);
 
   const baseTransport = routedTransport ?? options.transport ?? offlineTransport;
   const effectiveTransport = useMemo(
