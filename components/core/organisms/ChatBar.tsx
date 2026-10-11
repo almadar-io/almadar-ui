@@ -8,8 +8,10 @@
  *
  * The agent's activity stream lives in the dedicated Trace tab (see
  * SubagentTracePanel). ChatBar emits generic EventBus events
- * (`UI:CHAT_SEND`, `UI:ELEMENT_SELECTED`, plus the declarative `UI:*` actions
- * the Button atom raises) — it owns no app-specific state.
+ * (`UI:CHAT_SEND`, `UI:ELEMENT_SELECTED` to clear the picked element, plus the
+ * declarative `UI:*` actions the Button atom raises) — it owns no app-specific
+ * state. What the host hands it (a focus request, the picked element) arrives as
+ * declared props, never as a bus subscription.
  */
 
 import React, { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
@@ -26,11 +28,19 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import type { DisplayStateProps } from './types';
 import type { A11yProps, EditFocus, EventKey } from '@almadar/core';
 import { domPassthrough } from '../../../lib/domPassthrough';
-import { ELEMENT_SELECTED_EVENT, parseEditFocus } from './trace-edit-focus';
+import { ELEMENT_SELECTED_EVENT } from './trace-edit-focus';
 
 // ─── Types ─────────────────────────────────────────────────
 
 export type ChatBarStatus = 'idle' | 'running' | 'paused' | 'complete' | 'error';
+
+/** A host handing the conversation to the user: focus the input, optionally with a prompt. */
+export interface ChatFocusRequest {
+  /** Changes for every new request; the same id re-rendered does not refocus. */
+  id: string | number;
+  /** Shown in the input until the next message is sent. */
+  placeholder?: string;
+}
 
 export interface ChatBarProps extends DisplayStateProps, Omit<React.AriaAttributes, keyof A11yProps>, A11yProps {
   /** Pipeline status */
@@ -47,6 +57,10 @@ export interface ChatBarProps extends DisplayStateProps, Omit<React.AriaAttribut
   context?: string;
   /** The event a message is sent as — `UI:{sendEvent}` with `{ message }`, from Enter or the send button. @default "CHAT_SEND" */
   sendEvent?: EventKey;
+  /** Focus the input (with an optional prompt); a new `id` focuses again. */
+  focusRequest?: ChatFocusRequest;
+  /** The picked canvas element a sent message edits; its ✕ emits `UI:ELEMENT_SELECTED` with `{ focus: null }`. */
+  editFocus?: EditFocus | null;
 }
 
 // ─── Helpers ───────────────────────────────────────────────
@@ -70,6 +84,8 @@ export function ChatBar({
   placeholder,
   context,
   sendEvent = 'CHAT_SEND',
+  focusRequest,
+  editFocus,
   className,
   ...rest
 }: ChatBarProps): React.ReactElement {
@@ -77,10 +93,17 @@ export function ChatBar({
   const eventBus = useEventBus();
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  // A host's UI:CHAT_FOCUS prompt, shown until the next message is sent.
+  // The focus request's prompt, shown until the next message is sent.
   const [requestedPlaceholder, setRequestedPlaceholder] = useState<string | null>(null);
-  // Contextual-edit focus chip: shows the canvas element the user picked.
-  const [focus, setFocus] = useState<EditFocus | null>(null);
+  const focus = editFocus ?? null;
+  const requestId = focusRequest?.id;
+  const requestPlaceholder = focusRequest?.placeholder;
+
+  useEffect(() => {
+    if (requestId === undefined) return;
+    if (requestPlaceholder !== undefined && requestPlaceholder.length > 0) setRequestedPlaceholder(requestPlaceholder);
+    inputRef.current?.focus();
+  }, [requestId, requestPlaceholder]);
 
   // Grow with the text up to about six lines, then scroll inside the input.
   useLayoutEffect(() => {
@@ -93,44 +116,27 @@ export function ChatBar({
   }, [inputValue]);
 
   const clearFocus = useCallback(() => {
-    setFocus(null);
     eventBus.emit(ELEMENT_SELECTED_EVENT, { focus: null });
   }, [eventBus]);
 
-  // Enter key — emits the same UI:CHAT_SEND event the send button does. The
-  // input clearing is handled by the listener below so both entry points share
-  // one closed-circuit path.
+  // Inside a trait scope the send goes out under qualified keys only, so the bar
+  // never hears its own emit: both entry points clear it here.
+  const clearSent = useCallback(() => {
+    setInputValue('');
+    setRequestedPlaceholder(null);
+  }, []);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key !== 'Enter' || e.shiftKey) return;
     const trimmed = inputValue.trim();
     if (!trimmed) return;
     e.preventDefault();
     eventBus.emit(`UI:${sendEvent}`, { message: trimmed });
-  }, [inputValue, eventBus, sendEvent]);
+    clearSent();
+  }, [inputValue, eventBus, sendEvent, clearSent]);
 
-  // Closed-circuit listener: any UI:CHAT_SEND emission clears our local input
-  // and consumes the focus chip. Covers both the Enter key handler above and
-  // the declarative <Button action="CHAT_SEND" />.
-  useEffect(() => {
-    const unsubSend = eventBus.on(`UI:${sendEvent}`, () => {
-      setInputValue('');
-      setFocus(null);
-      setRequestedPlaceholder(null);
-    });
-    const unsubFocus = eventBus.on('UI:CHAT_FOCUS', (e) => {
-      const hint = e.payload?.placeholder;
-      if (typeof hint === 'string' && hint.length > 0) setRequestedPlaceholder(hint);
-      inputRef.current?.focus();
-    });
-    const unsubSelect = eventBus.on(ELEMENT_SELECTED_EVENT, (e) => {
-      setFocus(parseEditFocus(e.payload?.focus));
-    });
-    return () => {
-      unsubSend();
-      unsubFocus();
-      unsubSelect();
-    };
-  }, [eventBus, sendEvent]);
+  // A send emitted elsewhere on the bus (a host's own send button) clears the bar too.
+  useEffect(() => eventBus.on(`UI:${sendEvent}`, clearSent), [eventBus, sendEvent, clearSent]);
 
   // Fused trailing action(s) — Send by default; status-specific replacements
   // for error / running / paused. All variants share `rounded-none` so they
@@ -181,6 +187,7 @@ export function ChatBar({
         size="sm"
         action={sendEvent}
         actionPayload={{ message: inputValue.trim() }}
+        onClick={clearSent}
         disabled={!inputValue.trim()}
         aria-label={t('chatBar.sendMessage')}
         className="rounded-none flex-shrink-0 h-auto"

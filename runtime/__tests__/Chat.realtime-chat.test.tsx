@@ -25,11 +25,11 @@ import {
 import { MockPersistenceAdapter } from '@almadar/db/mock';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { OrbPreview } from '../OrbPreview';
-import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
+import { IO_ROOT, STD_ROOT, IO_REGISTRY } from '../../test/helpers/behavior-packages';
 
-const CHAT_ORB = join(IO_ROOT, 'behaviors/registry/app/organisms/std-realtime-chat.orb');
+const CHAT_ORB = join(IO_REGISTRY, 'app/organisms/std-realtime-chat.orb');
 // project-friday imports std-realtime-chat's whole ChatMessageOrbital.
-const PF_ORB = join(IO_ROOT, 'behaviors/registry/project-friday/organisms/project-friday.orb');
+const PF_ORB = join(IO_REGISTRY, 'project-friday/organisms/project-friday.orb');
 
 class ResizeObserverStub {
   observe(): void {}

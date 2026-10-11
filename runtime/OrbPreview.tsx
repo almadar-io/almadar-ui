@@ -695,6 +695,11 @@ export interface OrbPreviewProps {
    * page. Omitted → the host offers no sign-in and nothing happens.
    */
   onSignIn?: (returnTo?: string) => void;
+  /**
+   * The host's session sign-out, called on the system event `UI:SIGN_OUT` (a
+   * Sign out inside the circuit). Omitted → the host offers no sign-out.
+   */
+  onSignOut?: () => void;
 }
 
 type LazyLoad =
@@ -762,6 +767,13 @@ function NavigateListener({ onNavigate }: { onNavigate: (path: string) => void }
   return null;
 }
 
+/** `UI:SIGN_OUT` consumer: the host ends the viewer's session. Mounted inside OrbitalProvider, as NavigateListener. */
+function SignOutListener({ onSignOut }: { onSignOut: () => void }): null {
+  const bus = useEventBus();
+  useEffect(() => bus.on('UI:SIGN_OUT', () => onSignOut()), [bus, onSignOut]);
+  return null;
+}
+
 export function OrbPreview({
   schema,
   mockData,
@@ -783,6 +795,7 @@ export function OrbPreview({
   schemaPath,
   onUnmatchedNavigate,
   onSignIn,
+  onSignOut,
 }: OrbPreviewProps): React.ReactElement {
   if (serverUrl && transport) {
     throw new Error('OrbPreview accepts serverUrl OR transport, not both');
@@ -1220,6 +1233,7 @@ export function OrbPreview({
         <NavStackRefBridge apiRef={navStackRef} />
         <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated} user={user}>
           <NavigateListener onNavigate={handleNavigate} />
+          {onSignOut !== undefined && <SignOutListener onSignOut={onSignOut} />}
           <UISlotProvider>
             <PageAccessHost
               access={activePage?.access}

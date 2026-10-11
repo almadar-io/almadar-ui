@@ -2,6 +2,7 @@
 
 import type { A11yProps } from '@almadar/core';
 import { domPassthrough } from '../../../../lib/domPassthrough';
+import { svgMotionClass } from '../../../../lib/svgMotion';
 import React from 'react';
 
 export interface SvgConnectionProps extends A11yProps {
@@ -47,7 +48,7 @@ export const SvgConnection: React.FC<SvgConnectionProps> = ({
     <line {...(asRoot ? undefined : a11y)}
       className={
         [
-          variant === 'animated' ? 'almadar-svg-flow-dash' : undefined,
+          svgMotionClass('flowDash', variant === 'animated'),
           className,
         ]
           .filter(Boolean)

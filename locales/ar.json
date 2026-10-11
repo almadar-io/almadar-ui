@@ -1251,5 +1251,6 @@
   "avl.stateInitial": "البداية",
   "avl.stateTerminal": "النهاية",
   "avl.guardCaption": "لا يحدث الانتقال إلا عندما يكون هذا الشرط صحيحًا.",
-  "avl.effectsCaption": "ما يُنفَّذ، بالترتيب، عند حدوث الانتقال."
+  "avl.effectsCaption": "ما يُنفَّذ، بالترتيب، عند حدوث الانتقال.",
+  "aria.carousel": "عرض شرائح"
 }

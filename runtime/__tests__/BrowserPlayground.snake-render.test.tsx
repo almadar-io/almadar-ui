@@ -23,9 +23,9 @@ import { join } from 'node:path';
 import type { OrbitalSchema } from '@almadar/core';
 import { preprocessSchema } from '@almadar/runtime';
 import { BrowserPlayground } from '../BrowserPlayground';
-import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
+import { IO_ROOT, STD_ROOT, IO_REGISTRY } from '../../test/helpers/behavior-packages';
 
-const SNAKE_ORB = join(IO_ROOT, 'behaviors/registry/game/organisms/std-snake.orb');
+const SNAKE_ORB = join(IO_REGISTRY, 'game/organisms/std-snake.orb');
 
 // jsdom has no ResizeObserver (the shell/canvas measure with it).
 class ResizeObserverStub {

@@ -26,7 +26,7 @@ import {
 import { MockPersistenceAdapter } from '@almadar/db/mock';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { OrbPreview } from '../OrbPreview';
-import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
+import { IO_ROOT, STD_ROOT, IO_REGISTRY } from '../../test/helpers/behavior-packages';
 
 
 class ResizeObserverStub {
@@ -90,7 +90,7 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless', page: str
   };
 }
 
-const GAMES_DIR = join(IO_ROOT, 'behaviors/registry/game/organisms');
+const GAMES_DIR = join(IO_REGISTRY, 'game/organisms');
 const GAMES = [
   { orb: join(GAMES_DIR, 'std-snake.orb'), page: '/snake', code: 'ArrowUp', trait: 'SnakeMechanic', event: 'TURN' },
   { orb: join(GAMES_DIR, 'std-pong.orb'), page: '/pong', code: 'KeyW', trait: 'PongMechanic', event: 'PADDLE_MOVE' },

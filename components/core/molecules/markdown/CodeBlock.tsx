@@ -38,7 +38,7 @@ import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js';
 import light from 'react-syntax-highlighter/dist/esm/styles/prism/vs.js';
 import { orbLanguage, loloLanguage, ORB_COLORS, translateLolo, translateOrb } from '@almadar/syntax';
-import { coreTables, type LanguageCode } from '@almadar/core/i18n';
+import { getVocabulary, type LanguageCode } from '@almadar/core/i18n';
 
 // PrismLight requires explicit language registration.
 // Import common languages used in markdown code blocks.
@@ -1047,7 +1047,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const activeNaturalLanguage: LanguageCode = naturalTabs?.includes(naturalLanguage) === true
       ? naturalLanguage
       : (naturalTabs?.[0] ?? 'en');
-    const codeDir: 'ltr' | 'rtl' = naturalTabs && coreTables[activeNaturalLanguage].meta.rtl ? 'rtl' : 'ltr';
+    const codeDir: 'ltr' | 'rtl' = naturalTabs && getVocabulary(activeNaturalLanguage).meta.rtl ? 'rtl' : 'ltr';
     // One translation per (source, language), kept across tab switches — a
     // re-render, or coming back to a tab, must never re-run the renderer.
     const translationCache = useMemo(() => new Map<string, string>(), [englishCode, files]);
@@ -1069,13 +1069,13 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     // indentation structure. Only the tab chrome flips.
     const naturalTabItems: TabItem[] | undefined = naturalTabs?.map((lang) => ({
       id: `lang-${lang}`,
-      label: coreTables[lang].meta.name,
+      label: getVocabulary(lang).meta.name,
       content: null,
     }));
     const naturalTabStrip = naturalTabs && naturalTabItems ? (
       <Box
         className="border-b border-border"
-        dir={coreTables[activeNaturalLanguage].meta.rtl ? 'rtl' : 'ltr'}
+        dir={getVocabulary(activeNaturalLanguage).meta.rtl ? 'rtl' : 'ltr'}
         data-testid="codeblock-language-tabs"
       >
         <Tabs

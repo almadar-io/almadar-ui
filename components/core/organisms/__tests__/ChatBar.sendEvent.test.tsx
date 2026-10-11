@@ -9,9 +9,10 @@ import { describe, it, expect } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { EventBusProvider } from '../../../../providers/EventBusProvider';
 import { useEventBus } from '../../../../hooks/useEventBus';
+import { TraitScopeProvider } from '../../../../providers/TraitScopeProvider';
 import { ChatBar } from '../ChatBar';
 
-function mount(sendEvent?: string) {
+function mount(sendEvent?: string, scoped = false) {
   const seen: Array<{ type: string; message: unknown }> = [];
   function Spy() {
     const bus = useEventBus();
@@ -21,7 +22,9 @@ function mount(sendEvent?: string) {
   const view = render(
     <EventBusProvider debug={false}>
       <Spy />
-      <ChatBar {...(sendEvent !== undefined ? { sendEvent } : {})} />
+      {scoped
+        ? <TraitScopeProvider orbital="Page" trait="Builder"><ChatBar {...(sendEvent !== undefined ? { sendEvent } : {})} /></TraitScopeProvider>
+        : <ChatBar {...(sendEvent !== undefined ? { sendEvent } : {})} />}
     </EventBusProvider>,
   );
   const input = view.container.querySelector('textarea');
@@ -51,5 +54,28 @@ describe('ChatBar — sendEvent', () => {
     fireEvent.change(input, { target: { value: 'hi' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(seen).toContainEqual({ type: 'UI:CHAT_SEND', message: 'hi' });
+  });
+
+  it('inside a trait scope, Enter sends the scoped event and clears the input', () => {
+    const { input, seen } = mount('SEND', true);
+    fireEvent.change(input, { target: { value: 'a recipe tracker' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(seen).toContainEqual({ type: 'UI:Page.Builder.SEND', message: 'a recipe tracker' });
+    expect(input.value).toBe('');
+  });
+
+  it('inside a trait scope, the send button clears the input', () => {
+    const { input, seen } = mount('SEND', true);
+    fireEvent.change(input, { target: { value: 'hello' } });
+    act(() => { fireEvent.click(screen.getByRole('button', { name: /send/i })); });
+    expect(seen).toContainEqual({ type: 'UI:Page.Builder.SEND', message: 'hello' });
+    expect(input.value).toBe('');
+  });
+
+  it('control: an empty input sends nothing and stays empty', () => {
+    const { input, seen } = mount('SEND', true);
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(seen.some((e) => e.type.endsWith('SEND'))).toBe(false);
+    expect(input.value).toBe('');
   });
 });

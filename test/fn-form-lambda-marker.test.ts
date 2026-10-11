@@ -63,6 +63,20 @@ describe('convertFnFormLambdasInProps × i18n inside a lambda', () => {
     expect((props.content as RenderBindingMarker)[RENDER_BINDING_MARKER]).toBe(true);
   });
 
+  it('defers a conditional whose branch is a pattern carrying an i18n/t prop', () => {
+    const branch = { type: 'button', label: ['i18n/t', 'feed:showAnswer'] };
+    const props = childProps({ renderItem: ['fn', 'item', { type: 'box', children: [['if', ['==', '@item.key', 'todo'], branch, null]] }] });
+    const child = (props.children as RenderBindingMarker[])[0];
+    expect(child[RENDER_BINDING_MARKER]).toBe(true);
+    expect(child.expression).toEqual(['if', true, branch, null]);
+  });
+
+  it('control: a conditional whose branches carry no i18n is still evaluated in place', () => {
+    const branch = { type: 'button', label: 'Show' };
+    const props = childProps({ renderItem: ['fn', 'item', { type: 'box', children: [['if', ['==', '@item.key', 'todo'], branch, null]] }] });
+    expect((props.children as SlotProps[])[0]).toEqual(branch);
+  });
+
   it('control: a plain operator call is still evaluated in place', () => {
     const props = childProps({ renderItem: ['fn', 'col', { type: 'typography', content: ['str/concat', 'col-', '@col.key'] }] });
     expect(props.content).toBe('col-todo');

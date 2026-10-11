@@ -16,7 +16,7 @@ import { render, fireEvent, act } from '@testing-library/react';
 import { CodeBlock, EDITOR_MOTIONS, EDITOR_OPERATORS } from '../CodeBlock';
 import { EventBusProvider } from '../../../../../providers/EventBusProvider';
 import { useEventBus, type EventBusContextType } from '../../../../../hooks/useEventBus';
-import { coreTables } from '@almadar/core/i18n';
+import { getVocabulary } from '@almadar/core/i18n';
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <EventBusProvider debug={false}>{children}</EventBusProvider>;
@@ -215,9 +215,9 @@ describe('CodeBlock', () => {
       );
       const strip = container.querySelector('[data-testid="codeblock-language-tabs"]');
       expect(strip).not.toBeNull();
-      expect(strip?.textContent).toContain(coreTables.en.meta.name);
-      expect(strip?.textContent).toContain(coreTables.ar.meta.name);
-      expect(strip?.textContent).toContain(coreTables.sl.meta.name);
+      expect(strip?.textContent).toContain(getVocabulary('en').meta.name);
+      expect(strip?.textContent).toContain(getVocabulary('ar').meta.name);
+      expect(strip?.textContent).toContain(getVocabulary('sl').meta.name);
       // First tab wins: the English source renders untranslated.
       expect(container.textContent).toContain('app Shop');
     });
@@ -231,7 +231,7 @@ describe('CodeBlock', () => {
       expect(container.textContent).toContain('app Shop');
       expect(container.textContent).not.toContain('تطبيق');
 
-      fireEvent.click(getByText(coreTables.ar.meta.name));
+      fireEvent.click(getByText(getVocabulary('ar').meta.name));
 
       expect(container.textContent).toContain('تطبيق');
       expect(container.textContent).toContain('كيان Product');
@@ -249,7 +249,7 @@ describe('CodeBlock', () => {
           <CodeBlock code={orb} language="orb" naturalLanguages={['en', 'ar']} />
         </Wrapper>,
       );
-      fireEvent.click(getByText(coreTables.ar.meta.name));
+      fireEvent.click(getByText(getVocabulary('ar').meta.name));
       expect(container.textContent).toContain('مدارات');
     });
 
@@ -271,7 +271,7 @@ describe('CodeBlock', () => {
           <CodeBlock code={JSON_CODE} language="json" naturalLanguages={['en', 'ar']} />
         </Wrapper>,
       );
-      fireEvent.click(getByText(coreTables.ar.meta.name));
+      fireEvent.click(getByText(getVocabulary('ar').meta.name));
       expect(container.textContent).toContain('"orbital"');
     });
   });

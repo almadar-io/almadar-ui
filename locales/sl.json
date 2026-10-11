@@ -1251,5 +1251,6 @@
   "avl.stateInitial": "začetek",
   "avl.stateTerminal": "konec",
   "avl.guardCaption": "Prehod se zgodi le, ko je ta pogoj izpolnjen.",
-  "avl.effectsCaption": "Kaj se izvede, po vrsti, ko se prehod zgodi."
+  "avl.effectsCaption": "Kaj se izvede, po vrsti, ko se prehod zgodi.",
+  "aria.carousel": "vrtiljak"
 }

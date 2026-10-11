@@ -26,7 +26,7 @@ import {
 import { MockPersistenceAdapter } from '@almadar/db/mock';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { OrbPreview } from '../OrbPreview';
-import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
+import { IO_ROOT, STD_ROOT, IO_REGISTRY } from '../../test/helpers/behavior-packages';
 
 
 class ResizeObserverStub {
@@ -90,7 +90,7 @@ function harness(s: OrbitalSchema, topology: 'stateful' | 'stateless', page: str
   };
 }
 
-const SINE = join(IO_ROOT, 'behaviors/registry/riya/atoms/riya-level-sine.orb');
+const SINE = join(IO_REGISTRY, 'riya/atoms/riya-level-sine.orb');
 
 afterEach(() => {
   cleanup();

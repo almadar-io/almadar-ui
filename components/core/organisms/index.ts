@@ -95,7 +95,7 @@ export {
 
 // Agent-trace organisms (promoted from apps/builder). Read the agent-trace
 // view-model (Trace* types) from @almadar/core; own no transport.
-export { ChatBar, type ChatBarProps, type ChatBarStatus } from './ChatBar';
+export { ChatBar, type ChatBarProps, type ChatBarStatus, type ChatFocusRequest } from './ChatBar';
 export {
   ELEMENT_SELECTED_EVENT,
   parseEditFocus,

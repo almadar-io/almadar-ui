@@ -28,6 +28,9 @@ describe('resolveCanvasTheme', () => {
   it('reads every drawing axis declared on the scope', () => {
     const scope = scopeWith({
       '--surface-diagram': '#102030',
+      '--color-muted': '#203040',
+      '--color-card': 'rgb(5, 6, 7)',
+      '--color-primary-foreground': '#fafafa',
       '--color-diagram-ink': 'rgb(1, 2, 3)',
       '--color-series-2': 'oklch(0.627955 0.257683 29.2339)',
       '--diagram-stroke-thin': '1px',
@@ -53,6 +56,7 @@ describe('resolveCanvasTheme', () => {
     });
     const t = resolveCanvasTheme(scope);
     expect(t.ground).toBe('rgb(16, 32, 48)');
+    expect(t.surfaces).toEqual({ muted: 'rgb(32, 48, 64)', card: 'rgb(5, 6, 7)', onPrimary: 'rgb(250, 250, 250)' });
     expect(t.tones.ink).toBe('rgb(1, 2, 3)');
     expect(t.series[1]).toBe('rgb(255, 0, 0)');
     expect(t.strokes).toEqual({ thin: 1, normal: 3, bold: 6 });
@@ -80,6 +84,7 @@ describe('resolveCanvasTheme', () => {
     expect(t.fillStyle).toBe('tint');
     expect(t.roughness).toBe(0);
     expect(t.motion.enabled).toBe(true);
+    expect(t.surfaces).toEqual({ muted: 'transparent', card: 'transparent', onPrimary: 'transparent' });
   });
 
   it('edge: an invalid keyword falls back to the default instead of reaching the canvas', () => {

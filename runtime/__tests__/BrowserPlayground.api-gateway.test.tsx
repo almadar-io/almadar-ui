@@ -23,9 +23,9 @@ import { join } from 'node:path';
 import type { OrbitalSchema } from '@almadar/core';
 import { preprocessSchema } from '@almadar/runtime';
 import { BrowserPlayground } from '../BrowserPlayground';
-import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
+import { IO_ROOT, STD_ROOT, IO_REGISTRY } from '../../test/helpers/behavior-packages';
 
-const GATEWAY_ORB = join(IO_ROOT, 'behaviors/registry/app/organisms/std-api-gateway.orb');
+const GATEWAY_ORB = join(IO_REGISTRY, 'app/organisms/std-api-gateway.orb');
 
 class ResizeObserverStub {
   observe(): void {}

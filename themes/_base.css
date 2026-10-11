@@ -321,6 +321,33 @@
 .almadar-enter-delay-7 { --enter-index: 7; }
 .almadar-enter-delay-8 { --enter-index: 8; }
 
+/* SVG atom motion (`lib/svgMotion.ts`). One dash period of the `8 6` dash per loop. */
+@keyframes almadar-svg-flow-dash {
+    from { stroke-dashoffset: 14; }
+    to { stroke-dashoffset: 0; }
+}
+.almadar-svg-flow-dash {
+    animation: almadar-svg-flow-dash 1s linear infinite;
+}
+@keyframes almadar-svg-pulse-ring {
+    from { transform: scale(0.6); opacity: 0.3; }
+    to { transform: scale(1); opacity: 0; }
+}
+.almadar-svg-pulse-ring {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: almadar-svg-pulse-ring 2s ease-out infinite;
+}
+@keyframes almadar-svg-pulse-expand {
+    from { transform: scale(0.3); opacity: 0.4; }
+    to { transform: scale(1); opacity: 0; }
+}
+.almadar-svg-pulse-expand {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: almadar-svg-pulse-expand 2s ease-out infinite;
+}
+
 /* The shimmer gradient background. Pair with the `animate-shimmer` utility
  * (defined in tailwind-preset) which sweeps background-position. */
 .almadar-shimmer {

@@ -1,6 +1,7 @@
 /**
  * Workspaces, canvases and maps fill the content area edge to edge: `fullBleed` drops the
- * main area's padding and the page's max width.
+ * main area's padding and the page's max width, and bounds the shell to the viewport so a
+ * full-height child (a canvas) gets a real height while a long page scrolls inside main.
  */
 import React from 'react';
 import { describe, it, expect } from 'vitest';
@@ -32,5 +33,20 @@ describe('DashboardLayout fullBleed', () => {
     const main = mainOf(undefined);
     expect(main.className).toMatch(/\bp-3\b/);
     expect(main.querySelector('.max-w-\\[1440px\\]')).not.toBeNull();
+  });
+
+  it('bounds the shell to the viewport and scrolls inside main', () => {
+    const main = mainOf(true);
+    const root = main.closest('[class*="@container/dashboard"]');
+    expect(root?.className).toMatch(/(^|\s)h-screen(\s|$)/);
+    expect(root?.className).not.toMatch(/(^|\s)min-h-screen(\s|$)/);
+    expect(main.className).toMatch(/\boverflow-y-auto\b/);
+  });
+
+  it('control: by default the page grows and the document scrolls', () => {
+    const main = mainOf(undefined);
+    const root = main.closest('[class*="@container/dashboard"]');
+    expect(root?.className).toMatch(/(^|\s)min-h-screen(\s|$)/);
+    expect(root?.className).not.toMatch(/(^|\s)h-screen(\s|$)/);
   });
 });

@@ -32,6 +32,9 @@ function readsI18n(value: SlotPropValue): boolean {
     const arr = value as ReadonlyArray<SlotPropValue>;
     return arr[0] === "i18n/t" || arr.some((v) => readsI18n(v));
   }
+  if (value !== null && typeof value === "object" && !React.isValidElement(value) && !(value instanceof Date) && typeof value !== "function") {
+    return Object.values(value as Record<string, SlotPropValue>).some((v) => readsI18n(v));
+  }
   return false;
 }
 

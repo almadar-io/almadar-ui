@@ -25,9 +25,9 @@ import {
 import { MockPersistenceAdapter } from '@almadar/db/mock';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import { OrbPreview } from '../OrbPreview';
-import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
+import { IO_ROOT, STD_ROOT, IO_REGISTRY } from '../../test/helpers/behavior-packages';
 
-const IO = join(IO_ROOT, 'behaviors/registry');
+const IO = IO_REGISTRY;
 const STOREFRONT = join(IO, 'marketing/organisms/std-storefront.orb');
 const MENU = join(IO, 'app/atoms/std-menu.orb');
 const DRIVER = join(IO, 'app/atoms/std-driver.orb');

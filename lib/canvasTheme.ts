@@ -156,6 +156,10 @@ export function resolveCanvasTheme(scope: Element): CanvasTheme {
       const c = r.color(toneVar(tone));
       tones[tone] = c ? colorCss(c) : 'currentColor';
     }
+    const surface = (name: string): string => {
+      const c = r.color(name);
+      return c ? colorCss(c) : 'transparent';
+    };
     const ground = r.color('--surface-diagram');
     const text = {} as Record<DiagramTextSize, number>;
     const TEXT_FALLBACK: Readonly<Record<DiagramTextSize, number>> = { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, '2xl': 24 };
@@ -163,6 +167,11 @@ export function resolveCanvasTheme(scope: Element): CanvasTheme {
     const body = r.family('--font-family-body', r.family('--font-family', 'system-ui, sans-serif'));
     return {
       ground: ground ? colorCss(ground) : 'transparent',
+      surfaces: {
+        muted: surface('--color-muted'),
+        card: surface('--color-card'),
+        onPrimary: surface('--color-primary-foreground'),
+      },
       tones,
       series: SERIES_TONES.map((t) => tones[t]),
       strokes: {

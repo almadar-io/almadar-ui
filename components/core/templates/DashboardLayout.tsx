@@ -165,7 +165,7 @@ export interface DashboardLayoutProps {
    *  works inside the embedded playground where `pathname` would be
    *  the studio route. */
   currentPath?: string;
-  /** Callback when user clicks sign out (optional - uses auth context signOut if not provided) */
+  /** The trait's reaction to Sign out; the host ends the session through `UI:SIGN_OUT` either way. */
   onSignOut?: () => void;
   /** Layout mode. Default `"sidebar"`.
    *  - `sidebar`: Left sidebar nav + top header (classic dashboard)
@@ -286,8 +286,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     registerNavItems(navItems);
   }, [navItems, registerNavItems]);
 
-  // Get user and signOut from auth context (with prop overrides)
-  const { user: authUser, signOut: authSignOut } = useAuthContext();
+  // Get the user from auth context (with prop overrides)
+  const { user: authUser } = useAuthContext();
 
   // Use props if provided, otherwise use auth context
   const user =
@@ -300,7 +300,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         }
       : null);
 
-  const handleSignOut = onSignOutProp || authSignOut;
+  // The trait's own reaction, then the host ends the session (`UI:SIGN_OUT`, a system event).
+  const handleSignOut = (): void => {
+    onSignOutProp?.();
+    eventBus.emit("UI:SIGN_OUT", {});
+  };
 
   const showSidebar = layoutMode === "sidebar" || isDrawer;
   const showHeader = layoutMode !== "minimal";
@@ -313,7 +317,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       // `@container/dashboard` is kept for descendant grid components that opt
       // into container queries; the sidebar's own responsiveness is JS-driven
       // (see isMobile above) so it never depends on those classes being emitted.
-      className="@container/dashboard min-h-screen w-full bg-background surface-page flex flex-row items-stretch"
+      className={cn(
+        "@container/dashboard w-full bg-background surface-page flex flex-row items-stretch",
+        // A full-bleed shell is an app frame: viewport-bound, so a full-height child gets a real height.
+        fullBleed ? "h-screen overflow-hidden" : "min-h-screen",
+      )}
     >
       <Button
         variant="link"
@@ -435,7 +443,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       )}
 
       {/* `min-w-0` so the column shrinks below its intrinsic content width. */}
-      <VStack gap="none" className="flex-1 min-w-0 min-h-screen">
+      <VStack gap="none" className={cn("flex-1 min-w-0", fullBleed ? "h-full min-h-0" : "min-h-screen")}>
         {/* Header — hidden only in minimal mode. */}
         {showHeader && (
           <Box
@@ -683,7 +691,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           id="main-content"
           tabIndex={-1}
           className={cn(
-            fullBleed ? "flex-1 min-h-0 flex flex-col focus:outline-none" : "flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6 focus:outline-none",
+            fullBleed ? "flex-1 min-h-0 flex flex-col overflow-y-auto focus:outline-none" : "flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6 focus:outline-none",
             // Reserve space for the fixed bottom nav so content isn't
             // hidden under the tab bar.
             showBottomNav && "pb-[calc(5rem+env(safe-area-inset-bottom))]",

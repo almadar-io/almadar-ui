@@ -45,6 +45,7 @@ import { ALL_SLOTS } from './useUISlots';
 import { registerTrait, unregisterTrait, type TraitDebugInfo } from '../lib/traitRegistry';
 import { bindTraitStateGetter, registerTraitSnapshot } from '../lib/verificationRegistry';
 import { createCircuitVerificationObserver, recordDispatchVerdict } from '../lib/circuitVerificationObserver';
+import { hostDispatchInView } from '../lib/hostDispatchInView';
 import { TRAIT_MOUNT_ERROR_TESTID, configReferencesCallsitePayload, traitReferencesCallsitePayload, traitsEmbeddedByEvent, type TraitStateSnapshot, type PersistenceAdapter, type TransitionRejection } from '@almadar/core';
 import type { useUISlots } from '../providers/UISlotContext';
 import { getTabClientId, useCircuitKernel } from './circuit/useCircuitKernel';
@@ -372,7 +373,7 @@ export function useTraitStateMachine(
     if (!transport?.subscribeHostDispatches) return;
     return transport.subscribeHostDispatches((_orbitalName, request, response) => {
       const traitName = request.targetTrait;
-      if (traitName === undefined || !traitIndex.byName.has(traitName)) return;
+      if (traitName === undefined || !hostDispatchInView(request, response, (t) => traitIndex.byName.has(t))) return;
       const composedBefore = new Map(store.callsitePayloads);
       void kernel.foldHostDispatch(request, response).then((outcome) =>
         settleOutcome(traitName, request.event, request.payload, outcome, composedBefore));

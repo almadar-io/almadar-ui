@@ -2,6 +2,7 @@
 
 import type { A11yProps } from '@almadar/core';
 import { domPassthrough } from '../../../../lib/domPassthrough';
+import { svgMotionClass } from '../../../../lib/svgMotion';
 import React from 'react';
 
 export interface SvgPulseProps extends A11yProps {
@@ -19,19 +20,6 @@ export interface SvgPulseProps extends A11yProps {
   height?: number;
 }
 
-const PULSE_KEYFRAMES = `
-@keyframes almadar-svg-pulse-expand {
-  0% {
-    transform: scale(0.3);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0;
-  }
-}
-`;
-
 export const SvgPulse: React.FC<SvgPulseProps> = ({
   cx = 70,
   cy = 70,
@@ -47,9 +35,9 @@ export const SvgPulse: React.FC<SvgPulseProps> = ({
   ...rest
 }) => {
   const a11y = domPassthrough(rest);
+  const pulseClass = svgMotionClass('pulseExpand', animated);
   const inner = (
     <g {...(asRoot ? undefined : a11y)} className={className} opacity={opacity}>
-      {animated && <style>{PULSE_KEYFRAMES}</style>}
       {Array.from({ length: rings }).map((_, i) => {
         const ringRadius = ((i + 1) / rings) * maxRadius;
         const ringOpacity = 1 - (i / rings) * 0.6;
@@ -64,15 +52,9 @@ export const SvgPulse: React.FC<SvgPulseProps> = ({
             fill="none"
             stroke={color}
             strokeWidth={1.5}
-            opacity={animated ? undefined : ringOpacity * 0.4}
-            style={
-              animated
-                ? {
-                    transformOrigin: `${cx}px ${cy}px`,
-                    animation: `almadar-svg-pulse-expand 2s ease-out ${delay}s infinite`,
-                  }
-                : undefined
-            }
+            opacity={pulseClass ? undefined : ringOpacity * 0.4}
+            className={pulseClass}
+            style={pulseClass ? { animationDelay: `${delay}s` } : undefined}
           />
         );
       })}

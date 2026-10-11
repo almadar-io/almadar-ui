@@ -2,6 +2,7 @@
 
 import type { A11yProps } from '@almadar/core';
 import { domPassthrough } from '../../../../lib/domPassthrough';
+import { svgMotionClass } from '../../../../lib/svgMotion';
 import React from 'react';
 
 export interface SvgFlowProps extends A11yProps {
@@ -70,7 +71,7 @@ export const SvgFlow: React.FC<SvgFlowProps> = ({
         strokeLinecap="round"
         strokeLinejoin="round"
         markerEnd={`url(#${markerId})`}
-        className={animated ? 'almadar-svg-flow-dash' : undefined}
+        className={svgMotionClass('flowDash', animated)}
         strokeDasharray={animated ? '8 6' : undefined}
       />
     </g>

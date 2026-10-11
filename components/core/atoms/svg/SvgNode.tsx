@@ -2,6 +2,7 @@
 
 import type { A11yProps } from '@almadar/core';
 import { domPassthrough } from '../../../../lib/domPassthrough';
+import { svgMotionClass } from '../../../../lib/svgMotion';
 import React from 'react';
 
 export interface SvgNodeProps extends A11yProps {
@@ -45,7 +46,7 @@ export const SvgNode: React.FC<SvgNodeProps> = ({
           stroke={color}
           strokeWidth={1}
           opacity={0.3}
-          className="almadar-svg-pulse-ring"
+          className={svgMotionClass('pulseRing', true)}
         />
       )}
       <circle

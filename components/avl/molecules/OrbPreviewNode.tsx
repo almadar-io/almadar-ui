@@ -161,12 +161,12 @@ interface PatternInstanceDragData {
 // State role colors
 // ---------------------------------------------------------------------------
 
-const ROLE_COLORS: Record<StateRole, { border: string; dot: string }> = {
-  initial: { border: STATE_COLORS.initial.border, dot: STATE_COLORS.initial.border },
-  terminal: { border: STATE_COLORS.terminal.border, dot: STATE_COLORS.terminal.border },
-  hub: { border: STATE_COLORS.hub.border, dot: STATE_COLORS.hub.border },
-  default: { border: 'var(--color-border)', dot: STATE_COLORS.default.border },
-};
+// Read at render: `STATE_COLORS` lives in another module, and the split dist chunks
+// do not guarantee it is initialised when this module is.
+function roleColors(role: StateRole): { border: string; dot: string } {
+  if (role === 'default') return { border: 'var(--color-border)', dot: STATE_COLORS.default.border };
+  return { border: STATE_COLORS[role].border, dot: STATE_COLORS[role].border };
+}
 
 const LAYER_ORDER = ['Infrastructure', 'Services', 'UI Patterns', 'Game', 'ML', 'Domain', 'Community'] as const;
 const LAYER_LABEL_KEYS: Record<string, string> = {
@@ -776,7 +776,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const lastHoverElRef = useRef<Element | null>(null);
 
   const role = data.stateRole ?? 'default';
-  const colors = ROLE_COLORS[role] ?? ROLE_COLORS.default;
+  const colors = roleColors(role);
   const eventSources = data.eventSources ?? [];
   const layerColor = data.layer ? LAYER_COLORS[data.layer] : undefined;
 

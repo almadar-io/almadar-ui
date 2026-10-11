@@ -15,9 +15,9 @@ import { join } from 'node:path';
 import type { OrbitalSchema } from '@almadar/core';
 import { preprocessSchema } from '@almadar/runtime';
 import { BrowserPlayground } from '../BrowserPlayground';
-import { STD_ROOT } from '../../test/helpers/behavior-packages';
+import { STD_ROOT, STD_REGISTRY } from '../../test/helpers/behavior-packages';
 
-const CALENDAR_ORB = join(STD_ROOT, 'behaviors/registry/ui/core/atoms/std-calendar.orb');
+const CALENDAR_ORB = join(STD_REGISTRY, 'ui/core/atoms/std-calendar.orb');
 
 class ResizeObserverStub {
   observe(): void {}

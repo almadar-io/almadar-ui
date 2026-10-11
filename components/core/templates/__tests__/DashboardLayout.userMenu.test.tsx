@@ -16,17 +16,18 @@ function Probe({ seen }: { seen: string[] }): null {
   useEffect(() => {
     const offNav = bus.on('UI:NAVIGATE', (e) => seen.push(`NAVIGATE:${String(e.payload?.url)}`));
     const offEvt = bus.on('UI:OPEN_PROFILE', () => seen.push('OPEN_PROFILE'));
-    return () => { offNav(); offEvt(); };
+    const offSignOut = bus.on('UI:SIGN_OUT', () => seen.push('SIGN_OUT'));
+    return () => { offNav(); offEvt(); offSignOut(); };
   }, [bus, seen]);
   return null;
 }
 
-function renderLayout(userMenuItems: TopBarAction[] | undefined, seen: string[] = []) {
+function renderLayout(userMenuItems: TopBarAction[] | undefined, seen: string[] = [], onSignOut?: () => void) {
   return render(
     <EventBusProvider isolated>
       <MemoryRouter>
         <Probe seen={seen} />
-        <DashboardLayout appName="Studio" user={{ name: 'Dana Designer', email: 'dana@example.com' }} userMenuItems={userMenuItems}>
+        <DashboardLayout appName="Studio" user={{ name: 'Dana Designer', email: 'dana@example.com' }} userMenuItems={userMenuItems} onSignOut={onSignOut}>
           <span>content</span>
         </DashboardLayout>
       </MemoryRouter>
@@ -63,5 +64,23 @@ describe('DashboardLayout account menu entries', () => {
     openAccountMenu();
     expect(screen.getByText('Sign out')).toBeTruthy();
     expect(screen.queryByText('Settings')).toBeNull();
+  });
+
+  it('Sign out asks the host to end the session with the bare UI:SIGN_OUT', () => {
+    const seen: string[] = [];
+    renderLayout(undefined, seen);
+    openAccountMenu();
+    fireEvent.click(screen.getByText('Sign out'));
+    expect(seen).toEqual(['SIGN_OUT']);
+  });
+
+  it('a declared onSignOut runs too, so the trait can react', () => {
+    const seen: string[] = [];
+    const calls: string[] = [];
+    renderLayout(undefined, seen, () => calls.push('trait'));
+    openAccountMenu();
+    fireEvent.click(screen.getByText('Sign out'));
+    expect(calls).toEqual(['trait']);
+    expect(seen).toEqual(['SIGN_OUT']);
   });
 });

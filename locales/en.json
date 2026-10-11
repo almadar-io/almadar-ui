@@ -1251,5 +1251,6 @@
   "avl.stateInitial": "start",
   "avl.stateTerminal": "end",
   "avl.guardCaption": "The transition only fires when this check is true.",
-  "avl.effectsCaption": "What runs, in order, when the transition fires."
+  "avl.effectsCaption": "What runs, in order, when the transition fires.",
+  "aria.carousel": "carousel"
 }

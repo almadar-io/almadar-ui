@@ -13,9 +13,9 @@ import type { OrbitalSchema } from '@almadar/core';
 import { preprocessSchema } from '@almadar/runtime';
 import { BrowserPlayground } from '../BrowserPlayground';
 import { clearVerification, getTransitionsForTrait } from '../../lib/verificationRegistry';
-import { IO_ROOT, STD_ROOT } from '../../test/helpers/behavior-packages';
+import { IO_ROOT, STD_ROOT, IO_REGISTRY } from '../../test/helpers/behavior-packages';
 
-const RIYA = join(IO_ROOT, 'behaviors/registry/riya/organisms/riya-game-platformer.orb');
+const RIYA = join(IO_REGISTRY, 'riya/organisms/riya-game-platformer.orb');
 
 class ResizeObserverStub {
   observe(): void {}

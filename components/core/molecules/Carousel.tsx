@@ -2,14 +2,16 @@
 /**
  * Carousel Molecule Component
  *
- * Horizontal scrolling container with snap points, swipe gestures,
- * prev/next arrow buttons, and dot indicators.
+ * Scrolling container with snap points, swipe gestures, keyboard paging,
+ * prev/next arrow buttons and dot indicators. `orientation: vertical` with
+ * `fullHeight` makes a full-screen feed; `loadMoreEvent` asks for the next page
+ * a few slides before the end.
  * Pure UI molecule with no entity binding.
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import type { A11yProps, AssetUrl, EventEmit, JsonObject } from '@almadar/core';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
 import { cn } from '../../../lib/cn';
 import { pressableProps } from '../../../lib/pressable';
 import { domPassthrough } from '../../../lib/domPassthrough';
@@ -65,6 +67,21 @@ export interface CarouselProps<T = CarouselItem> extends A11yProps {
    *  @payloadFor slideChangeEvent
    */
   slideChangePayload?: JsonObject;
+  /** Scroll direction: a row of slides, or a column (a vertical feed). */
+  orientation?: 'horizontal' | 'vertical';
+  /** Each slide fills the carousel's height (pair with `orientation: vertical` for one card per screen). */
+  fullHeight?: boolean;
+  /**
+   * Emitted when the viewer is `loadMoreAhead` slides from the end and `hasMore` is set.
+   * @notification
+   */
+  loadMoreEvent?: EventEmit<{ index: number }>;
+  /** How many slides before the end to ask for more (default 2). */
+  loadMoreAhead?: number;
+  /** More slides can be loaded. */
+  hasMore?: boolean;
+  /** A load is in flight; no further request until it lands. */
+  isLoadingMore?: boolean;
   /** Additional CSS classes */
   className?: string;
 }
@@ -80,11 +97,21 @@ export const Carousel = <T = CarouselItem,>({
   loop = false,
   slideChangeEvent,
   slideChangePayload,
+  orientation = 'horizontal',
+  fullHeight = false,
+  loadMoreEvent,
+  loadMoreAhead = 2,
+  hasMore = false,
+  isLoadingMore = false,
   className,
   ...rest
 }: CarouselProps<T>): React.ReactElement | null => {
+  const vertical = orientation === 'vertical';
+  const loadRequestedAt = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [topOffset, setTopOffset] = useState(0);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const eventBus = useSafeEventBus();
   const { t } = useTranslate();
@@ -96,8 +123,10 @@ export const Carousel = <T = CarouselItem,>({
   const safeItems: T[] = items ?? [];
   const totalSlides = safeItems.length;
 
+  const announcedIndex = useRef(0);
   const emitSlideChange = useCallback(
     (newIndex: number) => {
+      announcedIndex.current = newIndex;
       if (slideChangeEvent) {
         eventBus.emit(`UI:${slideChangeEvent}`, {
           index: newIndex,
@@ -112,13 +141,13 @@ export const Carousel = <T = CarouselItem,>({
     (index: number) => {
       const container = scrollRef.current;
       if (!container) return;
-      const slideWidth = container.offsetWidth;
-      container.scrollTo({
-        left: slideWidth * index,
-        behavior: 'smooth',
-      });
+      const reduceMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const behavior: ScrollBehavior = reduceMotion ? 'auto' : 'smooth';
+      if (typeof container.scrollTo !== 'function') return;
+      if (vertical) container.scrollTo({ top: container.offsetHeight * index, behavior });
+      else container.scrollTo({ left: container.offsetWidth * index, behavior });
     },
-    [],
+    [vertical],
   );
 
   const goToSlide = useCallback(
@@ -149,10 +178,7 @@ export const Carousel = <T = CarouselItem,>({
 
   // Swipe gesture handlers
   const swipeHandlers = useSwipeGesture(
-    {
-      onSwipeLeft: goNext,
-      onSwipeRight: goPrev,
-    },
+    vertical ? { onSwipeUp: goNext, onSwipeDown: goPrev } : { onSwipeLeft: goNext, onSwipeRight: goPrev },
     { threshold: 40 },
   );
 
@@ -184,16 +210,54 @@ export const Carousel = <T = CarouselItem,>({
   const handleScroll = useCallback(() => {
     const container = scrollRef.current;
     if (!container) return;
-    const slideWidth = container.offsetWidth;
-    if (slideWidth === 0) return;
-    const newIndex = Math.round(container.scrollLeft / slideWidth);
-    setActiveIndex((prev) => {
-      if (prev !== newIndex && newIndex >= 0 && newIndex < totalSlides) {
-        return newIndex;
+    const slideSize = vertical ? container.offsetHeight : container.offsetWidth;
+    if (slideSize === 0) return;
+    const position = vertical ? container.scrollTop : container.scrollLeft;
+    const newIndex = Math.round(position / slideSize);
+    if (newIndex < 0 || newIndex >= totalSlides) return;
+    setActiveIndex(newIndex);
+    // Announce only where a snap settles, so a programmatic or mid-gesture pass over a card stays silent.
+    if (Math.abs(position - newIndex * slideSize) <= 1 && newIndex !== announcedIndex.current) {
+      emitSlideChange(newIndex);
+    }
+  }, [totalSlides, vertical, emitSlideChange]);
+
+  useEffect(() => {
+    if (!loadMoreEvent || !hasMore || isLoadingMore || totalSlides === 0) return;
+    if (activeIndex < totalSlides - 1 - loadMoreAhead) return;
+    if (loadRequestedAt.current === totalSlides) return;
+    loadRequestedAt.current = totalSlides;
+    eventBus.emit(`UI:${loadMoreEvent}`, { index: activeIndex });
+  }, [activeIndex, totalSlides, loadMoreEvent, hasMore, isLoadingMore, loadMoreAhead, eventBus]);
+
+  // A vertical full-height feed lives in pages that scroll, where `100%` has no definite parent:
+  // bound it to the viewport below its own top edge instead.
+  const viewportBound = vertical && fullHeight;
+  useLayoutEffect(() => {
+    if (!viewportBound || typeof window === 'undefined') return;
+    const measure = () => {
+      const root = rootRef.current;
+      if (root) setTopOffset(Math.max(0, Math.round(root.getBoundingClientRect().top)));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [viewportBound]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const next = vertical ? ['ArrowDown', 'PageDown'] : ['ArrowRight'];
+      const prev = vertical ? ['ArrowUp', 'PageUp'] : ['ArrowLeft'];
+      if (next.includes(e.key)) {
+        e.preventDefault();
+        goNext();
+      } else if (prev.includes(e.key)) {
+        e.preventDefault();
+        goPrev();
       }
-      return prev;
-    });
-  }, [totalSlides]);
+    },
+    [vertical, goNext, goPrev],
+  );
 
   const hasPrev = loop || activeIndex > 0;
   const hasNext = loop || activeIndex < totalSlides - 1;
@@ -201,7 +265,18 @@ export const Carousel = <T = CarouselItem,>({
   if (totalSlides === 0) return null;
 
   return (
-    <Box position="relative" overflow="hidden" {...domPassthrough(rest)} className={cn('w-full', className)}>
+    <Box
+      position="relative"
+      overflow="hidden"
+      role="region"
+      aria-roledescription={t('aria.carousel')}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      {...domPassthrough(rest)}
+      ref={rootRef}
+      className={cn('w-full', fullHeight && !viewportBound && 'h-full', className)}
+      style={viewportBound ? { height: `calc(100svh - ${topOffset}px)` } : undefined}
+    >
       {/* Slide track */}
       <Box
         ref={scrollRef}
@@ -211,12 +286,14 @@ export const Carousel = <T = CarouselItem,>({
           'w-full',
           'scroll-smooth',
           'scrollbar-none',
-          '[scroll-snap-type:x_mandatory]',
+          vertical ? '[scroll-snap-type:y_mandatory]' : '[scroll-snap-type:x_mandatory]',
           '[&::-webkit-scrollbar]:hidden',
           '[-ms-overflow-style:none]',
         )}
         style={{
-          scrollSnapType: 'x mandatory',
+          flexDirection: vertical ? 'column' : 'row',
+          scrollSnapType: vertical ? 'y mandatory' : 'x mandatory',
+          height: fullHeight ? '100%' : undefined,
           WebkitOverflowScrolling: 'touch',
         }}
         onScroll={handleScroll}
@@ -234,6 +311,8 @@ export const Carousel = <T = CarouselItem,>({
             )}
             style={{
               scrollSnapAlign: 'start',
+              scrollSnapStop: vertical ? 'always' : undefined,
+              height: fullHeight ? '100%' : undefined,
             }}
           >
             {(renderItem ?? children)?.(item, index)}
@@ -245,7 +324,7 @@ export const Carousel = <T = CarouselItem,>({
       {showArrows && hasPrev && totalSlides > 1 && (
         <Box
           position="absolute"
-          className="left-2 top-1/2 -translate-y-1/2 z-10"
+          className={vertical ? 'right-2 top-2 z-10' : 'left-2 top-1/2 -translate-y-1/2 z-10'}
         >
           <Button
             variant="ghost"
@@ -260,7 +339,7 @@ export const Carousel = <T = CarouselItem,>({
               'hover:bg-surface',
             )}
           >
-            <ChevronLeft className="w-5 h-5" />
+            {vertical ? <ChevronUp className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           </Button>
         </Box>
       )}
@@ -269,7 +348,7 @@ export const Carousel = <T = CarouselItem,>({
       {showArrows && hasNext && totalSlides > 1 && (
         <Box
           position="absolute"
-          className="right-2 top-1/2 -translate-y-1/2 z-10"
+          className={vertical ? 'right-2 bottom-2 z-10' : 'right-2 top-1/2 -translate-y-1/2 z-10'}
         >
           <Button
             variant="ghost"
@@ -284,7 +363,7 @@ export const Carousel = <T = CarouselItem,>({
               'hover:bg-surface',
             )}
           >
-            <ChevronRight className="w-5 h-5" />
+            {vertical ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </Button>
         </Box>
       )}
