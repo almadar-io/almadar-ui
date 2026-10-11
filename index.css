@@ -5,6 +5,9 @@
 /* Load Plus Jakarta Sans from Google Fonts (Track A: preferred UI font) */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
+/* React Flow's base styles (the canvas's node layering); ui's overrides below load after them. */
+@import '@xyflow/react/dist/style.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

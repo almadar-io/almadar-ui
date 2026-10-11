@@ -208,6 +208,48 @@ describe('initialStateOf', () => {
     expect(initialStateOf({ own: [], groups })).toBe(groups[0].options[0].id);
   });
 
+  // A modal listed first whose only INIT render fires from `open` (closing it again) is not
+  // the screen the app opens on: it starts `closed`, so that INIT never runs on open. The
+  // layout whose INIT fires from its initial state is.
+  it('an INIT render counts as the opening screen only when it fires from its trait\'s initial state', () => {
+    const modalFirst = {
+      name: 'opening-screen',
+      version: '1.0.0',
+      orbitals: [{
+        name: 'Providers',
+        entity: { name: 'Provider', persistence: 'runtime', fields: [{ name: 'id', type: 'string' }] },
+        traits: [
+          {
+            name: 'Create',
+            scope: 'instance',
+            linkedEntity: 'Provider',
+            stateMachine: {
+              states: [{ name: 'closed', isInitial: true }, { name: 'open' }],
+              events: [],
+              transitions: [
+                { from: 'closed', to: 'open', event: 'CREATE', effects: [['render-ui', 'modal', { type: 'form' }]] },
+                { from: 'open', to: 'closed', event: 'INIT', effects: [['render-ui', 'modal', { type: 'box' }]] },
+              ],
+            },
+          },
+          {
+            name: 'Shell',
+            scope: 'instance',
+            linkedEntity: 'Provider',
+            stateMachine: {
+              states: [{ name: 'composing', isInitial: true }],
+              events: [],
+              transitions: [{ from: 'composing', to: 'composing', event: 'INIT', effects: [['render-ui', 'main', list]] }],
+            },
+          },
+        ],
+        pages: [{ name: 'Providers', path: '/providers', traits: [{ ref: 'Create' }, { ref: 'Shell' }] }],
+      }],
+    } as OrbitalSchema;
+    expect(initialStateOf(stateOptionsOf(modalFirst, 'Providers', 'transitions'))).toBe('Shell:INIT:composing:composing');
+    expect(initialStateOf(stateOptionsOf(modalFirst, 'Providers', 'screens'))).toBe('Shell:INIT:composing:composing');
+  });
+
   it('with no render-ui states at all, the live orbital', () => {
     expect(initialStateOf({ own: [], groups: [] })).toBe(LIVE_STATE);
   });

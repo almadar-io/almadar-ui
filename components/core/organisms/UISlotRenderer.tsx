@@ -1817,7 +1817,7 @@ function substituteTraitRefsDeep(
  * deep-scan picks up references buried in config-shaped props like
  * `tabs[].content` whose schema marks the field as `trait`-typed.
  */
-function renderPatternProps(
+export function renderPatternProps(
   props: SlotProps,
   onDismiss: () => void,
   propsSchema?: Record<string, PatternPropDef>,
@@ -1825,6 +1825,9 @@ function renderPatternProps(
   const rendered: Record<string, SlotPropValue> = {};
   for (const [key, value] of Object.entries(props)) {
     if (key === "children") {
+      rendered[key] = value;
+    } else if (propsSchema?.[key]?.types?.includes("sexpr") === true) {
+      // A program held as data: a `@trait.X` inside it belongs to the program, never an embed.
       rendered[key] = value;
     } else if (isPatternConfig(value)) {
       const nestedProps: SlotProps = {};

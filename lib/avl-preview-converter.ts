@@ -166,6 +166,9 @@ export type PreviewNodeData = {
   /** Screen cards: every event that shows this render, in declaration order. */
   enteredBy?: string[];
 
+  /** The screen its trait shows when the app opens: entered by INIT fired from the trait's initial state. */
+  opensApp?: boolean;
+
   /**
    * Render-ui patterns extracted from the transition's effects.
    * Each entry is a slot + pattern config pair.
@@ -794,6 +797,16 @@ export interface CanvasStateOptions {
 interface ScreenEntry {
   entry: UITransitionEntry;
   enteredBy: string[];
+  /** One of its transitions is INIT fired from the trait's initial state: what the trait shows when the app opens. */
+  opensApp: boolean;
+}
+
+/** Whether a transition is the INIT a trait runs when the app opens: fired from its initial state. */
+function opensApp(entry: UITransitionEntry): boolean {
+  if (entry.transition.event !== 'INIT') return false;
+  const initial = entry.states.find((st) => st.isInitial)?.name;
+  const from = entry.transition.from;
+  return initial !== undefined && (Array.isArray(from) ? from.includes(initial) : from === initial);
 }
 
 /**
@@ -809,9 +822,10 @@ function collapseToScreens(transitions: UITransitionEntry[]): ScreenEntry[] {
     const screen = byRender.get(key);
     if (screen) {
       screen.enteredBy.push(entry.transition.event);
+      screen.opensApp = screen.opensApp || opensApp(entry);
       continue;
     }
-    const fresh = { entry, enteredBy: [entry.transition.event] };
+    const fresh = { entry, enteredBy: [entry.transition.event], opensApp: opensApp(entry) };
     byRender.set(key, fresh);
     screens.push(fresh);
   }
@@ -828,7 +842,7 @@ function stateOptionsFor(
 ): CanvasStateOption[] {
   const screens: ScreenEntry[] = view === 'screens'
     ? collapseToScreens(transitions)
-    : transitions.map((entry) => ({ entry, enteredBy: [entry.transition.event] }));
+    : transitions.map((entry) => ({ entry, enteredBy: [entry.transition.event], opensApp: opensApp(entry) }));
   // A list spanning several traits names each entry's trait; within one trait a
   // state shown by several distinct renders is told apart by its event.
   const manyTraits = new Set(screens.map((s) => s.entry.traitName)).size > 1;
@@ -840,7 +854,7 @@ function stateOptionsFor(
   // Guarded arms of one transition (same trait/event/from/to) are separate
   // options: the first keeps the plain id, the nth gets `#n` + "(guard n)".
   const armsSeen = new Map<string, number>();
-  return screens.map(({ entry, enteredBy }) => {
+  return screens.map(({ entry, enteredBy, opensApp: opens }) => {
     const t = entry.transition;
     const from = String(t.from);
     const state = view === 'screens'
@@ -862,6 +876,7 @@ function stateOptionsFor(
         transitionEvent: t.event,
         fromState: from,
         toState: t.to,
+        opensApp: opens,
         patterns: entry.patterns,
         eventSources: entry.eventSources,
         stateRole: detectStateRole(t.to, entry.states, entry.allTransitions),
@@ -921,7 +936,7 @@ export function stateOptionsOf(
  * live orbital.
  */
 export function initialStateOf(options: CanvasStateOptions): string {
-  const isInit = (o: CanvasStateOption) => o.data.transitionEvent === 'INIT' || (o.data.enteredBy ?? []).includes('INIT');
+  const isInit = (o: CanvasStateOption) => o.data.opensApp === true;
   const groupOptions = options.groups.flatMap((g) => g.options);
   const pick = options.own.find(isInit) ?? groupOptions.find(isInit) ?? options.own[0] ?? groupOptions[0];
   return pick?.id ?? LIVE_STATE;
