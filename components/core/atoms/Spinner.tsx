@@ -22,6 +22,23 @@ const sizeStyles: Record<SpinnerSize, string> = {
   lg: "h-8 w-8",
 };
 
+/** The theme's loading artwork (`illustration.loadingAsset`) in place of the icon when the theme declares one. */
+function SpinnerGlyph({ size, iconClassName }: { size: SpinnerSize; iconClassName: string }) {
+  return (
+    <>
+      <span
+        data-loader-mark=""
+        aria-hidden="true"
+        className={cn("bg-center bg-no-repeat bg-contain", sizeStyles[size])}
+        style={{ display: "var(--loader-mark-display, none)", backgroundImage: "var(--illustration-loading)" }}
+      />
+      <span data-loader-icon="" style={{ display: "var(--loader-icon-display, inline-flex)" }}>
+        <Icon name="loader" className={cn("animate-spin", iconClassName, sizeStyles[size])} />
+      </span>
+    </>
+  );
+}
+
 export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
   ({ className, size = "md", overlay, ...props }, ref) => {
     const { t } = useTranslate();
@@ -39,7 +56,7 @@ export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
           )}
           {...props}
         >
-          <Icon name="loader" className={cn("animate-spin text-foreground", sizeStyles[size])} />
+          <SpinnerGlyph size={size} iconClassName="text-foreground" />
         </div>
       );
     }
@@ -52,7 +69,7 @@ export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
         className={cn("text-foreground", className)}
         {...props}
       >
-        <Icon name="loader" className={cn("animate-spin", sizeStyles[size])} />
+        <SpinnerGlyph size={size} iconClassName="" />
       </div>
     );
   },

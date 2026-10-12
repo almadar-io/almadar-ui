@@ -38,6 +38,7 @@ import type {
   SceneTokens,
   ElevationTokens,
   GeometryTokens,
+  IllustrationTokens,
   IconographyTokens,
   MotionDurationKey,
   MotionEasingKey,
@@ -368,6 +369,9 @@ export function themeTokensToCssVars(
   const pickGeometry = isDark && darkVariant?.geometry ? darkVariant.geometry : tokens.geometry;
   emitGeometry(pickGeometry, vars);
 
+  const pickIllustration = isDark && darkVariant?.illustration ? darkVariant.illustration : tokens.illustration;
+  emitIllustration(pickIllustration, vars);
+
   const pickSurface = isDark && darkVariant?.surface ? darkVariant.surface : tokens.surface;
   applyFlat(pickSurface, SURFACE_VARS, vars);
 
@@ -479,6 +483,14 @@ function emitElevation(e: ElevationTokens | undefined, vars: Record<string, stri
 
 function emitGeometry(g: GeometryTokens | undefined, vars: Record<string, string>): void {
   applyFlat(g, GEOMETRY_VARS, vars);
+}
+
+/** Illustration axis — a theme's loading artwork replaces the Spinner's generic icon. */
+function emitIllustration(il: IllustrationTokens | undefined, vars: Record<string, string>): void {
+  if (!il?.loadingAsset) return;
+  vars['--illustration-loading'] = `url("${il.loadingAsset}")`;
+  vars['--loader-mark-display'] = 'inline-block';
+  vars['--loader-icon-display'] = 'none';
 }
 
 /**
