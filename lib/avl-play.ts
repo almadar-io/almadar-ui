@@ -4,7 +4,7 @@
  * Pure mapping; the host plays.
  */
 
-import type { CircuitStepResult, EffectTrace, EventPayload, GuardEvaluation } from '@almadar/core';
+import type { CircuitStepResult, EffectTrace, EventKey, EventPayload, GuardEvaluation } from '@almadar/core';
 import type { TraitLevelData, TraitTransitionInfo } from './avl-schema-parser';
 
 /** One played step of a scene, as the host recorded it. */
@@ -12,6 +12,10 @@ export interface AvlPlayStep {
   orbital: string;
   trait: string;
   from: string;
+  /** The event the step fired. */
+  event: EventKey;
+  /** The fired event's payload.
+   *  @payloadFor event */
   payload: EventPayload;
   result: CircuitStepResult;
 }
@@ -21,7 +25,10 @@ export type AvlStepRequest = {
   orbital: string;
   trait: string;
   from: string;
-  event: string;
+  /** The event to fire. */
+  event: EventKey;
+  /** The event's payload.
+   *  @payloadFor event */
   payload: EventPayload;
 };
 

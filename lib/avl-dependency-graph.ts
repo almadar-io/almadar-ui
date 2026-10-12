@@ -9,12 +9,11 @@ import type { Edge, Node } from '@xyflow/react';
 import type { PreviewNodeData } from './avl-preview-converter';
 import { layeredGraph, type LayeredUnit } from './avl-layered-graph';
 
-export type DependencyLayer = 'io' | 'std' | 'primitive' | 'unknown';
+import type { DependencyGraph, DependencyLayer } from '@almadar/core';
 
-export interface SystemDependencies {
-  orbitals: Record<string, readonly string[]>;
-  behaviors: Record<string, { layer: DependencyLayer; imports: readonly string[] }>;
-}
+export type { DependencyLayer };
+
+export type SystemDependencies = DependencyGraph;
 
 export type DependencyColumn = 'app' | DependencyLayer;
 

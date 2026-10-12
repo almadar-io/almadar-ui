@@ -911,7 +911,8 @@ module.exports = {
         '[dir="rtl"] .proof-marquee-track': { '--marquee-shift': '50%' },
         // Full-width band layers (Box edgeTop/edgeBottom/texture/backdrop, std-hero scrim).
         '.band': { position: 'relative', overflow: 'hidden', isolation: 'isolate' },
-        '.band > :not([data-band-layer])': { position: 'relative', 'z-index': '1' },
+        // Zero specificity: a child's own position utility (std-hero's absolute backdrop) must win.
+        ':where(.band > :not([data-band-layer]))': { position: 'relative', 'z-index': '1' },
         '.band-backdrop': { position: 'absolute', inset: '0', 'pointer-events': 'none', 'z-index': '0' },
         '.band-backdrop img': { width: '100%', height: '100%', 'object-fit': 'cover' },
         '.band-scrim': {

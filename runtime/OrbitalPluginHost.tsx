@@ -64,7 +64,8 @@ import type {
 } from '@almadar/core';
 import { UI_SLOTS } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
-import { useEventBus } from '../hooks/useEventBus';
+import { useEventBus, useRootEventBus } from '../hooks/useEventBus';
+import { useTraitScopeChain } from '../providers/TraitScopeProvider';
 import { useTranslate } from '../hooks/useTranslate';
 import { useUISlots, type UISlotManager, type SlotProps } from '../providers/UISlotContext';
 import type { EventTransport } from '@almadar/runtime';
@@ -106,6 +107,8 @@ export interface PluginHostPlugin {
   id: string;
   schema: OrbitalSchema;
   inbound: PluginHostInbound[];
+  /** When set, only these events reach the host bus; every other emit stays inside the plugin. */
+  outbound?: readonly string[];
 }
 
 export interface OrbitalPluginHostProps {
@@ -338,6 +341,19 @@ function PluginRuntimeMount({
   onError,
 }: PluginRuntimeMountProps): null {
   const bus = useEventBus();
+  const rootBus = useRootEventBus();
+  const chain = useTraitScopeChain();
+  // A plugin emit is one physical event: the bare key (what a pattern's event-listen prop hears)
+  // plus each enclosing trait's qualified key, sharing one fresh source so a trait claims it once.
+  const relay = useCallback(
+    (type: string, payload: EventPayload | undefined, source: BusEventSource | undefined) => {
+      const physical: BusEventSource = { ...source };
+      for (const key of new Set([`UI:${type}`, ...chain.map((sc) => `UI:${sc.orbital}.${sc.trait}.${type}`)])) {
+        rootBus.emit(key, payload, physical);
+      }
+    },
+    [rootBus, chain],
+  );
   const { locale } = useTranslate();
   const slots = useUISlots();
   const slotsRef = useRef(slots);
@@ -532,17 +548,18 @@ function PluginRuntimeMount({
       // trigger name) is always a relay for a sibling's `listens {}`,
       // never a fresh request back to the host — see file header.
       if (inboundBusEvents.has(event.type) || inboundTriggerNames.has(event.type)) return;
+      if (plugin.outbound !== undefined && !plugin.outbound.includes(event.type)) return;
       // Only re-broadcast events sourced from one of the PLUGIN's OWN
       // orbitals, never a host-protocol orbital it merely composes.
       const sourceOrbital = event.source?.orbital;
       if (sourceOrbital === undefined || !ownOrbitals.has(sourceOrbital)) return;
       rebroadcast.add(event);
-      bus.emit(`UI:${event.type}`, event.payload, event.source);
+      relay(event.type, event.payload, event.source);
     });
     return () => {
       unsub();
     };
-  }, [mockRuntime, bus, ownOrbitals, inboundBusEvents, inboundTriggerNames]);
+  }, [mockRuntime, relay, ownOrbitals, inboundBusEvents, inboundTriggerNames, plugin.outbound]);
 
   const dispatch = useCallback(
     async (row: PluginHostInbound, payload: EventPayload | undefined) => {
@@ -579,9 +596,10 @@ function PluginRuntimeMount({
         for (const entry of response.emittedEvents ?? []) {
           if (entry.event === row.trigger) continue;
           if (inboundBusEvents.has(entry.event)) continue;
+          if (plugin.outbound !== undefined && !plugin.outbound.includes(entry.event)) continue;
           const sourceOrbital = entry.source?.orbital;
           if (sourceOrbital !== undefined && ownOrbitals.has(sourceOrbital)) {
-            bus.emit(`UI:${entry.event}`, entry.payload, entry.source);
+            relay(entry.event, entry.payload, entry.source);
           }
         }
       }
@@ -596,18 +614,31 @@ function PluginRuntimeMount({
     [registrationReady, mockRuntime, mode, transport, locale, plugin, bus, ownOrbitals, inboundBusEvents, onError, onTransition, onDispatched],
   );
 
+  // Inside a trait scope the bus fans a bare `UI:EVENT` out to one qualified
+  // `UI:<orbital>.<trait>.EVENT` key per scope on the chain and drops the bare
+  // key, so an inbound row listens on the bare key AND every qualified key of
+  // the host's chain. One physical emit carries one source object across its
+  // keys; a row dispatches it once.
   useEffect(() => {
-    const unsubs = plugin.inbound.map((row) =>
-      bus.on(`UI:${row.busEvent}`, (event) => {
-        void dispatch(row, event.payload).catch((err) => {
-          onError(plugin.id, err instanceof Error ? err.message : String(err));
-        });
-      }),
-    );
+    const unsubs = plugin.inbound.flatMap((row) => {
+      const keys = new Set([`UI:${row.busEvent}`, ...chain.map((sc) => `UI:${sc.orbital}.${sc.trait}.${row.busEvent}`)]);
+      const delivered = new WeakSet<object>();
+      return Array.from(keys, (key) =>
+        bus.on(key, (event) => {
+          if (event.source) {
+            if (delivered.has(event.source)) return;
+            delivered.add(event.source);
+          }
+          void dispatch(row, event.payload).catch((err) => {
+            onError(plugin.id, err instanceof Error ? err.message : String(err));
+          });
+        }),
+      );
+    });
     return () => {
       for (const unsub of unsubs) unsub();
     };
-  }, [bus, plugin, dispatch, onError]);
+  }, [bus, plugin, dispatch, onError, chain]);
 
   return null;
 }

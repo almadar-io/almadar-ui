@@ -181,11 +181,7 @@ const fallbackEventBus: EventBusContextType = {
  * ```
  */
 export function useEventBus(): EventBusContextType {
-  const context = useContext(EventBusContext);
-  // Priority: 1) React context, 2) Window global bridge, 3) Fallback
-  // SSR-safe: getGlobalEventBus() guards with typeof window !== 'undefined'
-  // React Compiler-safe: all three references are stable (no render side effects)
-  const baseBus = context ?? getGlobalEventBus() ?? fallbackEventBus;
+  const baseBus = useRootEventBus();
 
   // Trait-scope qualification (Phase 4 producer-side fix).
   //
@@ -281,6 +277,18 @@ export function useEventBus(): EventBusContextType {
       },
     };
   }, [baseBus, chain]);
+}
+
+/**
+ * The bus with no trait-scope rewriting: a machine-originated relay (an embedded
+ * program's emit) goes out on exactly the keys it names.
+ */
+export function useRootEventBus(): EventBusContextType {
+  const context = useContext(EventBusContext);
+  // Priority: 1) React context, 2) Window global bridge, 3) Fallback
+  // SSR-safe: getGlobalEventBus() guards with typeof window !== 'undefined'
+  // React Compiler-safe: all three references are stable (no render side effects)
+  return context ?? getGlobalEventBus() ?? fallbackEventBus;
 }
 
 // ============================================================================

@@ -435,6 +435,7 @@ const DIAGNOSTIC_WARNING_COLOR = '#cca700';
 const EDITOR_LINE_PX = 19.5;
 import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
+import { keyChord, type EditorKeyEvent } from '../../../../hooks/useKeyboardRouter';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { useScopedMode } from '../../../../providers/ThemeContext';
 import { createLogger } from '@almadar/logger';
@@ -698,7 +699,13 @@ export interface CodeBlockProps extends A11yProps {
    * Declarative bus listen: switch editor mode and caret style.
    * @tier presentation
    */
-  onSetMode?: EventListen<{ editorId: string; mode: string; caret: EditorCaret }>;
+  onSetMode?: EventListen<{ editorId: string; mode: string; caret: EditorCaret; keys?: string[] }>;
+  /**
+   * Emits UI:{onKey} with the keystroke for each key the latest SET_MODE for
+   * this editor listed, and keeps it out of the text. No capture without it.
+   * @tier presentation
+   */
+  onKey?: EventEmit<{ editorId: string; key: string; code: string; ctrl: boolean; alt: boolean; shift: boolean; meta: boolean; repeat: boolean }>;
   /**
    * Motion vocabulary this editor accepts. Default: the full `EditorMotion` set.
    * @tier presentation
@@ -994,6 +1001,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     onOperate = 'OPERATE',
     onInsertText = 'INSERT_TEXT',
     onSetMode = 'SET_MODE',
+    onKey,
     motions = [
       'left',
       'right',
@@ -1126,7 +1134,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     }, [propDiff, mode, oldValue, newValue]);
 
     // An empty collection is unset: generated wrappers forward `files: []` / `diff: []` defaults.
-    const isViewerMode = !!(title || (files && files.length > 0) || showLineNumbers || diffLines || mode === 'diff' || actions);
+    const isViewerMode = !!(title || (files && files.length > 0) || (showLineNumbers && !editable) || diffLines || mode === 'diff' || actions);
     const effectiveCopy = showCopy ?? showCopyButton;
 
     // ── Editable mode (GAP-77): Prism overlay under transparent textarea ──
@@ -1201,7 +1209,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       onChange?.(v);
     }, [onChange]);
 
-    const { caretMode, recordKeystroke, undo, redo } = useEditorCapabilities({
+    const { caretMode, recordKeystroke, undo, redo, capturedKeys } = useEditorCapabilities({
       editorId: editable ? editorId : undefined,
       textareaRef: editableTextareaRef,
       events: { onMotion, onOperate, onInsertText, onSetMode },
@@ -1275,6 +1283,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         const ta = editableTextareaRef.current;
         if (ta) prevCaretRef.current = ta.selectionStart;
+        if (onKey && editorId && (capturedKeys.has(e.key) || capturedKeys.has(keyChord(e)))) {
+          e.preventDefault();
+          eventBus.emit(`UI:${onKey}`, { editorId, key: e.key, code: e.code, ctrl: e.ctrlKey, alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, repeat: e.repeat } satisfies EditorKeyEvent);
+          return;
+        }
         if (assist.onKeyDown(e)) return;
         if (completion.onKeyDown(e)) return;
         const mod = e.metaKey || e.ctrlKey;
@@ -1296,7 +1309,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           redo();
         }
       },
-      [undo, redo, completion, assist, onGoToDefinition, definitionAtOffset],
+      [undo, redo, completion, assist, onGoToDefinition, definitionAtOffset, onKey, editorId, capturedKeys, eventBus],
     );
 
     const showBlockCaret = isFocused && caretMode !== 'bar';
@@ -2421,6 +2434,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.onOperate === next.onOperate &&
     prev.onInsertText === next.onInsertText &&
     prev.onSetMode === next.onSetMode &&
+    prev.onKey === next.onKey &&
     prev.motions === next.motions &&
     prev.operators === next.operators,
 );

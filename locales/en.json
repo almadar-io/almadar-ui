@@ -355,6 +355,7 @@
   "avl.pageLayout": "Page Layout",
   "avl.overlaySuffix": "(overlay)",
   "avl.stateCount": "states: {{count}}",
+  "avl.transitionMissing": "This transition isn't in the program.",
   "avl.transitionCount": "transitions: {{count}}",
   "avl.listensRail": "listens",
   "avl.emitsRail": "emits",

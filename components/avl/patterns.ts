@@ -13,6 +13,7 @@ export { AvlGlyph } from './molecules/AvlGlyph';
 export { BehaviorView } from './molecules/BehaviorView';
 export { ModuleCard } from './molecules/ModuleCard';
 export { AvlTransitionExplainer } from './molecules/AvlTransitionExplainer';
+export { AvlTransitionDetail } from './molecules/AvlTransitionDetail';
 export { FlowCanvas } from './organisms/FlowCanvas';
 export { LayersPanel } from './organisms/LayersPanel';
 export { OrbInspector } from './organisms/OrbInspector';

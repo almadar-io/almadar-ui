@@ -30,6 +30,7 @@ function step(from: string, event: string, key: string, result: Omit<CircuitStep
     orbital: 'EditorOrbital',
     trait: 'Modes',
     from,
+    event,
     payload: { key },
     result: { trait: 'Modes', event, effects: [], emitted: [], ...result },
   };

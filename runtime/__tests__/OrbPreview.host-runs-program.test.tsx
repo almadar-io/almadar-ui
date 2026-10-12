@@ -144,7 +144,7 @@ describe('a view of a program its host runs entirely', () => {
     const served = serveChannel(hostEnd, host, { schemaName: ticking.name });
     let hostPulses = 0;
     host.onInputDispatched((orbital, request, response) => {
-      if (request.event === 'PULSE') hostPulses++;
+      if (request.runTick?.tick === 'pulse' && response.emittedEvents.some((e) => e.event === 'PULSE')) hostPulses++;
       served.pushDispatch(orbital, request, response);
     });
     render(<OrbPreview schema={ticking} transport={createChannelTransport(viewEnd, { hostsBrowserStore: true })} initialPagePath="/" />);

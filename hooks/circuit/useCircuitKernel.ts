@@ -84,7 +84,6 @@ export interface UseCircuitKernelOptions {
   /** Consumer `call-service` hook for the offline in-process evaluator. */
   callService?: (service: string, action: string, params?: ServiceParams) => Promise<EventPayload>;
   user?: UserContext;
-  guardMode?: 'strict' | 'permissive';
   strictBindings?: boolean;
   contextExtensions?: EvaluationContextExtensions;
   debug?: boolean;
@@ -187,19 +186,17 @@ export function useCircuitKernel(
   const store = useMemo(() => {
     const traitDefs = Array.from(traitIndex.byName.values(), (entry: IndexedTrait) => entry.traitDef);
     const config = {
-      ...(options.guardMode !== undefined ? { guardMode: options.guardMode } : {}),
       ...(options.strictBindings !== undefined ? { strictBindings: options.strictBindings } : {}),
       ...(options.contextExtensions !== undefined ? { contextExtensions: options.contextExtensions } : {}),
     };
     return createMemoryCircuitStore(traitDefs, config, options.observer);
-  }, [traitIndex, options.guardMode, options.strictBindings, options.contextExtensions, options.observer]);
+  }, [traitIndex, options.strictBindings, options.contextExtensions, options.observer]);
 
   const localTransportOptions = {
     traitIndex,
     store,
     ...(options.callService !== undefined ? { callService: options.callService } : {}),
     ...(options.user !== undefined ? { user: options.user } : {}),
-    ...(options.guardMode !== undefined ? { guardMode: options.guardMode } : {}),
     ...(options.strictBindings !== undefined ? { strictBindings: options.strictBindings } : {}),
     ...(options.contextExtensions !== undefined ? { contextExtensions: options.contextExtensions } : {}),
     ...(options.debug !== undefined ? { debug: options.debug } : {}),
@@ -212,7 +209,7 @@ export function useCircuitKernel(
       ? undefined
       : createLocalStoreTransport({ ...localTransportOptions, persistence: options.persistence })),
     [options.transport, options.persistence, traitIndex, store, options.callService, options.user,
-      options.guardMode, options.strictBindings, options.contextExtensions, options.debug, options.logContext, i18n],
+      options.strictBindings, options.contextExtensions, options.debug, options.logContext, i18n],
   );
   const routedTransport = useMemo(() => {
     if (options.browserStore === undefined) return undefined;
@@ -221,7 +218,7 @@ export function useCircuitKernel(
     const remote = options.transport ?? offlineTransport;
     return createResidenceTransport({ local, ...(remote !== undefined ? { remote } : {}), traitIndex: fullTraitIndex });
   }, [options.browserStore, options.transport, offlineTransport, fullTraitIndex, store, options.callService, options.user,
-    options.guardMode, options.strictBindings, options.contextExtensions, options.debug, options.logContext, i18n]);
+    options.strictBindings, options.contextExtensions, options.debug, options.logContext, i18n]);
 
   const baseTransport = routedTransport ?? options.transport ?? offlineTransport;
   const effectiveTransport = useMemo(
@@ -252,7 +249,6 @@ export function useCircuitKernel(
     ...(options.user !== undefined ? { user: options.user } : {}),
     locale,
     ...(i18n !== undefined ? { messages: { [i18n.locale]: i18n.messages } } : {}),
-    ...(options.guardMode !== undefined ? { guardMode: options.guardMode } : {}),
     ...(options.strictBindings !== undefined ? { strictBindings: options.strictBindings } : {}),
     ...(options.contextExtensions !== undefined ? { contextExtensions: options.contextExtensions } : {}),
     ...(options.debug !== undefined ? { debug: options.debug } : {}),
@@ -269,7 +265,6 @@ export function useCircuitKernel(
     options.user,
     locale,
     i18n,
-    options.guardMode,
     options.strictBindings,
     options.contextExtensions,
     options.debug,

@@ -17,12 +17,17 @@ import { Button } from '../../core/atoms/Button';
 import { Popover } from '../../core/molecules/Popover';
 import { AvlGlyph } from './AvlGlyph';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { useEventBus } from '../../../hooks/useEventBus';
 import type { PreviewNodeData } from '../../../lib/avl-preview-converter';
 
 export interface SystemMapContextValue {
-  /** Drill into the orbital's traits. */
-  openTraits: (orbital: string) => void;
-  /** What the hover shows for an orbital (e.g. its live screen); no hover card without it. */
+  /** React hosts: drill into the orbital's traits. */
+  openTraits?: (orbital: string) => void;
+  /** Emits UI:{openTraitsEvent} with { orbital } to drill into the orbital's traits (set from FlowCanvas's own `openTraitsEvent`). */
+  openTraitsEvent?: EventEmit<{ orbital: string }>;
+  /** Show each orbital's live screen in its hover card (the canvas renders it). */
+  preview?: boolean;
+  /** React hosts: what the hover shows for an orbital; no hover card without it (or `preview`). */
   renderPreview?: (orbital: string) => React.ReactNode;
   /** Emits UI:{openCodeEvent} with { orbital }. */
   openCodeEvent?: EventEmit<{ orbital: string }>;
@@ -34,7 +39,16 @@ export interface SystemMapContextValue {
   selectDependency?: (id: string) => void;
 }
 
-export const SystemMapContext = createContext<SystemMapContextValue>({ openTraits: () => undefined });
+export const SystemMapContext = createContext<SystemMapContextValue>({});
+
+/** Drills into an orbital the way the map declares: the React callback and/or the declared event. */
+export function useOpenTraits(map: SystemMapContextValue): (orbital: string) => void {
+  const eventBus = useEventBus();
+  return (orbital: string) => {
+    map.openTraits?.(orbital);
+    if (map.openTraitsEvent) eventBus.emit(`UI:${map.openTraitsEvent}`, { orbital });
+  };
+}
 
 const HIDDEN_HANDLE = { opacity: 0, width: 1, height: 1, border: 0 };
 
@@ -42,6 +56,7 @@ const SystemNodeInner: React.FC<NodeProps> = ({ data }) => {
   const d = data as PreviewNodeData;
   const { t } = useTranslate();
   const map = useContext(SystemMapContext);
+  const openTraits = useOpenTraits(map);
   const [open, setOpen] = useState(false);
   const orbital = d.orbitalName;
   const highlighted = map.highlighted === orbital;
@@ -52,8 +67,8 @@ const SystemNodeInner: React.FC<NodeProps> = ({ data }) => {
       data-orbital={orbital}
       role="button"
       tabIndex={0}
-      onClick={() => map.openTraits(orbital)}
-      onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') map.openTraits(orbital); }}
+      onClick={() => openTraits(orbital)}
+      onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') openTraits(orbital); }}
       className={`cursor-pointer rounded-lg border bg-card px-3 py-2.5 shadow-sm transition-shadow hover:shadow-md ${highlighted ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}
       style={{ width: 280, height: 88 }}
     >
@@ -100,7 +115,7 @@ const SystemNodeInner: React.FC<NodeProps> = ({ data }) => {
           </VStack>
           {map.renderPreview(orbital)}
           <HStack gap="xs">
-            <Button variant="primary" size="sm" rightIcon="chevron-right" onClick={() => { setOpen(false); map.openTraits(orbital); }} data-testid="avl-system-open-traits">
+            <Button variant="primary" size="sm" rightIcon="chevron-right" onClick={() => { setOpen(false); openTraits(orbital); }} data-testid="avl-system-open-traits">
               {t('avl.system.openTraits')}
             </Button>
             {map.openCodeEvent ? (

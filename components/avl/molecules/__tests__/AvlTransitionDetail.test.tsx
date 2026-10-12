@@ -36,6 +36,7 @@ function played(key: string): AvlTransitionPlayback {
       orbital: 'Editor',
       trait: 'Modes',
       from: 'NORMAL',
+      event: 'KEY',
       payload: { key },
       result: {
         trait: 'Modes',

@@ -58,7 +58,7 @@ function initEventOf(key: string): string {
  * their inbound subscriptions exist when this effect emits (sibling effect order);
  * the host's dispatch itself awaits registration.
  */
-function MountedInit({ event }: { event: string }): null {
+export function MountedInit({ event }: { event: string }): null {
   const bus = useEventBus();
   useEffect(() => {
     bus.emit(`UI:${event}`, {});

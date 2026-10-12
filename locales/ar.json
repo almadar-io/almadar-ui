@@ -351,6 +351,7 @@
   "avl.pageLayout": "تخطيط الصفحة",
   "avl.overlaySuffix": "(تراكب)",
   "avl.stateCount": "الحالات: {{count}}",
+  "avl.transitionMissing": "هذا الانتقال غير موجود في البرنامج.",
   "avl.transitionCount": "الانتقالات: {{count}}",
   "avl.listensRail": "يستمع",
   "avl.emitsRail": "يُطلق",

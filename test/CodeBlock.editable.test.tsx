@@ -160,3 +160,19 @@ describe('CodeBlock editable — caret mirror (SV4-4, structure only: jsdom has 
     expect(container.querySelector('[data-testid="editor-caret"]')).toBeNull();
   });
 });
+
+describe('CodeBlock editable wins over showLineNumbers (the editable gutter shows the numbers)', () => {
+  const textarea = (ui: React.ReactElement) => render(ui, { wrapper: Wrapper }).container.querySelector('textarea');
+
+  it('editable + showLineNumbers renders the editable surface', () => {
+    expect(textarea(<CodeBlock code="a" language="text" editable showLineNumbers />)).not.toBeNull();
+  });
+
+  it('control: showLineNumbers without editable stays a read-only viewer', () => {
+    expect(textarea(<CodeBlock code="a" language="text" showLineNumbers />)).toBeNull();
+  });
+
+  it('edge: diff mode stays a viewer even when editable', () => {
+    expect(textarea(<CodeBlock code="" language="text" editable mode="diff" oldValue="a" newValue="b" />)).toBeNull();
+  });
+});

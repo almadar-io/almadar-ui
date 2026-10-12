@@ -351,6 +351,7 @@
   "avl.pageLayout": "Postavitev strani",
   "avl.overlaySuffix": "(prekrivni sloj)",
   "avl.stateCount": "stanja: {{count}}",
+  "avl.transitionMissing": "Tega prehoda ni v programu.",
   "avl.transitionCount": "prehodi: {{count}}",
   "avl.listensRail": "posluša",
   "avl.emitsRail": "odda",

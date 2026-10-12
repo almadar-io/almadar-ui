@@ -48,6 +48,7 @@ const step = (from: string, event: string, after: string, firedArm: number): Avl
   orbital: 'Editor',
   trait: 'Modes',
   from,
+  event,
   payload: {},
   result: { trait: 'Modes', event, transitionFired: true, guard: 'none', firedArm, state: { before: from, after }, effects: [], emitted: [] },
 });

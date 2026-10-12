@@ -75,6 +75,8 @@ export interface SetModePayload extends EventPayload {
   editorId: string;
   mode: string;
   caret: EditorCaret;
+  /** The keys the mode captures, in `useKeyboardRouter`'s spelling (bare key or `Control+Alt+Shift+Meta` chord). */
+  keys?: string[];
 }
 
 interface HistorySnapshot {
@@ -138,10 +140,15 @@ export interface UseEditorCapabilitiesResult {
   recordKeystroke: (prevText: string, prevCaret: number, nextText: string) => void;
   undo: () => void;
   redo: () => void;
+  /** The keys the latest SET_MODE for this editor declared; empty until one does. */
+  capturedKeys: ReadonlySet<string>;
 }
+
+const NO_KEYS: ReadonlySet<string> = new Set();
 
 export function useEditorCapabilities(args: UseEditorCapabilitiesArgs): UseEditorCapabilitiesResult {
   const [caretMode, setCaretMode] = useState<EditorCaret>('bar');
+  const [capturedKeys, setCapturedKeys] = useState<ReadonlySet<string>>(NO_KEYS);
   // Vim-style yank/delete register. Unnamed — the single register the
   // vocabulary currently exposes. `registerLinewise` records whether the
   // yank/delete that filled it used the `line` motion (drives `put`).
@@ -321,7 +328,8 @@ export function useEditorCapabilities(args: UseEditorCapabilitiesArgs): UseEdito
     closeOpenTypingStep();
     insertSessionOpenRef.current = evt.payload.mode === 'INSERT';
     setCaretMode(evt.payload.caret);
+    setCapturedKeys(Array.isArray(evt.payload.keys) ? new Set(evt.payload.keys.filter((k): k is string => typeof k === 'string')) : NO_KEYS);
   });
 
-  return { caretMode, recordKeystroke, undo, redo };
+  return { caretMode, recordKeystroke, undo, redo, capturedKeys };
 }

@@ -1,14 +1,21 @@
 'use client';
 import * as React from "react";
-import type { A11yProps } from "@almadar/core";
+import type { A11yProps, EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { domPassthrough } from "../../../lib/domPassthrough";
+import { useEventBus } from "../../../hooks/useEventBus";
 
 /** @accessibleName label */
 export interface SwitchProps extends A11yProps {
   checked?: boolean;
   defaultChecked?: boolean;
   onChange?: (checked: boolean) => void;
+  /** Declarative event name — emits UI:{action} with `actionPayload` and the new `checked` value on toggle */
+  action?: EventKey;
+  /** Payload to include with the action event (the new `checked` is added to it)
+   *  @payloadFor action
+   */
+  actionPayload?: EventPayload;
   disabled?: boolean;
   label?: string;
   id?: string;
@@ -22,6 +29,8 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
       checked,
       defaultChecked = false,
       onChange,
+      action,
+      actionPayload,
       disabled = false,
       label,
       id,
@@ -31,6 +40,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
     },
     ref,
   ) => {
+    const eventBus = useEventBus();
     const generatedId = React.useId();
     const switchId = id ?? generatedId;
     const [isChecked, setIsChecked] = React.useState(
@@ -50,6 +60,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         setIsChecked(newValue);
       }
       onChange?.(newValue);
+      if (action) eventBus.emit(`UI:${action}`, { ...(actionPayload ?? {}), checked: newValue });
     };
 
     return (

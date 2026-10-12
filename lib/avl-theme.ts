@@ -120,8 +120,8 @@ const EFFECT_OPERATOR_CATEGORY: Record<EffectOperator, EffectCategory> = {
   'train/clipWeights': 'compute', 'train/sgd': 'compute', 'train/adam': 'compute', 'prob/seed': 'compute', 'prob/condition': 'compute',
   'workspace/write-orbital': 'system', 'workspace/write-file': 'system', 'workspace/write-schema': 'system',
   'workspace/write-plan': 'system', 'workspace/archive-orbital': 'system',
-  'behavior/catalog': 'system', 'behavior/describe': 'system', 'behavior/source': 'system', 'behavior/resolve': 'system',
-  'program/read': 'system', 'program/print': 'system', 'program/eval': 'system', 'program/compose': 'system',
+  'behavior/catalog': 'system', 'behavior/describe': 'system', 'behavior/source': 'system', 'behavior/resolve': 'system', 'behavior/dependencies': 'system',
+  'program/read': 'system', 'program/print': 'system', 'program/eval': 'system', 'program/compose': 'system', 'program/step': 'system',
 };
 
 const EFFECT_FAMILY_CATEGORY: Record<EffectOperatorFamily, EffectCategory> = {
@@ -147,8 +147,8 @@ const EFFECT_OPERATOR_ZONE: Record<EffectOperator, EffectZone> = {
   'train/clipWeights': 'model', 'train/sgd': 'model', 'train/adam': 'model', 'prob/seed': 'model', 'prob/condition': 'model',
   'workspace/write-orbital': 'system', 'workspace/write-file': 'system', 'workspace/write-schema': 'system',
   'workspace/write-plan': 'system', 'workspace/archive-orbital': 'system',
-  'behavior/catalog': 'system', 'behavior/describe': 'system', 'behavior/source': 'system', 'behavior/resolve': 'system',
-  'program/read': 'system', 'program/print': 'system', 'program/eval': 'system', 'program/compose': 'system',
+  'behavior/catalog': 'system', 'behavior/describe': 'system', 'behavior/source': 'system', 'behavior/resolve': 'system', 'behavior/dependencies': 'system',
+  'program/read': 'system', 'program/print': 'system', 'program/eval': 'system', 'program/compose': 'system', 'program/step': 'system',
 };
 
 const EFFECT_FAMILY_ZONE: Record<EffectOperatorFamily, EffectZone> = {

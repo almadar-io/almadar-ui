@@ -9,7 +9,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import type { EventEmit, SExpr, TraitConfigObject, TraitConfigValue } from '@almadar/core';
+import type { EventEmit, OrbitalSchema, SExpr, TraitConfigObject, TraitConfigValue } from '@almadar/core';
 import { Card } from '../../core/atoms/Card';
 import { Box } from '../../core/atoms/Box';
 import { HStack, VStack } from '../../core/atoms/Stack';
@@ -21,8 +21,9 @@ import { JsonTreeEditor } from '../../core/molecules/JsonTreeEditor';
 import { AvlCircuit } from './AvlCircuit';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { effectZoneOf } from '../../../lib/avl-theme';
-import type { TraitTransitionInfo } from '../../../lib/avl-schema-parser';
-import type { AvlStepRequest, AvlTransitionPlayback } from '../../../lib/avl-play';
+import { parseTraitLevel, type TraitTransitionInfo } from '../../../lib/avl-schema-parser';
+import { transitionPlayback, type AvlPlayStep, type AvlStepRequest, type AvlTransitionPlayback } from '../../../lib/avl-play';
+import { EmptyState } from '../../core/molecules/EmptyState';
 import type { AvlAnnotations, AvlNote } from '../../../lib/avl-annotations';
 import { AvlEffectChip } from './AvlEffectChip';
 import { AvlExplain } from './AvlExplain';
@@ -39,9 +40,17 @@ export interface AvlTransitionDetailProps {
   /** Trait the transition belongs to. */
   trait: string;
   /** The transition to explain.
-   * @example {"from":"pending","to":"paid","event":"PAY","guard":[">","@payload.amount",0],"effects":[{"type":"set","args":["@entity.total","@payload.amount"]},{"type":"persist","args":["update","Order","@entity"]}],"index":0}
+   * @example {"from":"pending","to":"paid","event":"PAY","effects":[{"type":"set","args":[]},{"type":"persist","args":[]}],"index":0}
    */
-  transition: TraitTransitionInfo;
+  transition?: TraitTransitionInfo;
+  /** The program the transition belongs to (object or JSON text), when it is given by position instead of `transition`. */
+  schema?: OrbitalSchema | string;
+  /** The transition's position among the trait's transitions, read from `schema`. */
+  transitionIndex?: number;
+  /** Played steps; the one at `cursor` that ran this transition lights the boards (with `schema`). */
+  scene?: readonly AvlPlayStep[];
+  /** The scene step shown. Default: the last. */
+  cursor?: number;
   /** Author explanations shown in a popover on hover: the transition's event note and per-effect-type notes.
    * @example {"transitions":{"PAY":{"title":"Paying","body":"The customer pays the order total."}},"effects":{"persist":{"body":"Saves the order."}}}
    */
@@ -64,7 +73,25 @@ const EffectHeader: React.FC<{ type: string; failed: boolean; failedLabel: strin
   </HStack>
 );
 
-export const AvlTransitionDetail: React.FC<AvlTransitionDetailProps> = ({ orbital, trait, transition, annotations, playback, stepEvent, className }) => {
+type ResolvedDetailProps = Omit<AvlTransitionDetailProps, 'transition' | 'schema' | 'transitionIndex' | 'scene' | 'cursor'> & { transition: TraitTransitionInfo };
+
+export const AvlTransitionDetail: React.FC<AvlTransitionDetailProps> = ({ schema, transitionIndex, scene, cursor, transition, playback, ...rest }) => {
+  const { t } = useTranslate();
+  const resolved = useMemo(() => {
+    if (transition) return { transition, playback };
+    if (schema === undefined || transitionIndex === undefined) return null;
+    const program: OrbitalSchema = typeof schema === 'string' ? JSON.parse(schema) : schema;
+    const level = parseTraitLevel(program, rest.orbital, rest.trait);
+    const found = level?.transitions[transitionIndex];
+    if (!level || !found) return null;
+    const steps = scene ?? [];
+    return { transition: found, playback: playback ?? transitionPlayback(level, rest.orbital, found, steps, cursor ?? steps.length - 1) };
+  }, [transition, playback, schema, transitionIndex, scene, cursor, rest.orbital, rest.trait]);
+  if (!resolved) return <Box data-testid="avl-transition-missing"><EmptyState icon="git-branch" title={t('avl.transitionMissing')} /></Box>;
+  return <TransitionDetailBody {...rest} transition={resolved.transition} {...(resolved.playback ? { playback: resolved.playback } : {})} />;
+};
+
+const TransitionDetailBody: React.FC<ResolvedDetailProps> = ({ orbital, trait, transition, annotations, playback, stepEvent, className }) => {
   const { t } = useTranslate();
   const [payload, setPayload] = useState<TraitConfigObject>({});
 

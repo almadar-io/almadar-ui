@@ -47,8 +47,9 @@ import type {
   TraitConfigValue,
   UserContext,
 } from '@almadar/core';
-import { walkSExpr } from '@almadar/core';
+import { guardHolds, storesRowsInBrowser, walkSExpr } from '@almadar/core';
 import {
+  browserLegEvents,
   collectDeclaredConfigDefaults,
   createContextFromBindings,
   createTickScheduler,
@@ -56,6 +57,8 @@ import {
   isValidCronExpression,
   normalizeCallSiteConfigToValues,
   parseDurationString,
+  processTick,
+  tickEventKey,
   type CircuitStore,
   type TraitIndex,
 } from '@almadar/runtime';
@@ -173,7 +176,11 @@ export function createSharedEntityWriter(
       });
     };
 
-    if (tick.guard !== undefined && !evaluateGuard(tick.guard, ctx)) {
+    const guard = tick.guard;
+    if (guard !== undefined && !guardHolds(
+      () => evaluateGuard(guard, ctx),
+      (error) => tickLog.error('guard:error-blocks-tick', { traitName, tick: tick.name, state: currentState, error }),
+    )) {
       tickLog.debug('guard-blocked', { traitName, tick: tick.name, state: currentState });
       return [];
     }
@@ -191,6 +198,8 @@ export interface UseClientTicksOptions {
   user?: UserContext;
   /** The host runs the whole program (an extension's worker), ticks included: this view runs none. */
   hostRunsProgram?: boolean;
+  /** Fire a tick whose effects write browser-stored data through the kernel as a `runTick` dispatch (its leg goes to the browser store). */
+  dispatchTick: (traitName: string, tickName: string) => void;
 }
 
 export function useClientTicks(
@@ -285,24 +294,21 @@ export function useClientTicks(
       refreshStates();
       const traitName = binding.trait.name;
       const currentState = traitStatesRef.current.get(traitName)?.currentState ?? '';
-      if (tick.appliesTo.length > 0 && !tick.appliesTo.includes(currentState)) return;
-
       const entry = traitIndex.byName.get(traitName);
-      const frameKey = entry?.frameKey ?? traitName;
-
-      if (tick.guard !== undefined) {
-        const entity = store.frames.get(frameKey) ?? {};
-        const guardCtx = {
-          entity,
-          payload: {},
-          state: currentState,
-          ...(options.user ? { user: options.user } : {}),
-          ...(entry?.config !== undefined ? { config: entry.config } : {}),
-        };
-        if (!evaluateGuard(tick.guard, createContextFromBindings(guardCtx))) {
-          tickLog.debug('guard-blocked', { traitName, tick: tick.name, state: currentState });
-          return;
-        }
+      if (entry === undefined) return;
+      const frameKey = entry.frameKey;
+      const fired = processTick({
+        traitState: { traitName, currentState, previousState: null, lastEvent: null, context: {} },
+        trait: entry.traitDef,
+        tick,
+        entityData: store.frames.get(frameKey) ?? {},
+        payload: {},
+        ...(options.user !== undefined ? { user: options.user } : {}),
+        ...(entry.config !== undefined ? { config: entry.config } : {}),
+      });
+      if (!fired.executed) {
+        tickLog.debug('guard-blocked', { traitName, tick: tick.name, state: currentState });
+        return;
       }
 
       const pendingSlots = new Map<string, Array<{ pattern: PatternConfig; props?: ResolvedPatternProps }>>();
@@ -311,15 +317,15 @@ export function useClientTicks(
         eventBus: options.eventBus,
         traitName,
         frameKey,
-        effects: tick.effects,
+        effects: fired.effects,
         state: currentState,
         transitionLabel: `${currentState}->${currentState}`,
-        config: entry?.config,
+        config: entry.config,
         user: options.user,
-        orbitalName: entry?.orbitalName,
-        orbitalId: entry?.orbitalId,
-        traitId: entry?.irTrait.id,
-        emits: entry?.irTrait.emits,
+        orbitalName: entry.orbitalName,
+        orbitalId: entry.orbitalId,
+        traitId: entry.irTrait.id,
+        emits: entry.irTrait.emits,
         navigate: options.navigate,
         navigateBack: options.navigateBack,
         tickName: tick.name,
@@ -345,12 +351,18 @@ export function useClientTicks(
       });
     };
 
+    const browserStored = new Set(traitIndex.allEntities.filter(storesRowsInBrowser).map((e) => e.name));
     for (const binding of traitBindings) {
       const entry = traitIndex.byName.get(binding.trait.name);
+      const legTicks = entry !== undefined
+        ? browserLegEvents(entry.traitDef, (t) => browserStored.has(t), entry.config, entry.irTrait.ticks)
+        : new Set<string>();
       for (const tick of binding.trait.ticks ?? []) {
         if (entry?.isSharedEntity && pureWriterTickKeys.has(`${binding.trait.name}::${tick.name}`)) continue;
         const key = `tick:${binding.trait.name}::${tick.name}`;
-        const onDue = () => perfTimeAsync(key, () => runNonWriterTick(binding, tick));
+        const onDue = legTicks.has(tickEventKey(tick.name))
+          ? () => options.dispatchTick(binding.trait.name, tick.name)
+          : () => perfTimeAsync(key, () => runNonWriterTick(binding, tick));
         if (tick.interval === 'frame') scheduler.add(0, onDue);
         else if (typeof tick.interval === 'number') scheduler.add(tick.interval, onDue);
         else if (isValidCronExpression(tick.interval)) scheduler.addCron(tick.interval, onDue);
@@ -359,5 +371,5 @@ export function useClientTicks(
     }
 
     return () => scheduler.stopAll();
-  }, [traitBindings, store, traitIndex, options.eventBus, options.slotFlush, options.traitConfigsByName, options.navigate, options.navigateBack, options.user, options.hostRunsProgram]);
+  }, [traitBindings, store, traitIndex, options.eventBus, options.slotFlush, options.traitConfigsByName, options.navigate, options.navigateBack, options.user, options.hostRunsProgram, options.dispatchTick]);
 }

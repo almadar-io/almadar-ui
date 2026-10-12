@@ -47,7 +47,7 @@ import { resolveAssetSource, blit, getAtlas, isAtlasAsset } from '../../../lib/a
 import { useCamera } from '../../../hooks/useCamera';
 import { useCanvasGestures } from '../../../hooks/useCanvasGestures';
 import { bindCanvasCapture, bindLastDrawables } from '../../../lib/verificationRegistry';
-import { resolveKeyMapEvent } from '../../../lib/keyMapEvent';
+import { useKeyMapEvents } from '../../../hooks/useKeyMapEvents';
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { create2DProjector, type Projection2D } from '../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
@@ -895,23 +895,7 @@ export function Canvas2D({
     }, [canvasWheelHandler]);
 
     // Keyboard → semantic events via keyMap/keyUpMap (device-agnostic input layer).
-    useEffect(() => {
-        if (!keyMap && !keyUpMap) return;
-        const onDown = (e: KeyboardEvent) => {
-            const ev = resolveKeyMapEvent(keyMap, e);
-            if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
-        };
-        const onUp = (e: KeyboardEvent) => {
-            const ev = resolveKeyMapEvent(keyUpMap, e);
-            if (ev) eventBus.emit(`UI:${ev}`, {});
-        };
-        window.addEventListener('keydown', onDown);
-        window.addEventListener('keyup', onUp);
-        return () => {
-            window.removeEventListener('keydown', onDown);
-            window.removeEventListener('keyup', onUp);
-        };
-    }, [keyMap, keyUpMap, eventBus]);
+    useKeyMapEvents(keyMap, keyUpMap);
 
     // Keyboard delivery above is window-scoped (not focus-gated), so this
     // isn't load-bearing for input — it's a visible affordance: a

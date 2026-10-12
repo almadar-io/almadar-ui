@@ -34,7 +34,7 @@ import type {
   TraitConfig,
   UserContext,
 } from '@almadar/core';
-import { collectListenerTargets, LIFECYCLE_EVENTS, TraitMountError, type ClientKernelOutcome, type EventTransport, type TraitState } from '@almadar/runtime';
+import { collectListenerTargets, LIFECYCLE_EVENTS, TraitMountError, tickEventKey, type ClientKernelOutcome, type EventTransport, type TraitState } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from './useEventBus';
 import { useUser } from '../providers/UserContext';
@@ -162,16 +162,6 @@ export function useTraitStateMachine(
     ...(userContext !== undefined ? { user: userContext } : {}),
   });
 
-  useClientTicks(traitBindings, store, traitIndex, {
-    eventBus,
-    slotFlush,
-    hostRunsProgram: transport?.hostsBrowserStore === true,
-    ...(options.traitConfigsByName !== undefined ? { traitConfigsByName: options.traitConfigsByName } : {}),
-    ...(options.navigate !== undefined ? { navigate: options.navigate } : {}),
-    ...(options.navigateBack !== undefined ? { navigateBack: options.navigateBack } : {}),
-    ...(userContext !== undefined ? { user: userContext } : {}),
-  });
-
   const entityBindingSource = useEntityBindingSource(store, traitIndex);
   const awaitingSkeletonSource = useAwaitingSkeletonSource(store, traitIndex, options.embeddedTraits);
 
@@ -294,7 +284,7 @@ export function useTraitStateMachine(
     await afterSettle(traitName, eventKey, payload, outcome.response.transitioned, outcome.response.clientEffectsByTrait ?? [], composedBefore);
   }, [slotFlush, traitIndex, eventBus, options.navigate, options.navigateBack, afterSettle]);
 
-  const dispatchAndSettle = useCallback(async (traitName: string, eventKey: string, payload: EventPayload | undefined, tick?: string): Promise<void> => {
+  const dispatchAndSettle = useCallback(async (traitName: string, eventKey: string, payload: EventPayload | undefined, tick?: string, runTick?: boolean): Promise<void> => {
     const entityId = typeof payload?.entityId === 'string' ? payload.entityId : undefined;
     const orbitalName = traitIndex.byName.get(traitName)?.orbitalName ?? traitName;
     let outcome: Awaited<ReturnType<typeof kernel.dispatch>>;
@@ -309,6 +299,7 @@ export function useTraitStateMachine(
         ...(payload !== undefined ? { payload } : {}),
         ...(entityId !== undefined ? { entityId } : {}),
         ...(tick !== undefined ? { tick } : {}),
+        ...(tick !== undefined && runTick === true ? { runTick: { trait: traitName, tick } } : {}),
         targetTrait: traitName,
       }, {
         onLocal: (local) => {
@@ -332,6 +323,23 @@ export function useTraitStateMachine(
     }
     await settleOutcome(traitName, eventKey, payload, outcome, composedBefore);
   }, [kernel, slotFlush, traitIndex, store, options.navigate, options.navigateBack, settleOutcome]);
+
+  const dispatchTick = useCallback((traitName: string, tickName: string): void => {
+    void dispatchAndSettle(traitName, tickEventKey(tickName), undefined, tickName, true).catch((error: Error) => {
+      stateLog.error('tick:dispatch-failed', { traitName, tick: tickName, error: error.message });
+    });
+  }, [dispatchAndSettle]);
+
+  useClientTicks(traitBindings, store, traitIndex, {
+    eventBus,
+    slotFlush,
+    dispatchTick,
+    hostRunsProgram: transport?.hostsBrowserStore === true,
+    ...(options.traitConfigsByName !== undefined ? { traitConfigsByName: options.traitConfigsByName } : {}),
+    ...(options.navigate !== undefined ? { navigate: options.navigate } : {}),
+    ...(options.navigateBack !== undefined ? { navigateBack: options.navigateBack } : {}),
+    ...(userContext !== undefined ? { user: userContext } : {}),
+  });
 
   // A live message of this tab's own running call: the progress lane, outside
   // the FIFO that is still waiting on that call.

@@ -25,7 +25,7 @@ import {
   type EdgeTypes,
   type Connection,
 } from '@xyflow/react';
-import type { EditFocus, EventEmit, OrbitalSchema, ThemeDefinition, EntityData } from '@almadar/core';
+import type { EditFocus, EventEmit, EventKey, OrbitalSchema, ThemeDefinition, EntityData } from '@almadar/core';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { HStack } from '../../core/atoms/Stack';
@@ -39,7 +39,8 @@ import { ElementEditAccessContext, type ElementEditAccessResolver } from '../../
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, CanvasToolsContext, CanvasStatePickerContext, CanvasVerifyContext, type CanvasStatePicker, type CanvasVerify, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { CANVAS_TOOLS, type CanvasTool } from '../../../lib/canvas-tools';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
-import { SystemNode, SystemBandNode, DependencyNode, DependencyColumnNode, SystemMapContext, type SystemMapContextValue } from '../molecules/SystemNode';
+import { SystemNode, SystemBandNode, DependencyNode, DependencyColumnNode, SystemMapContext, useOpenTraits, type SystemMapContextValue } from '../molecules/SystemNode';
+import { BrowserPlayground } from '../../../runtime/BrowserPlayground';
 import { dependencyReach, schemaToDependencyGraph, type SystemDependencies } from '../../../lib/avl-dependency-graph';
 import { flowNeighbors, traitFlowCanvas, traitFlowGraph } from '../../../lib/avl-trait-flow';
 import { Input } from '../../core/atoms/Input';
@@ -50,6 +51,7 @@ import { OrbInspector } from './OrbInspector';
 import { AvlGraphCanvas } from './AvlGraphCanvas';
 import { validateWire } from '../../../lib/wire-validation';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useKeyMapEvents } from '../../../hooks/useKeyMapEvents';
 import { isEditableTarget } from '../../../lib/keyMapEvent';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion';
@@ -93,7 +95,7 @@ const DEFAULT_EDGE_OPTIONS = {
 
 type CanvasNode = Node<PreviewNodeData>;
 
-const NO_SYSTEM_MAP: SystemMapContextValue = { openTraits: () => undefined };
+const NO_SYSTEM_MAP: SystemMapContextValue = {};
 
 /** The trait level's lens, and the unit whose traits the Traits lens is narrowed to. */
 export interface TraitView {
@@ -146,7 +148,9 @@ export interface FlowCanvasProps {
     transitionIndex?: number;
   }) => void;
   /** With `initialLevel="system"`: what an orbital chip does (drill in, hover preview, open code, preview). */
-  systemMap?: SystemMapContextValue;
+  systemMap?: Omit<SystemMapContextValue, 'openTraitsEvent' | 'selectDependency'>;
+  /** Emits UI:{openTraitsEvent} with { orbital } when an orbital on the system map is opened (drilled into). */
+  openTraitsEvent?: EventEmit<{ orbital: string }>;
   /** With `initialLevel="system"`: the app's imports, for the Dependencies lens (absent: Events only). */
   systemDependencies?: SystemDependencies;
   /** Trait level: which lens (and trait filter) shows — pass with `onTraitViewChange` to keep it across remounts. */
@@ -155,6 +159,8 @@ export interface FlowCanvasProps {
   onTraitViewChange?: (view: TraitView) => void;
   /** Dependencies lens: emits UI:{openBehaviorEvent} with { name } to open a selected behavior's source. */
   openBehaviorEvent?: EventEmit<{ name: string }>;
+  /** Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to an event, emitted as `UI:{event}`; keystrokes inside inputs/textareas never route. */
+  keyMap?: Record<string, EventKey>;
   /** With `initialLevel="trait-expanded"`: played steps lighting each trait card's state machine. */
   scene?: { steps: readonly AvlPlayStep[]; cursor: number };
   /**
@@ -315,6 +321,8 @@ function FlowCanvasInner({
   systemMap,
   systemDependencies,
   openBehaviorEvent,
+  openTraitsEvent,
+  keyMap,
   traitView: traitViewProp,
   onTraitViewChange,
 }: FlowCanvasProps) {
@@ -847,10 +855,28 @@ function FlowCanvasInner({
   }), [onNodeClick, scene]);
 
   const showOrbitalNav = !traitLevel && !systemLevel && orbitalNames.length > 0;
-  const systemMapValue = useMemo<SystemMapContextValue>(() => ({
-    ...(systemMap ?? NO_SYSTEM_MAP),
-    selectDependency: (id: string) => setDependencySelection((current) => (current === id ? null : id)),
-  }), [systemMap]);
+  const systemMapValue = useMemo<SystemMapContextValue>(() => {
+    const map = systemMap ?? NO_SYSTEM_MAP;
+    const livePreview = map.preview === true && map.renderPreview === undefined
+      ? (orbital: string): React.ReactNode => {
+          const found = parsedSchema.orbitals.find((o) => o.name === orbital);
+          if (!found) return null;
+          return (
+            <Box data-testid="avl-system-preview-screen" className="w-80 h-48 overflow-hidden rounded-container border border-border">
+              <BrowserPlayground schema={{ ...parsedSchema, orbitals: [found] }} mode="mock" height="100%" fit />
+            </Box>
+          );
+        }
+      : undefined;
+    return {
+      ...map,
+      ...(livePreview ? { renderPreview: livePreview } : {}),
+      ...(openTraitsEvent ? { openTraitsEvent } : {}),
+      selectDependency: (id: string) => setDependencySelection((current) => (current === id ? null : id)),
+    };
+  }, [systemMap, parsedSchema, openTraitsEvent]);
+  const openTraits = useOpenTraits(systemMapValue);
+  useKeyMapEvents(keyMap, undefined);
   const selectedDependency = dependencyGraph?.nodes.find((n) => n.id === dependencySelection)?.data;
   const selectedOrbital = selectedDependency?.dependencyColumn === 'app' ? selectedDependency.orbitalName : null;
   const selectedBehavior = selectedDependency && selectedDependency.dependencyColumn !== 'app' ? selectedDependency.orbitalName : null;
@@ -911,7 +937,7 @@ function FlowCanvasInner({
                     </Typography>
                   </Box>
                   {selectedOrbital && systemMap ? (
-                    <Button variant="secondary" size="sm" rightIcon="chevron-right" onClick={() => systemMap.openTraits(selectedOrbital)} data-testid="dependency-open-traits">
+                    <Button variant="secondary" size="sm" rightIcon="chevron-right" onClick={() => openTraits(selectedOrbital)} data-testid="dependency-open-traits">
                       {t('avl.system.openTraits')}
                     </Button>
                   ) : null}
