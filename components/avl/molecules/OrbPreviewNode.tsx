@@ -178,7 +178,12 @@ const LAYER_LABEL_KEYS: Record<string, string> = {
   Domain: 'orbPreview.layer.domain',
   Community: 'orbPreview.layer.community',
 };
-const LAYER_COLORS: Record<string, string> = Object.fromEntries(LAYER_ORDER.map((layer, i) => [layer, avlSeries(i)]));
+let layerColors: Record<string, string> | undefined;
+// Built on first use: avlSeries reads THEME_SERIES, which another chunk may not have evaluated yet at module load.
+const layerColorOf = (layer: string): string | undefined => {
+  layerColors ??= Object.fromEntries(LAYER_ORDER.map((name, i) => [name, avlSeries(i)]));
+  return layerColors[layer];
+};
 
 // ---------------------------------------------------------------------------
 // Handle styles
@@ -778,7 +783,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const role = data.stateRole ?? 'default';
   const colors = roleColors(role);
   const eventSources = data.eventSources ?? [];
-  const layerColor = data.layer ? LAYER_COLORS[data.layer] : undefined;
+  const layerColor = data.layer ? layerColorOf(data.layer) : undefined;
 
   const isExpanded = Boolean(data.traitName);
   const status = data.status ?? 'idle';
