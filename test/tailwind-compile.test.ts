@@ -22,6 +22,19 @@ describe('compileTailwindClasses', () => {
     expect(css).not.toMatch(/box-sizing/);
   });
 
+  it('compiles a container-query class to a @container rule, which a host with the plugin renders', async () => {
+    const css = await compileTailwindClasses(['@sm:w-1/2', '@md:hover:grow-[2]']);
+    expect(css).toMatch(/@container\s*\(min-width/);
+    expect(css).toMatch(/\.\\@sm\\:w-1\\\/2/);
+    expect(css).toMatch(/\.\\@md\\:hover\\:grow-\\\[2\\\]:hover/);
+  });
+
+  it('control: a plain class is not wrapped in a container query', async () => {
+    const css = await compileTailwindClasses(['w-1/2']);
+    expect(css).toMatch(/\.w-1\\\/2\s*\{/);
+    expect(css).not.toMatch(/@container/);
+  });
+
   it('nothing to compile is no CSS', async () => {
     expect(await compileTailwindClasses([])).toBe('');
   });

@@ -104,36 +104,9 @@ function extractSafelistCandidates(content: string): Set<string> {
 // Safelist parser
 // ---------------------------------------------------------------------------
 
+/** The safelist the preset really exports: parts of it are generated, so its source text lists only some of it. */
 function getCurrentSafelist(): Set<string> {
-  const content = readFileSync(PRESET_PATH, 'utf-8');
-  const safelist = new Set<string>();
-
-  // Find the safelist array - match from 'safelist: [' to the matching ']'
-  const startIdx = content.indexOf('safelist:');
-  if (startIdx === -1) return safelist;
-
-  const bracketStart = content.indexOf('[', startIdx);
-  if (bracketStart === -1) return safelist;
-
-  // Find the matching closing bracket (handle nested brackets)
-  let depth = 0;
-  let bracketEnd = -1;
-  for (let i = bracketStart; i < content.length; i++) {
-    if (content[i] === '[') depth++;
-    if (content[i] === ']') {
-      depth--;
-      if (depth === 0) { bracketEnd = i; break; }
-    }
-  }
-  if (bracketEnd === -1) return safelist;
-
-  const safelistContent = content.slice(bracketStart + 1, bracketEnd);
-  const entries = safelistContent.matchAll(/['"]([^'"]+)['"]/g);
-  for (const m of entries) {
-    if (m[1]) safelist.add(m[1]);
-  }
-
-  return safelist;
+  return new Set(loadedSafelist.filter((entry): entry is string => typeof entry === 'string'));
 }
 
 // ---------------------------------------------------------------------------

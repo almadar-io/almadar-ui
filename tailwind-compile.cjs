@@ -10,6 +10,7 @@
  */
 const postcss = require('postcss');
 const tailwindcss = require('tailwindcss');
+const containerQueries = require('@tailwindcss/container-queries');
 const { safelist: _safelist, ...preset } = require('./tailwind-preset.cjs');
 
 /** @param {string[]} classes @returns {Promise<string>} */
@@ -17,6 +18,7 @@ async function compileTailwindClasses(classes) {
   if (classes.length === 0) return '';
   const config = {
     presets: [preset],
+    plugins: [containerQueries],
     content: [{ raw: classes.join(' '), extension: 'html' }],
     corePlugins: { preflight: false },
   };
