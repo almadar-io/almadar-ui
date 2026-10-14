@@ -115,6 +115,9 @@ importers:
       '@almadar/eslint-plugin':
         specifier: ^2.22.0
         version: 2.22.0(eslint@10.0.0(jiti@1.21.7))
+      '@almadar/kernel':
+        specifier: ^18.0.0
+        version: 18.0.0
       '@react-three/drei':
         specifier: ^10.7.7
         version: 10.7.7(@react-three/fiber@9.6.1(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.160.1))(@types/react@19.2.17)(@types/three@0.160.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.160.1)
@@ -302,6 +305,10 @@ packages:
     peerDependenciesMeta:
       '@almadar/std':
         optional: true
+
+  '@almadar/kernel@18.0.0':
+    resolution: {integrity: sha512-N6VPyRFbsfWfkK7C2y/H9fAUUWVfK0So048HllHns8PlZrY209CT7vL9ZYoPvfC8Q5OPlaMZfT+Y9UbY4kMfYg==}
+    engines: {node: '>=22'}
 
   '@almadar/llm@2.64.0':
     resolution: {integrity: sha512-XYr7hRbHtyENXNgPAtIUAio5mma2bm2WLANoi99EmRZysNIBuRSpb13A7Yc/GLEXbKs5v5kz2bcuFOB8MuVBTg==}
@@ -5967,6 +5974,8 @@ snapshots:
       - react-native-b4a
       - supports-color
       - ws
+
+  '@almadar/kernel@18.0.0': {}
 
   '@almadar/llm@2.64.0(@almadar/core@10.128.0)(@aws-sdk/credential-provider-node@3.972.84)(@opentelemetry/api@1.9.1)(@smithy/signature-v4@5.7.3)(ws@8.21.0)':
     dependencies:

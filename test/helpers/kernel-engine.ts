@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { KernelEngineValue } from '../../providers/KernelEngineContext';
 import type { KernelInstance, KernelModule } from '../../lib/kernel-wire';
@@ -9,17 +10,31 @@ interface WasmGlue {
   initSync(input: { module: Buffer }): void;
 }
 
-/** The built `@almadar/kernel` package directory: `ALMADAR_KERNEL_DIR`, else the monorepo's `orbital-wasm/js`. */
-function kernelDir(): string {
-  return process.env.ALMADAR_KERNEL_DIR ?? resolve(__dirname, '../../../../orbital-rust/crates/orbital-wasm/js');
+const resolveInstalled = createRequire(import.meta.url).resolve;
+
+/** The kernel's glue and wasm: the installed `@almadar/kernel`, or the build in `ALMADAR_KERNEL_DIR` to test an unpublished one. */
+function kernelFiles(): { glue: string; wasm: string } {
+  const dir = process.env.ALMADAR_KERNEL_DIR;
+  if (dir !== undefined && dir !== '') {
+    return { glue: join(dir, 'pkg/orbital_wasm.js'), wasm: join(dir, 'pkg/orbital_wasm_bg.wasm') };
+  }
+  return { glue: resolveInstalled('@almadar/kernel'), wasm: resolveInstalled('@almadar/kernel/kernel.wasm') };
 }
 
-export const KERNEL_AVAILABLE = existsSync(join(kernelDir(), 'pkg/orbital_wasm.js'));
+function kernelAvailable(): boolean {
+  try {
+    return existsSync(kernelFiles().glue);
+  } catch {
+    return false;
+  }
+}
+
+export const KERNEL_AVAILABLE = kernelAvailable();
 
 async function load(): Promise<KernelModule> {
-  const dir = kernelDir();
-  const glue: WasmGlue = await import(/* @vite-ignore */ pathToFileURL(join(dir, 'pkg/orbital_wasm.js')).href);
-  glue.initSync({ module: readFileSync(join(dir, 'pkg/orbital_wasm_bg.wasm')) });
+  const files = kernelFiles();
+  const glue: WasmGlue = await import(/* @vite-ignore */ pathToFileURL(files.glue).href);
+  glue.initSync({ module: readFileSync(files.wasm) });
   return { Kernel: glue.Kernel };
 }
 

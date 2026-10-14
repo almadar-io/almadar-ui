@@ -208,6 +208,7 @@
   "devDependencies": {
     "@almadar-io/behaviors": "^0.16.203",
     "@almadar/eslint-plugin": "^2.22.0",
+    "@almadar/kernel": "^18.0.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
     "@react-three/postprocessing": "3.0.4",
