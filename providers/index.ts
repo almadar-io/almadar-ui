@@ -113,6 +113,9 @@ export { SelectionProvider, SelectionContext, useSelection, useSelectionOptional
 export type { SelectionContextType } from './SelectionProvider';
 export { EntityBindingContext, useEntityBindingSnapshot } from './EntityBindingContext';
 export type { EntityBindingSource } from './EntityBindingContext';
+export { KernelEngineContext, KernelEngineProvider, useKernelEngine } from './KernelEngineContext';
+export type { ClientEngine, KernelEngineValue, KernelEngineProviderProps } from './KernelEngineContext';
+export type { KernelLoader, KernelModule, KernelInstance } from '../lib/kernel-wire';
 export { AwaitingSkeletonContext, useAwaitingSkeleton } from './AwaitingSkeletonContext';
 export type { AwaitingSkeletonSource } from './AwaitingSkeletonContext';
 

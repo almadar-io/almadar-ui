@@ -67,6 +67,22 @@ describe('useBusIngress', () => {
     expect(settle).toHaveBeenCalledWith('Picker', 'PICK', { id: 'other' }, undefined);
   });
 
+  it('a tick emit does not reach a sibling that only has an arm of that name (G-UI-103 retired)', () => {
+    const settle = vi.fn<BusDispatch>(async () => {});
+    const { result: bus } = renderHook(() => useEventBus());
+    renderHook(() => useBusIngress([binding()], buildTraitIndex(orbitals()), settle, bus.current, new Set(['Picker', 'Ticker'])));
+    bus.current.emit('UI:PICK', { id: 'beat' }, { trait: 'Ticker', tick: 'beat' });
+    expect(settle).not.toHaveBeenCalled();
+  });
+
+  it('control: a trait\'s own tick emit still reaches its own arm', () => {
+    const settle = vi.fn<BusDispatch>(async () => {});
+    const { result: bus } = renderHook(() => useEventBus());
+    renderHook(() => useBusIngress([binding()], buildTraitIndex(orbitals()), settle, bus.current, new Set(['Picker'])));
+    bus.current.emit('UI:PICK', { id: 'beat' }, { trait: 'Picker', tick: 'beat' });
+    expect(settle).toHaveBeenCalledWith('Picker', 'PICK', { id: 'beat' }, 'beat');
+  });
+
   it('edge: a user event (not a server echo) still reaches the trait by bare name', () => {
     const settle = vi.fn<BusDispatch>(async () => {});
     const { result: bus } = renderHook(() => useEventBus());

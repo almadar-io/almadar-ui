@@ -211,6 +211,8 @@ export const Typography: React.FC<TypographyProps> = ({
         // "truncate" as the earlier-declared class, silently losing its
         // `white-space: nowrap`.)
         truncate && "truncate min-w-0",
+        // Overflow never clips an inline element: a truncated span is a block.
+        truncate && Component === "span" && "block",
         overflow && cn(overflowStyles[overflow], overflow !== "visible" && "min-w-0"),
         className,
       ),

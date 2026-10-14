@@ -34,7 +34,7 @@
 
 import React, { useEffect, type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import { isThemeRegistryKey, type ThemeRef } from '@almadar/core';
-import { useTheme, useThemeScope, ThemeScopeContext, registryKeyTheme, themeHasMode } from './ThemeContext';
+import { useTheme, useThemeScope, ThemeScopeContext, keyInViewerMode } from './ThemeContext';
 import { themeTokensToCssVars, resolveThemeForRuntime } from '../lib/themeTokens';
 import { Box } from '../components/core/atoms/Box';
 import { cn } from '../lib/cn';
@@ -83,15 +83,13 @@ export function OrbitalThemeProvider({ theme: declared, override, children }: Or
   useFontImport(darkTypeScale?.fontImport ?? resolved?.tokens.typeScale?.fontImport);
 
   if (isThemeRegistryKey(theme)) {
-    // A declared key names a theme and its starting mode; the viewer's mode wins when the theme has it.
-    const keyTheme = registryKeyTheme(theme, availableThemes);
-    const mode = keyTheme === undefined ? parent.mode : themeHasMode(keyTheme.theme, resolvedMode) ? resolvedMode : keyTheme.mode;
-    const key = keyTheme === undefined ? theme : `${keyTheme.theme.name}-${mode}`;
+    const { key, mode: keyMode } = keyInViewerMode(theme, availableThemes, resolvedMode);
+    const mode = keyMode ?? parent.mode;
     return (
       <ThemeScopeContext.Provider
         value={hostOverride ? { ...parent, theme: key, mode, vars: undefined, override: key } : { ...parent, theme: key, mode }}
       >
-        <Box data-theme={key} className={cn(SURFACE, keyTheme && mode)}>
+        <Box data-theme={key} className={cn(SURFACE, keyMode)}>
           {children}
         </Box>
       </ThemeScopeContext.Provider>

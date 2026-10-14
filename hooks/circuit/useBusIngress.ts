@@ -22,11 +22,14 @@
  * kernel; this hook drops a republished emit whose source trait is in its
  * own `traitIndex`, since the kernel already delivered it.
  *
- * A bare-key emit fans to every trait `traitIndex` currently holds that
- * transitions on that event — `dispatchWithServerLeg` requires exactly one
- * seed trait per call (plan §4.2 P4), so a broadcast-shaped bare emit
- * becomes N single-trait `kernel.dispatch` calls; the kernel's own FIFO
- * queue (plan §5.1 G1) serializes them.
+ * A tick's bare-key emit reaches its own trait's arm for the event and,
+ * through the declared `listens` routes below, its listeners (G-UI-103
+ * retired: a sibling with a same-name arm and no `listens` does not hear it).
+ * Any other bare-key emit fans to every trait `traitIndex` holds that
+ * transitions on the event — `dispatchWithServerLeg` requires exactly one
+ * seed trait per call (plan §4.2 P4), so that broadcast becomes N
+ * single-trait `kernel.dispatch` calls; the kernel's own FIFO queue (plan
+ * §5.1 G1) serializes them.
  *
  * @packageDocumentation
  */
@@ -123,13 +126,15 @@ export function useBusIngress(
           subscribedBare.add(bareKey);
           const unsub = eventBus.on(bareKey, (event) => {
             if (deliveredHere(event.source)) return;
-            // A republished echo reaching a trait through an explicit listens
-            // route was already delivered on that route (server fan-out or the
-            // kernel's response fold) — bare-name delivery would run it twice.
+            // A tick's `(emit X)` (stamped with its `tick`) reaches its own trait's arm for the event (the
+            // same-trait cascade) and every declared `listens` route (the `listen-bare` block below) —
+            // never a sibling that merely has an arm of that name (G-UI-103 retired).
+            const tickEmitter = event.source?.tick !== undefined ? event.source.trait : undefined;
             const routed = event.source?.dispatched === true
               ? new Set(collectListenerTargets(traitIndex, event.source, eventKey, event.payload).map((t) => t.listenerTrait))
               : undefined;
             for (const [name, entry] of traitIndex.byName) {
+              if (tickEmitter !== undefined && name !== tickEmitter) continue;
               if (!entry.traitDef.transitions.some((t: { event: string }) => t.event === eventKey)) continue;
               if (routed?.has(name) === true) continue;
               log.debug('bare:fire', { key: bareKey, trait: name });

@@ -4,6 +4,7 @@ import { renderHook } from '@testing-library/react';
 import type { OrbitalSchema, ResolvedTraitBinding } from '@almadar/core';
 import type { EventTransport, EventTransportRegisterResult, OrbitalEventRequest, OrbitalEventResponse } from '@almadar/runtime';
 import { useCircuitKernel } from '../hooks/circuit/useCircuitKernel';
+import { ENGINES } from './helpers/kernel-engine';
 import { clearVerification, getTransitions } from '../lib/verificationRegistry';
 
 const orbitals: OrbitalSchema['orbitals'] = [{
@@ -47,12 +48,12 @@ class Server implements EventTransport {
 
 const serverTraces = () => getTransitions().filter((t) => t.traitName === 'server:Main');
 
-describe('the circuit client records server responses', () => {
+describe.each(ENGINES)('the circuit client records server responses [%s engine]', (_name, engine) => {
   beforeEach(() => clearVerification());
 
   it("a posted leg's response lands on the timeline with its emits, effect outcomes and data", async () => {
     const server = new Server();
-    const { result } = renderHook(() => useCircuitKernel([binding], { orbitals, transport: server }));
+    const { result } = renderHook(() => useCircuitKernel([binding], { orbitals, transport: server, engine }));
     await result.current.kernel.dispatch({ event: 'SAVE', targetTrait: 'Notes' });
     expect(server.sent.length).toBeGreaterThan(0);
     const [trace] = serverTraces();
@@ -63,7 +64,7 @@ describe('the circuit client records server responses', () => {
   });
 
   it('control: a failed post records nothing', async () => {
-    const { result } = renderHook(() => useCircuitKernel([binding], { orbitals, transport: new Server(true) }));
+    const { result } = renderHook(() => useCircuitKernel([binding], { orbitals, transport: new Server(true), engine }));
     await result.current.kernel.dispatch({ event: 'SAVE', targetTrait: 'Notes' }).catch(() => undefined);
     expect(serverTraces()).toEqual([]);
   });

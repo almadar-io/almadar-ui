@@ -8,7 +8,7 @@ Every open gap this repo owns lives here. This file is the source of truth; the 
 - **Close by deleting.** Remove the entry in the same commit as the fix. There is no "closed" section; git history is the record.
 - **Cross-repo gaps don't go here.** If fixing it needs another repo, describe it in your report or PR body; the monorepo coordinator files it.
 
-Next code: `G-UI-102`
+Next code: `G-UI-104`
 
 - **G-UI-096** — A `split` or `data-grid` laid out by container queries collapses to zero width inside any shrink-to-fit ancestor (a `stack` with `align: center`, an inline flex item): its `@container` wrapper has inline-size containment, so it contributes no intrinsic width, and the centred ancestor sizes it to nothing. Seen 2026-10-09 on almadar.io home ("Everything your team runs", rows squeezed to one word per line, demos 0 px). Fixed there by taking `align: center` off the rows' stack; the hazard stays for any other page. Decide the contract: either container-query layouts always stretch (Stack stops centring a child that holds one) or validate flags a container layout under a centring stack. `components/core/molecules/Split.tsx`, `DataGrid.tsx`, `Stack` [architectural] — prevention rung: validate (decidable on the render tree: container-query pattern under `align: center`)
 

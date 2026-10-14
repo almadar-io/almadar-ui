@@ -53,6 +53,13 @@ module.exports = {
   ...['@sm:', '@md:', '@lg:', '@xl:'].flatMap((bp) => [
     'w-1/2', 'w-1/3', 'w-2/3', 'w-1/4', 'w-3/4', 'w-1/5', 'w-4/5', 'w-2/5', 'w-3/5', 'flex-row', 'flex-row-reverse',
   ].map((cls) => `${bp}${cls}`)),
+  // Container-query layout a .lolo body composes (a behavior sized by the room it is given)
+  ...['@sm:', '@md:'].flatMap((bp) => ['block', 'hidden', 'flex', 'flex-row', 'w-16', 'basis-auto', 'text-base', 'text-xl', 'text-2xl', 'text-3xl'].map((cls) => `${bp}${cls}`)),
+  // Flex shares a .lolo composes from knobs (e.g. a split whose hovered panel grows)
+  ...['', '@sm:', '@md:', '@lg:', '@xl:'].flatMap((bp) => ['', 'hover:', 'focus-within:'].flatMap((state) =>
+    ['w-auto', 'basis-0', 'grow', 'grow-0', ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12].map((n) => `grow-[${n}]`)]
+      .map((cls) => `${bp}${state}${cls}`))),
+  'basis-full', 'min-w-0', 'transition-[flex-grow]', 'duration-500', 'ease-out', 'motion-reduce:transition-none',
   // Non-theme CSS variable classes (no semantic equivalent in theme config)
   'active:scale-[var(--active-scale)]',
   'border-b-[length:var(--border-width)]',

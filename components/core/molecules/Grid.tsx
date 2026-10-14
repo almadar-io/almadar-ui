@@ -70,6 +70,71 @@ const colStyles: Record<GridCols, string> = {
   12: 'grid-cols-12',
 };
 
+// Written out in full: Tailwind only generates the classes it can read here.
+const smColStyles: Record<GridCols, string> = {
+  none: 'sm:grid-cols-none',
+  1: 'sm:grid-cols-1',
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-3',
+  4: 'sm:grid-cols-4',
+  5: 'sm:grid-cols-5',
+  6: 'sm:grid-cols-6',
+  7: 'sm:grid-cols-7',
+  8: 'sm:grid-cols-8',
+  9: 'sm:grid-cols-9',
+  10: 'sm:grid-cols-10',
+  11: 'sm:grid-cols-11',
+  12: 'sm:grid-cols-12',
+};
+
+const mdColStyles: Record<GridCols, string> = {
+  none: 'md:grid-cols-none',
+  1: 'md:grid-cols-1',
+  2: 'md:grid-cols-2',
+  3: 'md:grid-cols-3',
+  4: 'md:grid-cols-4',
+  5: 'md:grid-cols-5',
+  6: 'md:grid-cols-6',
+  7: 'md:grid-cols-7',
+  8: 'md:grid-cols-8',
+  9: 'md:grid-cols-9',
+  10: 'md:grid-cols-10',
+  11: 'md:grid-cols-11',
+  12: 'md:grid-cols-12',
+};
+
+const lgColStyles: Record<GridCols, string> = {
+  none: 'lg:grid-cols-none',
+  1: 'lg:grid-cols-1',
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4',
+  5: 'lg:grid-cols-5',
+  6: 'lg:grid-cols-6',
+  7: 'lg:grid-cols-7',
+  8: 'lg:grid-cols-8',
+  9: 'lg:grid-cols-9',
+  10: 'lg:grid-cols-10',
+  11: 'lg:grid-cols-11',
+  12: 'lg:grid-cols-12',
+};
+
+const xlColStyles: Record<GridCols, string> = {
+  none: 'xl:grid-cols-none',
+  1: 'xl:grid-cols-1',
+  2: 'xl:grid-cols-2',
+  3: 'xl:grid-cols-3',
+  4: 'xl:grid-cols-4',
+  5: 'xl:grid-cols-5',
+  6: 'xl:grid-cols-6',
+  7: 'xl:grid-cols-7',
+  8: 'xl:grid-cols-8',
+  9: 'xl:grid-cols-9',
+  10: 'xl:grid-cols-10',
+  11: 'xl:grid-cols-11',
+  12: 'xl:grid-cols-12',
+};
+
 const gapStyles: Record<GridGap, string> = {
   none: 'gap-0',
   xs: 'gap-1',
@@ -133,16 +198,16 @@ function getColsClass(cols: GridCols | ResponsiveGridCols): string {
     classes.push(colStyles[cols.base]);
   }
   if (cols.sm !== undefined) {
-    classes.push(`sm:${colStyles[cols.sm]}`);
+    classes.push(smColStyles[cols.sm]);
   }
   if (cols.md !== undefined) {
-    classes.push(`md:${colStyles[cols.md]}`);
+    classes.push(mdColStyles[cols.md]);
   }
   if (cols.lg !== undefined) {
-    classes.push(`lg:${colStyles[cols.lg]}`);
+    classes.push(lgColStyles[cols.lg]);
   }
   if (cols.xl !== undefined) {
-    classes.push(`xl:${colStyles[cols.xl]}`);
+    classes.push(xlColStyles[cols.xl]);
   }
 
   return classes.join(' ');

@@ -26,7 +26,7 @@ import type {
   JsonValue,
   JsonObject,
   SExpr,
-  SExprObject, EntityPersistence } from '@almadar/core';
+  SExprObject, EntityPersistence, TraitDescription } from '@almadar/core';
 import { renderUiEntriesOf } from '@almadar/core/patterns';
 import { traitEventWires } from './avl-event-wires';
 
@@ -410,7 +410,29 @@ export function parseTraitLevel(schema: OrbitalSchema, orbitalName: string, trai
 export function traitLevelFromTrait(trait: Trait, linkedEntity: string): TraitLevelData | null {
   const sm = getStateMachine(trait);
   if (!sm) return null;
+  return traitLevelOf(trait.name, linkedEntity, sm, getEmits(trait), getListens(trait));
+}
 
+/** A described trait (`behavior/describe`) as AVL trait data; null when the description carries no machine. */
+export function traitLevelFromDescription(description: TraitDescription): TraitLevelData | null {
+  const machine = description.machine;
+  if (!machine) return null;
+  return traitLevelOf(
+    description.value.trait,
+    machine.linkedEntity ?? '',
+    machine.stateMachine,
+    description.events.emits,
+    description.events.listens,
+  );
+}
+
+function traitLevelOf(
+  name: string,
+  linkedEntity: string,
+  sm: StateMachine,
+  emittedEvents: string[],
+  listenedEvents: string[],
+): TraitLevelData {
   const states: TraitStateInfo[] = getStates(sm).map(s => ({
     name: s.name ?? '',
     isInitial: s.isInitial ?? null,
@@ -427,12 +449,12 @@ export function traitLevelFromTrait(trait: Trait, linkedEntity: string): TraitLe
   }));
 
   return {
-    name: trait.name,
+    name,
     linkedEntity,
     states,
     transitions,
-    emittedEvents: getEmits(trait),
-    listenedEvents: getListens(trait),
+    emittedEvents,
+    listenedEvents,
   };
 }
 

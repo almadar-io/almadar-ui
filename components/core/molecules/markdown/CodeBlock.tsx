@@ -437,6 +437,7 @@ import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { keyChord, type EditorKeyEvent } from '../../../../hooks/useKeyboardRouter';
 import { useTranslate } from '../../../../hooks/useTranslate';
+import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { useScopedMode } from '../../../../providers/ThemeContext';
 import { createLogger } from '@almadar/logger';
 import type { A11yProps, EventEmit, EventKey, EventListen } from "@almadar/core";
@@ -628,6 +629,8 @@ export interface CodeBlockProps extends A11yProps {
    * schema + validation results.
    */
   errorLines?: Map<number, 'error' | 'warning'>;
+  /** Lines to mark and keep in view (1-based, inclusive): the code of the step a running program just took. */
+  highlightLines?: { start: number; end: number };
   // ── Viewer props (absorbed from CodeViewer / DocCodeBlock) ────────────────
   /** Title shown in the toolbar */
   title?: string;
@@ -899,11 +902,19 @@ function plainCodeColorOf(style: Record<string, React.CSSProperties>): string {
 function buildLineProps(
   errorLines: Map<number, 'error' | 'warning'> | undefined,
   extraClassName?: string,
+  highlight?: { start: number; end: number },
 ): (lineNumber: number) => React.HTMLProps<HTMLElement> {
   return (lineNumber: number): React.HTMLProps<HTMLElement> => {
+    const highlighted = highlight !== undefined && lineNumber >= highlight.start && lineNumber <= highlight.end;
     const base = {
       'data-line': String(lineNumber - 1),
       ...(extraClassName ? { className: extraClassName } : {}),
+      ...(highlighted
+        ? {
+            'data-highlighted': 'true',
+            style: { display: 'block', backgroundColor: 'rgba(96, 165, 250, 0.18)', boxShadow: 'inset 3px 0 0 #60a5fa' },
+          }
+        : {}),
     } as React.HTMLProps<HTMLElement>;
     const severity = errorLines?.get(lineNumber);
     if (!severity) return base;
@@ -971,6 +982,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     editable = false,
     onChange,
     errorLines,
+    highlightLines,
     completions,
     assist: assistProvider,
     problems,
@@ -1104,6 +1116,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const { t } = useTranslate();
     const resolvedMode = useScopedMode();
     const scrollRef = useRef<HTMLDivElement | null>(null);
+    const viewerScrollRef = useRef<HTMLDivElement | null>(null);
     const codeRef = useRef<HTMLDivElement | null>(null);
     const savedScrollLeftRef = useRef<number>(0);
     const [copied, setCopied] = useState(false);
@@ -1365,9 +1378,19 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     // Viewer-mode non-diff highlight: same severity behavior as above, plus
     // the per-row padding/hover chrome the old hand-rolled `<Typography>`
     // rows carried.
+    const highlightStart = highlightLines?.start;
+    const highlightEnd = highlightLines?.end;
+    const highlightRange = useMemo(
+      () => (highlightStart !== undefined && highlightEnd !== undefined ? { start: highlightStart, end: highlightEnd } : undefined),
+      [highlightStart, highlightEnd],
+    );
     const viewerLineProps = useMemo(
-      () => buildLineProps(errorLines, 'px-4 py-0.5 hover:bg-muted/50'),
-      [errorLines],
+      () => buildLineProps(errorLines, 'px-4 py-0.5 hover:bg-muted/50', highlightRange),
+      [errorLines, highlightRange],
+    );
+    const standardLineProps = useMemo(
+      () => (highlightRange === undefined ? LINE_PROPS_FN : buildLineProps(undefined, undefined, highlightRange)),
+      [highlightRange],
     );
 
     // ── Fold state ──
@@ -1475,6 +1498,21 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       [editableValue, editableOverCapacity, plainCodeColor, language, activeStyle, errorLines, errorLineProps, languageReady],
     );
 
+    // Keep the highlighted range in the middle of whichever scroller is showing.
+    const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+    useEffect(() => {
+      if (highlightRange === undefined) return;
+      const host = viewerScrollRef.current ?? scrollRef.current;
+      const first = host?.querySelector<HTMLElement>(`[data-line="${highlightRange.start - 1}"]`);
+      const last = host?.querySelector<HTMLElement>(`[data-line="${highlightRange.end - 1}"]`) ?? first;
+      if (!host || !first || !last) return;
+      const hostBox = host.getBoundingClientRect();
+      const top = first.getBoundingClientRect().top;
+      const bottom = last.getBoundingClientRect().bottom;
+      const target = host.scrollTop + (top + bottom) / 2 - (hostBox.top + hostBox.height / 2);
+      host.scrollTo({ top: Math.max(0, target), behavior: reduceMotion ? 'auto' : 'smooth' });
+    }, [highlightRange, reduceMotion, languageReady, activeCode, code]);
+
     // ── Memoized highlight (never re-tokenizes on fold toggle) ──
     // showLineNumbers + showInlineLineNumbers=false gives proper data-line
     // without rendering inline numbers. lineNumberContainerStyle hides the gutter.
@@ -1498,7 +1536,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           showLineNumbers
           showInlineLineNumbers={false}
           lineNumberContainerStyle={HIDDEN_LINE_NUMBERS}
-          lineProps={LINE_PROPS_FN}
+          lineProps={standardLineProps}
           customStyle={{
             backgroundColor: 'transparent',
             borderRadius: 0,
@@ -1511,7 +1549,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           {code}
         </SyntaxHighlighter>
         ),
-      [code, overCapacity, plainCodeColor, language, activeStyle, languageReady],
+      [code, overCapacity, plainCodeColor, language, activeStyle, languageReady, standardLineProps],
     );
 
     // ── Memoized viewer-mode highlight (non-diff) ──
@@ -1545,7 +1583,9 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           style={viewerStyle}
           wrapLines
           wrapLongLines={wrap}
-          showLineNumbers={showLineNumbers}
+          showLineNumbers
+          showInlineLineNumbers={showLineNumbers}
+          {...(showLineNumbers ? {} : { lineNumberContainerStyle: HIDDEN_LINE_NUMBERS })}
           lineNumberStyle={codeDir === 'rtl' ? VIEWER_LINE_NUMBER_STYLE_RTL : VIEWER_LINE_NUMBER_STYLE}
           lineProps={viewerLineProps}
           renderer={codeDir === 'rtl' ? renderRtlCode : undefined}
@@ -1887,7 +1927,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 ))}
               </HStack>
             </HStack>
-            <Box className="overflow-auto bg-muted/20" style={{ maxHeight }} dir={codeDir} role="region" tabIndex={0} aria-label={title ?? t('codeBlock.region')}>
+            <Box ref={viewerScrollRef} className="overflow-auto bg-muted/20" style={{ maxHeight }} dir={codeDir} role="region" tabIndex={0} aria-label={title ?? t('codeBlock.region')}>
               {diffLines ? (
                 <div style={{ display: 'flex', flexDirection: 'column' }} className="font-mono text-xs">
                   {diffRowElements}
@@ -2419,6 +2459,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.diagnosticsCode === next.diagnosticsCode &&
     prev.lineNumbers === next.lineNumbers &&
     prev.errorLines === next.errorLines &&
+    prev.highlightLines?.start === next.highlightLines?.start &&
+    prev.highlightLines?.end === next.highlightLines?.end &&
     prev.mode === next.mode &&
     prev.title === next.title &&
     prev.diff === next.diff &&

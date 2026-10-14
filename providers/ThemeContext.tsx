@@ -113,6 +113,22 @@ export function registryKeyTheme(
   return undefined;
 }
 
+/**
+ * A declared registry key as it renders: the key names a theme and its starting
+ * mode, and the viewer's mode wins when the theme has it. A key no declared
+ * theme builds passes through with no mode.
+ */
+export function keyInViewerMode(
+  key: string,
+  themes: readonly UIThemeDefinition[],
+  viewerMode: ResolvedMode,
+): { key: string; mode?: ResolvedMode } {
+  const keyTheme = registryKeyTheme(key, themes);
+  if (keyTheme === undefined) return { key };
+  const mode = themeHasMode(keyTheme.theme, viewerMode) ? viewerMode : keyTheme.mode;
+  return { key: `${keyTheme.theme.name}-${mode}`, mode };
+}
+
 export function themeHasMode(theme: UIThemeDefinition, mode: ResolvedMode): boolean {
   return mode === "light" ? theme.hasLightMode !== false : theme.hasDarkMode !== false;
 }

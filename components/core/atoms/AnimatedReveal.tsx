@@ -1,7 +1,7 @@
 'use client';
 
 import type { A11yProps, EventKey } from '@almadar/core';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useId } from 'react';
 import { cn } from '../../../lib/cn';
 import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -114,6 +114,7 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
     const internalRef = useRef<HTMLDivElement>(null);
     const hasAnimated = useRef(false);
     const inView = useRef(false);
+    const revealId = useId();
 
     // Merge forwarded ref with internal ref
     const setRef = useCallback(
@@ -131,6 +132,9 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
       const el = internalRef.current;
       if (!el) return;
 
+      // The section's own heading names it in the log; ids alone cannot be matched to a section.
+      const section = (): string | null => el.querySelector('h1, h2, h3')?.textContent ?? null;
+      revealLog.debug('observe', () => ({ id: revealId, section: section(), threshold, once, animated: hasAnimated.current }));
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting !== inView.current) {
@@ -144,6 +148,16 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
             entry.intersectionRatio >= threshold
             || (entry.rootBounds !== null && entry.intersectionRect.height >= threshold * entry.rootBounds.height)
           );
+          revealLog.debug('entry', () => ({
+            id: revealId,
+            section: section(),
+            seenEnough,
+            animated: hasAnimated.current,
+            intersecting: entry.isIntersecting,
+            ratio: entry.intersectionRatio,
+            visibleHeight: entry.intersectionRect.height,
+            rootHeight: entry.rootBounds?.height ?? null,
+          }));
           if (seenEnough) {
             // Independent of `once`: the event may arrive on a later render than the first reveal.
             if (revealEvent && !reducedMotion && !revealEmitted.current) {
@@ -153,6 +167,7 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
             }
             if (once && hasAnimated.current) return;
             hasAnimated.current = true;
+            revealLog.debug('revealed', () => ({ id: revealId, section: section() }));
             setIsAnimated(true);
           } else if (!entry.isIntersecting && !once) {
             setIsAnimated(false);
@@ -162,8 +177,11 @@ export const AnimatedReveal = React.forwardRef<HTMLDivElement, AnimatedRevealPro
       );
 
       observer.observe(el);
-      return () => observer.disconnect();
-    }, [trigger, threshold, once, revealEvent, enterEvent, leaveEvent, reducedMotion, eventBus]);
+      return () => {
+        revealLog.debug('disconnect', () => ({ id: revealId, section: section(), animated: hasAnimated.current }));
+        observer.disconnect();
+      };
+    }, [trigger, threshold, once, revealEvent, enterEvent, leaveEvent, reducedMotion, eventBus, revealId]);
 
     // Off-screen bands pause their CSS animations (tailwind preset); written to the DOM so scrolling re-renders nothing.
     useEffect(() => {

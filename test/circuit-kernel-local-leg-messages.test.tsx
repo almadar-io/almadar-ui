@@ -9,6 +9,7 @@ import { renderHook } from '@testing-library/react';
 import type { OrbitalSchema, ResolvedTraitBinding } from '@almadar/core';
 import { InMemoryPersistence } from '@almadar/db/mock';
 import { useCircuitKernel } from '../hooks/circuit/useCircuitKernel';
+import { ENGINES } from './helpers/kernel-engine';
 import { I18nProvider, createTranslate } from '../hooks/useTranslate';
 
 const orbitals: OrbitalSchema['orbitals'] = [{
@@ -37,9 +38,9 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
   <I18nProvider value={{ locale: 'en', direction: 'ltr', t: createTranslate(messages, 'en'), messages }}>{children}</I18nProvider>
 );
 
-describe('a local-store leg translates with the viewer catalog', () => {
+describe.each(ENGINES)('a local-store leg translates with the viewer catalog [%s engine]', (_name, engine) => {
   it('the offline transport mounts a trait whose leg renders translated text', async () => {
-    const { result } = renderHook(() => useCircuitKernel([binding], { orbitals, persistence: new InMemoryPersistence() }), { wrapper });
+    const { result } = renderHook(() => useCircuitKernel([binding], { orbitals, persistence: new InMemoryPersistence(), engine }), { wrapper });
     const outcome = await result.current.kernel.dispatch({ event: 'INIT', targetTrait: 'Shell' });
     expect(outcome.response.success).toBe(true);
   });

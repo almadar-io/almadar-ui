@@ -36,7 +36,7 @@ describe('JazariStateMachine renders through the AVL state machine as gears', ()
     expect(screen.getAllByTestId('avl-sm-gear')).toHaveLength(3);
     expect(screen.getByText('awaitingPaymentConfirmation')).toBeInTheDocument();
     expect(node('closed').dataset.shape).toBe('gear');
-    expect(screen.getByText('(> @entity.power 0)')).toBeInTheDocument();
+    expect(screen.getByTestId('avl-guard-glyph').getAttribute('aria-label')).toContain('(> @entity.power 0)');
   });
 
   it('resolves the trait and entity fields from a schema', async () => {

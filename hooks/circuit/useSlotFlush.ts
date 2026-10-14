@@ -180,7 +180,7 @@ export function useSlotFlush(
         }
       } else if (kind === 'navigate') {
         const [, route, params, options] = effect;
-        onNavigate?.(route, params as Record<string, string> | undefined, (options as { crumb?: string } | undefined)?.crumb);
+        onNavigate?.(route, params ?? undefined, options?.crumb);
       } else if (kind === 'navigate-back') {
         onNavigateBack?.();
       }

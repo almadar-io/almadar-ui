@@ -1,14 +1,14 @@
 /**
  * A tick's `(emit X)` reaches a sibling through its declared `listens { Source.X -> Y }`, the
- * same as an emit from an event. Ticks run outside the kernel, so the route has to come from
- * the bus: the orb.almadar.io demo diagrams heard a learning transport's Step button but never
- * its running clock.
+ * same as an emit from an event, and only through it: a sibling that merely has an arm named X
+ * stays idle (G-UI-103 retired; EXEC-TICK-2). The emitter's own arm for X still runs (the
+ * same-trait cascade). Ticks run outside the kernel, so the route has to come from the bus.
  */
 import { describe, expect, it } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import type { OrbitalSchema, TraitEventListener } from '@almadar/core';
+import type { OrbitalSchema, TraitEventListener, TypedEffect } from '@almadar/core';
 import { BrowserPlayground } from '../BrowserPlayground';
 
 class ResizeObserverStub {
@@ -18,7 +18,9 @@ class ResizeObserverStub {
 }
 (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= ResizeObserverStub;
 
-function program(watcherHears: 'listens' | 'bare'): OrbitalSchema {
+const ownArmRender: TypedEffect = ['render-ui', 'main', { type: 'typography', content: 'Own arm ran' }];
+
+function program(watcherHears: 'listens' | 'bare', clockArm = false): OrbitalSchema {
   const listens: TraitEventListener[] = watcherHears === 'listens'
     ? [{ event: 'BEAT', source: { kind: 'trait', trait: 'Clock' }, triggers: 'HEARD' }]
     : [];
@@ -34,8 +36,11 @@ function program(watcherHears: 'listens' | 'bare'): OrbitalSchema {
           name: 'Clock', linkedEntity: 'LabState', category: 'interaction', scope: 'instance',
           stateMachine: {
             states: [{ name: 'idle', isInitial: true }],
-            events: [{ key: 'INIT', name: 'INIT' }],
-            transitions: [{ from: 'idle', to: 'idle', event: 'INIT', effects: [['render-ui', 'main', { type: 'typography', content: 'Ticking' }]] }],
+            events: [{ key: 'INIT', name: 'INIT' }, ...(clockArm ? [{ key: 'BEAT', name: 'BEAT' }] : [])],
+            transitions: [
+              { from: 'idle', to: 'idle', event: 'INIT', effects: [['render-ui', 'main', { type: 'typography', content: 'Ticking' }]] },
+              ...(clockArm ? [{ from: 'idle', to: 'idle', event: 'BEAT', effects: [ownArmRender] }] : []),
+            ],
           },
           emits: [{ event: 'BEAT', scope: 'external' }],
           ticks: [{ name: 'beat', interval: 30, effects: [['emit', 'BEAT']] }],
@@ -64,8 +69,15 @@ describe('BrowserPlayground: a tick emit and declared listens', () => {
     expect(await screen.findByText('Heard the clock', {}, { timeout: 5_000 })).toBeTruthy();
   }, 20_000);
 
-  it('control: reaches a sibling with a same-name arm', async () => {
+  it('a sibling with a same-name arm and no listens stays idle', async () => {
     render(<MemoryRouter><BrowserPlayground schema={program('bare')} /></MemoryRouter>);
-    expect(await screen.findByText('Heard the clock', {}, { timeout: 5_000 })).toBeTruthy();
+    expect(await screen.findByText('Waiting', {}, { timeout: 5_000 })).toBeTruthy();
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(screen.queryByText('Heard the clock')).toBeNull();
+  }, 20_000);
+
+  it('control: the emitting trait\'s own same-name arm runs', async () => {
+    render(<MemoryRouter><BrowserPlayground schema={program('bare', true)} /></MemoryRouter>);
+    expect(await screen.findByText('Own arm ran', {}, { timeout: 5_000 })).toBeTruthy();
   }, 20_000);
 });

@@ -229,3 +229,5 @@ export {
 
 export { usePageHead } from './usePageHead';
 export type { PageHeadInput } from './usePageHead';
+
+export { useTickVisibility } from './useTickVisibility';

@@ -60,6 +60,18 @@ describe('AvlEffectChip', () => {
     expect(panel.textContent).toContain('Data');
   });
 
+  it('an effect with its code opens a popover: the brief explanation, then the code, left to right and scrollable', async () => {
+    render(<AvlEffectChip effectType="set" code="(set @entity.open true)" />);
+    await hover(screen.getByLabelText('set'));
+    const panel = screen.getByRole('dialog', { hidden: true });
+    expect(panel.textContent).toContain('set');
+    expect(panel.textContent).toContain('Data');
+    const code = panel.querySelector<HTMLElement>('[data-testid="avl-explain-code"]');
+    expect(code?.textContent).toBe('(set @entity.open true)');
+    expect(code?.getAttribute('dir')).toBe('ltr');
+    expect(code?.className).toContain('overflow-auto');
+  });
+
   it('edge: an effect the registry does not know shows just its name', async () => {
     render(<AvlEffectChip effectType="zz/unknown" />);
     await hover(screen.getByLabelText('zz/unknown'));
@@ -76,6 +88,26 @@ describe('AvlStateMachine effect labels and annotations', () => {
     const chips = [...pay.querySelectorAll('[data-testid="avl-effect-chip"]')].map((c) => c.getAttribute('aria-label'));
     expect(chips).toEqual(['set', 'persist']);
     expect(pay.textContent).not.toMatch(/·\d/);
+  });
+
+  it('each effect chip carries its own code from the transition', async () => {
+    const withArgs: TraitLevelData = {
+      ...TRAIT,
+      transitions: [{ ...TRAIT.transitions[0]!, effects: [{ type: 'set', args: ['@entity.status', 'paid'] }, { type: 'persist', args: [] }] }, TRAIT.transitions[1]!],
+    };
+    render(<AvlStateMachine trait={withArgs} />);
+    const pay = await findBy('[data-testid="avl-sm-label"][data-event="PAY"]');
+    await hover(pay.querySelector<HTMLElement>('[aria-label="set"]')!);
+    const code = screen.getByRole('dialog', { hidden: true }).querySelector('[data-testid="avl-explain-code"]');
+    expect(code?.textContent).toBe('(set @entity.status "paid")');
+  });
+
+  it('control: an effect known only by its type (no arguments) keeps the plain explanation', async () => {
+    renderSm();
+    const pay = await findBy('[data-testid="avl-sm-label"][data-event="PAY"]');
+    await hover(pay.querySelector<HTMLElement>('[aria-label="persist"]')!);
+    expect(screen.queryByRole('dialog', { hidden: true })).toBeNull();
+    expect(screen.getByRole('tooltip').textContent).toContain('persist');
   });
 
   it('control: a transition with no effects has no chips', async () => {

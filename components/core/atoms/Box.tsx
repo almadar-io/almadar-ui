@@ -12,7 +12,7 @@ import { bandEdgeLayerStyle, bandPadding } from "../../../lib/bandShapes";
 import type { BandEdge, BandEdgeColor } from "../../../lib/bandShapes";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTapReveal } from "../../../hooks/useTapReveal";
-import { useThemeScope } from "../../../providers/ThemeContext";
+import { keyInViewerMode, useTheme, useThemeScope } from "../../../providers/ThemeContext";
 import { pressableProps } from "../../../lib/pressable";
 import { useAnimateChanges } from "../../../lib/animate-changes";
 
@@ -301,10 +301,13 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
       if (typeof ref === "function") ref(node);
       else if (ref !== null) ref.current = node;
     }, [ref]);
-    // A host theme override replaces a declared data-theme (never adds one).
+    // A host theme override replaces a declared data-theme (never adds one); otherwise it renders in the viewer's mode.
     const { override: themeOverride } = useThemeScope();
+    const { resolvedMode, availableThemes } = useTheme();
     const declaredTheme = rest['data-theme'];
-    const dataTheme = declaredTheme !== undefined && themeOverride ? themeOverride : declaredTheme;
+    const dataTheme = declaredTheme === undefined
+      ? undefined
+      : themeOverride || keyInViewerMode(declaredTheme, availableThemes, resolvedMode).key;
 
     const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
       if (action) {

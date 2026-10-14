@@ -49,15 +49,15 @@ describe('OrbitalThemeProvider override', () => {
     expect(getByTestId('nested-leaf').closest('[data-theme]')?.getAttribute('data-theme')).toBe('win95-dark');
   });
 
-  it('control: no override keeps every declared theme', () => {
+  it('control: no override keeps every declared theme, in the viewer mode like its scope', () => {
     const { getByTestId } = renderTree(undefined);
-    expect(getByTestId('layout').getAttribute('data-theme')).toBe('art-deco-light');
+    expect(getByTestId('layout').getAttribute('data-theme')).toBe('art-deco-dark');
     expect(getByTestId('nested-leaf').closest('[data-theme]')?.getAttribute('data-theme')).toBe('gazette-dark');
   });
 
   it('an empty-string override is no override', () => {
     const { getByTestId } = renderTree('');
-    expect(getByTestId('layout').getAttribute('data-theme')).toBe('art-deco-light');
+    expect(getByTestId('layout').getAttribute('data-theme')).toBe('art-deco-dark');
   });
 
   it('a GameShell data-theme yields to the override too', () => {

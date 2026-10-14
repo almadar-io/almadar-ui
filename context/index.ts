@@ -23,6 +23,7 @@ export {
   registryKeyMode,
   registryKeyTheme,
   themeHasMode,
+  keyInViewerMode,
   useScopedMode,
   type ThemeScope,
   BUILT_IN_THEMES,

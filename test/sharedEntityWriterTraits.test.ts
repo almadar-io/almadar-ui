@@ -30,6 +30,7 @@ function traitWithTick(name: string, tick: Partial<ResolvedTraitTick> & Pick<Res
         interval: 'frame',
         priority: 0,
         appliesTo: [],
+        whileVisible: false,
         ...tick,
     }];
     return trait;

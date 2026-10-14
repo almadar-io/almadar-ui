@@ -31,6 +31,7 @@
  * @packageDocumentation
  */
 import { useEffect } from 'react';
+import { getTraitPresence } from '../../lib/traitPresence';
 import type {
   BusEventSource,
   EntityRow,
@@ -69,6 +70,9 @@ import { runTickFrame, type SharedEntityStore, type SharedEntityWriter } from '.
 import { runCircuitEffects } from '../../lib/circuitEffectRunner';
 import type { EventBusContextType } from '../../types/event-bus-types';
 import type { SlotFlushHandle } from './useSlotFlush';
+import type { KernelClient } from '../../lib/kernel-client';
+import type { FrameScheduler } from '../../lib/kernel-frames';
+import type { ClientKernelOutcome } from '@almadar/runtime';
 
 const tickLog = createLogger('almadar:ui:circuit:tick-effects');
 
@@ -190,6 +194,11 @@ export function createSharedEntityWriter(
 }
 
 export interface UseClientTicksOptions {
+  /** The kernel engine's client: ticks run in its frame instead of the JS scheduler (needs `onKernelFrame`). */
+  kernelClient?: KernelClient;
+  /** Paints one kernel frame's outcomes. */
+  onKernelFrame?: (outcomes: ClientKernelOutcome[]) => void;
+  scheduleFrame?: FrameScheduler;
   eventBus: EventBusContextType;
   slotFlush: SlotFlushHandle;
   traitConfigsByName?: Record<string, TraitConfig>;
@@ -210,7 +219,28 @@ export function useClientTicks(
 ): void {
   useEffect(() => {
     if (options.hostRunsProgram === true) return;
+    if (options.kernelClient !== undefined) {
+      const paint = options.onKernelFrame;
+      if (paint === undefined) throw new Error('useClientTicks: a kernelClient needs onKernelFrame');
+      return options.kernelClient.startFrames(paint, options.scheduleFrame);
+    }
     const scheduler = createTickScheduler();
+    // A `[visible]` tick fires only while its trait's output is on screen; a trait that renders
+    // nothing follows the traits rendering its `[shared]` entity (LOLO §11).
+    const presence = getTraitPresence();
+    const presenceGroup = (traitName: string): string[] => {
+      const entry = traitIndex.byName.get(traitName);
+      if (entry === undefined || !entry.isSharedEntity) return [traitName];
+      return [...traitIndex.byName].filter(([, e]) => e.frameKey === entry.frameKey).map(([name]) => name);
+    };
+    const releases: Array<() => void> = [];
+    const offScreen = (traitName: string, tick: ResolvedTraitTick): boolean => {
+      if (!tick.whileVisible) return false;
+      return presence.state(presenceGroup(traitName)) === 'off-screen';
+    };
+    for (const binding of traitBindings) {
+      if ((binding.trait.ticks ?? []).some((t) => t.whileVisible)) releases.push(presence.watch(presenceGroup(binding.trait.name)));
+    }
     const traitStatesRef = { current: store.manager.getAllStates() };
     const refreshStates = (): void => { traitStatesRef.current = store.manager.getAllStates(); };
 
@@ -275,10 +305,10 @@ export function useClientTicks(
       for (const group of byInterval.values()) {
         const interval = group[0].tick.interval;
         const onDue = () => perfTimeAsync(`tick:shared:${frameKey}@${String(interval)}`, () => {
-          const writers = group.map(({ binding, tick }) =>
+          const writers = group.filter(({ binding, tick }) => !offScreen(binding.trait.name, tick)).map(({ binding, tick }) =>
             createSharedEntityWriter(binding, tick, traitStatesRef, emitFromWriter, options.traitConfigsByName, orbitalsByTrait, orbitalIdsByTrait),
           );
-          runTickFrame(frameKey, writers, frameAdapter);
+          if (writers.length > 0) runTickFrame(frameKey, writers, frameAdapter);
         });
         if (interval === 'frame') scheduler.add(0, onDue);
         else if (typeof interval === 'number') scheduler.add(interval, onDue);
@@ -360,9 +390,10 @@ export function useClientTicks(
       for (const tick of binding.trait.ticks ?? []) {
         if (entry?.isSharedEntity && pureWriterTickKeys.has(`${binding.trait.name}::${tick.name}`)) continue;
         const key = `tick:${binding.trait.name}::${tick.name}`;
-        const onDue = legTicks.has(tickEventKey(tick.name))
+        const fire = legTicks.has(tickEventKey(tick.name))
           ? () => options.dispatchTick(binding.trait.name, tick.name)
           : () => perfTimeAsync(key, () => runNonWriterTick(binding, tick));
+        const onDue = () => { if (!offScreen(binding.trait.name, tick)) fire(); };
         if (tick.interval === 'frame') scheduler.add(0, onDue);
         else if (typeof tick.interval === 'number') scheduler.add(tick.interval, onDue);
         else if (isValidCronExpression(tick.interval)) scheduler.addCron(tick.interval, onDue);
@@ -370,6 +401,9 @@ export function useClientTicks(
       }
     }
 
-    return () => scheduler.stopAll();
-  }, [traitBindings, store, traitIndex, options.eventBus, options.slotFlush, options.traitConfigsByName, options.navigate, options.navigateBack, options.user, options.hostRunsProgram, options.dispatchTick]);
+    return () => {
+      scheduler.stopAll();
+      releases.forEach((release) => release());
+    };
+  }, [traitBindings, store, traitIndex, options.eventBus, options.slotFlush, options.traitConfigsByName, options.navigate, options.navigateBack, options.user, options.hostRunsProgram, options.dispatchTick, options.kernelClient, options.onKernelFrame, options.scheduleFrame]);
 }

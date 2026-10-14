@@ -37,6 +37,8 @@ export interface AvlStateMachineProps extends A11yProps {
   activeTransition?: number;
   /** States already passed through, in order. */
   visitedStates?: string[];
+  /** Keep the active state in view: when it changes, the diagram scrolls sideways to centre it. @default false */
+  followActive?: boolean;
   /** Emits UI:{stateClickEvent} with { stateId } when a state is clicked. */
   stateClickEvent?: EventEmit<{ stateId: string }>;
   /** Emits UI:{transitionClickEvent} with { index, event, from, to } when a transition label is clicked. */
@@ -66,7 +68,6 @@ const MONO_CHAR = 7.3;
 const BODY_CHAR = 7.6;
 const NODE_H = 44;
 const PILL_H = 24;
-const GUARD_H = 20;
 const EFFECT_CHIP = 14;
 const EFFECT_GAP = 4;
 const MARGIN = 28;
@@ -74,6 +75,11 @@ const MIN_SCALE = 0.85;
 const MAX_SCALE = 1.25;
 
 type Transition = TraitLevelData['transitions'][number];
+
+/** An effect's code; none when only its type is known (data without arguments). */
+function effectText(effect: Transition['effects'][number]): string | undefined {
+  return effect.args.length === 0 ? undefined : formatSExpr([effect.type, ...effect.args]);
+}
 
 function guardText(t: Transition): string | null {
   return t.guard === undefined || t.guard === null ? null : formatSExpr(t.guard);
@@ -92,11 +98,7 @@ function metricsFor(nodeShape: 'pill' | 'gear', direction: 'ltr' | 'rtl'): Trait
   nodeSize: (name) => nodeShape === 'gear'
     ? { width: gearDiameter(name), height: gearDiameter(name) }
     : { width: Math.max(112, Math.round(name.length * BODY_CHAR + 44)), height: NODE_H },
-  labelSize: (t) => {
-    const guard = guardText(t);
-    const width = Math.max(pillWidth(t), guard === null ? 0 : guard.length * MONO_CHAR + 8);
-    return { width, height: guard === null ? PILL_H : PILL_H + 2 * GUARD_H };
-  },
+  labelSize: (t) => ({ width: pillWidth(t), height: PILL_H }),
   nodeSpacing: 40,
   layerSpacing: 88,
   orthogonal: true,
@@ -109,6 +111,7 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
   activeState,
   activeTransition,
   visitedStates,
+  followActive = false,
   stateClickEvent,
   transitionClickEvent,
   onTransitionClick,
@@ -141,6 +144,17 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
     return () => { live = false; };
     // trait is captured by its serialized key.
   }, [traitKey, nodeShape, direction]);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!followActive || layout === null || host === null || activeState === undefined) return;
+    const node = [...host.querySelectorAll<Element>('[data-testid="avl-sm-state"]')].find((n) => n.getAttribute('data-state') === activeState);
+    if (node === undefined) return;
+    const hostBox = host.getBoundingClientRect();
+    const nodeBox = node.getBoundingClientRect();
+    const left = host.scrollLeft + (nodeBox.left + nodeBox.width / 2) - (hostBox.left + hostBox.width / 2);
+    host.scrollTo({ left: Math.max(0, left), behavior: reduceMotion ? 'auto' : 'smooth' });
+  }, [followActive, layout, activeState, reduceMotion]);
 
   const visitOrder = useMemo(() => new Map((visitedStates ?? []).map((s, i) => [s, i + 1])), [visitedStates]);
   const nextFromActive = useMemo(
@@ -283,26 +297,25 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
                       }}
                     >
                       {guard !== null ? (
-                        <svg width={12} height={12} viewBox="0 0 12 12" aria-label={t('avl.guard')}>
-                          <path d="M6 1 L11 6 L6 11 L1 6z" fill={AVL_INK.surface} stroke={fired ? AVL_INK.focus : AVL_INK.quiet} strokeWidth={1.2} />
-                        </svg>
+                        <AvlExplain lines={[t('avl.guard'), t('avl.guardCaption')]} code={guard}>
+                          <Box as="span" role="img" tabIndex={0} aria-label={`${t('avl.guard')}: ${guard}`} data-testid="avl-guard-glyph" className="inline-flex shrink-0 cursor-help rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                            <svg width={12} height={12} viewBox="0 0 12 12" aria-hidden="true">
+                              <path d="M6 1 L11 6 L6 11 L1 6z" fill={AVL_INK.surface} stroke={fired ? AVL_INK.focus : AVL_INK.quiet} strokeWidth={1.2} />
+                            </svg>
+                          </Box>
+                        </AvlExplain>
                       ) : null}
                       {annotations?.transitions?.[tr.event] ? (
-                        <AvlExplain lines={guard === null ? [tr.event] : [tr.event, guard]} note={annotations.transitions[tr.event]}>
+                        <AvlExplain lines={[tr.event]} code={guard ?? undefined} note={annotations.transitions[tr.event]}>
                           <Box as="span" tabIndex={0} data-explain={`transition:${tr.event}`} className="whitespace-nowrap underline decoration-dotted underline-offset-2 cursor-help">{tr.event}</Box>
                         </AvlExplain>
                       ) : (
                         <Box as="span" className="whitespace-nowrap">{tr.event}</Box>
                       )}
                       {tr.effects.map((fx, i) => (
-                        <AvlEffectChip key={`${fx.type}-${i}`} effectType={fx.type} size={EFFECT_CHIP} note={annotations?.effects?.[fx.type]} />
+                        <AvlEffectChip key={`${fx.type}-${i}`} effectType={fx.type} size={EFFECT_CHIP} note={annotations?.effects?.[fx.type]} code={effectText(fx)} />
                       ))}
                     </Box>
-                    {guard !== null ? (
-                      <Box as="span" dir="ltr" className="whitespace-nowrap" style={{ height: GUARD_H, lineHeight: `${GUARD_H}px`, fontFamily: AVL_FONT.mono, fontSize: 12, color: fired ? AVL_INK.focus : AVL_INK.quiet }}>
-                        {guard}
-                      </Box>
-                    ) : null}
                   </Box>
                 );
               })}

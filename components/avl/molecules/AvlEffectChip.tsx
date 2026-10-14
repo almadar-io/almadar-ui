@@ -19,6 +19,8 @@ export interface AvlEffectChipProps {
   /** Glyph box in px. @default 16 */
   size?: number;
   note?: AvlNote;
+  /** The effect's code (`(set @entity.status "paid")`), shown under its explanation. */
+  code?: string;
 }
 
 /** The built-in explanation lines for an effect: name, category, registry description. */
@@ -29,11 +31,11 @@ export function useEffectLines(effectType: string): string[] {
   return [effectType, ...(category ? [t(`avl.effectCategory.${category}`)] : []), ...(description ? [description] : [])];
 }
 
-export const AvlEffectChip: React.FC<AvlEffectChipProps> = ({ effectType, size = 16, note }) => {
+export const AvlEffectChip: React.FC<AvlEffectChipProps> = ({ effectType, size = 16, note, code }) => {
   const lines = useEffectLines(effectType);
   const half = size / 2;
   return (
-    <AvlExplain lines={lines} note={note}>
+    <AvlExplain lines={lines} note={note} code={code}>
       <Box as="span" role="img" tabIndex={0} aria-label={effectType} data-testid="avl-effect-chip" className="inline-flex shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
           <AvlEffect x={half} y={half} effectType={effectType} size={half / 1.2 - 0.5} showBackground />

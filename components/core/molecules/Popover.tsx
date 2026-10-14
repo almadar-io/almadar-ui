@@ -22,6 +22,9 @@ export type PopoverPosition = "top" | "bottom" | "left" | "right";
 const INTERACTIVE_SELECTOR = 'button, a[href], input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])';
 export type PopoverTrigger = "click" | "hover";
 
+/** How long a hover popover waits after the pointer leaves before closing, so it can be crossed into. */
+export const HOVER_CLOSE_DELAY_MS = 150;
+
 export interface PopoverProps extends A11yProps {
   /**
    * Popover content
@@ -158,12 +161,29 @@ export const Popover: React.FC<PopoverProps> = ({
   };
 
   const handleClose = () => {
+    cancelHoverClose();
     setIsOpen(false);
   };
 
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelHoverClose = () => {
+    if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  };
+  const scheduleHoverClose = () => {
+    cancelHoverClose();
+    closeTimer.current = setTimeout(handleClose, HOVER_CLOSE_DELAY_MS);
+  };
+  const hoverOpen = () => {
+    cancelHoverClose();
+    if (!isOpen) handleOpen();
+  };
+  useEffect(() => cancelHoverClose, []);
+
   const panelId = useId();
   const focusReturnRef = useRef<HTMLElement | null>(null);
-  useDialogBehavior({ open: isOpen, containerRef: popoverRef, onEscape: handleClose, modal: false, returnFocusRef: focusReturnRef });
+  // A hover popover never takes focus, so it hands none back (that refocus would reopen it).
+  useDialogBehavior({ open: isOpen, containerRef: popoverRef, onEscape: handleClose, modal: false, ...(trigger === "click" ? { returnFocusRef: focusReturnRef } : {}) });
 
   const handleToggle = () => {
     if (isOpen) {
@@ -255,9 +275,12 @@ export const Popover: React.FC<PopoverProps> = ({
           onClick: handleToggle,
         }
       : {
-          onMouseEnter: handleOpen,
-          onMouseLeave: handleClose,
+          onMouseEnter: hoverOpen,
+          onMouseLeave: scheduleHoverClose,
+          onFocus: hoverOpen,
+          onBlur: scheduleHoverClose,
           onPointerDown: tapTriggerProps.onPointerDown,
+          "data-popover-open": String(isOpen),
         };
 
   // Non-element children are wrapped in a span. A click trigger's dialog semantics
@@ -358,8 +381,8 @@ export const Popover: React.FC<PopoverProps> = ({
       role="dialog"
       aria-label={rest['aria-label'] ?? (typeof content === "string" ? content : undefined)}
       onAnimationEnd={onAnimationEnd}
-      onMouseEnter={trigger === "hover" ? handleOpen : undefined}
-      onMouseLeave={trigger === "hover" ? handleClose : undefined}
+      onMouseEnter={trigger === "hover" ? hoverOpen : undefined}
+      onMouseLeave={trigger === "hover" ? scheduleHoverClose : undefined}
     >
       {typeof content === "string" ? (
         <Typography variant="body">{content}</Typography>

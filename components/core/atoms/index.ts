@@ -60,6 +60,7 @@ export {
 export { Radio, type RadioProps } from "./Radio";
 export { Sparkline, type SparklineProps, type SparklineColor } from "./Sparkline";
 export { Switch, type SwitchProps } from "./Switch";
+export { VideoEmbed, type VideoEmbedProps, type VideoReadyPayload, type VideoPlayPayload, type VideoErrorPayload } from "./VideoEmbed";
 export { Spacer, type SpacerProps, type SpacerSize } from "./Spacer";
 export {
   Stack,

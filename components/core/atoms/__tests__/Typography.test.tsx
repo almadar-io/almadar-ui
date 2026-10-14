@@ -34,6 +34,18 @@ describe('Typography', () => {
     expect(el.className).toContain('min-w-0');
   });
 
+  it('a truncated span becomes a block, since overflow never clips an inline element', () => {
+    render(<Typography variant="small" truncate>Customer Info</Typography>);
+    const el = screen.getByText('Customer Info');
+    expect(el.tagName).toBe('SPAN');
+    expect(el.className.split(' ')).toContain('block');
+  });
+
+  it('control: an untruncated span stays inline', () => {
+    render(<Typography variant="small">Customer Info</Typography>);
+    expect(screen.getByText('Customer Info').className.split(' ')).not.toContain('block');
+  });
+
   it('keeps the "truncate" class itself (not just its overflow-hidden/text-ellipsis parts) — regression: tailwind-merge previously dropped it, silently losing white-space:nowrap', () => {
     render(<Typography truncate>a very long name</Typography>);
     const classes = screen.getByText('a very long name').className.split(' ');

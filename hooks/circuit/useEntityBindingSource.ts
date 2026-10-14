@@ -17,10 +17,16 @@ import { useMemo, useSyncExternalStore } from 'react';
 import type { EntityRow } from '@almadar/core';
 import type { CircuitStore, TraitIndex } from '@almadar/runtime';
 import type { EntityBindingSource } from '../../providers/EntityBindingContext';
+import type { KernelClient } from '../../lib/kernel-client';
 
 const EMPTY_ENTITY: EntityRow = {};
 
-export function useEntityBindingSource(store: CircuitStore, traitIndex: TraitIndex): EntityBindingSource {
+export function useEntityBindingSource(
+  store: CircuitStore,
+  traitIndex: TraitIndex,
+  /** The kernel engine's client: its trait states are the source of `@state`; rows arrive through the store it mirrors into. */
+  kernel?: Pick<KernelClient, 'traitState'>,
+): EntityBindingSource {
   // Re-render every binding-source consumer on any circuit commit — the
   // store's own `notify()` is global (one version counter for the whole
   // circuit), so this hook subscribes once here rather than per trait; each
@@ -47,10 +53,12 @@ export function useEntityBindingSource(store: CircuitStore, traitIndex: TraitInd
         return next;
       },
       getConfig: (traitName) => traitIndex.byName.get(traitName)?.config,
-      getState: (traitName) => store.manager.getState(traitName)?.currentState ?? '',
+      getState: (traitName) => (kernel !== undefined
+        ? kernel.traitState(traitName)
+        : store.manager.getState(traitName)?.currentState) ?? '',
       subscribe: (_traitName, callback) => store.subscribe(callback),
     };
-  }, [store, traitIndex]);
+  }, [store, traitIndex, kernel]);
 }
 
 function sameFields(a: EntityRow, b: EntityRow): boolean {

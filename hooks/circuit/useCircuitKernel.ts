@@ -56,6 +56,11 @@ import {
 import type { PersistenceAdapter } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { recordingTransport } from '../../lib/verificationRegistry';
+import { createLazyKernelClient } from '../../lib/kernel-client-lazy';
+import type { KernelClient } from '../../lib/kernel-client';
+import type { KernelInstance } from '../../lib/kernel-wire';
+import { kernelOrbitals } from '../../lib/kernel-schema';
+import type { KernelEngineValue } from '../../providers/KernelEngineContext';
 import { useTranslate, useRenderI18n } from '../useTranslate';
 
 export interface UseCircuitKernelOptions {
@@ -90,6 +95,8 @@ export interface UseCircuitKernelOptions {
   logContext?: { behavior?: string; orbitalName?: string };
   /** Verification/perf recording — `StateMachineManager.setObserver`'s hook. */
   observer?: TransitionObserver;
+  /** Which client engine runs the circuit; absent = `'js'`. `useKernelEngine()` supplies it under a `KernelEngineProvider`. */
+  engine?: KernelEngineValue;
 }
 
 export interface CircuitKernelHandle {
@@ -100,6 +107,8 @@ export interface CircuitKernelHandle {
   appTraitNames: ReadonlySet<string>;
   /** The server the kernel posts to; its pushes are settled by the caller. */
   transport: EventTransport | undefined;
+  /** The WebAssembly-backed client, present only when the circuit runs the kernel engine. */
+  engine: KernelClient | undefined;
 }
 
 /**
@@ -138,15 +147,28 @@ function restrictTraitIndex(full: TraitIndex, activeNames: ReadonlySet<string>):
   return { byName, allEntities: full.allEntities, orbitals: full.orbitals };
 }
 
+/** The previous orbital set while a new array carries the same content: a host that rebuilds the array each render must not rebuild the circuit. */
+function useContentStable(orbitals: readonly OrbitalDefinition[]): readonly OrbitalDefinition[] {
+  const held = useRef<{ value: readonly OrbitalDefinition[]; key: string } | null>(null);
+  if (held.current === null) {
+    held.current = { value: orbitals, key: JSON.stringify(orbitals) };
+  } else if (held.current.value !== orbitals) {
+    const key = JSON.stringify(orbitals);
+    if (key !== held.current.key) held.current = { value: orbitals, key };
+  }
+  return held.current.value;
+}
+
 export function useCircuitKernel(
   traitBindings: readonly ResolvedTraitBinding[],
   options: UseCircuitKernelOptions,
 ): CircuitKernelHandle {
+  const orbitals = useContentStable(options.orbitals);
   // A host that runs the whole program (an extension worker) runs every trait; this view only shows them.
   const hostRunsProgram = options.transport?.hostsBrowserStore === true;
   const fullTraitIndex = useMemo(
-    () => buildTraitIndex(options.orbitals, options.traitConfigsByName, { hostRunsProgram }),
-    [options.orbitals, options.traitConfigsByName, hostRunsProgram],
+    () => buildTraitIndex(orbitals, options.traitConfigsByName, { hostRunsProgram }),
+    [orbitals, options.traitConfigsByName, hostRunsProgram],
   );
   const appTraitNames = useMemo(() => new Set(fullTraitIndex.byName.keys()), [fullTraitIndex]);
   // Keyed on the active trait SET, not the bindings array identity: a same-traits re-render must not rebuild the store.
@@ -225,7 +247,7 @@ export function useCircuitKernel(
     () => (baseTransport === undefined ? undefined : recordingTransport(baseTransport)),
     [baseTransport],
   );
-  const orbitalName = options.orbitals[0]?.name ?? '';
+  const orbitalName = orbitals[0]?.name ?? '';
 
   // The transport's topology, confirmed once its register() settles: the
   // kernel paints every local arm at once and holds only its posts on this.
@@ -240,7 +262,38 @@ export function useCircuitKernel(
     if (!awaitTopology) topology.resolve({ carriesCircuitState: confirmedCarries });
   }, [awaitTopology, confirmedCarries, topology]);
 
-  const rawKernel = useMemo(() => createClientKernel({
+  const kernelEngine = options.engine?.engine === 'kernel';
+  const loadModule = options.engine?.loadModule;
+  const kernelInstance = useMemo<Promise<KernelInstance> | undefined>(() => {
+    if (!kernelEngine) return undefined;
+    if (loadModule === undefined) throw new Error('useCircuitKernel: engine "kernel" requires a loadModule');
+    const instance = loadModule().then((mod) => {
+      const kernel = new mod.Kernel(JSON.stringify({ name: orbitalName, orbitals: kernelOrbitals(orbitals) }), getTabClientId());
+      // Every host this view posts to runs the whole worklist, listeners of a dispatched emit included.
+      kernel.setHostFansOut(true);
+      return kernel;
+    });
+    // A failure surfaces on the first dispatch that awaits it; a circuit with nothing to run never does.
+    instance.catch((err) => log.error('kernel-load-failed', { error: String(err) }));
+    return instance;
+  }, [kernelEngine, loadModule, orbitalName, orbitals]);
+  useEffect(() => {
+    if (kernelInstance === undefined || options.user === undefined) return;
+    const user = options.user;
+    void kernelInstance.then((k) => k.setCurrentUser(JSON.stringify(user)));
+  }, [kernelInstance, options.user]);
+  const kernelClient = useMemo<KernelClient | undefined>(() => kernelInstance === undefined
+    ? undefined
+    : createLazyKernelClient({
+      instance: kernelInstance,
+      store,
+      traitIndex,
+      topology: topology.promise,
+      ...(options.observer !== undefined ? { observer: options.observer } : {}),
+      ...(effectiveTransport !== undefined ? { transport: effectiveTransport } : {}),
+    }), [kernelInstance, store, traitIndex, topology, effectiveTransport, options.observer]);
+
+  const rawKernel = useMemo(() => kernelClient ?? createClientKernel({
     orbitalName,
     traitIndex,
     fullTraitIndex,
@@ -271,6 +324,7 @@ export function useCircuitKernel(
     options.logContext,
     topology,
     effectiveTransport,
+    kernelClient,
   ]);
 
   // Stamp the per-tab clientId and the viewer's locale onto every dispatch
@@ -292,5 +346,5 @@ export function useCircuitKernel(
     };
   }, [rawKernel, locale]);
 
-  return { kernel, store, traitIndex, appTraitNames, transport: effectiveTransport };
+  return { kernel, store, traitIndex, appTraitNames, transport: effectiveTransport, engine: kernelClient };
 }

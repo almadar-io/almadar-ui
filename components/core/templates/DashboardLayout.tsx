@@ -414,9 +414,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               isRail ? "px-2" : "px-3",
             )}
           >
-            {navItems.map((item) => (
+            {navItems.map((item, itemIndex) => (
               <NavLink
-                key={item.href}
+                key={`${itemIndex}:${item.href}`}
                 item={item}
                 activeHref={activeHref}
                 compact={isRail}
@@ -525,9 +525,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       {appName}
                     </Typography>
                   </Link>
-                  {navItems.map((item) => (
+                  {navItems.map((item, itemIndex) => (
                     <TopNavItem
-                      key={item.href}
+                      key={`${itemIndex}:${item.href}`}
                       item={item}
                       activeHref={activeHref}
                       tone="solid"
@@ -678,8 +678,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             position="left"
           >
             <VStack as="nav" aria-label={t('aria.mainNavigation')} gap="none" className="space-y-1">
-              {navItems.map((item) => (
-                <NavLink key={item.href} item={item} activeHref={activeHref} />
+              {navItems.map((item, itemIndex) => (
+                <NavLink key={`${itemIndex}:${item.href}`} item={item} activeHref={activeHref} />
               ))}
             </VStack>
           </Drawer>
@@ -712,9 +712,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             className="fixed bottom-0 inset-x-0 z-20 pb-[env(safe-area-inset-bottom)] bg-card surface-material border-t-[length:var(--border-width)] border-border"
           >
             <HStack align="center" justify="around" className="h-16 px-2">
-              {navItems.map((item) => (
+              {navItems.map((item, itemIndex) => (
                 <NavLinkBottom
-                  key={item.href}
+                  key={`${itemIndex}:${item.href}`}
                   item={item}
                   activeHref={activeHref}
                 />
@@ -795,11 +795,11 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
             <>
               <Box className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
               <Box className="absolute left-full top-0 ml-2 w-48 bg-card surface-material rounded-container shadow-elevation-popover border border-border py-1 z-30">
-                {item.children!.map((child) => {
+                {item.children!.map((child, childIndex) => {
                   const childIsActive = child.href === activeHref;
                   return (
                     <Link
-                      key={child.href}
+                      key={`${childIndex}:${child.href}`}
                       to={child.href}
                       aria-current={child.href === activeHref ? "page" : undefined}
                       onClick={() => setOpen(false)}
@@ -913,11 +913,11 @@ const NavLink: React.FC<{ item: NavItem; activeHref?: string; compact?: boolean 
             gap="none"
             className="mt-1 ml-4 pl-4 border-s-[length:var(--border-width)] border-border space-y-1"
           >
-            {item.children!.map((child) => {
+            {item.children!.map((child, childIndex) => {
               const childIsActive = child.href === activeHref;
               return (
                 <Link
-                  key={child.href}
+                  key={`${childIndex}:${child.href}`}
                   to={child.href}
                   aria-current={child.href === activeHref ? "page" : undefined}
                   className={cn(

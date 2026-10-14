@@ -22,6 +22,7 @@ import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { OrbitalId, OrbitalSchema } from '@almadar/core';
 import { useCircuitKernel } from '../hooks/circuit/useCircuitKernel';
+import { ENGINES } from './helpers/kernel-engine';
 
 function fixtureOrbitals(): OrbitalSchema['orbitals'] {
   return [
@@ -76,7 +77,7 @@ function fixtureOrbitals(): OrbitalSchema['orbitals'] {
   ];
 }
 
-describe('useCircuitKernel — cross-trait dispatch through the client role (no ui-local relay)', () => {
+describe.each(ENGINES)('useCircuitKernel [%s engine] — cross-trait dispatch through the client role (no ui-local relay)', (_name, engine) => {
   it('a listens{} subscriber transitions from the SAME kernel.dispatch call that produced its trigger', async () => {
     const orbitals = fixtureOrbitals();
     const bindings = [
@@ -84,7 +85,7 @@ describe('useCircuitKernel — cross-trait dispatch through the client role (no 
       { trait: { name: 'Chart', id: undefined, states: [{ name: 'idle' }, { name: 'listened' }], events: [], transitions: [{ from: 'idle', to: 'listened', event: 'RENDER' }], guards: [], ticks: [], listens: [{ event: 'POINTS_READY', triggers: 'RENDER', source: { kind: 'trait', trait: 'Writer' } }], emits: [], source: 'schema' } },
     ] as never;
 
-    const { result } = renderHook(() => useCircuitKernel(bindings, { orbitals }));
+    const { result } = renderHook(() => useCircuitKernel(bindings, { orbitals, engine }));
 
     await act(async () => {
       await result.current.kernel.dispatch({ event: 'COMPUTE', payload: { points: '[1,2,3]' }, targetTrait: 'Writer' });

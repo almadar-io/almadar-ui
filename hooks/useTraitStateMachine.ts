@@ -39,6 +39,7 @@ import { createLogger } from '@almadar/logger';
 import { useEventBus } from './useEventBus';
 import { useUser } from '../providers/UserContext';
 import { useTranslate } from './useTranslate';
+import { useKernelEngine } from '../providers/KernelEngineContext';
 import type { EntityBindingSource } from '../providers/EntityBindingContext';
 import type { AwaitingSkeletonSource } from '../providers/AwaitingSkeletonContext';
 import { ALL_SLOTS } from './useUISlots';
@@ -137,8 +138,10 @@ export function useTraitStateMachine(
 
   const observer = useMemo(() => createCircuitVerificationObserver(), []);
 
-  const { kernel, store, traitIndex, appTraitNames, transport } = useCircuitKernel(traitBindings, {
+  const engine = useKernelEngine();
+  const { kernel, store, traitIndex, appTraitNames, transport, engine: kernelClient } = useCircuitKernel(traitBindings, {
     orbitals: options.orbitals,
+    engine,
     ...(options.traitConfigsByName !== undefined ? { traitConfigsByName: options.traitConfigsByName } : {}),
     ...(options.transport !== undefined ? { transport: options.transport } : {}),
     ...(options.carriesCircuitState !== undefined ? { carriesCircuitState: options.carriesCircuitState } : {}),
@@ -162,7 +165,7 @@ export function useTraitStateMachine(
     ...(userContext !== undefined ? { user: userContext } : {}),
   });
 
-  const entityBindingSource = useEntityBindingSource(store, traitIndex);
+  const entityBindingSource = useEntityBindingSource(store, traitIndex, kernelClient);
   const awaitingSkeletonSource = useAwaitingSkeletonSource(store, traitIndex, options.embeddedTraits);
 
   // Traits mounted on THIS page (`useSlotFlush.applyClientEffects`'s
@@ -330,7 +333,23 @@ export function useTraitStateMachine(
     });
   }, [dispatchAndSettle]);
 
+  // One kernel frame's outcomes: the head is the frame's merged response, each following one a tick's
+  // listener cascade (its server legs settle on their own and paint when they land).
+  const settleFrame = useCallback((outcomes: ClientKernelOutcome[]): void => {
+    for (const outcome of outcomes) {
+      slotFlush.applyClientEffects(outcome.response.clientEffects ?? [], outcome.response.clientEffectsByTrait, options.navigate, options.navigateBack, activeTraitNamesRef.current);
+      for (const emitted of outcome.response.emittedEvents) {
+        eventBus.emit(`UI:${emitted.event}`, emitted.payload, { ...(emitted.source ?? {}), dispatched: true });
+      }
+      void outcome.tickSettled?.then((later) => {
+        if (later === undefined) return;
+        slotFlush.applyClientEffects(later.clientEffects ?? [], later.clientEffectsByTrait, options.navigate, options.navigateBack, activeTraitNamesRef.current);
+      });
+    }
+  }, [slotFlush, eventBus, options.navigate, options.navigateBack]);
+
   useClientTicks(traitBindings, store, traitIndex, {
+    ...(kernelClient !== undefined ? { kernelClient, onKernelFrame: settleFrame, ...(engine.scheduleFrame !== undefined ? { scheduleFrame: engine.scheduleFrame } : {}) } : {}),
     eventBus,
     slotFlush,
     dispatchTick,
@@ -480,16 +499,35 @@ export function useTraitStateMachine(
     aliveRef.current = true;
     return () => { aliveRef.current = false; };
   }, []);
+  // The kernel's tick clock runs mounted traits only: a page leaving takes its ticks with it.
+  const kernelClientRef = useRef(kernelClient);
+  kernelClientRef.current = kernelClient;
+  const declaredOnRef = useRef<typeof kernelClient>(undefined);
+  useEffect(() => () => {
+    const client = kernelClientRef.current;
+    const mounted = mountedRef.current;
+    if (client === undefined || mounted === null) return;
+    void client.unmount([...mounted.initialized]).catch((err: Error) => stateLog.warn('unmount:failed', { error: err.message }));
+  }, []);
   const mountKey = `${options.mountKey ?? ''}\u0000${JSON.stringify(Object.entries(options.initPayload ?? {}).sort(([a], [b]) => a.localeCompare(b)))}`;
   useEffect(() => {
     const prev = mountedRef.current;
-    const mount = prev !== null && prev.key === mountKey && prev.store === store
+    const continuing = prev !== null && prev.key === mountKey && prev.store === store;
+    const mount = continuing
       ? prev
       : { key: mountKey, store, initialized: new Set<string>() };
     const active = new Set(traitBindings.map((b) => b.trait.name));
+    // Declared before the first frame: the kernel's tick clock must not tick traits this page never mounted.
+    if (kernelClient !== undefined) {
+      const fresh = !continuing || declaredOnRef.current !== kernelClient;
+      const declared = fresh ? [...active] : [...active].filter((name) => !mount.initialized.has(name));
+      declaredOnRef.current = kernelClient;
+      if (fresh || declared.length > 0) void (fresh ? kernelClient.remount(declared) : kernelClient.mount(declared)).catch((err: Error) => stateLog.warn('mount:declare-failed', { error: err.message }));
+    }
     const left = [...mount.initialized].filter((traitName) => !active.has(traitName));
     for (const traitName of left) mount.initialized.delete(traitName);
     store.mount.unmounted(left);
+    if (kernelClient !== undefined && left.length > 0) void kernelClient.unmount(left).catch((err: Error) => stateLog.warn('unmount:failed', { error: err.message }));
     // Every entering trait awaits its own lifecycle event BEFORE any of them
     // dispatches: a sibling's INIT cascade must not reach it first.
     const entering: MountSeed[] = [];
@@ -543,7 +581,7 @@ export function useTraitStateMachine(
       });
     }
     mountedRef.current = mount;
-  }, [traitBindings, store, mountAndSettle, mountKey, uiSlots, traitIndex, options.callsiteCaptureChildrenByTrait, t]);
+  }, [traitBindings, store, mountAndSettle, mountKey, uiSlots, traitIndex, options.callsiteCaptureChildrenByTrait, t, kernelClient]);
 
   // Re-render on every committed circuit change (mirrors the old hook's own
   // `setTraitStates(manager.getAllStates())` after each dispatch) — the

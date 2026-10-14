@@ -30,7 +30,9 @@
  * @packageDocumentation
  */
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { Box } from '../components/core/atoms/Box';
+import { getTraitPresence } from '../lib/traitPresence';
 
 export interface TraitScope {
   /** Owning orbital name (e.g. `"ContactOrbital"`). */
@@ -84,11 +86,28 @@ export function TraitScopeProvider({
       ? [self, ...parentChain]
       : [self];
   }, [orbital, trait, parentChain]);
+  const watched = useSyncExternalStore(
+    presence.subscribe,
+    () => presence.isWatched(trait),
+    () => false,
+  );
   return (
     <TraitScopeContext.Provider value={value}>
-      {children}
+      {watched ? <TraitPresenceRoot trait={trait}>{children}</TraitPresenceRoot> : children}
     </TraitScopeContext.Provider>
   );
+}
+
+const presence = getTraitPresence();
+
+/** A `[visible]` tick's trait: its output sits in a `display: contents` box the presence registry tracks. */
+function TraitPresenceRoot({ trait, children }: { trait: string; children?: React.ReactNode }): React.ReactElement {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    return el === null ? undefined : presence.attach(trait, el);
+  }, [trait]);
+  return <Box ref={ref} className="contents" data-trait-presence={trait}>{children}</Box>;
 }
 
 /**

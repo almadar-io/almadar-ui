@@ -54,6 +54,7 @@ import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDis
 import { resolveDrawableColors } from '../../../lib/drawable/themeDrawables';
 import { markColor } from '../../../lib/canvasTheme';
 import { useCanvasTheme } from '../../../hooks/useCanvasTheme';
+import { useOnScreen } from '../../../hooks/useOnScreen';
 import { isAnimatedShape } from '../atoms/DrawShape';
 import { isAnimatedSprite } from '../atoms/DrawSprite';
 import { isAnimatedGroup } from '../atoms/DrawGroup';
@@ -566,6 +567,9 @@ export function Canvas2D({
     // =========================================================================
     const animRafRef = useRef(0);
     const drawTimeRef = useRef<(timeMs: number) => void>(() => undefined);
+    const onScreen = useOnScreen(canvasRef);
+    const onScreenRef = useRef(onScreen);
+    onScreenRef.current = onScreen;
     const draw = useCallback((timeMs = 0) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -575,14 +579,18 @@ export function Canvas2D({
         const scheduleAnimation = (nodes: readonly DrawableNode[]): void => {
             if (!nodes.some(drawableIsAnimated)) return;
             if (canvasTheme && !canvasTheme.motion.enabled) return;
+            if (!onScreenRef.current) return;
             cancelAnimationFrame(animRafRef.current);
             animRafRef.current = requestAnimationFrame(() => drawTimeRef.current(performance.now()));
         };
 
         const dpr = window.devicePixelRatio || 1;
-        canvas.width = viewportSize.width * dpr;
-        canvas.height = viewportSize.height * dpr;
-        ctx.scale(dpr, dpr);
+        // Assigning a size reallocates the backing store, so only a real resize does it.
+        const pixelWidth = viewportSize.width * dpr;
+        const pixelHeight = viewportSize.height * dpr;
+        if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+        if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
         ctx.clearRect(0, 0, viewportSize.width, viewportSize.height);
 
@@ -689,6 +697,10 @@ export function Canvas2D({
         drawTimeRef.current = draw;
     }, [draw]);
     useEffect(() => () => cancelAnimationFrame(animRafRef.current), []);
+    useEffect(() => {
+        if (onScreen) drawTimeRef.current(performance.now());
+        else cancelAnimationFrame(animRafRef.current);
+    }, [onScreen]);
 
     // =========================================================================
     // Follow camera: lerp to keep `followTarget` centered (camera:'follow').

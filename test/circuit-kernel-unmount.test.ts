@@ -5,6 +5,8 @@ import type { OrbitalSchema, ResolvedTraitBinding } from '@almadar/core';
 import type { EventTransport, EventTransportRegisterResult, OrbitalEventRequest, OrbitalEventResponse } from '@almadar/runtime';
 import { UNMOUNT_EVENT } from '@almadar/runtime';
 import { useCircuitKernel } from '../hooks/circuit/useCircuitKernel';
+import { ENGINES } from './helpers/kernel-engine';
+import type { KernelEngineValue } from '../providers/KernelEngineContext';
 
 function trait(name: string): OrbitalSchema['orbitals'][number]['traits'][number] {
   return {
@@ -58,24 +60,24 @@ class RecordingTransport implements EventTransport {
   }
 }
 
-function mount(transport: RecordingTransport, names: string[], awaitTopology = false) {
+function mount(engine: KernelEngineValue, transport: RecordingTransport, names: string[], awaitTopology = false) {
   return renderHook(
     ({ bindings, pending }: { bindings: ResolvedTraitBinding[]; pending: boolean }) =>
-      useCircuitKernel(bindings, { orbitals, transport, awaitTopology: pending }),
+      useCircuitKernel(bindings, { orbitals, transport, awaitTopology: pending, engine }),
     { initialProps: { bindings: names.map(binding), pending: awaitTopology } },
   );
 }
 
-describe('useCircuitKernel posts $UNMOUNT for traits leaving the page', () => {
+describe.each(ENGINES)('useCircuitKernel [%s engine] posts $UNMOUNT for traits leaving the page', (_name, engine) => {
   it('mounting posts no unmount', () => {
     const transport = new RecordingTransport();
-    mount(transport, ['Ticker', 'Notes']);
+    mount(engine, transport, ['Ticker', 'Notes']);
     expect(transport.unmounts()).toEqual([]);
   });
 
   it('a dropped trait is unmounted once, on its own orbital, with the tab id', () => {
     const transport = new RecordingTransport();
-    const hook = mount(transport, ['Ticker', 'Clock', 'Notes']);
+    const hook = mount(engine, transport, ['Ticker', 'Clock', 'Notes']);
     hook.rerender({ bindings: ['Clock'].map(binding), pending: false });
     expect(transport.unmounts()).toEqual(['Feed.Ticker', 'Side.Notes']);
     const clientIds = new Set(transport.sent.map((s) => s.request.clientId));
@@ -87,14 +89,14 @@ describe('useCircuitKernel posts $UNMOUNT for traits leaving the page', () => {
 
   it('a new bindings array with the same traits unmounts nothing', () => {
     const transport = new RecordingTransport();
-    const hook = mount(transport, ['Ticker', 'Notes']);
+    const hook = mount(engine, transport, ['Ticker', 'Notes']);
     hook.rerender({ bindings: ['Notes', 'Ticker'].map(binding), pending: false });
     expect(transport.unmounts()).toEqual([]);
   });
 
   it('a trait that leaves and comes back is unmounted only for the time it was gone', () => {
     const transport = new RecordingTransport();
-    const hook = mount(transport, ['Ticker', 'Notes']);
+    const hook = mount(engine, transport, ['Ticker', 'Notes']);
     hook.rerender({ bindings: ['Notes'].map(binding), pending: false });
     hook.rerender({ bindings: ['Ticker', 'Notes'].map(binding), pending: false });
     hook.unmount();
@@ -103,14 +105,14 @@ describe('useCircuitKernel posts $UNMOUNT for traits leaving the page', () => {
 
   it('tearing the page down unmounts every trait still on it', () => {
     const transport = new RecordingTransport();
-    const hook = mount(transport, ['Ticker', 'Clock', 'Notes']);
+    const hook = mount(engine, transport, ['Ticker', 'Clock', 'Notes']);
     hook.unmount();
     expect(transport.unmounts()).toEqual(['Feed.Clock', 'Feed.Ticker', 'Side.Notes']);
   });
 
   it('nothing is unmounted while the topology is pending, and only confirmed mounts are released later', () => {
     const transport = new RecordingTransport();
-    const hook = mount(transport, ['Ticker', 'Notes'], true);
+    const hook = mount(engine, transport, ['Ticker', 'Notes'], true);
     hook.rerender({ bindings: ['Notes'].map(binding), pending: true });
     expect(transport.unmounts()).toEqual([]);
     hook.rerender({ bindings: ['Notes'].map(binding), pending: false });
@@ -121,7 +123,7 @@ describe('useCircuitKernel posts $UNMOUNT for traits leaving the page', () => {
 
   it('a failed unmount post does not break teardown', async () => {
     const transport = new RecordingTransport(true);
-    const hook = mount(transport, ['Ticker']);
+    const hook = mount(engine, transport, ['Ticker']);
     expect(() => hook.unmount()).not.toThrow();
     await Promise.resolve();
     expect(transport.unmounts()).toEqual(['Feed.Ticker']);

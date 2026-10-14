@@ -1,11 +1,12 @@
 // The page kernel wrapper must forward per-dispatch hooks: `onLocal` is how a
 // transition's own render-ui (its loading skeleton) paints before the server
 // round trip. Dropping it leaves the slot empty for the whole leg.
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { OrbitalSchema, ResolvedTraitBinding } from '@almadar/core';
 import type { EventTransport, EventTransportRegisterResult, OrbitalEventRequest, OrbitalEventResponse } from '@almadar/runtime';
 import { useCircuitKernel } from '../hooks/circuit/useCircuitKernel';
+import { ENGINES, warmKernel } from './helpers/kernel-engine';
 
 const orbitals: OrbitalSchema['orbitals'] = [{
   name: 'Main', pages: [],
@@ -41,10 +42,11 @@ class GatedServer implements EventTransport {
   }
 }
 
-describe('useCircuitKernel forwards dispatch hooks', () => {
+describe.each(ENGINES)('useCircuitKernel [%s engine] forwards dispatch hooks', (_name, engine) => {
+  beforeAll(warmKernel);
   it('onLocal sees the local render before the server leg settles', async () => {
     const server = new GatedServer();
-    const { result } = renderHook(() => useCircuitKernel([binding], { orbitals, transport: server, carriesCircuitState: true }));
+    const { result } = renderHook(() => useCircuitKernel([binding], { orbitals, transport: server, carriesCircuitState: true, engine }));
     const painted: string[] = [];
     const done = result.current.kernel.dispatch({ event: 'INIT', targetTrait: 'Notes' }, {
       onLocal: (local) => { painted.push(...(local.clientEffects ?? []).map((e) => String(e[0]))); },
@@ -57,7 +59,7 @@ describe('useCircuitKernel forwards dispatch hooks', () => {
 
   it('while the topology is pending the local arm paints and only the post waits', async () => {
     const server = new GatedServer();
-    const { result, rerender } = renderHook(({ pending }) => useCircuitKernel([binding], { orbitals, transport: server, carriesCircuitState: true, awaitTopology: pending }), { initialProps: { pending: true } });
+    const { result, rerender } = renderHook(({ pending }) => useCircuitKernel([binding], { orbitals, transport: server, carriesCircuitState: true, awaitTopology: pending, engine }), { initialProps: { pending: true } });
     let localSeen = false;
     const done = result.current.kernel.dispatch({ event: 'INIT', targetTrait: 'Notes' }, { onLocal: () => { localSeen = true; } });
     await new Promise((r) => setTimeout(r, 0));
@@ -73,7 +75,7 @@ describe('useCircuitKernel forwards dispatch hooks', () => {
 
   it('the kernel survives the topology resolving: one dispatch is posted once, never dropped or duplicated', async () => {
     const server = new GatedServer();
-    const { result, rerender } = renderHook(({ pending }) => useCircuitKernel([binding], { orbitals, transport: server, carriesCircuitState: true, awaitTopology: pending }), { initialProps: { pending: true } });
+    const { result, rerender } = renderHook(({ pending }) => useCircuitKernel([binding], { orbitals, transport: server, carriesCircuitState: true, awaitTopology: pending, engine }), { initialProps: { pending: true } });
     const before = result.current.kernel;
     const done = before.dispatch({ event: 'INIT', targetTrait: 'Notes' });
     rerender({ pending: false });

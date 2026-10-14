@@ -66,9 +66,11 @@ describe('AvlStateMachine', () => {
     expect(badge('saving')).toBeUndefined();
   });
 
-  it('shows the guard in .lolo form under its event', async () => {
+  it('carries the guard in .lolo form on a glyph instead of printing it', async () => {
     await renderMachine();
-    expect(screen.getByText('(> @entity.qty 0)')).toBeInTheDocument();
+    const glyph = screen.getAllByTestId('avl-guard-glyph')[0];
+    expect(glyph.getAttribute('aria-label')).toContain('(> @entity.qty 0)');
+    expect(screen.queryByText('(> @entity.qty 0)')).toBeNull();
   });
 
   it('shows each effect as a labelled glyph chip', async () => {
